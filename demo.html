@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Tagalong - sample app</title>
+<style>
+:root{--bg:#f6f5fb;--card:#fff;--ink:#1d1b2e;--mute:#6b6880;--line:#e6e4f0;--acc:#5b4bf5;--acc2:#ede9ff;--ok:#15803d;--okbg:#dcfce7;--bad:#b91c1c;--badbg:#fee2e2;--warn:#a16207;--warnbg:#fef3c7;--grey:#eceaf3}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:#dcd8f0;display:flex;align-items:center;justify-content:center}
+#shell{position:relative;width:min(100%,420px);height:min(100dvh,880px);background:var(--bg);overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px #2b1f6a33;border-radius:0}
+@media(min-width:500px){#shell{border-radius:28px;border:8px solid #1d1b2e}}
+#screen{display:flex;flex-direction:column;flex:1;min-height:0}
+header{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--line)}
+header h1{font-size:18px;margin:0;flex:1;letter-spacing:-.01em}
+.ib{border:0;background:var(--grey);width:36px;height:36px;border-radius:50%;font-size:16px;cursor:pointer;position:relative}
+.badge{position:absolute;top:-3px;right:-3px;background:#e11d48;color:#fff;font-size:10px;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+main{flex:1;overflow-y:auto;padding:14px 16px;min-height:0}
+nav{display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;background:none;padding:8px 2px 7px;font-size:10.5px;color:var(--mute);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px}
+nav button span{font-size:19px}
+nav button.on{color:var(--acc);font-weight:700}
+h2{margin:0 0 6px;font-size:17px}
+h3{margin:14px 0 6px;font-size:14px;color:var(--mute);text-transform:uppercase;letter-spacing:.05em}
+p{margin:0 0 6px}
+.mute{color:var(--mute)}
+.small{font-size:12.5px}
+.btn{border:0;background:var(--acc);color:#fff;font-weight:600;padding:12px 16px;border-radius:12px;font-size:15px;cursor:pointer;width:100%}
+.btn.sec{background:var(--acc2);color:var(--acc)}
+.btn.bad{background:var(--badbg);color:var(--bad)}
+.btn.ok{background:var(--okbg);color:var(--ok)}
+.btn.sm{width:auto;padding:8px 14px;font-size:13px;border-radius:10px}
+.btn:disabled{opacity:.5}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{flex:1}
+label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff;color:var(--ink)}
+textarea{resize:none;min-height:70px}
+.chk{display:flex;align-items:center;gap:8px;font-weight:500;margin:6px 0}
+.chk input{width:auto}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+.panel.tap{cursor:pointer}
+.chip{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:99px;background:var(--grey);color:var(--mute)}
+.chip.ok{background:var(--okbg);color:var(--ok)}.chip.bad{background:var(--badbg);color:var(--bad)}.chip.warn{background:var(--warnbg);color:var(--warn)}.chip.acc{background:var(--acc2);color:var(--acc)}
+.seg{display:flex;background:var(--grey);border-radius:10px;padding:3px;margin-bottom:12px}
+.seg button{flex:1;border:0;background:none;padding:7px;border-radius:8px;font-weight:600;color:var(--mute);cursor:pointer}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px #0002}
+.deck{position:relative;height:100%;min-height:440px;display:flex;flex-direction:column}
+.stack{position:relative;flex:1;min-height:380px}
+.card{position:absolute;inset:0;border-radius:22px;color:#fff;padding:20px;display:flex;flex-direction:column;justify-content:flex-end;touch-action:none;user-select:none;box-shadow:0 8px 24px #2b1f6a33}
+.card.back{transform:scale(.94) translateY(12px);opacity:.7}
+.card .ic{position:absolute;top:22px;right:22px;font-size:64px;opacity:.9}
+.card h2{font-size:22px;line-height:1.25;margin:8px 0 12px}
+.card p{margin:0 0 4px;font-size:14.5px}
+.pill{display:inline-block;background:#ffffff33;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700}
+.stamp{position:absolute;top:26px;left:20px;font-size:26px;font-weight:800;border:3px solid;border-radius:10px;padding:2px 10px;transform:rotate(-12deg);opacity:0}
+.acts{display:flex;justify-content:center;gap:28px;padding:14px 0 4px}
+.rb{width:60px;height:60px;border-radius:50%;border:0;font-size:26px;background:#fff;box-shadow:0 4px 14px #0002;cursor:pointer}
+.empty{text-align:center;padding:50px 20px;color:var(--mute)}
+.empty .big{font-size:46px}
+.ov{position:absolute;inset:0;background:#0007;display:flex;align-items:flex-end;z-index:20}
+.sheet{background:var(--bg);width:100%;max-height:92%;border-radius:22px 22px 0 0;display:flex;flex-direction:column}
+.sheet.full{height:96%}
+.sh{display:flex;align-items:center;padding:14px 16px 6px}
+.sh h2{flex:1;margin:0}
+.sb{padding:6px 16px 18px;overflow-y:auto}
+.msgs{flex:1;overflow-y:auto;padding:8px 16px}
+.msg{max-width:80%;margin-bottom:8px;padding:8px 12px;border-radius:14px;background:#fff;border:1px solid var(--line)}
+.msg.me{margin-left:auto;background:var(--acc);color:#fff;border-color:var(--acc)}
+.msg .who{font-size:11px;font-weight:700;opacity:.7}
+.msg.sys{margin:8px auto;background:none;border:0;font-size:12px;color:var(--mute);text-align:center;max-width:100%}
+.cin{display:flex;gap:8px;padding:10px 16px;border-top:1px solid var(--line)}
+.cin input{flex:1}.cin button{width:auto}
+#toast{position:absolute;left:14px;right:14px;top:14px;z-index:50;background:#1d1b2e;color:#fff;padding:11px 14px;border-radius:12px;font-size:13.5px;opacity:0;transform:translateY(-12px);transition:.25s;pointer-events:none}
+#toast.show{opacity:1;transform:none}
+.ob{padding:26px 22px;overflow-y:auto;flex:1}
+.ob .logo{font-size:44px}
+.prog{height:4px;background:var(--grey);border-radius:2px;margin:0 0 20px}
+.prog i{display:block;height:100%;background:var(--acc);border-radius:2px}
+.scan{width:130px;height:130px;border-radius:50%;margin:16px auto;background:var(--acc2);display:flex;align-items:center;justify-content:center;font-size:56px}
+.scan.go{animation:pulse .7s infinite alternate}
+@keyframes pulse{to{transform:scale(1.1);background:#d8d0ff}}
+.dn{border-left:3px solid var(--acc);padding-left:10px;margin:8px 0;font-size:12.5px;color:var(--mute)}
+</style>
+</head>
+<body>
+<div id="shell"><div id="screen"></div><div id="toast"></div></div>
+<script>
+"use strict";
+/* ---------- constants ---------- */
+const KEY='tagalong_demo_v1';
+const HOODS=['Central Market','Lakeside','Old Quarter'];
+const GENDERS=['Woman','Man','Non-binary'];
+const CATS={
+  movies:{label:'Movies',icon:'🎬',g:'linear-gradient(135deg,#5b4bf5,#9b6bff)'},
+  cafe:{label:'Cafe / Food',icon:'☕',g:'linear-gradient(135deg,#f97316,#fbbf24)'},
+  concerts:{label:'Concerts',icon:'🎤',g:'linear-gradient(135deg,#db2777,#f472b6)'}
+};
+const COST={split:'Split equally',own:'Everyone pays their own way',host:'Host is covering everyone'};
+const SWIPE_WINDOW=36*3600e3;
+const USERS={
+  u1:{name:'Aarav',gender:'Man',age:27,job:'Designer',bio:'Will watch anything with good sound design.'},
+  u2:{name:'Meera',gender:'Woman',age:29,job:'Architect',bio:'Coffee snob, jazz fan, always early.'},
+  u3:{name:'Rohan',gender:'Man',age:31,job:'Developer',bio:'Live gigs > streaming. Ask me about my vinyl.'},
+  u4:{name:'Sara',gender:'Woman',age:25,job:'Journalist',bio:'New in town, collecting good brunch spots.'},
+  u5:{name:'Kabir',gender:'Man',age:28,job:'Chef',bio:'Cooks all day, so I eat out on my days off.'},
+  u6:{name:'Ananya',gender:'Woman',age:26,job:'Teacher',bio:'Board games evangelist.'},
+  u7:{name:'Alex',gender:'Non-binary',age:30,job:'Musician',bio:'Open mics, always.'},
+  u8:{name:'Ishaan',gender:'Man',age:24,job:'Student',bio:'Ramen is a personality.'}
+};
+const NOTES=['Love this plan, would be great to join!','New to the area, looking to meet people.','I have been wanting to see this for ages.','Happy to split costs, can be on time.'];
+const REPLIES=['Sounds good!','See you there','Running 5 min late, save me a seat','Who is bringing snacks?','Can we meet outside first?','Excited for this'];
+
+/* ---------- state ---------- */
+let S=load()||seed();
+let ui={tab:'swipe',seg:'act',ob:{step:2,d:{}},modal:null};
+
+function seed(){
+  const n=Date.now(),h=x=>n+x*3600e3;
+  const A=(id,host,cat,desc,cap,hrs,aud,venue,cost,hood,members)=>({id,host,cat,desc,cap,when:h(hrs),aud,venue,cost,hood,members:members||[],status:'open'});
+  const acts=[
+    A('a1','u2','movies','Catching the 8pm show of the new sci-fi release, chai after',3,5,'everyone','Grand Cinema, Screen 4','split','Central Market',['u1']),
+    A('a2','u4','cafe','Slow brunch. Bring a book or a laptop',4,20,['Woman'],'Bean & Leaf','own','Central Market'),
+    A('a3','u3','concerts','Indie band live set, got spare spots',2,30,'everyone','The Hangar','own','Central Market'),
+    A('a4','u5','movies','Late-night horror double feature',4,10,['Man','Non-binary'],'Regal Multiplex','split','Central Market'),
+    A('a5','u6','cafe','Board games and coffee, beginners welcome',5,28,'everyone','Meeple Cafe','own','Central Market',['u2','u7','u1']),
+    A('a6','u7','concerts','Open-mic night, come cheer for friends',6,72,'everyone','Blue Note Lounge','own','Central Market'),
+    A('a7','u8','cafe','Trying the new ramen place (only 1 spot left)',3,54,'everyone','Ramen Yokocho','split','Central Market',['u5','u3']),
+    A('a8','u1','movies','Classic film re-run screening',4,100,'everyone','Old Rex Cinema','split','Central Market'),
+    A('a9','u2','concerts','Jazz on the lawn',5,120,['Woman'],'Riverside Lawn','host','Central Market'),
+    A('a10','u3','cafe','Coffee and sketching afternoon',3,150,'everyone','Paper & Pour','own','Central Market'),
+    A('a11','u4','movies','Documentary night and discussion',3,200,'everyone','Film Society Hall','own','Central Market'),
+    A('a12','u5','concerts','Rock night at the lake',4,12,'everyone','Lakeside Amphitheatre','own','Lakeside'),
+    A('a13','u6','cafe','Tea tasting flight',3,9,'everyone','Chai Lab','split','Old Quarter'),
+    A('a14','u8','movies','Sunday matinee',4,40,'everyone','Lakeview Cinema','split','Lakeside')
+  ];
+  const chats={};
+  acts.filter(a=>a.members.length).forEach(a=>{
+    chats[a.id]=[{from:'sys',text:'Chat created',at:n-7200e3},{from:a.host,text:'Hey all! Excited for this one.',at:n-3600e3},{from:a.members[0],text:'Me too, what time should we meet?',at:n-3000e3},{from:a.host,text:'Let us meet 15 min before at the entrance.',at:n-2400e3}];
+  });
+  return {offset:0,me:null,acts,reqs:[],dismissed:[],chats,notes:[],forceFail:false,seq:100};
+}
+function load(){try{const v=localStorage.getItem(KEY);return v?JSON.parse(v):null}catch(e){return null}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+/* ---------- helpers ---------- */
+const now=()=>Date.now()+S.offset;
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uname=id=>id==='me'?'You':(USERS[id]?.name||'?');
+const fmt=t=>new Date(t).toLocaleString([], {weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+const spots=a=>a.cap-a.members.length;
+const actOf=id=>S.acts.find(a=>a.id===id);
+const myReq=id=>S.reqs.find(r=>r.act===id&&r.user==='me');
+const audOK=a=>a.aud==='everyone'||a.aud.includes(S.me.gender);
+const ageOf=dob=>{const d=new Date(dob);return isNaN(d)?'?':Math.floor((Date.now()-d)/31557600000)};
+const nextId=p=>p+(S.seq++);
+const localInput=ts=>new Date(ts-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16);
+function profileOf(id){
+  if(id==='me')return {name:S.me.name,gender:S.me.gender,age:ageOf(S.me.dob),job:S.me.job||'',bio:S.me.bio||''};
+  return USERS[id];
+}
+let toastT;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600)}
+function notify(text){S.notes.unshift({id:nextId('n'),text,at:now(),read:false});toast(text);save()}
+
+/* ---------- domain logic ---------- */
+function eligible(a){return a.status==='open'&&a.host!=='me'&&a.hood===S.me.hood&&audOK(a)&&!S.dismissed.includes(a.id)&&a.when>now()&&spots(a)>0}
+const deck=()=>S.acts.filter(a=>eligible(a)&&!myReq(a.id)&&a.when<=now()+SWIPE_WINDOW).sort((a,b)=>a.when-b.when);
+const feed=()=>S.acts.filter(a=>eligible(a)&&a.when>now()+SWIPE_WINDOW).sort((a,b)=>a.when-b.when);
+
+function sendReq(actId,note){
+  const a=actOf(actId);
+  if(!a||a.host==='me'||a.status!=='open'||myReq(actId))return false;
+  S.reqs.push({id:nextId('r'),act:actId,user:'me',note:note||'',status:'pending'});
+  toast('Request sent to '+uname(a.host));save();return true;
+}
+function addMsg(actId,from,text){(S.chats[actId]=S.chats[actId]||[]).push({from,text,at:now()})}
+function accept(reqId){
+  const r=S.reqs.find(x=>x.id===reqId),a=r&&actOf(r.act);
+  if(!r||!a||r.status!=='pending'||spots(a)<=0)return;
+  r.status='accepted';a.members.push(r.user);
+  if(!S.chats[a.id])addMsg(a.id,'sys','Chat created');
+  addMsg(a.id,'sys',uname(r.user)+' joined the chat');
+  if(r.user==='me')notify('Accepted! You are in: '+a.desc.slice(0,40));
+  if(spots(a)<=0)fillUp(a);
+  save();
+}
+function reject(reqId){
+  const r=S.reqs.find(x=>x.id===reqId);if(!r||r.status!=='pending')return;
+  r.status='rejected';
+  if(r.user==='me')notify('Not accepted: '+actOf(r.act).desc.slice(0,40));
+  save();
+}
+function fillUp(a){
+  a.status='full';
+  S.reqs.filter(r=>r.act===a.id&&r.status==='pending').forEach(r=>{
+    r.status='rejected';
+    if(r.user==='me')notify('Activity is full, request not accepted: '+a.desc.slice(0,32));
+  });
+  if(a.host==='me')notify('Your activity is now full');
+}
+function cancelAct(id,byHost){
+  const a=actOf(id);if(!a)return;
+  const wasMember=a.members.includes('me');
+  S.acts=S.acts.filter(x=>x.id!==id);
+  S.reqs=S.reqs.filter(r=>r.act!==id);
+  delete S.chats[id];
+  if(byHost==='me')notify('Activity cancelled. '+(a.members.length?a.members.length+' accepted member(s) notified.':'Removed from your list.'));
+  else if(wasMember)notify(uname(byHost)+' cancelled: '+a.desc.slice(0,40));
+  save();
+}
+function tick(){
+  let ch=false;
+  S.acts.forEach(a=>{
+    if(a.status==='open'&&a.when<=now()){
+      a.status='past';ch=true;
+      S.reqs.filter(r=>r.act===a.id&&r.status==='pending').forEach(r=>r.status='no_action');
+    }
+  });
+  if(ch)save();return ch;
+}
+function incoming(){
+  const mine=S.acts.filter(a=>a.host==='me'&&a.status==='open'&&spots(a)>0);
+  if(!mine.length){toast('Post an activity first, then simulate requests');return}
+  const a=mine[Math.floor(Math.random()*mine.length)];
+  const pool=Object.keys(USERS).filter(u=>!a.members.includes(u)&&!S.reqs.some(r=>r.act===a.id&&r.user===u)&&(a.aud==='everyone'||a.aud.includes(USERS[u].gender)));
+  if(!pool.length){toast('No eligible people left for that activity');return}
+  const u=pool[Math.floor(Math.random()*pool.length)];
+  S.reqs.push({id:nextId('r'),act:a.id,user:u,note:NOTES[Math.floor(Math.random()*NOTES.length)],status:'pending'});
+  notify(USERS[u].name+' requested to join: '+a.desc.slice(0,32));
+}
+
+/* ---------- verification ---------- */
+function openVerify(kind,next){
+  const fl=S.me[kind+'Flag'];
+  ui.modal={type:'verify',kind,next,state:fl?'flagged':'idle'};render();
+}
+function scan(){
+  const m=ui.modal;m.state='scanning';render();
+  setTimeout(()=>{
+    if(S.forceFail){
+      S.me[m.kind+'Fails']=(S.me[m.kind+'Fails']||0)+1;
+      if(S.me[m.kind+'Fails']>=5){S.me[m.kind+'Flag']=true;m.state='flagged'}else m.state='fail';
+    }else{
+      S.me[m.kind]=true;S.me[m.kind+'Fails']=0;
+      const nx=m.next;ui.modal=null;save();toast(m.kind==='face'?'Face check passed':'ID verified');render();
+      if(nx)nx();return;
+    }
+    save();render();
+  },1300);
+}
+const gate=fn=>{if(S.me.kyc)fn();else openVerify('kyc',fn)};
+
+/* ---------- swipe ---------- */
+function swipe(dir){
+  const a=deck()[0];if(!a)return;
+  const go=()=>{
+    const el=document.querySelector('.card.top');
+    if(el){el.style.transition='transform .25s';el.style.transform=`translateX(${dir==='right'?600:-600}px) rotate(${dir==='right'?25:-25}deg)`}
+    setTimeout(()=>{
+      if(dir==='right')sendReq(a.id,'');else S.dismissed.push(a.id);
+      save();
+      if(!deck().length){ui.tab='discover';toast("You've seen everything nearby. Here's Discover.")}
+      render();
+    },230);
+  };
+  if(dir==='right'&&!S.me.kyc){const el=document.querySelector('.card.top');if(el)el.style.transform='';openVerify('kyc',go);return}
+  go();
+}
+function bindDrag(){
+  const el=document.querySelector('.card.top');if(!el)return;
+  let sx=0,dx=0,down=false;
+  const st=el.querySelector('.stamp');
+  el.onpointerdown=e=>{down=true;sx=e.clientX;el.setPointerCapture(e.pointerId);el.style.transition='none'};
+  el.onpointermove=e=>{
+    if(!down)return;dx=e.clientX-sx;
+    el.style.transform=`translateX(${dx}px) rotate(${dx/18}deg)`;
+    st.textContent=dx>0?'REQUEST':'SKIP';st.style.color=dx>0?'#bbf7d0':'#fecaca';st.style.opacity=Math.min(Math.abs(dx)/100,1);
+  };
+  el.onpointerup=()=>{
+    if(!down)return;down=false;el.style.transition='transform .25s';
+    const d=dx;dx=0;st.style.opacity=0;
+    if(d>110)swipe('right');else if(d<-110)swipe('left');else el.style.transform='';
+  };
+}
+
+/* ---------- render: cards & lists ---------- */
+function cardHtml(a,cls){
+  const c=CATS[a.cat];
+  return `<div class="card ${cls}" style="background:${c.g}"><div class="stamp"></div><div class="ic">${c.icon}</div>
+  <span class="pill" style="align-self:flex-start">${c.label}</span><h2>${esc(a.desc)}</h2>
+  <p>🕒 ${fmt(a.when)}</p><p>📍 ${esc(a.venue)}</p><p>👥 ${spots(a)} of ${a.cap} spots left</p><p>💸 ${COST[a.cost]}</p>
+  <p style="opacity:.85;margin-top:6px">Hosted by ${esc(uname(a.host))}</p></div>`;
+}
+function rowHtml(a,extra){
+  const c=CATS[a.cat],rq=myReq(a.id);
+  return `<div class="panel tap" data-a="detail" data-id="${a.id}"><div class="row" style="align-items:flex-start"><div style="flex:0 0 40px;font-size:28px">${c.icon}</div>
+  <div style="flex:1"><strong>${esc(a.desc)}</strong><p class="small mute" style="margin:3px 0">🕒 ${fmt(a.when)} · 📍 ${esc(a.venue)}</p>
+  <p class="small mute" style="margin:0">By ${esc(uname(a.host))} · ${spots(a)} of ${a.cap} spots left</p>
+  ${extra||''}${rq?` <span class="chip acc">${rq.status==='pending'?'Requested':rq.status}</span>`:''}</div></div></div>`;
+}
+const statusChip=s=>({pending:'<span class="chip warn">Pending</span>',accepted:'<span class="chip ok">Accepted</span>',rejected:'<span class="chip bad">Rejected</span>',no_action:'<span class="chip">No action from poster</span>'}[s]);
+const actChip=s=>({open:'<span class="chip ok">Open</span>',full:'<span class="chip acc">Full</span>',past:'<span class="chip">Past</span>'}[s]);
+const empty=(ic,t,sub,btn)=>`<div class="empty"><div class="big">${ic}</div><h2>${t}</h2><p>${sub}</p>${btn||''}</div>`;
+
+/* ---------- render: tabs ---------- */
+function tabSwipe(){
+  const d=deck();
+  if(!d.length)return empty('🎉','Nothing new right now','You have gone through all plans happening soon in '+esc(S.me.hood)+'. Check Discover for plans further out.','<button class="btn" data-a="tab" data-t="discover">Go to Discover</button>');
+  return `<div class="deck"><div class="stack">${d[1]?cardHtml(d[1],'back'):''}${cardHtml(d[0],'top')}</div>
+  <div class="acts"><button class="rb" data-a="swipe" data-d="left" title="Skip">✕</button><button class="rb" data-a="swipe" data-d="right" title="Request to join">♥</button></div>
+  <p class="small mute" style="text-align:center">Swipe right to request, left to skip forever · Plans in the next ~36 hours</p></div>`;
+}
+function tabDiscover(){
+  const f=feed();
+  return `<div class="row" style="margin-bottom:10px"><div><h2 style="margin:0">Discover</h2><p class="small mute" style="margin:0">Plans further out in ${esc(S.me.hood)}, soonest first</p></div><button class="btn sm" style="flex:0 0 auto" data-a="newpost">+ Post</button></div>`
+    +(f.length?f.map(a=>rowHtml(a)).join(''):empty('🗓️','No plans yet','Be the first to post one in your neighborhood.'));
+}
+function tabActs(){
+  const mine=S.acts.filter(a=>a.host==='me').sort((a,b)=>a.when-b.when);
+  return `<div class="row" style="margin-bottom:10px"><h2 style="margin:0">My Activities</h2><button class="btn sm" style="flex:0 0 auto" data-a="newpost">+ Post</button></div>`
+    +(mine.length?mine.map(a=>{
+      const p=S.reqs.filter(r=>r.act===a.id&&r.status==='pending').length;
+      return `<div class="panel tap" data-a="hostview" data-id="${a.id}"><div class="row"><div style="flex:1"><strong>${CATS[a.cat].icon} ${esc(a.desc)}</strong><p class="small mute" style="margin:3px 0">🕒 ${fmt(a.when)} · ${a.members.length}/${a.cap} accepted</p>${actChip(a.status)} ${p?`<span class="chip warn">${p} pending</span>`:''}</div><span>›</span></div></div>`;
+    }).join(''):empty('📝','You have not posted anything','Post a plan you are already making and see who wants to join.','<button class="btn" data-a="newpost">Post an activity</button>'));
+}
+function tabReqs(){
+  const mine=S.reqs.filter(r=>r.user==='me'&&actOf(r.act));
+  return `<h2>My Requests</h2>`+(mine.length?mine.map(r=>{
+    const a=actOf(r.act);
+    return `<div class="panel"><div data-a="detail" data-id="${a.id}" style="cursor:pointer"><strong>${CATS[a.cat].icon} ${esc(a.desc)}</strong><p class="small mute" style="margin:3px 0">🕒 ${fmt(a.when)} · by ${esc(uname(a.host))}</p></div>
+    <div class="row" style="margin-top:6px"><div style="flex:1">${statusChip(r.status)}</div>${r.status==='accepted'?`<button class="btn sm sec" style="flex:0 0 auto" data-a="chat" data-id="${a.id}">Open chat</button>`:''}</div></div>`;
+  }).join(''):empty('💌','No requests yet','Swipe right on a plan or request one from Discover.'));
+}
+function tabProfile(){
+  const m=S.me;
+  return `<h2>My Profile</h2>
+  <div class="panel"><span class="chip ${m.face?'ok':'warn'}">Face ${m.face?'verified':'not verified'}</span> <span class="chip ${m.kyc?'ok':''}">ID ${m.kyc?'verified':'not yet (needed to post/request)'}</span></div>
+  <label>Name</label><input id="p_name" value="${esc(m.name)}">
+  <label>Date of birth</label><input id="p_dob" type="date" value="${esc(m.dob)}">
+  <label>Gender identity</label><select id="p_gender">${GENDERS.map(g=>`<option ${g===m.gender?'selected':''}>${g}</option>`).join('')}</select>
+  <label>City: Demo City · Neighborhood</label><select id="p_hood">${HOODS.map(g=>`<option ${g===m.hood?'selected':''}>${g}</option>`).join('')}</select>
+  <label>Profession</label><input id="p_job" value="${esc(m.job||'')}">
+  <label>Bio</label><textarea id="p_bio">${esc(m.bio||'')}</textarea>
+  <div style="height:12px"></div><button class="btn" data-a="saveprofile">Save profile</button>`;
+}
+
+/* ---------- render: modals ---------- */
+function modalHtml(){
+  const m=ui.modal;if(!m)return '';
+  const sheet=(title,body,full)=>`<div class="ov" data-a="closebg"><div class="sheet ${full?'full':''}" data-stop="1"><div class="sh"><h2>${title}</h2><button class="ib" data-a="close">✕</button></div>${body}</div></div>`;
+  if(m.type==='verify'){
+    const face=m.kind==='face',fails=S.me[m.kind+'Fails']||0;
+    let inner;
+    if(m.state==='flagged')inner=`<div class="scan">🕵️</div><p style="text-align:center"><strong>Sent for human review</strong></p><p class="mute" style="text-align:center">After 5 failed attempts we flag the account for a person to check. You are not locked out permanently.</p>`;
+    else if(m.state==='scanning')inner=`<div class="scan go">${face?'🙂':'🪪'}</div><p style="text-align:center" class="mute">${face?'Checking liveness…':'Reading your ID…'}</p>`;
+    else inner=`<div class="scan">${face?'🙂':'🪪'}</div>
+      <p style="text-align:center" class="mute">${face?'A quick selfie scan confirms you are a real person. This unlocks browsing.':'Government ID check. Needed once, the first time you post or request. It unlocks both.'}</p>
+      ${m.state==='fail'?`<p style="text-align:center;color:var(--bad)"><strong>Verification failed.</strong> Please try again (${fails}/5).</p>`:''}
+      <div class="dn">Demo: this is a simulation, no camera or ID is used.${S.forceFail?' <b>Failure mode is ON.</b>':''}</div>
+      <button class="btn" data-a="scan">${m.state==='fail'?'Try again':(face?'Start face check':'Start ID check')}</button>`;
+    return sheet(face?'Face verification':'ID verification (KYC)',`<div class="sb">${inner}</div>`);
+  }
+  if(m.type==='post'){
+    const mn=localInput(now()+3600e3);
+    return sheet('Post an activity',`<div class="sb">
+      <label>Category</label><select id="f_cat">${Object.entries(CATS).map(([k,c])=>`<option value="${k}">${c.icon} ${c.label}</option>`).join('')}</select>
+      <label>What is the plan?</label><textarea id="f_desc" maxlength="160" placeholder="Short description of what you are doing"></textarea>
+      <label>Group size (people who can join)</label><select id="f_cap">${[2,3,4,5,6,7,8,9,10].map(n=>`<option>${n}</option>`).join('')}</select>
+      <label>Date and time</label><input id="f_when" type="datetime-local" min="${mn}" value="${localInput(now()+26*3600e3)}">
+      <label>Who can see and request this?</label>
+      <label class="chk"><input type="checkbox" id="f_all" checked> Everyone</label>
+      ${GENDERS.map(g=>`<label class="chk"><input type="checkbox" class="f_g" value="${g}"> ${g}</label>`).join('')}
+      <label>Venue</label><input id="f_venue" placeholder="e.g. Grand Cinema, Screen 4">
+      <label>How will costs work? (informational only)</label><select id="f_cost">${Object.entries(COST).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select>
+      <div style="height:14px"></div><button class="btn" data-a="submitpost">Post activity</button></div>`,true);
+  }
+  if(m.type==='detail'){
+    const a=actOf(m.id);if(!a)return '';
+    const rq=myReq(a.id),can=a.host!=='me'&&a.status==='open'&&spots(a)>0&&!rq&&a.when>now();
+    return sheet('Activity',`<div class="sb"><div style="height:300px;position:relative">${cardHtml(a,'det')}</div><div style="height:12px"></div>
+      ${rq?`<p>Your request: ${statusChip(rq.status)}</p>${rq.note?`<p class="small mute">Your note: ${esc(rq.note)}</p>`:''}`:''}
+      ${can?`<label>Add a note for the host (optional)</label><textarea id="r_note" placeholder="A little context helps the host decide"></textarea><div style="height:10px"></div><button class="btn" data-a="request" data-id="${a.id}">Request to join</button>`
+      :(!rq?`<p class="mute">${a.host==='me'?'This is your activity.':a.status!=='open'?'This activity is '+a.status+', no requests possible.':'No request available.'}</p>`:'')}
+      ${rq&&rq.status==='accepted'?`<div style="height:8px"></div><button class="btn sec" data-a="chat" data-id="${a.id}">Open group chat</button>`:''}
+      </div>`,true);
+  }
+  if(m.type==='host'){
+    const a=actOf(m.id);if(!a)return '';
+    const reqs=S.reqs.filter(r=>r.act===a.id),pend=reqs.filter(r=>r.status==='pending'),done=reqs.filter(r=>r.status!=='pending');
+    const person=r=>{const p=profileOf(r.user);return `<div class="panel"><strong>${esc(p.name)}</strong> <span class="mute small">${esc(p.gender)}, ${p.age}${p.job?' · '+esc(p.job):''}</span><p class="small mute" style="margin:4px 0">${esc(p.bio)}</p>${r.note?`<div class="dn">Note: ${esc(r.note)}</div>`:'<p class="small mute">No note attached</p>'}`;};
+    return sheet('Manage activity',`<div class="sb"><div class="panel"><strong>${CATS[a.cat].icon} ${esc(a.desc)}</strong><p class="small mute" style="margin:4px 0">🕒 ${fmt(a.when)} · 📍 ${esc(a.venue)}</p>${actChip(a.status)} <span class="chip">${a.members.length}/${a.cap} accepted</span></div>
+      ${a.members.length?`<button class="btn sec" data-a="chat" data-id="${a.id}">Open group chat</button>`:'<p class="small mute">Chat opens when you accept the first member.</p>'}
+      <h3>Pending requests (${pend.length})</h3>
+      ${pend.length?pend.map(r=>person(r)+`<div class="row"><button class="btn sm bad" data-a="rej" data-id="${r.id}">Reject</button><button class="btn sm ok" data-a="acc" data-id="${r.id}">Accept</button></div></div>`).join(''):'<p class="mute small">No pending requests. Use Demo tools to simulate some.</p>'}
+      ${done.length?`<h3>Decided</h3>`+done.map(r=>`<div class="panel row"><div>${esc(uname(r.user))}</div><div style="text-align:right">${statusChip(r.status)}</div></div>`).join(''):''}
+      <div style="height:10px"></div><button class="btn bad" data-a="cancelact" data-id="${a.id}">Cancel this activity</button></div>`,true);
+  }
+  if(m.type==='chat'){
+    const a=actOf(m.id);if(!a)return '';
+    const msgs=(S.chats[a.id]||[]).map(x=>x.from==='sys'?`<div class="msg sys">${esc(x.text)}</div>`:`<div class="msg ${x.from==='me'?'me':''}">${x.from==='me'?'':`<div class="who">${esc(uname(x.from))}</div>`}${esc(x.text)}</div>`).join('');
+    return `<div class="ov"><div class="sheet full"><div class="sh"><h2 style="font-size:15px">${CATS[a.cat].icon} ${esc(a.desc.slice(0,34))}</h2><button class="ib" data-a="close">✕</button></div>
+      <p class="small mute" style="padding:0 16px;margin:0">Members: ${[a.host,...a.members].map(uname).join(', ')} · full history visible to everyone</p>
+      <div class="msgs" id="msgs">${msgs}</div><div class="cin"><input id="c_in" placeholder="Message the group" autocomplete="off"><button class="btn sm" data-a="send" data-id="${a.id}">Send</button></div></div></div>`;
+  }
+  if(m.type==='bell'){
+    S.notes.forEach(n=>n.read=true);
+    return sheet('Notifications',`<div class="sb">${S.notes.length?S.notes.map(n=>`<div class="panel">${esc(n.text)}<div class="small mute">${fmt(n.at)}</div></div>`).join(''):'<p class="mute">Nothing yet.</p>'}</div>`);
+  }
+  if(m.type==='demo'){
+    return sheet('Demo tools',`<div class="sb"><p class="small mute">Shortcuts so you can show the whole flow without waiting for other people. Virtual time now: <b>${fmt(now())}</b></p>
+      <h3>Time</h3><div class="row"><button class="btn sm sec" data-a="adv" data-h="12">+12 hours</button><button class="btn sm sec" data-a="adv" data-h="24">+1 day</button><button class="btn sm sec" data-a="adv" data-h="72">+3 days</button></div>
+      <p class="small mute">Moves the clock forward. Unfilled activities become Past and their pending requests become "No action from poster".</p>
+      <h3>Other people</h3>
+      <button class="btn sm sec" style="width:100%;margin-bottom:8px" data-a="simreq">Someone requests to join one of my activities</button>
+      <button class="btn sm sec" style="width:100%;margin-bottom:8px" data-a="simacc">A host accepts my oldest pending request</button>
+      <button class="btn sm sec" style="width:100%;margin-bottom:8px" data-a="simrej">A host rejects my oldest pending request</button>
+      <button class="btn sm sec" style="width:100%;margin-bottom:8px" data-a="simcancel">A host cancels an activity I was accepted to</button>
+      <button class="btn sm sec" style="width:100%;margin-bottom:8px" data-a="simreply">Chat members send a message (open chat first)</button>
+      <h3>Reset</h3><button class="btn sm bad" style="width:100%" data-a="reset">Reset whole demo</button></div>`,true);
+  }
+  return '';
+}
+
+/* ---------- render: onboarding ---------- */
+function onboardHtml(){
+  const d=ui.ob.d;let step=ui.ob.step,body='';
+  if(S.me){step=S.me.face?4:3}
+  const pr='';
+  if(step===0)body=`<div class="logo">🎟️</div><h1 style="margin:6px 0">Tagalong</h1><p class="mute">Do things in your city with company. Post a plan you are already making, pick who joins. Not a dating app.</p>
+    <label>Phone number</label><input id="o_phone" type="tel" placeholder="+91 98765 43210" value="${esc(d.phone||'')}">
+    <label>Email</label><input id="o_email" type="email" placeholder="you@example.com" value="${esc(d.email||'')}">
+    <div style="height:16px"></div><button class="btn" data-a="ob0">Continue</button>`;
+  if(step===1)body=`<h2>Verify your phone and email</h2><p class="mute">Both are verified independently.</p>
+    <label>OTP sent to ${esc(d.phone)}</label><input id="o_otp" inputmode="numeric" maxlength="4" placeholder="Any 4 digits (demo)">
+    <div class="dn">Demo: any 4-digit code works.</div>
+    <label>Email</label><div class="panel row"><div class="small">${esc(d.email)}</div><button class="btn sm sec" style="flex:0 0 auto" id="o_mailbtn" data-a="mail">${d.mail?'✓ Confirmed':'I clicked the link'}</button></div>
+    <div style="height:10px"></div><button class="btn" data-a="ob1">Continue</button>`;
+  if(step===2)body=`<h2>Create your profile</h2>
+    <label>Name</label><input id="o_name" value="${esc(d.name||'')}">
+    <label>Date of birth</label><input id="o_dob" type="date" value="${esc(d.dob||'')}">
+    <label>Gender identity (required)</label><select id="o_gender"><option value="">Select…</option>${GENDERS.map(g=>`<option ${g===d.gender?'selected':''}>${g}</option>`).join('')}</select>
+    <p class="small mute">Used only for the safety-oriented audience filter on posts.</p>
+    <label>City</label><input value="Demo City" disabled>
+    <label>Neighborhood (launch areas)</label><select id="o_hood">${HOODS.map(g=>`<option ${g===d.hood?'selected':''}>${g}</option>`).join('')}</select>
+    <div style="height:16px"></div><button class="btn" data-a="ob2">Continue</button>`;
+  if(step===3)body=`<h2>Quick face check</h2><p class="mute">Confirms your account belongs to a real person. Passing unlocks browsing.</p><div class="scan">🙂</div><button class="btn" data-a="obface">Start face check</button>`;
+  if(step===4)body=`<h2>Tell us more (optional)</h2><p class="mute">You can skip this and add it later.</p>
+    <label>Profession</label><input id="o_job"><label>Bio</label><textarea id="o_bio"></textarea><label>Interests</label><input id="o_int"><label>Fun fact</label><input id="o_fun">
+    <div style="height:16px"></div><button class="btn" data-a="obdone" data-save="1">Save and start browsing</button><div style="height:8px"></div><button class="btn sec" data-a="obdone">Skip for now</button>`;
+  return `<div class="ob">${pr}${body}</div>`;
+}
+
+/* ---------- main render ---------- */
+function render(){
+  const scr=document.getElementById('screen');
+  if(!S.me||!S.me.face||!S.me.obDone){scr.innerHTML=onboardHtml()+modalHtml();afterRender();return}
+  const unread=S.notes.filter(n=>!n.read).length;
+  const view={swipe:tabSwipe,discover:tabDiscover,acts:tabActs,reqs:tabReqs,profile:tabProfile}[ui.tab]();
+  const T=(k,ic,l)=>`<button class="${ui.tab===k?'on':''}" data-a="tab" data-t="${k}"><span>${ic}</span>${l}</button>`;
+  const pend=S.reqs.filter(r=>r.status==='pending'&&actOf(r.act)?.host==='me').length;
+  scr.innerHTML=`<header><h1>🎟️ Tagalong</h1><button class="ib" data-a="bell">🔔${unread?`<span class="badge">${unread}</span>`:''}</button>${window.parent!==window?'<button class="ib" data-a="fb" title="Leave feedback">💬</button>':''}<button class="ib" data-a="demo">⚙️</button></header>
+  <main>${view}</main><nav>${T('swipe','🔥','Swipe')}${T('discover','🧭','Discover')}${T('acts','📌','Activities'+(pend?` (${pend})`:''))}${T('reqs','💌','Requests')}${T('profile','👤','Profile')}</nav>${modalHtml()}`;
+  afterRender();
+}
+function afterRender(){
+  bindDrag();
+  const ms=document.getElementById('msgs');if(ms)ms.scrollTop=ms.scrollHeight;
+}
+
+/* ---------- actions ---------- */
+const val=id=>document.getElementById(id)?.value?.trim()||'';
+const A={
+  tab:d=>{ui.tab=d.t;ui.modal=null;render()},
+  swipe:d=>swipe(d.d),
+  detail:d=>{ui.modal={type:'detail',id:d.id};render()},
+  hostview:d=>{ui.modal={type:'host',id:d.id};render()},
+  chat:d=>{ui.modal={type:'chat',id:d.id};render()},
+  close:()=>{ui.modal=null;render()},
+  closebg:(d,e)=>{if(e.target.classList.contains('ov')&&ui.modal?.type!=='verify'&&ui.modal?.type!=='chat'){ui.modal=null;render()}},
+  bell:()=>{ui.modal={type:'bell'};render();S.notes.forEach(n=>n.read=true);save()},
+  demo:()=>{ui.modal={type:'demo'};render()},
+  fb:()=>{try{window.parent.postMessage('tagalong-feedback','*')}catch(e){}},
+  scan:()=>scan(),
+  newpost:()=>gate(()=>{ui.modal={type:'post'};render()}),
+  submitpost:()=>{
+    const desc=val('f_desc'),venue=val('f_venue'),when=new Date(document.getElementById('f_when').value).getTime();
+    const all=document.getElementById('f_all').checked,gs=[...document.querySelectorAll('.f_g:checked')].map(x=>x.value);
+    if(!desc||!venue)return toast('Add a description and a venue');
+    if(!(when>now()))return toast('Pick a future date and time');
+    if(!all&&!gs.length)return toast('Choose Everyone or at least one identity');
+    S.acts.push({id:nextId('a'),host:'me',cat:val('f_cat'),desc,cap:+val('f_cap'),when,aud:all?'everyone':gs,venue,cost:val('f_cost'),hood:S.me.hood,members:[],status:'open'});
+    save();ui.modal=null;ui.tab='acts';toast('Posted. Now visible to eligible people.');render();
+  },
+  request:d=>gate(()=>{
+    if(sendReq(d.id,val('r_note'))){ui.modal=null;render()}
+  }),
+  acc:d=>{accept(d.id);render()},
+  rej:d=>{reject(d.id);render()},
+  cancelact:d=>{cancelAct(d.id,'me');ui.modal=null;render()},
+  send:d=>{
+    const t=val('c_in');if(!t)return;
+    addMsg(d.id,'me',t);save();render();
+    document.getElementById('c_in')?.focus();
+    setTimeout(()=>{if(ui.modal?.type==='chat'&&ui.modal.id===d.id)simReply(d.id)},1400);
+  },
+  saveprofile:()=>{
+    Object.assign(S.me,{name:val('p_name')||S.me.name,dob:val('p_dob')||S.me.dob,gender:val('p_gender'),hood:val('p_hood'),job:val('p_job'),bio:document.getElementById('p_bio').value});
+    save();toast('Profile saved');render();
+  },
+  adv:d=>{S.offset+=+d.h*3600e3;tick();save();toast('Moved forward '+d.h+' hours');render()},
+  simreq:()=>{incoming();render()},
+  simacc:()=>hostDecide(true),
+  simrej:()=>hostDecide(false),
+  simcancel:()=>{
+    const a=S.acts.find(x=>x.host!=='me'&&x.members.includes('me'));
+    if(!a)return toast('You are not accepted into any activity yet');
+    cancelAct(a.id,a.host);ui.modal=null;render();
+  },
+  simreply:()=>{
+    if(ui.modal?.type==='chat')simReply(ui.modal.id);else toast('Open a group chat first, then use this from a fresh chat');
+  },
+  togfail:()=>{S.forceFail=document.getElementById('d_fail').checked;save()},
+  approve:()=>{['face','kyc'].forEach(k=>{if(S.me[k+'Flag']){S.me[k+'Flag']=false;S.me[k+'Fails']=0;S.me[k]=true}});save();toast('Reviewer approved flagged verifications');render()},
+  resetkyc:()=>{S.me.kyc=false;S.me.kycFails=0;S.me.kycFlag=false;save();toast('ID verification reset');render()},
+  reset:()=>{try{localStorage.removeItem(KEY)}catch(e){}S=seed();ui={tab:'swipe',seg:'act',ob:{step:2,d:{}},modal:null};initMe();render()},
+  /* onboarding */
+  ob0:()=>{
+    const d=ui.ob.d;d.phone=val('o_phone');d.email=val('o_email');
+    if(d.phone.replace(/\D/g,'').length<7||!/.+@.+\..+/.test(d.email))return toast('Enter a valid phone and email');
+    ui.ob.step=1;render();
+  },
+  mail:()=>{ui.ob.d.mail=true;const b=document.getElementById('o_mailbtn');if(b)b.textContent='✓ Confirmed'},
+  ob1:()=>{
+    if(!/^\d{4}$/.test(val('o_otp')))return toast('Enter any 4-digit code');
+    if(!ui.ob.d.mail)return toast('Confirm your email link first');
+    ui.ob.step=2;render();
+  },
+  ob2:()=>{
+    const d=ui.ob.d;d.name=val('o_name');d.dob=val('o_dob');d.gender=val('o_gender');d.hood=val('o_hood');
+    if(!d.name||!d.dob||!d.gender)return toast('Name, date of birth and gender identity are required');
+    if(ageOf(d.dob)<18)return toast('You must be 18 or over (demo rule)');
+    S.me={name:d.name,dob:d.dob,gender:d.gender,hood:d.hood,face:true,kyc:true,obDone:true};
+    save();render();
+  },
+  obface:()=>openVerify('face',()=>render()),
+  obdone:d=>{
+    if(d.save)Object.assign(S.me,{job:val('o_job'),bio:val('o_bio')});
+    S.me.obDone=true;save();ui.tab='swipe';render();
+  }
+};
+function hostDecide(yes){
+  const r=S.reqs.find(x=>x.user==='me'&&x.status==='pending'&&actOf(x.act));
+  if(!r)return toast('You have no pending requests');
+  yes?accept(r.id):reject(r.id);render();
+}
+function simReply(actId){
+  const a=actOf(actId);if(!a)return;
+  const others=[a.host,...a.members].filter(x=>x!=='me');
+  if(!others.length)return;
+  addMsg(actId,others[Math.floor(Math.random()*others.length)],REPLIES[Math.floor(Math.random()*REPLIES.length)]);
+  save();if(ui.modal?.type==='chat'&&ui.modal.id===actId)render();
+}
+
+document.addEventListener('click',e=>{
+  if(e.target.matches('input[type=checkbox]')&&e.target.id!=='d_fail'){
+    if(e.target.id==='f_all'&&e.target.checked)document.querySelectorAll('.f_g').forEach(x=>x.checked=false);
+    else if(e.target.classList.contains('f_g')&&e.target.checked)document.getElementById('f_all').checked=false;
+  }
+  const el=e.target.closest('[data-a]');if(!el)return;
+  if(el.dataset.a==='closebg'){A.closebg(el.dataset,e);return}
+  const fn=A[el.dataset.a];if(fn){e.stopPropagation();fn(el.dataset,e)}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='c_in'){const b=document.querySelector('[data-a=send]');if(b)b.click()}});
+
+function initMe(){
+  if(S.me)return;
+  try{
+    const p=JSON.parse(localStorage.getItem('tagalong_participant'));
+    if(p&&p.name&&p.gender&&p.hood)S.me={name:p.name,dob:p.dob||'1995-01-01',gender:p.gender,hood:p.hood,face:true,kyc:true,obDone:true};
+  }catch(e){}
+  if(S.me)save();
+}
+initMe();tick();render();
+setInterval(()=>{if(S.me&&tick()){if(!ui.modal)render()}},30000);
+</script>
+</body>
+</html>

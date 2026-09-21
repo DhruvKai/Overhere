@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tagalong - join the beta</title>
+<style>
+:root{--bg:#f6f5fb;--card:#fff;--ink:#1d1b2e;--mute:#6b6880;--line:#e0ddee;--acc:#5b4bf5;--acc2:#ede9ff;--ok:#15803d;--okbg:#dcfce7;--bad:#b91c1c;--badbg:#fee2e2;--warnbg:#fef3c7;--warn:#a16207}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.bar{max-width:760px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:8px}
+.logo{font-weight:800;font-size:19px;flex:1;cursor:pointer}
+.tab{border:0;background:none;padding:8px 12px;border-radius:10px;font:inherit;font-size:14px;font-weight:600;color:var(--mute);cursor:pointer}
+.tab.on{background:var(--acc2);color:var(--acc)}
+.tab:disabled{opacity:.4;cursor:not-allowed}
+main{max-width:760px;margin:0 auto;padding:22px 16px 60px}
+h1{font-size:30px;line-height:1.2;margin:0 0 10px;letter-spacing:-.02em}
+h2{font-size:22px;margin:0 0 6px}
+p{margin:0 0 12px}
+.mute{color:var(--mute)}.small{font-size:13.5px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:16px}
+.btn{border:0;background:var(--acc);color:#fff;font:inherit;font-weight:700;padding:13px 20px;border-radius:12px;cursor:pointer}
+.btn.sec{background:var(--acc2);color:var(--acc)}
+.btn:disabled{opacity:.55;cursor:wait}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:560px){.grid{grid-template-columns:1fr}}
+label{display:block;font-size:14px;font-weight:600;margin:14px 0 5px}
+input[type=text],input[type=email],input[type=date],select,textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff;color:var(--ink)}
+textarea{min-height:88px;resize:vertical}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:99px;padding:8px 14px;font-weight:500;margin:0;cursor:pointer;background:#fff}
+.opt input{margin:0}
+.consent{background:var(--warnbg);border-radius:12px;padding:14px;margin-top:18px}
+.consent label{display:flex;gap:10px;align-items:flex-start;font-weight:500;margin:8px 0 0;font-size:14px}
+.consent input{margin-top:4px;flex:0 0 auto}
+.err{background:var(--badbg);color:var(--bad);padding:10px 12px;border-radius:10px;margin-top:14px;font-size:14px}
+.note{background:var(--warnbg);color:var(--warn);padding:9px 12px;border-radius:10px;font-size:13px;margin-bottom:14px}
+.ok{background:var(--okbg);color:var(--ok);padding:12px;border-radius:12px;margin-bottom:14px;font-weight:600}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}
+@media(max-width:560px){.steps{grid-template-columns:1fr}}
+.steps div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.steps b{display:block;font-size:26px}
+.stars{display:flex;gap:6px}
+.stars button{border:0;background:none;font-size:34px;cursor:pointer;color:#d4d0e6;padding:0;line-height:1}
+.stars button.on{color:#f59e0b}
+.frame{width:380px;max-width:100%;height:760px;max-height:78vh;margin:0 auto;border:8px solid #1d1b2e;border-radius:30px;overflow:hidden;background:#fff}
+.frame iframe{width:100%;height:100%;border:0}
+.hide{display:none}
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <div class="logo" id="logo">🎟️ Tagalong</div>
+  <button class="tab" id="t_try" disabled>Try it</button>
+  <button class="tab" id="t_fb">Feedback</button>
+</div></header>
+<main id="main"></main>
+
+<script src="config.js"></script>
+<script>
+"use strict";
+const CFG=window.APP_CONFIG||{};
+const REMOTE=!!(CFG.SUPABASE_URL&&CFG.SUPABASE_ANON_KEY);
+const CONSENT_VERSION='v1';
+const HOODS=['Central Market','Lakeside','Old Quarter'];
+const GENDERS=['Woman','Man','Non-binary'];
+const INTERESTS=['Movies','Cafe / Food','Concerts'];
+const TIMES=['Weekday evenings','Weekend days','Weekend evenings','Late nights'];
+const PKEY='tagalong_participant',LKEY='tagalong_local_data';
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uuid=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)});
+const getP=()=>{try{return JSON.parse(localStorage.getItem(PKEY))}catch(e){return null}};
+const ageOf=d=>Math.floor((Date.now()-new Date(d))/31557600000);
+
+/* ---------- storage ---------- */
+async function store(table,row){
+  if(REMOTE){
+    const headers={apikey:CFG.SUPABASE_ANON_KEY,'Content-Type':'application/json',Prefer:'return=minimal'};
+    if(CFG.SUPABASE_ANON_KEY.startsWith('eyJ'))headers.Authorization='Bearer '+CFG.SUPABASE_ANON_KEY; // legacy JWT-style anon key only
+    const r=await fetch(CFG.SUPABASE_URL.replace(/\/+$/,'')+'/rest/v1/'+table,{method:'POST',headers,body:JSON.stringify(row)});
+    if(r.status===409)return 'duplicate';
+    if(!r.ok)throw new Error('Could not save ('+r.status+'). Please try again.');
+    return 'ok';
+  }
+  const all=JSON.parse(localStorage.getItem(LKEY)||'{"participants":[],"feedback":[]}');
+  if(table==='participants'&&all.participants.some(p=>p.email.toLowerCase()===row.email.toLowerCase()))return 'duplicate';
+  all[table].push(row);localStorage.setItem(LKEY,JSON.stringify(all));return 'ok';
+}
+function download(){
+  const blob=new Blob([localStorage.getItem(LKEY)||'{}'],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='tagalong-local-data.json';a.click();
+}
+const localBanner=()=>REMOTE?'':'<div class="note">Backend not connected yet: submissions are saved in this browser only. See GO-LIVE-GUIDE.md to connect Supabase. <a href="#" id="dl">Download saved data</a></div>';
+
+/* ---------- views ---------- */
+let view='home';
+function nav(v){
+  view=v;const p=getP();
+  $('#t_try').disabled=!p;
+  $('#t_try').classList.toggle('on',v==='try');$('#t_fb').classList.toggle('on',v==='feedback');
+  $('#main').innerHTML=({home,signup,try_:tryView,feedback,thanks})[v==='try'?'try_':v]();
+  bind();window.scrollTo(0,0);
+}
+function home(){
+  const p=getP();
+  return `<h1>Find people to do things with.</h1>
+  <p class="mute">Tagalong helps you turn a plan you are already making, like a movie, a coffee or a concert, into an outing with company. You post it, people ask to join, you choose who comes.</p>
+  <div class="steps"><div><b>1</b>Tell us about yourself</div><div><b>2</b>Try the app in your browser</div><div><b>3</b>Tell us what you think</div></div>
+  <p class="small mute">This is an early test. We are collecting a little information to learn who would use this and what should be built first. Not a dating app.</p>
+  ${p?`<div class="ok">Welcome back, ${esc(p.name)}.</div><button class="btn" data-go="try">Try the platform</button> <button class="btn sec" data-go="feedback">Leave feedback</button>`
+     :`<button class="btn" data-go="signup">Join the beta</button>`}`;
+}
+function signup(){
+  return localBanner()+`<div class="panel"><h2>Join the beta</h2><p class="mute small">Takes about a minute. No phone number, no ID and no photo needed.</p>
+  <form id="f">
+  <div class="grid"><div><label for="name">Name</label><input type="text" id="name" required maxlength="80" autocomplete="name"></div>
+  <div><label for="email">Email</label><input type="email" id="email" required maxlength="120" autocomplete="email"></div>
+  <div><label for="dob">Date of birth</label><input type="date" id="dob" required></div>
+  <div><label for="gender">Gender identity</label><select id="gender" required><option value="">Select…</option>${GENDERS.map(g=>`<option>${g}</option>`).join('')}</select></div></div>
+  <p class="small mute" style="margin-top:6px">Gender is used only to test the audience-visibility safety control (who can see a plan).</p>
+  <label for="hood">Which neighborhood are you in? (Demo City)</label><select id="hood" required>${HOODS.map(g=>`<option>${g}</option>`).join('')}</select>
+  <label>What would you want to do with company?</label><div class="opts">${INTERESTS.map(i=>`<label class="opt"><input type="checkbox" name="int" value="${i}">${i}</label>`).join('')}</div>
+  <label>When are you usually free?</label><div class="opts">${TIMES.map(i=>`<label class="opt"><input type="checkbox" name="time" value="${i}">${i}</label>`).join('')}</div>
+  <div class="consent"><strong>Your consent</strong>
+   <label><input type="checkbox" id="c_data"> <span>I agree that Tagalong may store the details above to run this beta, contact me about it, and decide what to build. I am 18 or older. I can ask for my data to be deleted at any time by emailing <b>${esc(CFG.CONTACT_EMAIL||'the beta team')}</b>. We will not sell it or share it.</span></label>
+  </div>
+  <div id="err"></div>
+  <p style="margin-top:16px"><button class="btn" id="go" type="submit">Join and try the platform</button></p></form></div>`;
+}
+function tryView(){
+  return `<h2>Try the platform</h2><p class="mute small">This is a sample version with pretend people and plans. Nothing you do here is real. Try swiping, posting a plan, requesting to join, and chatting. The ⚙️ button in the app has shortcuts to simulate other people.</p>
+  <div class="frame"><iframe src="demo.html?embed=1" title="Tagalong demo"></iframe></div>
+  <p style="text-align:center;margin-top:16px"><button class="btn" data-go="feedback">I have tried it, leave feedback</button></p>`;
+}
+function feedback(){
+  return localBanner()+`<div class="panel"><h2>Tell us what you think</h2><p class="mute small">Honest is best. Nothing here is required except the consent box.</p>
+  <form id="f">
+  <label>Overall, how was it?</label><div class="stars" id="stars">${[1,2,3,4,5].map(n=>`<button type="button" data-n="${n}" aria-label="${n} stars">★</button>`).join('')}</div>
+  <label for="liked">What did you like?</label><textarea id="liked" maxlength="1000"></textarea>
+  <label for="improve">What was confusing or missing?</label><textarea id="improve" maxlength="1000"></textarea>
+  <label>Would you use this in your city?</label><div class="opts">${['Yes','Maybe','No'].map(v=>`<label class="opt"><input type="radio" name="use" value="${v}">${v}</label>`).join('')}</div>
+  <div class="consent"><strong>Your consent</strong>
+   <label><input type="checkbox" id="c_store"> <span><b>Required:</b> I agree that my feedback may be stored and used to improve Tagalong.</span></label>
+   <label><input type="checkbox" id="c_quote"> <span>Optional: you may quote my feedback publicly, without my name or email.</span></label>
+   <label><input type="checkbox" id="c_contact"> <span>Optional: you may contact me with follow-up questions.</span></label>
+  </div>
+  <div id="err"></div>
+  <p style="margin-top:16px"><button class="btn" id="go" type="submit">Send feedback</button></p></form></div>`;
+}
+function thanks(){
+  return `<div class="panel" style="text-align:center"><div style="font-size:48px">🙏</div><h2>Thank you!</h2><p class="mute">Your response has been saved. You can keep trying the platform any time.</p>
+  <button class="btn" data-go="try">Back to the platform</button></div>`;
+}
+
+/* ---------- behavior ---------- */
+function showErr(m){$('#err').innerHTML=`<div class="err">${esc(m)}</div>`}
+function bind(){
+  document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>nav(b.dataset.go));
+  const dl=$('#dl');if(dl)dl.onclick=e=>{e.preventDefault();download()};
+  if(view==='signup')$('#f').onsubmit=submitSignup;
+  if(view==='feedback'){
+    let rating=0;
+    document.querySelectorAll('#stars button').forEach(b=>b.onclick=()=>{rating=+b.dataset.n;document.querySelectorAll('#stars button').forEach(x=>x.classList.toggle('on',+x.dataset.n<=rating))});
+    $('#f').onsubmit=e=>submitFeedback(e,()=>rating);
+  }
+}
+async function submitSignup(e){
+  e.preventDefault();
+  const v=id=>$('#'+id).value.trim(),many=n=>[...document.querySelectorAll(`input[name=${n}]:checked`)].map(x=>x.value);
+  if(!$('#c_data').checked)return showErr('Please tick the consent box to continue.');
+  if(!(ageOf(v('dob'))>=18))return showErr('You must be 18 or older to join.');
+  if(!many('int').length)return showErr('Pick at least one thing you would want to do.');
+  const id=uuid(),row={id,name:v('name'),email:v('email'),dob:v('dob'),gender:v('gender'),city:'Demo City',neighborhood:v('hood'),interests:many('int'),availability:many('time'),consent_data:true,consent_version:CONSENT_VERSION};
+  $('#go').disabled=true;
+  try{
+    const r=await store('participants',row);
+    localStorage.setItem(PKEY,JSON.stringify({id:r==='duplicate'?null:id,name:row.name,gender:row.gender,dob:row.dob,hood:row.neighborhood}));
+    nav('try');
+  }catch(err){showErr(err.message);$('#go').disabled=false}
+}
+async function submitFeedback(e,getRating){
+  e.preventDefault();
+  if(!$('#c_store').checked)return showErr('Please tick the required consent box to send feedback.');
+  const rating=getRating();if(!rating)return showErr('Please pick a star rating.');
+  const use=document.querySelector('input[name=use]:checked');
+  const p=getP();
+  const row={id:uuid(),participant_id:p&&p.id||null,rating,liked:$('#liked').value.trim()||null,improve:$('#improve').value.trim()||null,would_use:use?use.value:null,consent_store:true,consent_quote:$('#c_quote').checked,consent_contact:$('#c_contact').checked,consent_version:CONSENT_VERSION};
+  $('#go').disabled=true;
+  try{await store('feedback',row);nav('thanks')}catch(err){showErr(err.message);$('#go').disabled=false}
+}
+window.addEventListener('message',e=>{if(e.data==='tagalong-feedback'&&e.source===document.querySelector('iframe')?.contentWindow)nav('feedback')});
+$('#logo').onclick=()=>nav('home');
+$('#t_try').onclick=()=>nav('try');
+$('#t_fb').onclick=()=>nav('feedback');
+nav('home');
+</script>
+</body>
+</html>
