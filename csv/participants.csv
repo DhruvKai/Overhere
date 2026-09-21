@@ -1,0 +1,2 @@
+id,created_at,name,email,dob,gender,city,neighborhood,interests,availability,consent_data,consent_version
+00000000-0000-0000-0000-000000000000,2026-01-01 00:00:00,Sample Person,sample@example.com,1990-01-01,Woman,Demo City,Central Market,Movies,Weekend days,true,v1

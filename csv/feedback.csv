@@ -1,0 +1,2 @@
+id,created_at,participant_id,rating,liked,improve,would_use,consent_store,consent_quote,consent_contact,consent_version
+00000000-0000-0000-0000-000000000001,2026-01-01 00:00:00,00000000-0000-0000-0000-000000000000,4,Sample liked,Sample improve,Yes,true,false,false,v1
