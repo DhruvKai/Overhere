@@ -4,100 +4,277 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Tagalong - sample app</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f6f5fb;--card:#fff;--ink:#1d1b2e;--mute:#6b6880;--line:#e6e4f0;--acc:#5b4bf5;--acc2:#ede9ff;--ok:#15803d;--okbg:#dcfce7;--bad:#b91c1c;--badbg:#fee2e2;--warn:#a16207;--warnbg:#fef3c7;--grey:#eceaf3}
+:root{--bg:#F7F6F2;--card:#fff;--ink:#1A1A1A;--mute:#6B6B6B;--line:#ECEAE4;--field:#F1F0EA;--acc:#F97316;--acch:#EA580C;--acc2:#FFF1E6;--accink:#C2410C;--ok:#15803D;--okbg:#DCFCE7;--bad:#B91C1C;--badbg:#FEE2E2;--warn:#A16207;--warnbg:#FEF3C7;--info:#1D4ED8;--infobg:#DBEAFE;--grey:#F1F0EA;--shadow:0 2px 14px rgba(26,26,26,.06);--r:20px}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%}
-body{font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:#dcd8f0;display:flex;align-items:center;justify-content:center}
-#shell{position:relative;width:min(100%,420px);height:min(100dvh,880px);background:var(--bg);overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px #2b1f6a33;border-radius:0}
-@media(min-width:500px){#shell{border-radius:28px;border:8px solid #1d1b2e}}
+body{font:14.5px/1.45 "Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:#E9E6DF;display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit}
+.i{flex:0 0 auto;vertical-align:-3px}
+#shell{position:relative;width:min(100%,420px);height:min(100dvh,880px);background:var(--bg);overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(60,40,20,.18)}
+@media(min-width:500px){#shell{border-radius:28px;border:8px solid #1A1A1A}}
+@media(min-width:900px){#shell{width:100%;height:100dvh;border:0;border-radius:0;box-shadow:none}}
 #screen{display:flex;flex-direction:column;flex:1;min-height:0}
-header{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--line)}
-header h1{font-size:18px;margin:0;flex:1;letter-spacing:-.01em}
-.ib{border:0;background:var(--grey);width:36px;height:36px;border-radius:50%;font-size:16px;cursor:pointer;position:relative}
-.badge{position:absolute;top:-3px;right:-3px;background:#e11d48;color:#fff;font-size:10px;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px}
-main{flex:1;overflow-y:auto;padding:14px 16px;min-height:0}
+
+/* header + nav */
+header{background:var(--card);border-bottom:1px solid var(--line)}
+.hb{display:flex;align-items:center;gap:8px;padding:10px 16px;max-width:1240px;margin:0 auto}
+.logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:17px;letter-spacing:-.02em;flex:1}
+.dots{display:flex;gap:2px}.dots i{width:11px;height:11px;border-radius:50%;background:#1A1A1A;box-shadow:inset 0 0 0 2.5px var(--acc)}
+.tnav{display:none;gap:4px;align-items:center}
+.tt{border:0;background:none;padding:8px 16px;border-radius:99px;color:var(--mute);cursor:pointer;font-weight:500;font-size:14px;transition:.15s}
+.tt:hover{color:var(--ink)}
+.tt.on{background:var(--acc2);color:var(--acch)}
+.hr{display:flex;align-items:center;gap:4px}
+.ib{border:0;background:none;width:38px;height:38px;border-radius:50%;cursor:pointer;position:relative;color:var(--ink);display:inline-flex;align-items:center;justify-content:center;padding:0}
+.ib:hover{background:var(--grey)}
+.dot{position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--acc);border:2px solid #fff}
+.av{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;color:#fff;font-weight:700;font-size:13px;flex:0 0 auto}
+.av.sm{width:24px;height:24px;font-size:11px}
+.av.lg{width:72px;height:72px;border-radius:20px;font-size:28px;box-shadow:0 6px 16px rgba(26,26,26,.12)}
+main{flex:1;overflow-y:auto;padding:18px 16px;min-height:0}
+.wrap{max-width:1180px;margin:0 auto}.narrow{max-width:620px;margin:0 auto}
 nav{display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
-nav button{flex:1;border:0;background:none;padding:8px 2px 7px;font-size:10.5px;color:var(--mute);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px}
-nav button span{font-size:19px}
+nav button{flex:1;border:0;background:none;padding:9px 2px 8px;font-size:10.5px;color:var(--mute);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-weight:500}
 nav button.on{color:var(--acc);font-weight:700}
-h2{margin:0 0 6px;font-size:17px}
-h3{margin:14px 0 6px;font-size:14px;color:var(--mute);text-transform:uppercase;letter-spacing:.05em}
+@media(min-width:900px){.tnav{display:flex}nav,.mobonly{display:none!important}.logo,.hr{flex:1 1 0}.hr{justify-content:flex-end}main{padding:28px 32px}}
+@media(max-width:899px){.kb{display:none}}
+
+/* type */
+.pt{font-size:26px;font-weight:500;letter-spacing:-.02em;margin:0 0 2px;line-height:1.2}
+.sub{color:var(--mute);font-size:13px;margin:0 0 18px}
+h2{margin:0 0 6px;font-size:17px;font-weight:600;letter-spacing:-.01em}
+h3{margin:18px 0 8px;font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
 p{margin:0 0 6px}
-.mute{color:var(--mute)}
-.small{font-size:12.5px}
-.btn{border:0;background:var(--acc);color:#fff;font-weight:600;padding:12px 16px;border-radius:12px;font-size:15px;cursor:pointer;width:100%}
-.btn.sec{background:var(--acc2);color:var(--acc)}
-.btn.bad{background:var(--badbg);color:var(--bad)}
-.btn.ok{background:var(--okbg);color:var(--ok)}
-.btn.sm{width:auto;padding:8px 14px;font-size:13px;border-radius:10px}
+.mute{color:var(--mute)}.small{font-size:12.5px}
+.hd{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.hd .btn{flex:0 0 auto}
+
+/* buttons */
+.btn{border:0;background:var(--acc);color:#fff;font-weight:600;padding:13px 18px;border-radius:99px;font-size:14.5px;cursor:pointer;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:background .15s,transform .1s}
+.btn:hover{background:var(--acch)}.btn:active{transform:scale(.98)}
+.btn.sec{background:var(--acc2);color:var(--accink)}.btn.sec:hover{background:#FFE4CC}
+.btn.bad{background:var(--badbg);color:var(--bad)}.btn.bad:hover{background:#FECACA}
+.btn.ok{background:var(--okbg);color:var(--ok)}.btn.ok:hover{background:#BBF7D0}
+.btn.ghost{background:var(--grey);color:var(--ink)}.btn.ghost:hover{background:#E7E5DE}
+.btn.sm{width:auto;padding:8px 16px;font-size:13px}
+.btn.xs{width:auto;padding:6px 12px 6px 14px;font-size:12px;gap:3px}
 .btn:disabled{opacity:.5}
 .row{display:flex;gap:8px;align-items:center}
 .row>*{flex:1}
-label{display:block;font-size:13px;font-weight:600;margin:12px 0 4px}
-input,select,textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff;color:var(--ink)}
-textarea{resize:none;min-height:70px}
+
+/* forms */
+label{display:block;font-size:13px;font-weight:600;margin:14px 0 6px}
+input,select,textarea{width:100%;padding:12px 14px;border:1px solid transparent;border-radius:14px;background:var(--field);color:var(--ink);outline:none;transition:border-color .15s,background .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--acc);background:#fff}
+input::placeholder,textarea::placeholder{color:#A3A19A}
+textarea{resize:none;min-height:96px}
+input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--acc)}
 .chk{display:flex;align-items:center;gap:8px;font-weight:500;margin:6px 0}
-.chk input{width:auto}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
-.panel.tap{cursor:pointer}
-.chip{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:99px;background:var(--grey);color:var(--mute)}
-.chip.ok{background:var(--okbg);color:var(--ok)}.chip.bad{background:var(--badbg);color:var(--bad)}.chip.warn{background:var(--warnbg);color:var(--warn)}.chip.acc{background:var(--acc2);color:var(--acc)}
-.seg{display:flex;background:var(--grey);border-radius:10px;padding:3px;margin-bottom:12px}
-.seg button{flex:1;border:0;background:none;padding:7px;border-radius:8px;font-weight:600;color:var(--mute);cursor:pointer}
-.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px #0002}
-.deck{position:relative;height:100%;min-height:440px;display:flex;flex-direction:column}
-.stack{position:relative;flex:1;min-height:380px}
-.card{position:absolute;inset:0;border-radius:22px;color:#fff;padding:20px;display:flex;flex-direction:column;justify-content:flex-end;touch-action:none;user-select:none;box-shadow:0 8px 24px #2b1f6a33}
-.card.back{transform:scale(.94) translateY(12px);opacity:.7}
-.card .ic{position:absolute;top:22px;right:22px;font-size:64px;opacity:.9}
-.card h2{font-size:22px;line-height:1.25;margin:8px 0 12px}
-.card p{margin:0 0 4px;font-size:14.5px}
-.pill{display:inline-block;background:#ffffff33;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700}
-.stamp{position:absolute;top:26px;left:20px;font-size:26px;font-weight:800;border:3px solid;border-radius:10px;padding:2px 10px;transform:rotate(-12deg);opacity:0}
-.acts{display:flex;justify-content:center;gap:28px;padding:14px 0 4px}
-.rb{width:60px;height:60px;border-radius:50%;border:0;font-size:26px;background:#fff;box-shadow:0 4px 14px #0002;cursor:pointer}
-.empty{text-align:center;padding:50px 20px;color:var(--mute)}
-.empty .big{font-size:46px}
-.ov{position:absolute;inset:0;background:#0007;display:flex;align-items:flex-end;z-index:20}
-.sheet{background:var(--bg);width:100%;max-height:92%;border-radius:22px 22px 0 0;display:flex;flex-direction:column}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{display:inline-flex;align-items:center;gap:8px;margin:0;border:1px solid var(--line);border-radius:99px;padding:9px 16px;background:#fff;font-weight:500;font-size:13.5px;cursor:pointer;transition:.15s}
+.opt:hover{border-color:#D9D5CC}
+.opt:has(input:checked){border-color:var(--acc);background:var(--acc2);color:var(--accink)}
+.opt input{margin:0}
+
+/* panels, chips */
+.panel{background:var(--card);border-radius:var(--r);padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.panel.tap{cursor:pointer;transition:transform .15s}.panel.tap:hover{transform:translateY(-1px)}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:99px;background:var(--grey);color:var(--mute)}
+.chip.ok{background:var(--okbg);color:var(--ok)}.chip.bad{background:var(--badbg);color:var(--bad)}.chip.warn{background:var(--warnbg);color:var(--warn)}.chip.acc{background:var(--acc2);color:var(--accink)}.chip.info{background:var(--infobg);color:var(--info)}
+.cat{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:99px;background:#fff}
+.vf{color:var(--acc);font-weight:600;font-size:12px;display:inline-flex;align-items:center;gap:3px}
+.fchips{display:flex;flex-wrap:wrap;gap:8px}
+.fc{border:1px solid var(--line);background:#fff;padding:7px 16px;border-radius:99px;cursor:pointer;font-size:13px;color:var(--ink);display:inline-flex;align-items:center;gap:6px;transition:.15s}
+.fc:hover{border-color:#D9D5CC}
+.fc.on{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+.fc b{font-weight:600;background:rgba(0,0,0,.06);border-radius:99px;padding:0 7px;font-size:11px}
+.fc.on b{background:rgba(255,255,255,.25)}
+
+/* swipe */
+.deck{display:flex;flex-direction:column;align-items:center;text-align:center}
+.stack{position:relative;width:100%;max-width:320px;height:min(470px,60dvh);margin:0 auto}
+.card{position:absolute;inset:0;border-radius:28px;color:#fff;overflow:hidden;touch-action:none;user-select:none;box-shadow:0 18px 40px rgba(26,26,26,.22);text-align:left;cursor:grab}
+.card.back{transform:scale(.94) translateY(14px);opacity:.6}
+.card .art{position:absolute;inset:0;display:flex;justify-content:center;padding-top:22%;color:rgba(255,255,255,.13)}
+.card .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 28%,rgba(0,0,0,.5) 52%,rgba(12,9,6,.93) 100%)}
+.card .cp{position:absolute;top:14px;left:14px}
+.card .body{position:absolute;left:0;right:0;bottom:0;padding:18px 18px 20px}
+.card .who{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-bottom:8px}
+.card .vf{color:#FDBA74}
+.card h2{font-size:20px;line-height:1.25;margin:0 0 6px;font-weight:600}
+.card .meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;font-weight:500;opacity:.92;margin-top:8px}
+.card .meta span{display:inline-flex;align-items:center;gap:5px}
+.card .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.card .tags span{font-size:11.5px;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.14)}
+.stamp{position:absolute;top:56px;right:18px;font-size:22px;font-weight:800;border:3px solid;border-radius:10px;padding:2px 10px;transform:rotate(12deg);opacity:0;z-index:2}
+.acts{display:flex;align-items:center;justify-content:center;gap:26px;padding:24px 0 6px}
+.rb{width:58px;height:58px;border-radius:50%;border:0;background:#fff;color:var(--mute);box-shadow:0 6px 18px rgba(26,26,26,.1);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:transform .12s}
+.rb:hover{transform:scale(1.06)}
+.rb.go{background:var(--acc);color:#fff;box-shadow:0 8px 22px rgba(249,115,22,.4)}
+.cnt{font-size:11.5px;color:var(--mute);line-height:1.6}
+
+/* discover */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
+.ac{background:var(--card);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);cursor:pointer;display:flex;flex-direction:column;transition:transform .15s,box-shadow .15s}
+.ac:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(26,26,26,.1)}
+.media{position:relative;height:150px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.2)}
+.media .cat{position:absolute;top:12px;left:12px}
+.ac .bd{padding:16px;display:flex;flex-direction:column;gap:9px;flex:1}
+.ac h4{margin:0;font-size:15px;font-weight:600;line-height:1.3}
+.meta2{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--mute)}
+.meta2 span{display:inline-flex;align-items:center;gap:5px}
+.tg{display:flex;flex-wrap:wrap;gap:6px}
+.tg span{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 9px;border-radius:99px;background:var(--grey);color:var(--mute)}
+.ft{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:8px}
+.hn{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500}
+.filters{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:flex-end;margin:16px 0}
+.filters .f{flex:1 1 260px}
+.filters label{margin:0 0 6px;font-weight:500;font-size:12.5px}
+
+/* lists */
+.li{display:flex;gap:12px;align-items:center}
+.thumb{width:56px;height:56px;border-radius:14px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.85)}
+.li .t{font-weight:600;font-size:14.5px;line-height:1.3}
+
+/* modal */
+.ov{position:absolute;inset:0;background:rgba(20,16,10,.45);display:flex;align-items:flex-end;z-index:20;animation:fade .15s}
+.sheet{background:var(--card);width:100%;max-height:92%;border-radius:24px 24px 0 0;display:flex;flex-direction:column;animation:up .2s ease-out}
 .sheet.full{height:96%}
-.sh{display:flex;align-items:center;padding:14px 16px 6px}
-.sh h2{flex:1;margin:0}
-.sb{padding:6px 16px 18px;overflow-y:auto}
-.msgs{flex:1;overflow-y:auto;padding:8px 16px}
-.msg{max-width:80%;margin-bottom:8px;padding:8px 12px;border-radius:14px;background:#fff;border:1px solid var(--line)}
-.msg.me{margin-left:auto;background:var(--acc);color:#fff;border-color:var(--acc)}
-.msg .who{font-size:11px;font-weight:700;opacity:.7}
-.msg.sys{margin:8px auto;background:none;border:0;font-size:12px;color:var(--mute);text-align:center;max-width:100%}
-.cin{display:flex;gap:8px;padding:10px 16px;border-top:1px solid var(--line)}
+@keyframes fade{from{opacity:0}}
+@keyframes up{from{transform:translateY(24px);opacity:.6}}
+.sh{display:flex;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line)}
+.sh h2{flex:1;margin:0;font-size:16px;font-weight:600}
+.sb{padding:16px 18px 20px;overflow-y:auto}
+@media(min-width:720px){.ov{align-items:center;justify-content:center}.sheet{max-width:440px;border-radius:22px;max-height:90%}.sheet.full{height:auto}.sheet.wide{max-width:620px}.sheet.chat{height:80%;max-width:560px}}
+.sum{display:flex;gap:14px;align-items:center;background:var(--grey);border-radius:18px;padding:14px}
+.sum .thumb{width:72px;height:72px;border-radius:50%}
+.sum .t{font-weight:600;font-size:15px;margin:5px 0 3px}
+.hostline{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mute);margin:16px 0 2px}
+.cc{text-align:right;font-size:11.5px;color:var(--mute);margin-top:4px}
+.warnbox{display:flex;gap:10px;align-items:flex-start;background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;border-radius:14px;padding:12px 14px;font-size:12.5px;margin:14px 0}
+.warnbox .i{color:#F59E0B;margin-top:1px}
+
+/* notifications */
+.nh{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px}
+.nh .ic{color:var(--acc);margin-top:4px}
+.lnk{white-space:nowrap;border:0;background:none;color:var(--acc);font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:6px}
+.lnk.m{color:var(--mute);font-weight:500}
+.nf{display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.nc{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);border:1px solid var(--line);margin-bottom:12px;position:relative}
+.nc .top{display:flex;gap:12px;padding:16px 18px}
+.nic{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.nt{font-weight:600;font-size:14px;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.nx{font-size:13px;color:#3F3F3F;margin:3px 0 5px}
+.tm{font-size:11.5px;color:var(--mute);display:flex;align-items:center;gap:5px}
+.unread{position:absolute;top:18px;right:18px;width:8px;height:8px;border-radius:50%;background:var(--acc)}
+.nb{display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-top:1px solid var(--line);padding:10px 18px}
+.pb{white-space:nowrap;border:0;border-radius:99px;padding:6px 12px;font-size:12px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:5px;background:var(--grey);color:var(--mute)}
+.pb.o{background:var(--acc2);color:var(--accink)}
+.pb.d{background:none;margin-left:auto}.pb.d:hover{color:var(--bad)}
+
+/* profile */
+.ph{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px}
+.ph .i{color:var(--acc)}
+.ph .r{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:500;color:var(--mute);font-size:12px}
+.pt2{display:flex;gap:16px;align-items:center}
+.pn{font-size:22px;font-weight:500;display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px}
+.facts{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px;color:var(--mute);margin:16px 0 10px}
+.facts span{display:inline-flex;align-items:center;gap:5px}
+.soft{display:flex;flex-wrap:wrap;gap:8px}
+.soft span{background:var(--acc2);color:var(--accink);padding:6px 14px;border-radius:99px;font-size:13px}
+.bar{height:6px;background:var(--grey);border-radius:99px;overflow:hidden;margin-bottom:14px}
+.bar i{display:block;height:100%;background:var(--acc);border-radius:99px}
+.vg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.vi{display:flex;align-items:center;gap:8px;border-radius:99px;padding:9px 14px;font-size:13px;border:1px solid var(--line);background:var(--grey);color:var(--mute)}
+.vi .e{margin-left:auto;display:inline-flex}
+.vi.y{background:#ECFDF5;border-color:#A7F3D0;color:#047857}
+@media(max-width:420px){.vg{grid-template-columns:1fr}}
+
+/* chat, misc */
+.msgs{flex:1;overflow-y:auto;padding:12px 18px;background:var(--bg)}
+.msg{max-width:80%;margin-bottom:8px;padding:9px 13px;border-radius:18px 18px 18px 6px;background:#fff;box-shadow:var(--shadow)}
+.msg.me{margin-left:auto;background:var(--acc);color:#fff;border-radius:18px 18px 6px 18px}
+.msg .who{font-size:11px;font-weight:700;color:var(--acch)}
+.msg.sys{margin:8px auto;background:none;box-shadow:none;font-size:12px;color:var(--mute);text-align:center;max-width:100%}
+.cin{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--line)}
 .cin input{flex:1}.cin button{width:auto}
-#toast{position:absolute;left:14px;right:14px;top:14px;z-index:50;background:#1d1b2e;color:#fff;padding:11px 14px;border-radius:12px;font-size:13.5px;opacity:0;transform:translateY(-12px);transition:.25s;pointer-events:none}
+#toast{position:absolute;left:14px;right:14px;top:14px;z-index:50;background:#1A1A1A;color:#fff;padding:12px 16px;border-radius:14px;font-size:13.5px;opacity:0;transform:translateY(-12px);transition:.25s;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.2)}
 #toast.show{opacity:1;transform:none}
-.ob{padding:26px 22px;overflow-y:auto;flex:1}
-.ob .logo{font-size:44px}
-.prog{height:4px;background:var(--grey);border-radius:2px;margin:0 0 20px}
-.prog i{display:block;height:100%;background:var(--acc);border-radius:2px}
-.scan{width:130px;height:130px;border-radius:50%;margin:16px auto;background:var(--acc2);display:flex;align-items:center;justify-content:center;font-size:56px}
+@media(min-width:900px){#toast{left:auto;right:24px;top:74px;width:360px}}
+.ob{padding:28px 22px;overflow-y:auto;flex:1;width:100%}
+@media(min-width:900px){.ob{max-width:520px;margin:0 auto}}
+.scan{width:130px;height:130px;border-radius:50%;margin:18px auto;background:var(--acc2);color:var(--acc);display:flex;align-items:center;justify-content:center}
 .scan.go{animation:pulse .7s infinite alternate}
-@keyframes pulse{to{transform:scale(1.1);background:#d8d0ff}}
-.dn{border-left:3px solid var(--acc);padding-left:10px;margin:8px 0;font-size:12.5px;color:var(--mute)}
+@keyframes pulse{to{transform:scale(1.08);background:#FFE0C2}}
+.dn{border-left:3px solid var(--acc);padding-left:10px;margin:10px 0;font-size:12.5px;color:var(--mute)}
+.empty{text-align:center;padding:50px 20px;color:var(--mute);max-width:420px;margin:0 auto}
+.empty .big{width:72px;height:72px;border-radius:50%;background:var(--acc2);color:var(--acc);display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.empty h2{color:var(--ink)}
+.empty .btn{width:auto;margin-top:10px}
 </style>
 </head>
 <body>
 <div id="shell"><div id="screen"></div><div id="toast"></div></div>
 <script>
 "use strict";
+/* ---------- icons (Lucide, ISC licence) ---------- */
+const IC={
+  x:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  heart:'<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
+  calendar:'<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
+  'calendar-check':'<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/>',
+  'map-pin':'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  'user-check':'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/>',
+  user:'<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  'bell-off':'<path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="m2 2 20 20"/>',
+  'settings-2':'<path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/>',
+  'message-circle':'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+  send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+  compass:'<circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>',
+  mail:'<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+  film:'<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M3 7.5h4"/><path d="M3 12h18"/><path d="M3 16.5h4"/><path d="M17 3v18"/><path d="M17 7.5h4"/><path d="M17 16.5h4"/>',
+  coffee:'<path d="M10 2v2"/><path d="M14 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/><path d="M6 2v2"/>',
+  music:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+  plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+  'chevron-right':'<path d="m9 18 6-6-6-6"/>',
+  'circle-check':'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  'badge-check':'<path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/>',
+  'shield-check':'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+  'alert-triangle':'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  'scan-face':'<path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01"/><path d="M15 9h.01"/>',
+  'id-card':'<rect width="20" height="14" x="2" y="5" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M14 10h4"/><path d="M14 14h4"/><path d="M5 17c.5-1 1.6-1.5 3-1.5s2.5.5 3 1.5"/>',
+  briefcase:'<rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
+  star:'<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  pencil:'<path d="M21.17 6.81a1 1 0 0 0-3.99-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z"/>',
+  layers:'<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>',
+  filter:'<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>',
+  eye:'<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+  trash:'<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+  search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>'
+};
+const I=(n,s=16)=>`<svg class="i" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||''}</svg>`;
+
 /* ---------- constants ---------- */
-const KEY='tagalong_demo_v1';
+const KEY='tagalong_demo_v2';
 const HOODS=['Central Market','Lakeside','Old Quarter'];
 const GENDERS=['Woman','Man','Non-binary'];
+const INTERESTS=['Movies','Cafe / Food','Concerts'];
+const TIMES=['Weekday evenings','Weekend days','Weekend evenings','Late nights'];
 const CATS={
-  movies:{label:'Movies',icon:'🎬',g:'linear-gradient(135deg,#5b4bf5,#9b6bff)'},
-  cafe:{label:'Cafe / Food',icon:'☕',g:'linear-gradient(135deg,#f97316,#fbbf24)'},
-  concerts:{label:'Concerts',icon:'🎤',g:'linear-gradient(135deg,#db2777,#f472b6)'}
+  movies:{label:'Movies',icon:'film',fg:'#7C3AED',bg:'#EDE9FE',g:'radial-gradient(120% 70% at 50% 115%,rgba(234,88,12,.55),transparent 60%),radial-gradient(60% 40% at 50% 35%,rgba(148,163,255,.22),transparent 70%),linear-gradient(180deg,#0f0d1a,#1c1530 60%,#120e0b)'},
+  cafe:{label:'Cafe/Food',icon:'coffee',fg:'#15803D',bg:'#DCFCE7',g:'radial-gradient(80% 60% at 70% 20%,rgba(253,186,116,.85),transparent 60%),linear-gradient(160deg,#b45309,#7c2d12 55%,#2a1206)'},
+  concerts:{label:'Concerts',icon:'music',fg:'#DB2777',bg:'#FCE7F3',g:'radial-gradient(70% 55% at 30% 25%,rgba(244,114,182,.6),transparent 60%),radial-gradient(60% 50% at 80% 80%,rgba(250,204,21,.35),transparent 60%),linear-gradient(160deg,#4a0d2e,#1a0a1f)'}
 };
 const COST={split:'Split equally',own:'Everyone pays their own way',host:'Host is covering everyone'};
+const COST_S={split:'Equal Split',own:'Everyone Pays',host:'Host Pays'};
 const SWIPE_WINDOW=36*3600e3;
 const USERS={
   u1:{name:'Aarav',gender:'Man',age:27,job:'Designer',bio:'Will watch anything with good sound design.'},
@@ -107,39 +284,93 @@ const USERS={
   u5:{name:'Kabir',gender:'Man',age:28,job:'Chef',bio:'Cooks all day, so I eat out on my days off.'},
   u6:{name:'Ananya',gender:'Woman',age:26,job:'Teacher',bio:'Board games evangelist.'},
   u7:{name:'Alex',gender:'Non-binary',age:30,job:'Musician',bio:'Open mics, always.'},
-  u8:{name:'Ishaan',gender:'Man',age:24,job:'Student',bio:'Ramen is a personality.'}
+  u8:{name:'Ishaan',gender:'Man',age:24,job:'Student',bio:'Ramen is a personality.'},
+  u9:{name:'Priya',gender:'Woman',age:27,job:'Product Manager',bio:'Jazz, sunsets and very strong coffee.'},
+  u10:{name:'Dev',gender:'Man',age:32,job:'Photographer',bio:'Will find the best late-night food in any city.'},
+  u11:{name:'Zoya',gender:'Woman',age:24,job:'Film student',bio:'Runs a tiny film club. Subtitles always on.'},
+  u12:{name:'Sam',gender:'Non-binary',age:29,job:'Copywriter',bio:'Crosswords, filter coffee, early mornings.'}
 };
 const NOTES=['Love this plan, would be great to join!','New to the area, looking to meet people.','I have been wanting to see this for ages.','Happy to split costs, can be on time.'];
 const REPLIES=['Sounds good!','See you there','Running 5 min late, save me a seat','Who is bringing snacks?','Can we meet outside first?','Excited for this'];
+const NK={req:{ic:'user-check',bg:'#FFF1E6',fg:'#EA580C'},update:{ic:'layers',bg:'#DBEAFE',fg:'#1D4ED8'},remind:{ic:'calendar',bg:'#FEF3C7',fg:'#A16207'}};
 
 /* ---------- state ---------- */
 let S=load()||seed();
-let ui={tab:'swipe',seg:'act',ob:{step:2,d:{}},modal:null};
+const freshUi=()=>({tab:'swipe',ob:{step:2,d:{}},modal:null,f:{cat:'all',date:'',tod:'any'},nf:'all'});
+let ui=freshUi();
 
 function seed(){
   const n=Date.now(),h=x=>n+x*3600e3;
-  const A=(id,host,cat,desc,cap,hrs,aud,venue,cost,hood,members)=>({id,host,cat,desc,cap,when:h(hrs),aud,venue,cost,hood,members:members||[],status:'open'});
+  /* fixed clock time N days ahead: 3+ days is always beyond the 36h swipe window, so these land in Discover */
+  const at=(day,hr,mi)=>{const d=new Date(n);d.setDate(d.getDate()+day);d.setHours(hr,mi||0,0,0);return d.getTime()};
+  /* next occurrence of a clock time, at least 1h away: always inside the 36h swipe window */
+  const next=(hr,mi)=>{const d=new Date(n);d.setHours(hr,mi||0,0,0);if(d.getTime()<n+3600e3)d.setDate(d.getDate()+1);return d.getTime()};
+  const A=(id,host,cat,desc,cap,when,aud,venue,cost,hood,members)=>({id,host,cat,desc,cap,when,aud,venue,cost,hood,members:members||[],status:'open'});
+  const CM='Central Market';
   const acts=[
-    A('a1','u2','movies','Catching the 8pm show of the new sci-fi release, chai after',3,5,'everyone','Grand Cinema, Screen 4','split','Central Market',['u1']),
-    A('a2','u4','cafe','Slow brunch. Bring a book or a laptop',4,20,['Woman'],'Bean & Leaf','own','Central Market'),
-    A('a3','u3','concerts','Indie band live set, got spare spots',2,30,'everyone','The Hangar','own','Central Market'),
-    A('a4','u5','movies','Late-night horror double feature',4,10,['Man','Non-binary'],'Regal Multiplex','split','Central Market'),
-    A('a5','u6','cafe','Board games and coffee, beginners welcome',5,28,'everyone','Meeple Cafe','own','Central Market',['u2','u7','u1']),
-    A('a6','u7','concerts','Open-mic night, come cheer for friends',6,72,'everyone','Blue Note Lounge','own','Central Market'),
-    A('a7','u8','cafe','Trying the new ramen place (only 1 spot left)',3,54,'everyone','Ramen Yokocho','split','Central Market',['u5','u3']),
-    A('a8','u1','movies','Classic film re-run screening',4,100,'everyone','Old Rex Cinema','split','Central Market'),
-    A('a9','u2','concerts','Jazz on the lawn',5,120,['Woman'],'Riverside Lawn','host','Central Market'),
-    A('a10','u3','cafe','Coffee and sketching afternoon',3,150,'everyone','Paper & Pour','own','Central Market'),
-    A('a11','u4','movies','Documentary night and discussion',3,200,'everyone','Film Society Hall','own','Central Market'),
-    A('a12','u5','concerts','Rock night at the lake',4,12,'everyone','Lakeside Amphitheatre','own','Lakeside'),
-    A('a13','u6','cafe','Tea tasting flight',3,9,'everyone','Chai Lab','split','Old Quarter'),
-    A('a14','u8','movies','Sunday matinee',4,40,'everyone','Lakeview Cinema','split','Lakeside')
+    /* Swipe deck: within the next 36 hours */
+    A('n1','u9','concerts','Sunset acoustic set on the terrace',4,next(18,30),'everyone','Skyline Terrace','host',CM),
+    A('a1','u2','movies','Catching the 8pm show of the new sci-fi release, chai after',3,next(20),'everyone','Grand Cinema, Screen 4','split',CM,['u1']),
+    A('a4','u5','movies','Late-night horror double feature',4,next(22,30),['Man','Non-binary'],'Regal Multiplex','split',CM),
+    A('n2','u10','cafe','Midnight biryani run',3,next(23,45),'everyone','Bawarchi, Old Lane','split',CM,['u8','me']),
+    A('n4','u12','cafe','Morning filter coffee and the Sunday crossword',2,next(8),'everyone','Madras Coffee House','own',CM),
+    A('a2','u4','cafe','Slow brunch. Bring a book or a laptop',4,next(11),['Woman'],'Bean & Leaf','own',CM),
+    A('n3','u11','movies',"Women's film club: Sairat screening and discussion",4,next(16),['Woman'],'Prithvi Studio','own',CM,['u9']),
+    A('a5','u6','cafe','Board games and coffee, beginners welcome',5,next(15),'everyone','Meeple Cafe','own',CM,['u2','u7','u1']),
+    A('a3','u3','concerts','Indie band live set, got spare spots',2,next(21),'everyone','The Hangar','own',CM),
+    A('n5','u7','concerts','Karaoke night, no talent required',6,next(21,30),'everyone','Mic Drop Bar','split',CM,['u1','u4','u6','u8','u3']),
+    /* Discover: 3+ days out, spread across morning / afternoon / evening / night */
+    A('d1','u12','cafe','Sunrise walk around the lake, then breakfast',4,at(3,6,30),'everyone','Lake gate no. 2','own',CM,['u6']),
+    A('a7','u8','cafe','Trying the new ramen place (only 1 spot left)',3,at(3,13),'everyone','Ramen Yokocho','split',CM,['u5','u3']),
+    A('a6','u7','concerts','Open-mic night, come cheer for friends',6,at(3,20),'everyone','Blue Note Lounge','own',CM),
+    A('a8','u1','movies','Classic film re-run matinee',4,at(4,11),'everyone','Old Rex Cinema','split',CM),
+    A('a9','u9','concerts','Jazz night on the lawn, table for 4',4,at(4,21),['Woman'],'Riverside Lawn','host',CM,['u2']),
+    A('a10','u3','cafe','Coffee and sketching afternoon',3,at(5,16),'everyone','Paper & Pour','own',CM),
+    A('d2','u11','movies','Marathi film screening, post-film chai',5,at(5,19,30),'everyone','Film Society Hall','own',CM,['u4']),
+    A('d3','u10','concerts','Techno night, leaving early is allowed',3,at(6,22,30),'everyone','Antisocial','own',CM),
+    A('d4','u4','cafe','Pancake brunch and a long walk',4,at(7,10),'everyone','Flipside Diner','split',CM),
+    A('a11','u6','movies','Documentary night and discussion',3,at(8,18),'everyone','Film Society Hall','own',CM),
+    A('d5','u5','movies','Midnight show of the big release',4,at(9,23,45),['Man','Non-binary'],'Regal Multiplex','split',CM),
+    A('d6','u2','cafe','Dessert crawl: three places, one evening',5,at(10,19),'everyone','Starts at Theobroma','split',CM,['u6','u9','u4']),
+    /* Other neighborhoods (switch neighborhood in Profile to see these) */
+    A('a12','u5','concerts','Rock night at the lake',4,next(19),'everyone','Lakeside Amphitheatre','own','Lakeside'),
+    A('a14','u8','movies','Sunday matinee',4,at(4,14),'everyone','Lakeview Cinema','split','Lakeside'),
+    A('l1','u9','cafe','Lakeside picnic, bring one snack',6,at(5,12),'everyone','North lawn','own','Lakeside',['u2']),
+    A('a13','u6','cafe','Tea tasting flight',3,next(17),'everyone','Chai Lab','split','Old Quarter'),
+    A('o1','u3','concerts','Heritage walk and a sitar recital',4,at(6,17),'everyone','Town Hall steps','own','Old Quarter'),
+    /* Hosted by you */
+    A('m1','me','cafe','Filter coffee crawl',3,h(50),'everyone','Blue Tokai','own',CM,['u2']),
+    A('m2','me','movies','Late show and street food after',2,at(4,21,30),['Woman','Non-binary'],'PVR Phoenix','split',CM),
+    {...A('m3','me','concerts','Qawwali evening',4,h(-26),'everyone','Courtyard Stage','own',CM,['u4','u6']),status:'past'}
+  ];
+  const reqs=[
+    /* incoming, on your activities */
+    {id:'r1',act:'m1',user:'u9',note:'Love specialty coffee, would be fun to compare notes!',status:'pending'},
+    {id:'r2',act:'m1',user:'u10',note:'',status:'pending'},
+    {id:'r3',act:'m2',user:'u11',note:'Happy to split an auto after.',status:'pending'},
+    {id:'r4',act:'m1',user:'u2',note:'',status:'accepted'},
+    {id:'r8',act:'m3',user:'u8',note:'',status:'no_action'},
+    /* yours, one in each state */
+    {id:'r5',act:'n2',user:'me',note:'Biryani is my love language.',status:'accepted'},
+    {id:'r6',act:'a6',user:'me',note:'',status:'pending'},
+    {id:'r7',act:'a11',user:'me',note:'I watch a lot of docs!',status:'rejected'}
   ];
   const chats={};
   acts.filter(a=>a.members.length).forEach(a=>{
-    chats[a.id]=[{from:'sys',text:'Chat created',at:n-7200e3},{from:a.host,text:'Hey all! Excited for this one.',at:n-3600e3},{from:a.members[0],text:'Me too, what time should we meet?',at:n-3000e3},{from:a.host,text:'Let us meet 15 min before at the entrance.',at:n-2400e3}];
+    const other=a.members.find(x=>x!=='me')||a.host;
+    chats[a.id]=[{from:'sys',text:'Chat created',at:n-7200e3},{from:a.host,text:'Hey all! Excited for this one.',at:n-3600e3},{from:other,text:'Me too, what time should we meet?',at:n-3000e3},{from:a.host,text:'Let us meet 15 min before at the entrance.',at:n-2400e3}];
   });
-  return {offset:0,me:null,acts,reqs:[],dismissed:[],chats,notes:[],forceFail:false,seq:100};
+  chats.n2.push({from:'sys',text:'You joined the chat',at:n-1800e3},{from:'u10',text:'Welcome! We are ordering the family pack.',at:n-1500e3});
+  const N=(id,mins,kind,title,tag,tone,act,text,read)=>({id,at:n-mins*6e4,kind,title,tag,tone,act,text,read:!!read});
+  const notes=[
+    N('n1',20,'req','New join request','Pending','warn','m1','Priya wants to join "Filter coffee crawl".'),
+    N('n2',95,'req','Request Accepted 🎉','Accepted','ok','n2','Dev accepted your join request for "Midnight biryani run".'),
+    N('n3',180,'update','Spot opened up','1 spot left','info','n5','"Karaoke night, no talent required" now has 1 spot available.'),
+    N('n4',300,'req','Request Declined','Declined','bad','a11','Ananya declined your join request for "Documentary night and discussion". You can browse similar activities.',true),
+    N('n5',420,'update','Activity updated','Details changed','info','a6','Alex moved "Open-mic night" to Blue Note Lounge.',true),
+    N('n6',1440,'req','New join request','Pending','warn','m2','Zoya wants to join "Late show and street food after".',true)
+  ];
+  return {offset:0,me:null,acts,reqs,dismissed:[],chats,notes,forceFail:false,seq:100};
 }
 function load(){try{const v=localStorage.getItem(KEY);return v?JSON.parse(v):null}catch(e){return null}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -148,8 +379,22 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 const now=()=>Date.now()+S.offset;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uname=id=>id==='me'?'You':(USERS[id]?.name||'?');
+const short=s=>s.length>40?s.slice(0,40)+'…':s;
 const fmt=t=>new Date(t).toLocaleString([], {weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+function whenStr(t){
+  const d=new Date(t),n=new Date(now()),day=x=>new Date(x.getFullYear(),x.getMonth(),x.getDate()).getTime();
+  const diff=Math.round((day(d)-day(n))/864e5),tm=d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+  return diff===0?'Today '+tm:diff===1?'Tomorrow '+tm:d.toLocaleDateString([], {weekday:'short',day:'numeric',month:'short'})+' · '+tm;
+}
+function ago(t){
+  const s=Math.max(0,(now()-t)/1000);
+  return s<60?'just now':s<3600?Math.floor(s/60)+'m ago':s<86400?Math.floor(s/3600)+'h ago':Math.floor(s/86400)+'d ago';
+}
+const dayKey=t=>{const d=new Date(t);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const tod=t=>{const h=new Date(t).getHours();return h>=5&&h<12?'morning':h>=12&&h<17?'afternoon':h>=17&&h<21?'evening':'night'};
 const spots=a=>a.cap-a.members.length;
+const spotTxt=a=>spots(a)<=0?'Full':spots(a)+' spot'+(spots(a)===1?'':'s')+' open';
+const tags=a=>[COST_S[a.cost],...(a.aud==='everyone'?[]:[a.aud.join(' / ')+' only'])];
 const actOf=id=>S.acts.find(a=>a.id===id);
 const myReq=id=>S.reqs.find(r=>r.act===id&&r.user==='me');
 const audOK=a=>a.aud==='everyone'||a.aud.includes(S.me.gender);
@@ -160,9 +405,17 @@ function profileOf(id){
   if(id==='me')return {name:S.me.name,gender:S.me.gender,age:ageOf(S.me.dob),job:S.me.job||'',bio:S.me.bio||''};
   return USERS[id];
 }
+function av(id,cls=''){
+  const n=id==='me'?(S.me?.name||'?'):(USERS[id]?.name||'?'),hues=['#F97316','#8B5CF6','#10B981','#EC4899','#0EA5E9','#EAB308'];
+  let h=0;for(const c of n)h+=c.charCodeAt(0);
+  return `<span class="av ${cls}" style="background:${hues[h%hues.length]}">${esc(n[0].toUpperCase())}</span>`;
+}
+const catPill=(k,tint)=>{const c=CATS[k];return `<span class="cat" style="color:${c.fg}${tint?';background:'+c.bg:''}">${I(c.icon,12)}${c.label}</span>`};
+const opts=(name,list,sel)=>`<div class="opts">${list.map(v=>`<label class="opt"><input type="checkbox" name="${name}" value="${esc(v)}" ${sel&&sel.includes(v)?'checked':''}>${esc(v)}</label>`).join('')}</div>`;
+const many=n=>[...document.querySelectorAll(`input[name="${n}"]:checked`)].map(x=>x.value);
 let toastT;
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600)}
-function notify(text){S.notes.unshift({id:nextId('n'),text,at:now(),read:false});toast(text);save()}
+function notify(text,o={}){S.notes.unshift({id:nextId('n'),text,at:now(),read:false,kind:o.kind||'update',title:o.title||'Update',tag:o.tag||'',tone:o.tone||'',act:o.act||null});toast(o.title?o.title+' · '+text:text);save()}
 
 /* ---------- domain logic ---------- */
 function eligible(a){return a.status==='open'&&a.host!=='me'&&a.hood===S.me.hood&&audOK(a)&&!S.dismissed.includes(a.id)&&a.when>now()&&spots(a)>0}
@@ -182,23 +435,24 @@ function accept(reqId){
   r.status='accepted';a.members.push(r.user);
   if(!S.chats[a.id])addMsg(a.id,'sys','Chat created');
   addMsg(a.id,'sys',uname(r.user)+' joined the chat');
-  if(r.user==='me')notify('Accepted! You are in: '+a.desc.slice(0,40));
+  if(r.user==='me')notify(`${uname(a.host)} accepted your join request for "${short(a.desc)}".`,{kind:'req',title:'Request Accepted 🎉',tag:'Accepted',tone:'ok',act:a.id});
   if(spots(a)<=0)fillUp(a);
   save();
 }
 function reject(reqId){
   const r=S.reqs.find(x=>x.id===reqId);if(!r||r.status!=='pending')return;
   r.status='rejected';
-  if(r.user==='me')notify('Not accepted: '+actOf(r.act).desc.slice(0,40));
+  const a=actOf(r.act);
+  if(r.user==='me')notify(`${uname(a.host)} declined your join request for "${short(a.desc)}". You can browse similar activities.`,{kind:'req',title:'Request Declined',tag:'Declined',tone:'bad',act:a.id});
   save();
 }
 function fillUp(a){
   a.status='full';
   S.reqs.filter(r=>r.act===a.id&&r.status==='pending').forEach(r=>{
     r.status='rejected';
-    if(r.user==='me')notify('Activity is full, request not accepted: '+a.desc.slice(0,32));
+    if(r.user==='me')notify(`"${short(a.desc)}" filled up before your request was accepted.`,{kind:'req',title:'Activity full',tag:'Full',tone:'bad',act:a.id});
   });
-  if(a.host==='me')notify('Your activity is now full');
+  if(a.host==='me')notify(`Your activity "${short(a.desc)}" is now full.`,{kind:'update',title:'Activity full',tag:'Full',tone:'acc',act:a.id});
 }
 function cancelAct(id,byHost){
   const a=actOf(id);if(!a)return;
@@ -206,13 +460,17 @@ function cancelAct(id,byHost){
   S.acts=S.acts.filter(x=>x.id!==id);
   S.reqs=S.reqs.filter(r=>r.act!==id);
   delete S.chats[id];
-  if(byHost==='me')notify('Activity cancelled. '+(a.members.length?a.members.length+' accepted member(s) notified.':'Removed from your list.'));
-  else if(wasMember)notify(uname(byHost)+' cancelled: '+a.desc.slice(0,40));
+  if(byHost==='me')notify(a.members.length?a.members.length+' accepted member(s) notified.':'Removed from your list.',{kind:'update',title:'Activity cancelled',tag:'Cancelled',tone:'bad'});
+  else if(wasMember)notify(`${uname(byHost)} cancelled "${short(a.desc)}".`,{kind:'update',title:'Activity cancelled',tag:'Cancelled',tone:'bad'});
   save();
 }
 function tick(){
   let ch=false;
   S.acts.forEach(a=>{
+    if(a.status!=='past'&&!a.reminded&&(a.host==='me'||a.members.includes('me'))&&a.when>now()&&a.when-now()<=2*3600e3){
+      a.reminded=true;ch=true;
+      notify(`"${short(a.desc)}" at ${a.venue} starts at ${new Date(a.when).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}. Don't be late!`,{kind:'remind',title:'Activity in 2 hours',tag:'Soon',tone:'warn',act:a.id});
+    }
     if(a.status==='open'&&a.when<=now()){
       a.status='past';ch=true;
       S.reqs.filter(r=>r.act===a.id&&r.status==='pending').forEach(r=>r.status='no_action');
@@ -228,7 +486,7 @@ function incoming(){
   if(!pool.length){toast('No eligible people left for that activity');return}
   const u=pool[Math.floor(Math.random()*pool.length)];
   S.reqs.push({id:nextId('r'),act:a.id,user:u,note:NOTES[Math.floor(Math.random()*NOTES.length)],status:'pending'});
-  notify(USERS[u].name+' requested to join: '+a.desc.slice(0,32));
+  notify(`${USERS[u].name} wants to join "${short(a.desc)}".`,{kind:'req',title:'New join request',tag:'Pending',tone:'warn',act:a.id});
 }
 
 /* ---------- verification ---------- */
@@ -255,18 +513,14 @@ const gate=fn=>{if(S.me.kyc)fn();else openVerify('kyc',fn)};
 /* ---------- swipe ---------- */
 function swipe(dir){
   const a=deck()[0];if(!a)return;
-  const go=()=>{
-    const el=document.querySelector('.card.top');
-    if(el){el.style.transition='transform .25s';el.style.transform=`translateX(${dir==='right'?600:-600}px) rotate(${dir==='right'?25:-25}deg)`}
-    setTimeout(()=>{
-      if(dir==='right')sendReq(a.id,'');else S.dismissed.push(a.id);
-      save();
-      if(!deck().length){ui.tab='discover';toast("You've seen everything nearby. Here's Discover.")}
-      render();
-    },230);
-  };
-  if(dir==='right'&&!S.me.kyc){const el=document.querySelector('.card.top');if(el)el.style.transform='';openVerify('kyc',go);return}
-  go();
+  const el=document.querySelector('.card.top');
+  if(dir==='right'){if(el)el.style.transform='';ui.modal={type:'confirm',id:a.id};render();return}
+  if(el){el.style.transition='transform .25s';el.style.transform='translateX(-600px) rotate(-25deg)'}
+  setTimeout(()=>{
+    S.dismissed.push(a.id);save();
+    if(!deck().length){ui.tab='discover';toast("You've seen everything nearby. Here's Discover.")}
+    render();
+  },230);
 }
 function bindDrag(){
   const el=document.querySelector('.card.top');if(!el)return;
@@ -276,7 +530,7 @@ function bindDrag(){
   el.onpointermove=e=>{
     if(!down)return;dx=e.clientX-sx;
     el.style.transform=`translateX(${dx}px) rotate(${dx/18}deg)`;
-    st.textContent=dx>0?'REQUEST':'SKIP';st.style.color=dx>0?'#bbf7d0':'#fecaca';st.style.opacity=Math.min(Math.abs(dx)/100,1);
+    st.textContent=dx>0?'REQUEST':'SKIP';st.style.color=dx>0?'#FDBA74':'#FECACA';st.style.opacity=Math.min(Math.abs(dx)/100,1);
   };
   el.onpointerup=()=>{
     if(!down)return;down=false;el.style.transition='transform .25s';
@@ -287,138 +541,205 @@ function bindDrag(){
 
 /* ---------- render: cards & lists ---------- */
 function cardHtml(a,cls){
-  const c=CATS[a.cat];
-  return `<div class="card ${cls}" style="background:${c.g}"><div class="stamp"></div><div class="ic">${c.icon}</div>
-  <span class="pill" style="align-self:flex-start">${c.label}</span><h2>${esc(a.desc)}</h2>
-  <p>🕒 ${fmt(a.when)}</p><p>📍 ${esc(a.venue)}</p><p>👥 ${spots(a)} of ${a.cap} spots left</p><p>💸 ${COST[a.cost]}</p>
-  <p style="opacity:.85;margin-top:6px">Hosted by ${esc(uname(a.host))}</p></div>`;
+  const c=CATS[a.cat],h=profileOf(a.host);
+  return `<div class="card ${cls}" style="background:${c.g}"><div class="art">${I(c.icon,120)}</div><div class="shade"></div><div class="stamp"></div>
+  <div class="cp">${catPill(a.cat)}</div>
+  <div class="body"><div class="who">${av(a.host,'sm')}${esc(h.name)}, ${h.age} <span class="vf">✓</span></div>
+  <h2>${esc(a.desc)}</h2>
+  <div class="meta"><span>${I('calendar',14)}${whenStr(a.when)}</span><span>${I('map-pin',14)}${esc(a.venue)}</span><span>${I('users',14)}${spotTxt(a)}</span></div>
+  <div class="tags">${tags(a).map(t=>`<span>${esc(t)}</span>`).join('')}</div></div></div>`;
 }
-function rowHtml(a,extra){
+function acCard(a){
   const c=CATS[a.cat],rq=myReq(a.id);
-  return `<div class="panel tap" data-a="detail" data-id="${a.id}"><div class="row" style="align-items:flex-start"><div style="flex:0 0 40px;font-size:28px">${c.icon}</div>
-  <div style="flex:1"><strong>${esc(a.desc)}</strong><p class="small mute" style="margin:3px 0">🕒 ${fmt(a.when)} · 📍 ${esc(a.venue)}</p>
-  <p class="small mute" style="margin:0">By ${esc(uname(a.host))} · ${spots(a)} of ${a.cap} spots left</p>
-  ${extra||''}${rq?` <span class="chip acc">${rq.status==='pending'?'Requested':rq.status}</span>`:''}</div></div></div>`;
+  return `<div class="ac" data-a="detail" data-id="${a.id}"><div class="media" style="background:${c.g}">${I(c.icon,56)}${catPill(a.cat)}</div>
+  <div class="bd"><h4>${esc(a.desc)}</h4>
+  <div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)}</span></div>
+  <div class="tg"><span>${I('users',12)}${spotTxt(a)}</span>${tags(a).map(t=>`<span>${esc(t)}</span>`).join('')}</div>
+  <div class="ft"><div class="hn">${av(a.host,'sm')}${esc(uname(a.host))} <span class="vf">✓</span></div>
+  ${rq?`<span class="chip acc">${rq.status==='pending'?'Requested':esc(rq.status)}</span>`:`<button class="btn xs" data-a="askreq" data-id="${a.id}">Request ${I('chevron-right',13)}</button>`}</div></div></div>`;
 }
-const statusChip=s=>({pending:'<span class="chip warn">Pending</span>',accepted:'<span class="chip ok">Accepted</span>',rejected:'<span class="chip bad">Rejected</span>',no_action:'<span class="chip">No action from poster</span>'}[s]);
+function liHtml(a,act,meta,chips,right){
+  const c=CATS[a.cat];
+  return `<div class="panel tap li" data-a="${act}" data-id="${a.id}"><div class="thumb" style="background:${c.g}">${I(c.icon,22)}</div>
+  <div style="flex:1;min-width:0"><div class="t">${esc(a.desc)}</div><div class="meta2" style="margin:4px 0 8px">${meta}</div>${chips}</div>${right||`<span class="mute">${I('chevron-right',18)}</span>`}</div>`;
+}
+const statusChip=s=>({pending:'<span class="chip warn">Pending</span>',accepted:'<span class="chip ok">Accepted</span>',rejected:'<span class="chip bad">Declined</span>',no_action:'<span class="chip">No action from poster</span>'}[s]);
 const actChip=s=>({open:'<span class="chip ok">Open</span>',full:'<span class="chip acc">Full</span>',past:'<span class="chip">Past</span>'}[s]);
-const empty=(ic,t,sub,btn)=>`<div class="empty"><div class="big">${ic}</div><h2>${t}</h2><p>${sub}</p>${btn||''}</div>`;
+const empty=(ic,t,sub,btn)=>`<div class="empty"><div class="big">${I(ic,30)}</div><h2>${t}</h2><p>${sub}</p>${btn||''}</div>`;
 
 /* ---------- render: tabs ---------- */
 function tabSwipe(){
   const d=deck();
-  if(!d.length)return empty('🎉','Nothing new right now','You have gone through all plans happening soon in '+esc(S.me.hood)+'. Check Discover for plans further out.','<button class="btn" data-a="tab" data-t="discover">Go to Discover</button>');
-  return `<div class="deck"><div class="stack">${d[1]?cardHtml(d[1],'back'):''}${cardHtml(d[0],'top')}</div>
-  <div class="acts"><button class="rb" data-a="swipe" data-d="left" title="Skip">✕</button><button class="rb" data-a="swipe" data-d="right" title="Request to join">♥</button></div>
-  <p class="small mute" style="text-align:center">Swipe right to request, left to skip forever · Plans in the next ~36 hours</p></div>`;
+  if(!d.length)return empty('compass','Nothing new right now','You have gone through all plans happening soon in '+esc(S.me.hood)+'. Check Discover for plans further out.','<button class="btn" data-a="tab" data-t="discover">Go to Discover</button>');
+  return `<div class="deck"><h1 class="pt">What's happening tonight?</h1><p class="sub">Activities in the next 36 hours · Swipe right to request</p>
+  <div class="stack">${d[1]?cardHtml(d[1],'back'):''}${cardHtml(d[0],'top')}</div>
+  <div class="acts"><button class="rb" data-a="swipe" data-d="left" title="Skip">${I('x',24)}</button>
+  <div class="cnt">1 of ${d.length}<br>← dismiss · request →</div>
+  <button class="rb go" data-a="swipe" data-d="right" title="Request to join">${I('heart',24)}</button></div>
+  <p class="small mute kb" style="margin-top:6px">Use ← → arrow keys to navigate</p></div>`;
 }
 function tabDiscover(){
-  const f=feed();
-  return `<div class="row" style="margin-bottom:10px"><div><h2 style="margin:0">Discover</h2><p class="small mute" style="margin:0">Plans further out in ${esc(S.me.hood)}, soonest first</p></div><button class="btn sm" style="flex:0 0 auto" data-a="newpost">+ Post</button></div>`
-    +(f.length?f.map(a=>rowHtml(a)).join(''):empty('🗓️','No plans yet','Be the first to post one in your neighborhood.'));
+  const all=feed(),f=ui.f;
+  const list=all.filter(a=>(f.cat==='all'||a.cat===f.cat)&&(!f.date||dayKey(a.when)===f.date)&&(f.tod==='any'||tod(a.when)===f.tod));
+  const C=(k,l)=>`<button class="fc ${f.cat===k?'on':''}" data-a="fcat" data-k="${k}">${l}</button>`;
+  const T=(k,l)=>`<button class="fc ${f.tod===k?'on':''}" data-a="ftod" data-k="${k}">${l}</button>`;
+  return `<div class="hd"><div><h1 class="pt">Plan ahead</h1><p class="sub">Activities more than 36 hours away · ${all.length} upcoming in ${esc(S.me.hood)}</p></div><button class="btn sm mobonly" data-a="newpost">${I('plus',15)} Post</button></div>
+  <div class="fchips">${C('all','All')}${Object.entries(CATS).map(([k,c])=>C(k,c.label)).join('')}</div>
+  <div class="filters"><div class="f"><label for="d_date">Date</label><input type="date" id="d_date" value="${esc(f.date)}"></div>
+  <div><label>Time of day</label><div class="fchips">${T('any',I('clock',13)+' Any time')}${T('morning','Morning')}${T('afternoon','Afternoon')}${T('evening','Evening')}${T('night','Night')}</div></div></div>
+  <p class="small mute" style="margin:0 0 12px">Showing <b>${list.length}</b> ${list.length===1?'activity':'activities'}</p>
+  ${list.length?`<div class="grid">${list.map(acCard).join('')}</div>`:empty('calendar',all.length?'No matches':'No plans yet',all.length?'Try a different filter.':'Be the first to post one in your neighborhood.')}`;
 }
 function tabActs(){
   const mine=S.acts.filter(a=>a.host==='me').sort((a,b)=>a.when-b.when);
-  return `<div class="row" style="margin-bottom:10px"><h2 style="margin:0">My Activities</h2><button class="btn sm" style="flex:0 0 auto" data-a="newpost">+ Post</button></div>`
+  return `<div class="hd"><div><h1 class="pt">My Activities</h1><p class="sub">Plans you are hosting</p></div><button class="btn sm" data-a="newpost">${I('plus',15)} Post</button></div>`
     +(mine.length?mine.map(a=>{
       const p=S.reqs.filter(r=>r.act===a.id&&r.status==='pending').length;
-      return `<div class="panel tap" data-a="hostview" data-id="${a.id}"><div class="row"><div style="flex:1"><strong>${CATS[a.cat].icon} ${esc(a.desc)}</strong><p class="small mute" style="margin:3px 0">🕒 ${fmt(a.when)} · ${a.members.length}/${a.cap} accepted</p>${actChip(a.status)} ${p?`<span class="chip warn">${p} pending</span>`:''}</div><span>›</span></div></div>`;
-    }).join(''):empty('📝','You have not posted anything','Post a plan you are already making and see who wants to join.','<button class="btn" data-a="newpost">Post an activity</button>'));
+      return liHtml(a,'hostview',`<span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('users',13)}${a.members.length}/${a.cap} accepted</span>`,`${actChip(a.status)} ${p?`<span class="chip warn">${p} pending</span>`:''}`);
+    }).join(''):empty('calendar-check','You have not posted anything','Post a plan you are already making and see who wants to join.','<button class="btn" data-a="newpost">Post an activity</button>'));
 }
 function tabReqs(){
   const mine=S.reqs.filter(r=>r.user==='me'&&actOf(r.act));
-  return `<h2>My Requests</h2>`+(mine.length?mine.map(r=>{
+  return `<h1 class="pt">My Requests</h1><p class="sub">Plans you asked to join</p>`+(mine.length?mine.map(r=>{
     const a=actOf(r.act);
-    return `<div class="panel"><div data-a="detail" data-id="${a.id}" style="cursor:pointer"><strong>${CATS[a.cat].icon} ${esc(a.desc)}</strong><p class="small mute" style="margin:3px 0">🕒 ${fmt(a.when)} · by ${esc(uname(a.host))}</p></div>
-    <div class="row" style="margin-top:6px"><div style="flex:1">${statusChip(r.status)}</div>${r.status==='accepted'?`<button class="btn sm sec" style="flex:0 0 auto" data-a="chat" data-id="${a.id}">Open chat</button>`:''}</div></div>`;
-  }).join(''):empty('💌','No requests yet','Swipe right on a plan or request one from Discover.'));
+    return liHtml(a,'detail',`<span>${I('calendar',13)}${whenStr(a.when)}</span><span>by ${esc(uname(a.host))}</span>`,statusChip(r.status),
+      r.status==='accepted'?`<button class="btn sm sec" style="flex:0 0 auto" data-a="chat" data-id="${a.id}">${I('message-circle',14)} Chat</button>`:'');
+  }).join(''):empty('mail','No requests yet','Swipe right on a plan or request one from Discover.'));
+}
+function noteHtml(n){
+  const k=NK[n.kind]||NK.update,has=n.act&&actOf(n.act);
+  return `<div class="nc">${n.read?'':'<span class="unread"></span>'}<div class="top"><div class="nic" style="background:${k.bg};color:${k.fg}">${I(k.ic,17)}</div>
+  <div style="flex:1;min-width:0;padding-right:14px"><div class="nt">${esc(n.title||'Update')}${n.tag?`<span class="chip ${n.tone||''}">${esc(n.tag)}</span>`:''}</div>
+  <div class="nx">${esc(n.text)}</div><div class="tm">${I('clock',12)}${ago(n.at)}</div></div></div>
+  <div class="nb">${has?`<button class="pb o" data-a="viewact" data-id="${n.act}">${I('eye',13)} View Activity ${I('chevron-right',12)}</button>`:''}${n.read?'':`<button class="pb" data-a="markread" data-id="${n.id}">${I('circle-check',13)} Mark read</button>`}<button class="pb d" data-a="dismiss" data-id="${n.id}">${I('trash',13)} Dismiss</button></div></div>`;
+}
+function tabNotes(){
+  const N=S.notes,k=n=>n.kind||'update',cnt=x=>N.filter(n=>k(n)===x).length,unread=N.filter(n=>!n.read).length;
+  const list=ui.nf==='all'?N:N.filter(n=>k(n)===ui.nf);
+  const F=(x,l,c)=>`<button class="fc ${ui.nf===x?'on':''}" data-a="nf" data-k="${x}">${l} <b>${c}</b></button>`;
+  return `<div class="nh"><span class="ic">${I('bell',22)}</span><div style="flex:1"><h1 class="pt" style="font-size:22px">Notifications</h1><p class="sub" style="margin:0">${unread} unread</p></div>
+  ${N.length?`<button class="lnk" data-a="readall">Mark all read</button><button class="lnk m" data-a="clearall">${I('bell-off',14)} Clear all</button>`:''}</div>
+  <div class="nf"><span class="mute">${I('filter',16)}</span>${F('all','All',N.length)}${F('req','Requests',cnt('req'))}${F('update','Updates',cnt('update'))}${F('remind','Reminders',cnt('remind'))}</div>
+  ${list.length?list.map(noteHtml).join(''):empty('bell','All caught up','New requests, updates and reminders will show up here.')}`;
 }
 function tabProfile(){
   const m=S.me;
-  return `<h2>My Profile</h2>
-  <div class="panel"><span class="chip ${m.face?'ok':'warn'}">Face ${m.face?'verified':'not verified'}</span> <span class="chip ${m.kyc?'ok':''}">ID ${m.kyc?'verified':'not yet (needed to post/request)'}</span></div>
-  <label>Name</label><input id="p_name" value="${esc(m.name)}">
+  const V=[['mail','Email Verified',true],['scan-face','Face Verified',!!m.face],['id-card','Identity Verified',!!m.kyc],['user','Profile Complete',!!(m.job&&m.bio&&(m.ints||[]).length&&(m.avail||[]).length)]];
+  const done=V.filter(v=>v[2]).length;
+  const soft=(arr,none)=>arr&&arr.length?`<div class="soft">${arr.map(x=>`<span>${esc(x)}</span>`).join('')}</div>`:`<p class="small mute">${none}</p>`;
+  return `<div class="panel"><div class="pt2">${av('me','lg')}<div><div class="pn">${esc(m.name)} ${m.kyc?`<span class="vf">${I('badge-check',14)} Verified</span>`:''}</div><div class="small mute">${esc(m.hood)}, Demo City</div></div></div>
+  <div class="facts"><span>${ageOf(m.dob)} yrs</span><span>${esc(m.gender)}</span>${m.job?`<span>${I('briefcase',14)}${esc(m.job)}</span>`:''}<span>${I('map-pin',14)}${esc(m.hood)}</span></div>
+  <p>${m.bio?esc(m.bio):'<span class="mute">Add a short bio so hosts know who you are.</span>'}</p></div>
+  <div class="panel"><div class="ph">${I('star',15)} Interests</div>${soft(m.ints,'Pick what you would like to do with company below.')}</div>
+  <div class="panel"><div class="ph">${I('clock',15)} Usually free</div>${soft(m.avail,'Tell hosts when you are usually free.')}</div>
+  <div class="panel"><div class="ph">${I('shield-check',15)} Verifications <span class="r">${done}/${V.length} complete</span></div>
+  <div class="bar"><i style="width:${done/V.length*100}%"></i></div>
+  <div class="vg">${V.map(([ic,l,y])=>`<div class="vi ${y?'y':''}">${I(ic,14)}${l}${y?`<span class="e">${I('circle-check',14)}</span>`:''}</div>`).join('')}</div></div>
+  <div class="panel"><div class="ph">${I('pencil',15)} Edit profile</div>
+  <label style="margin-top:0">Name</label><input id="p_name" value="${esc(m.name)}">
   <label>Date of birth</label><input id="p_dob" type="date" value="${esc(m.dob)}">
   <label>Gender identity</label><select id="p_gender">${GENDERS.map(g=>`<option ${g===m.gender?'selected':''}>${g}</option>`).join('')}</select>
   <label>City: Demo City · Neighborhood</label><select id="p_hood">${HOODS.map(g=>`<option ${g===m.hood?'selected':''}>${g}</option>`).join('')}</select>
   <label>Profession</label><input id="p_job" value="${esc(m.job||'')}">
   <label>Bio</label><textarea id="p_bio">${esc(m.bio||'')}</textarea>
-  <div style="height:12px"></div><button class="btn" data-a="saveprofile">Save profile</button>`;
+  <label>What would you want to do with company?</label>${opts('p_int',INTERESTS,m.ints)}
+  <label>When are you usually free?</label>${opts('p_avail',TIMES,m.avail)}
+  <div style="height:18px"></div><button class="btn" data-a="saveprofile">Save profile</button></div>`;
 }
 
 /* ---------- render: modals ---------- */
 function modalHtml(){
   const m=ui.modal;if(!m)return '';
-  const sheet=(title,body,full)=>`<div class="ov" data-a="closebg"><div class="sheet ${full?'full':''}" data-stop="1"><div class="sh"><h2>${title}</h2><button class="ib" data-a="close">✕</button></div>${body}</div></div>`;
+  const sheet=(title,body,cls='')=>`<div class="ov" data-a="closebg"><div class="sheet ${cls}" data-stop="1"><div class="sh"><h2>${title}</h2><button class="ib" data-a="close" title="Close">${I('x',18)}</button></div>${body}</div></div>`;
   if(m.type==='verify'){
-    const face=m.kind==='face',fails=S.me[m.kind+'Fails']||0;
+    const face=m.kind==='face',fails=S.me[m.kind+'Fails']||0,ic=face?'scan-face':'id-card';
     let inner;
-    if(m.state==='flagged')inner=`<div class="scan">🕵️</div><p style="text-align:center"><strong>Sent for human review</strong></p><p class="mute" style="text-align:center">After 5 failed attempts we flag the account for a person to check. You are not locked out permanently.</p>`;
-    else if(m.state==='scanning')inner=`<div class="scan go">${face?'🙂':'🪪'}</div><p style="text-align:center" class="mute">${face?'Checking liveness…':'Reading your ID…'}</p>`;
-    else inner=`<div class="scan">${face?'🙂':'🪪'}</div>
+    if(m.state==='flagged')inner=`<div class="scan">${I('shield-check',56)}</div><p style="text-align:center"><strong>Sent for human review</strong></p><p class="mute" style="text-align:center">After 5 failed attempts we flag the account for a person to check. You are not locked out permanently.</p>`;
+    else if(m.state==='scanning')inner=`<div class="scan go">${I(ic,56)}</div><p style="text-align:center" class="mute">${face?'Checking liveness…':'Reading your ID…'}</p>`;
+    else inner=`<div class="scan">${I(ic,56)}</div>
       <p style="text-align:center" class="mute">${face?'A quick selfie scan confirms you are a real person. This unlocks browsing.':'Government ID check. Needed once, the first time you post or request. It unlocks both.'}</p>
       ${m.state==='fail'?`<p style="text-align:center;color:var(--bad)"><strong>Verification failed.</strong> Please try again (${fails}/5).</p>`:''}
       <div class="dn">Demo: this is a simulation, no camera or ID is used.${S.forceFail?' <b>Failure mode is ON.</b>':''}</div>
       <button class="btn" data-a="scan">${m.state==='fail'?'Try again':(face?'Start face check':'Start ID check')}</button>`;
-    return sheet(face?'Face verification':'ID verification (KYC)',`<div class="sb">${inner}</div>`);
+    return sheet(face?'Face verification':'Identity verification',`<div class="sb">${inner}</div>`);
   }
   if(m.type==='post'){
     const mn=localInput(now()+3600e3);
-    return sheet('Post an activity',`<div class="sb">
-      <label>Category</label><select id="f_cat">${Object.entries(CATS).map(([k,c])=>`<option value="${k}">${c.icon} ${c.label}</option>`).join('')}</select>
+    return sheet('Create Activity',`<div class="sb">
+      <label style="margin-top:0">Category</label><select id="f_cat">${Object.entries(CATS).map(([k,c])=>`<option value="${k}">${c.label}</option>`).join('')}</select>
       <label>What is the plan?</label><textarea id="f_desc" maxlength="160" placeholder="Short description of what you are doing"></textarea>
-      <label>Group size (people who can join)</label><select id="f_cap">${[2,3,4,5,6,7,8,9,10].map(n=>`<option>${n}</option>`).join('')}</select>
+      <label>Group capacity <span class="mute" style="font-weight:400">(excluding you)</span></label><select id="f_cap">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option ${n===2?'selected':''}>${n}</option>`).join('')}</select>
+      <p class="small mute" style="margin-top:6px">Shows on your card as "spots open", so 2 means two people can join you.</p>
       <label>Date and time</label><input id="f_when" type="datetime-local" min="${mn}" value="${localInput(now()+26*3600e3)}">
       <label>Who can see and request this?</label>
       <label class="chk"><input type="checkbox" id="f_all" checked> Everyone</label>
       ${GENDERS.map(g=>`<label class="chk"><input type="checkbox" class="f_g" value="${g}"> ${g}</label>`).join('')}
       <label>Venue</label><input id="f_venue" placeholder="e.g. Grand Cinema, Screen 4">
       <label>How will costs work? (informational only)</label><select id="f_cost">${Object.entries(COST).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select>
-      <div style="height:14px"></div><button class="btn" data-a="submitpost">Post activity</button></div>`,true);
+      <div style="height:16px"></div><button class="btn" data-a="submitpost">Post activity</button></div>`,'full wide');
   }
-  if(m.type==='detail'){
+  if(m.type==='detail'||m.type==='confirm'){
     const a=actOf(m.id);if(!a)return '';
-    const rq=myReq(a.id),can=a.host!=='me'&&a.status==='open'&&spots(a)>0&&!rq&&a.when>now();
-    return sheet('Activity',`<div class="sb"><div style="height:300px;position:relative">${cardHtml(a,'det')}</div><div style="height:12px"></div>
-      ${rq?`<p>Your request: ${statusChip(rq.status)}</p>${rq.note?`<p class="small mute">Your note: ${esc(rq.note)}</p>`:''}`:''}
-      ${can?`<label>Add a note for the host (optional)</label><textarea id="r_note" placeholder="A little context helps the host decide"></textarea><div style="height:10px"></div><button class="btn" data-a="request" data-id="${a.id}">Request to join</button>`
-      :(!rq?`<p class="mute">${a.host==='me'?'This is your activity.':a.status!=='open'?'This activity is '+a.status+', no requests possible.':'No request available.'}</p>`:'')}
-      ${rq&&rq.status==='accepted'?`<div style="height:8px"></div><button class="btn sec" data-a="chat" data-id="${a.id}">Open group chat</button>`:''}
-      </div>`,true);
+    const c=CATS[a.cat],h=profileOf(a.host),rq=myReq(a.id),can=a.host!=='me'&&a.status==='open'&&spots(a)>0&&!rq&&a.when>now();
+    const top=`<div class="sum"><div class="thumb" style="background:${c.g}">${I(c.icon,26)}</div><div style="min-width:0">${catPill(a.cat,true)}<div class="t">${esc(a.desc)}</div>
+      <div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)}</span></div>
+      <div class="meta2" style="margin-top:3px"><span>${I('users',13)}${spotTxt(a)}</span>${tags(a).map(t=>`<span>· ${esc(t)}</span>`).join('')}</div></div></div>
+      <div class="hostline">${av(a.host,'sm')}Hosted by <b style="color:var(--ink);font-weight:600">${esc(h.name)}</b>${a.host==='me'?'':' <span class="vf">✓ Verified</span>'}</div>`;
+    if(m.type==='confirm'&&can)return sheet('Request to Join',`<div class="sb">${top}
+      <label for="r_note" style="font-size:14px;margin-top:18px">Add a note <span class="mute" style="font-weight:400">(optional)</span></label>
+      <p class="small mute">Introduce yourself or mention why you want to join.</p>
+      <textarea id="r_note" maxlength="100" placeholder="Hey! I'd love to join, happy to be on time and split costs."></textarea><div class="cc"><span id="r_cnt">0</span>/100</div>
+      ${S.me.kyc?'<div style="height:14px"></div>':`<div class="warnbox">${I('alert-triangle',16)}<span>You'll need to complete a quick identity verification before your request is sent. It only takes 2 minutes.</span></div>`}
+      <button class="btn" data-a="request" data-id="${a.id}">${I('send',16)} ${S.me.kyc?'Send Request':'Verify &amp; Send Request'}</button>
+      <div style="height:8px"></div><button class="btn ghost" data-a="close">Not now</button></div>`);
+    return sheet('Activity',`<div class="sb">${top}
+      <div class="panel" style="background:var(--bg);box-shadow:none;margin:14px 0 0;padding:14px 16px">
+        <div class="meta2" style="flex-direction:column;gap:6px;font-size:13px"><span>${I('clock',14)}${fmt(a.when)}</span><span>${I('users',14)}${a.members.length} going · ${spotTxt(a)} (capacity ${a.cap}, excluding host)</span><span>${I('user',14)}${a.aud==='everyone'?'Open to everyone':esc(a.aud.join(' / '))+' only'}</span><span>${I('briefcase',14)}${COST[a.cost]}</span></div></div>
+      ${rq?`<p style="margin-top:14px">Your request: ${statusChip(rq.status)}</p>${rq.note?`<p class="small mute">Your note: ${esc(rq.note)}</p>`:''}`:''}
+      ${can?`<div style="height:16px"></div><button class="btn" data-a="askreq" data-id="${a.id}">Request to join</button>`
+      :(!rq?`<p class="mute" style="margin-top:14px">${a.host==='me'?'This is your activity.':a.status!=='open'?'This activity is '+a.status+', no requests possible.':'No request available.'}</p>`:'')}
+      ${rq&&rq.status==='accepted'?`<div style="height:8px"></div><button class="btn sec" data-a="chat" data-id="${a.id}">${I('message-circle',16)} Open group chat</button>`:''}
+      </div>`);
+  }
+  if(m.type==='cancelconfirm'){
+    const a=actOf(m.id);if(!a)return '';
+    const n=a.members.length,p=S.reqs.filter(r=>r.act===a.id&&r.status==='pending').length;
+    return sheet('Cancel activity?',`<div class="sb">
+      <div class="warnbox" style="margin-top:0;background:var(--badbg);border-color:#FECACA;color:var(--bad)">${I('alert-triangle',16)}<span>You're about to cancel <b>"${esc(short(a.desc))}"</b> on ${whenStr(a.when)}. This can't be undone.</span></div>
+      <p class="small mute">${n?`${n} accepted ${n===1?'member':'members'} will be notified and the group chat will be closed.`:'No one has been accepted yet.'}${p?` ${p} pending ${p===1?'request':'requests'} will be dropped.`:''}</p>
+      <div style="height:12px"></div><button class="btn bad" data-a="docancel" data-id="${a.id}">Yes, cancel activity</button>
+      <div style="height:8px"></div><button class="btn ghost" data-a="hostview" data-id="${a.id}">Keep activity</button></div>`);
   }
   if(m.type==='host'){
     const a=actOf(m.id);if(!a)return '';
     const reqs=S.reqs.filter(r=>r.act===a.id),pend=reqs.filter(r=>r.status==='pending'),done=reqs.filter(r=>r.status!=='pending');
-    const person=r=>{const p=profileOf(r.user);return `<div class="panel"><strong>${esc(p.name)}</strong> <span class="mute small">${esc(p.gender)}, ${p.age}${p.job?' · '+esc(p.job):''}</span><p class="small mute" style="margin:4px 0">${esc(p.bio)}</p>${r.note?`<div class="dn">Note: ${esc(r.note)}</div>`:'<p class="small mute">No note attached</p>'}`;};
-    return sheet('Manage activity',`<div class="sb"><div class="panel"><strong>${CATS[a.cat].icon} ${esc(a.desc)}</strong><p class="small mute" style="margin:4px 0">🕒 ${fmt(a.when)} · 📍 ${esc(a.venue)}</p>${actChip(a.status)} <span class="chip">${a.members.length}/${a.cap} accepted</span></div>
-      ${a.members.length?`<button class="btn sec" data-a="chat" data-id="${a.id}">Open group chat</button>`:'<p class="small mute">Chat opens when you accept the first member.</p>'}
+    const person=r=>{const p=profileOf(r.user);return `<div class="panel" style="background:var(--bg);box-shadow:none"><div class="hn">${av(r.user)}<div><strong>${esc(p.name)}</strong> <span class="vf">✓</span><div class="mute small">${esc(p.gender)}, ${p.age}${p.job?' · '+esc(p.job):''}</div></div></div><p class="small mute" style="margin:8px 0 4px">${esc(p.bio)}</p>${r.note?`<div class="dn">Note: ${esc(r.note)}</div>`:'<p class="small mute">No note attached</p>'}`;};
+    return sheet('Manage activity',`<div class="sb"><div class="sum"><div class="thumb" style="background:${CATS[a.cat].g}">${I(CATS[a.cat].icon,26)}</div><div style="min-width:0"><div class="t">${esc(a.desc)}</div><div class="meta2" style="margin-bottom:6px"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)}</span></div>${actChip(a.status)} <span class="chip">${a.members.length}/${a.cap} accepted</span></div></div>
+      <div style="height:12px"></div>
+      ${a.members.length?`<button class="btn sec" data-a="chat" data-id="${a.id}">${I('message-circle',16)} Open group chat</button>`:'<p class="small mute">Chat opens when you accept the first member.</p>'}
       <h3>Pending requests (${pend.length})</h3>
-      ${pend.length?pend.map(r=>person(r)+`<div class="row"><button class="btn sm bad" data-a="rej" data-id="${r.id}">Reject</button><button class="btn sm ok" data-a="acc" data-id="${r.id}">Accept</button></div></div>`).join(''):'<p class="mute small">No pending requests. Use Demo tools to simulate some.</p>'}
-      ${done.length?`<h3>Decided</h3>`+done.map(r=>`<div class="panel row"><div>${esc(uname(r.user))}</div><div style="text-align:right">${statusChip(r.status)}</div></div>`).join(''):''}
-      <div style="height:10px"></div><button class="btn bad" data-a="cancelact" data-id="${a.id}">Cancel this activity</button></div>`,true);
+      ${pend.length?pend.map(r=>person(r)+`<div class="row" style="margin-top:10px"><button class="btn sm bad" data-a="rej" data-id="${r.id}">Decline</button><button class="btn sm ok" data-a="acc" data-id="${r.id}">Accept</button></div></div>`).join(''):'<p class="mute small">No pending requests. Use Demo tools to simulate some.</p>'}
+      ${done.length?`<h3>Decided</h3>`+done.map(r=>`<div class="panel row" style="padding:12px 16px"><div class="hn">${av(r.user,'sm')}${esc(uname(r.user))}</div><div style="text-align:right">${statusChip(r.status)}</div></div>`).join(''):''}
+      <div style="height:10px"></div><button class="btn bad" data-a="cancelact" data-id="${a.id}">Cancel this activity</button></div>`,'full wide');
   }
   if(m.type==='chat'){
     const a=actOf(m.id);if(!a)return '';
     const msgs=(S.chats[a.id]||[]).map(x=>x.from==='sys'?`<div class="msg sys">${esc(x.text)}</div>`:`<div class="msg ${x.from==='me'?'me':''}">${x.from==='me'?'':`<div class="who">${esc(uname(x.from))}</div>`}${esc(x.text)}</div>`).join('');
-    return `<div class="ov"><div class="sheet full"><div class="sh"><h2 style="font-size:15px">${CATS[a.cat].icon} ${esc(a.desc.slice(0,34))}</h2><button class="ib" data-a="close">✕</button></div>
-      <p class="small mute" style="padding:0 16px;margin:0">Members: ${[a.host,...a.members].map(uname).join(', ')} · full history visible to everyone</p>
-      <div class="msgs" id="msgs">${msgs}</div><div class="cin"><input id="c_in" placeholder="Message the group" autocomplete="off"><button class="btn sm" data-a="send" data-id="${a.id}">Send</button></div></div></div>`;
-  }
-  if(m.type==='bell'){
-    S.notes.forEach(n=>n.read=true);
-    return sheet('Notifications',`<div class="sb">${S.notes.length?S.notes.map(n=>`<div class="panel">${esc(n.text)}<div class="small mute">${fmt(n.at)}</div></div>`).join(''):'<p class="mute">Nothing yet.</p>'}</div>`);
+    return `<div class="ov"><div class="sheet full chat"><div class="sh"><h2 style="font-size:15px">${esc(a.desc.slice(0,34))}</h2><button class="ib" data-a="close" title="Close">${I('x',18)}</button></div>
+      <p class="small mute" style="padding:8px 18px;margin:0">Members: ${[a.host,...a.members].map(uname).join(', ')} · full history visible to everyone</p>
+      <div class="msgs" id="msgs">${msgs}</div><div class="cin"><input id="c_in" placeholder="Message the group" autocomplete="off"><button class="btn sm" data-a="send" data-id="${a.id}">${I('send',15)}</button></div></div></div>`;
   }
   if(m.type==='demo'){
     return sheet('Demo tools',`<div class="sb"><p class="small mute">Shortcuts so you can show the whole flow without waiting for other people. Virtual time now: <b>${fmt(now())}</b></p>
       <h3>Time</h3><div class="row"><button class="btn sm sec" data-a="adv" data-h="12">+12 hours</button><button class="btn sm sec" data-a="adv" data-h="24">+1 day</button><button class="btn sm sec" data-a="adv" data-h="72">+3 days</button></div>
-      <p class="small mute">Moves the clock forward. Unfilled activities become Past and their pending requests become "No action from poster".</p>
+      <p class="small mute" style="margin-top:8px">Moves the clock forward. Unfilled activities become Past and their pending requests become "No action from poster".</p>
       <h3>Other people</h3>
       <button class="btn sm sec" style="width:100%;margin-bottom:8px" data-a="simreq">Someone requests to join one of my activities</button>
       <button class="btn sm sec" style="width:100%;margin-bottom:8px" data-a="simacc">A host accepts my oldest pending request</button>
-      <button class="btn sm sec" style="width:100%;margin-bottom:8px" data-a="simrej">A host rejects my oldest pending request</button>
+      <button class="btn sm sec" style="width:100%;margin-bottom:8px" data-a="simrej">A host declines my oldest pending request</button>
       <button class="btn sm sec" style="width:100%;margin-bottom:8px" data-a="simcancel">A host cancels an activity I was accepted to</button>
       <button class="btn sm sec" style="width:100%;margin-bottom:8px" data-a="simreply">Chat members send a message (open chat first)</button>
-      <h3>Reset</h3><button class="btn sm bad" style="width:100%" data-a="reset">Reset whole demo</button></div>`,true);
+      <h3>Reset</h3><button class="btn sm bad" style="width:100%" data-a="reset">Reset whole demo</button></div>`,'full');
   }
   return '';
 }
@@ -427,29 +748,30 @@ function modalHtml(){
 function onboardHtml(){
   const d=ui.ob.d;let step=ui.ob.step,body='';
   if(S.me){step=S.me.face?4:3}
-  const pr='';
-  if(step===0)body=`<div class="logo">🎟️</div><h1 style="margin:6px 0">Tagalong</h1><p class="mute">Do things in your city with company. Post a plan you are already making, pick who joins. Not a dating app.</p>
+  if(step===0)body=`<div class="logo" style="font-size:22px;margin-bottom:14px"><span class="dots"><i></i><i></i></span>Tagalong</div><p class="mute">Do things in your city with company. Post a plan you are already making, pick who joins. Not a dating app.</p>
     <label>Phone number</label><input id="o_phone" type="tel" placeholder="+91 98765 43210" value="${esc(d.phone||'')}">
     <label>Email</label><input id="o_email" type="email" placeholder="you@example.com" value="${esc(d.email||'')}">
     <div style="height:16px"></div><button class="btn" data-a="ob0">Continue</button>`;
-  if(step===1)body=`<h2>Verify your phone and email</h2><p class="mute">Both are verified independently.</p>
+  if(step===1)body=`<h1 class="pt">Verify your phone and email</h1><p class="sub">Both are verified independently.</p>
     <label>OTP sent to ${esc(d.phone)}</label><input id="o_otp" inputmode="numeric" maxlength="4" placeholder="Any 4 digits (demo)">
     <div class="dn">Demo: any 4-digit code works.</div>
     <label>Email</label><div class="panel row"><div class="small">${esc(d.email)}</div><button class="btn sm sec" style="flex:0 0 auto" id="o_mailbtn" data-a="mail">${d.mail?'✓ Confirmed':'I clicked the link'}</button></div>
     <div style="height:10px"></div><button class="btn" data-a="ob1">Continue</button>`;
-  if(step===2)body=`<h2>Create your profile</h2>
+  if(step===2)body=`<div class="logo" style="margin-bottom:18px"><span class="dots"><i></i><i></i></span>Tagalong</div><h1 class="pt">Create your profile</h1><p class="sub">A few details so hosts know who is asking to join.</p>
     <label>Name</label><input id="o_name" value="${esc(d.name||'')}">
     <label>Date of birth</label><input id="o_dob" type="date" value="${esc(d.dob||'')}">
     <label>Gender identity (required)</label><select id="o_gender"><option value="">Select…</option>${GENDERS.map(g=>`<option ${g===d.gender?'selected':''}>${g}</option>`).join('')}</select>
-    <p class="small mute">Used only for the safety-oriented audience filter on posts.</p>
+    <p class="small mute" style="margin-top:6px">Used only for the safety-oriented audience filter on posts.</p>
     <label>City</label><input value="Demo City" disabled>
     <label>Neighborhood (launch areas)</label><select id="o_hood">${HOODS.map(g=>`<option ${g===d.hood?'selected':''}>${g}</option>`).join('')}</select>
-    <div style="height:16px"></div><button class="btn" data-a="ob2">Continue</button>`;
-  if(step===3)body=`<h2>Quick face check</h2><p class="mute">Confirms your account belongs to a real person. Passing unlocks browsing.</p><div class="scan">🙂</div><button class="btn" data-a="obface">Start face check</button>`;
-  if(step===4)body=`<h2>Tell us more (optional)</h2><p class="mute">You can skip this and add it later.</p>
-    <label>Profession</label><input id="o_job"><label>Bio</label><textarea id="o_bio"></textarea><label>Interests</label><input id="o_int"><label>Fun fact</label><input id="o_fun">
+    <label>What would you want to do with company?</label>${opts('o_int',INTERESTS,d.ints)}
+    <label>When are you usually free?</label>${opts('o_avail',TIMES,d.avail)}
+    <div style="height:18px"></div><button class="btn" data-a="ob2">Continue</button>`;
+  if(step===3)body=`<h1 class="pt">Quick face check</h1><p class="sub">Confirms your account belongs to a real person. Passing unlocks browsing.</p><div class="scan">${I('scan-face',56)}</div><button class="btn" data-a="obface">Start face check</button>`;
+  if(step===4)body=`<h1 class="pt">Tell us more (optional)</h1><p class="sub">You can skip this and add it later.</p>
+    <label>Profession</label><input id="o_job"><label>Bio</label><textarea id="o_bio"></textarea>
     <div style="height:16px"></div><button class="btn" data-a="obdone" data-save="1">Save and start browsing</button><div style="height:8px"></div><button class="btn sec" data-a="obdone">Skip for now</button>`;
-  return `<div class="ob">${pr}${body}</div>`;
+  return `<div class="ob">${body}</div>`;
 }
 
 /* ---------- main render ---------- */
@@ -457,11 +779,15 @@ function render(){
   const scr=document.getElementById('screen');
   if(!S.me||!S.me.face||!S.me.obDone){scr.innerHTML=onboardHtml()+modalHtml();afterRender();return}
   const unread=S.notes.filter(n=>!n.read).length;
-  const view={swipe:tabSwipe,discover:tabDiscover,acts:tabActs,reqs:tabReqs,profile:tabProfile}[ui.tab]();
-  const T=(k,ic,l)=>`<button class="${ui.tab===k?'on':''}" data-a="tab" data-t="${k}"><span>${ic}</span>${l}</button>`;
+  const view={swipe:tabSwipe,discover:tabDiscover,acts:tabActs,reqs:tabReqs,profile:tabProfile,notes:tabNotes}[ui.tab]();
   const pend=S.reqs.filter(r=>r.status==='pending'&&actOf(r.act)?.host==='me').length;
-  scr.innerHTML=`<header><h1>🎟️ Tagalong</h1><button class="ib" data-a="bell">🔔${unread?`<span class="badge">${unread}</span>`:''}</button>${window.parent!==window?'<button class="ib" data-a="fb" title="Leave feedback">💬</button>':''}<button class="ib" data-a="demo">⚙️</button></header>
-  <main>${view}</main><nav>${T('swipe','🔥','Swipe')}${T('discover','🧭','Discover')}${T('acts','📌','Activities'+(pend?` (${pend})`:''))}${T('reqs','💌','Requests')}${T('profile','👤','Profile')}</nav>${modalHtml()}`;
+  const TT=(k,l)=>`<button class="tt ${ui.tab===k?'on':''}" data-a="tab" data-t="${k}">${l}</button>`;
+  const T=(k,ic,l)=>`<button class="${ui.tab===k?'on':''}" data-a="tab" data-t="${k}">${I(ic,20)}${l}</button>`;
+  scr.innerHTML=`<header><div class="hb"><div class="logo"><span class="dots"><i></i><i></i></span>Tagalong</div>
+  <div class="tnav">${TT('swipe','Swipe')}${TT('discover','Discover')}<button class="btn sm" data-a="newpost">${I('plus',15)} Create Activity</button>${TT('acts','Activities'+(pend?` (${pend})`:''))}${TT('reqs','Requests')}${TT('profile','Profile')}</div>
+  <div class="hr"><button class="ib" data-a="bell" title="Notifications">${I('bell',19)}${unread?'<span class="dot"></span>':''}</button>${window.parent!==window?`<button class="ib" data-a="fb" title="Leave feedback">${I('message-circle',19)}</button>`:''}<button class="ib" data-a="demo" title="Demo tools">${I('settings-2',19)}</button><button class="ib" data-a="tab" data-t="profile" title="Profile">${av('me')}</button></div></div></header>
+  <main><div class="${ui.tab==='discover'?'wrap':'narrow'}">${view}</div></main>
+  <nav>${T('swipe','flame','Swipe')}${T('discover','compass','Discover')}${T('acts','calendar-check','Activities'+(pend?` (${pend})`:''))}${T('reqs','mail','Requests')}${T('profile','user','Profile')}</nav>${modalHtml()}`;
   afterRender();
 }
 function afterRender(){
@@ -479,10 +805,21 @@ const A={
   chat:d=>{ui.modal={type:'chat',id:d.id};render()},
   close:()=>{ui.modal=null;render()},
   closebg:(d,e)=>{if(e.target.classList.contains('ov')&&ui.modal?.type!=='verify'&&ui.modal?.type!=='chat'){ui.modal=null;render()}},
-  bell:()=>{ui.modal={type:'bell'};render();S.notes.forEach(n=>n.read=true);save()},
+  bell:()=>{ui.tab='notes';ui.modal=null;render()},
   demo:()=>{ui.modal={type:'demo'};render()},
   fb:()=>{try{window.parent.postMessage('tagalong-feedback','*')}catch(e){}},
   scan:()=>scan(),
+  fcat:d=>{ui.f.cat=d.k;render()},
+  ftod:d=>{ui.f.tod=d.k;render()},
+  nf:d=>{ui.nf=d.k;render()},
+  readall:()=>{S.notes.forEach(n=>n.read=true);save();render()},
+  clearall:()=>{S.notes=[];save();render()},
+  markread:d=>{const n=S.notes.find(x=>x.id===d.id);if(n)n.read=true;save();render()},
+  dismiss:d=>{S.notes=S.notes.filter(x=>x.id!==d.id);save();render()},
+  viewact:d=>{
+    const a=actOf(d.id);if(!a)return toast('That activity is no longer available');
+    ui.modal={type:a.host==='me'?'host':'detail',id:a.id};render();
+  },
   newpost:()=>gate(()=>{ui.modal={type:'post'};render()}),
   submitpost:()=>{
     const desc=val('f_desc'),venue=val('f_venue'),when=new Date(document.getElementById('f_when').value).getTime();
@@ -493,12 +830,20 @@ const A={
     S.acts.push({id:nextId('a'),host:'me',cat:val('f_cat'),desc,cap:+val('f_cap'),when,aud:all?'everyone':gs,venue,cost:val('f_cost'),hood:S.me.hood,members:[],status:'open'});
     save();ui.modal=null;ui.tab='acts';toast('Posted. Now visible to eligible people.');render();
   },
-  request:d=>gate(()=>{
-    if(sendReq(d.id,val('r_note'))){ui.modal=null;render()}
-  }),
+  request:d=>{
+    const note=val('r_note');
+    gate(()=>{
+      if(!sendReq(d.id,note))return;
+      ui.modal=null;
+      if(ui.tab==='swipe'&&!deck().length){ui.tab='discover';toast("Request sent. You've seen everything nearby, here's Discover.")}
+      render();
+    });
+  },
   acc:d=>{accept(d.id);render()},
   rej:d=>{reject(d.id);render()},
-  cancelact:d=>{cancelAct(d.id,'me');ui.modal=null;render()},
+  askreq:d=>{ui.modal={type:'confirm',id:d.id};render()},
+  cancelact:d=>{ui.modal={type:'cancelconfirm',id:d.id};render()},
+  docancel:d=>{cancelAct(d.id,'me');ui.modal=null;render()},
   send:d=>{
     const t=val('c_in');if(!t)return;
     addMsg(d.id,'me',t);save();render();
@@ -506,7 +851,7 @@ const A={
     setTimeout(()=>{if(ui.modal?.type==='chat'&&ui.modal.id===d.id)simReply(d.id)},1400);
   },
   saveprofile:()=>{
-    Object.assign(S.me,{name:val('p_name')||S.me.name,dob:val('p_dob')||S.me.dob,gender:val('p_gender'),hood:val('p_hood'),job:val('p_job'),bio:document.getElementById('p_bio').value});
+    Object.assign(S.me,{name:val('p_name')||S.me.name,dob:val('p_dob')||S.me.dob,gender:val('p_gender'),hood:val('p_hood'),job:val('p_job'),bio:document.getElementById('p_bio').value,ints:many('p_int'),avail:many('p_avail')});
     save();toast('Profile saved');render();
   },
   adv:d=>{S.offset+=+d.h*3600e3;tick();save();toast('Moved forward '+d.h+' hours');render()},
@@ -524,7 +869,7 @@ const A={
   togfail:()=>{S.forceFail=document.getElementById('d_fail').checked;save()},
   approve:()=>{['face','kyc'].forEach(k=>{if(S.me[k+'Flag']){S.me[k+'Flag']=false;S.me[k+'Fails']=0;S.me[k]=true}});save();toast('Reviewer approved flagged verifications');render()},
   resetkyc:()=>{S.me.kyc=false;S.me.kycFails=0;S.me.kycFlag=false;save();toast('ID verification reset');render()},
-  reset:()=>{try{localStorage.removeItem(KEY)}catch(e){}S=seed();ui={tab:'swipe',seg:'act',ob:{step:2,d:{}},modal:null};initMe();render()},
+  reset:()=>{try{localStorage.removeItem(KEY)}catch(e){}S=seed();ui=freshUi();initMe();render()},
   /* onboarding */
   ob0:()=>{
     const d=ui.ob.d;d.phone=val('o_phone');d.email=val('o_email');
@@ -538,10 +883,10 @@ const A={
     ui.ob.step=2;render();
   },
   ob2:()=>{
-    const d=ui.ob.d;d.name=val('o_name');d.dob=val('o_dob');d.gender=val('o_gender');d.hood=val('o_hood');
+    const d=ui.ob.d;d.name=val('o_name');d.dob=val('o_dob');d.gender=val('o_gender');d.hood=val('o_hood');d.ints=many('o_int');d.avail=many('o_avail');
     if(!d.name||!d.dob||!d.gender)return toast('Name, date of birth and gender identity are required');
     if(ageOf(d.dob)<18)return toast('You must be 18 or over (demo rule)');
-    S.me={name:d.name,dob:d.dob,gender:d.gender,hood:d.hood,face:true,kyc:true,obDone:true};
+    S.me={name:d.name,dob:d.dob,gender:d.gender,hood:d.hood,ints:d.ints,avail:d.avail,face:true,kyc:true,obDone:true};
     save();render();
   },
   obface:()=>openVerify('face',()=>render()),
@@ -572,13 +917,21 @@ document.addEventListener('click',e=>{
   if(el.dataset.a==='closebg'){A.closebg(el.dataset,e);return}
   const fn=A[el.dataset.a];if(fn){e.stopPropagation();fn(el.dataset,e)}
 });
-document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='c_in'){const b=document.querySelector('[data-a=send]');if(b)b.click()}});
+document.addEventListener('input',e=>{if(e.target.id==='r_note'){const c=document.getElementById('r_cnt');if(c)c.textContent=e.target.value.length}});
+document.addEventListener('change',e=>{if(e.target.id==='d_date'){ui.f.date=e.target.value;render()}});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.id==='c_in'){const b=document.querySelector('[data-a=send]');if(b)b.click();return}
+  if(e.key==='Escape'&&ui.modal&&ui.modal.type!=='verify'){ui.modal=null;render();return}
+  if(ui.modal||ui.tab!=='swipe'||!S.me?.obDone||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
+  if(e.key==='ArrowLeft')swipe('left');
+  else if(e.key==='ArrowRight')swipe('right');
+});
 
 function initMe(){
   if(S.me)return;
   try{
     const p=JSON.parse(localStorage.getItem('tagalong_participant'));
-    if(p&&p.name&&p.gender&&p.hood)S.me={name:p.name,dob:p.dob||'1995-01-01',gender:p.gender,hood:p.hood,face:true,kyc:true,obDone:true};
+    if(p&&p.name&&p.gender&&p.hood)S.me={name:p.name,dob:p.dob||'1995-01-01',gender:p.gender,hood:p.hood,ints:p.ints||[],avail:p.avail||[],face:true,kyc:true,obDone:true};
   }catch(e){}
   if(S.me)save();
 }
