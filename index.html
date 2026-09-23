@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#F7F6F2;--card:#fff;--ink:#1A1A1A;--mute:#6B6B6B;--line:#ECEAE4;--field:#F1F0EA;--acc:#F97316;--acch:#EA580C;--acc2:#FFF1E6;--accink:#C2410C;--ok:#15803D;--okbg:#DCFCE7;--bad:#B91C1C;--badbg:#FEE2E2;--warnbg:#FFFBEB;--warn:#92400E;--shadow:0 2px 14px rgba(26,26,26,.06)}
+:root{--bg:#F5F0E6;--card:#FFFDF8;--ink:#1A1A1A;--mute:#6B6B6B;--line:#E7DFCF;--field:#EFE8DA;--acc:#3F7D4E;--acch:#336842;--acc2:#E7F0E1;--accink:#2E6139;--ok:#15803D;--okbg:#DCFCE7;--bad:#B91C1C;--badbg:#FEE2E2;--warnbg:#FFFBEB;--warn:#92400E;--shadow:0 2px 14px rgba(26,26,26,.06)}
 *{box-sizing:border-box}
 body{margin:0;font:15.5px/1.5 "Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font:inherit}
@@ -28,7 +28,7 @@ p{margin:0 0 12px}
 .panel{background:var(--card);border-radius:22px;padding:24px;margin-bottom:16px;box-shadow:var(--shadow)}
 .btn{border:0;background:var(--acc);color:#fff;font-weight:600;padding:13px 22px;border-radius:99px;cursor:pointer;transition:background .15s}
 .btn:hover{background:var(--acch)}
-.btn.sec{background:var(--acc2);color:var(--accink)}.btn.sec:hover{background:#FFE4CC}
+.btn.sec{background:var(--acc2);color:var(--accink)}.btn.sec:hover{background:#D8E8CF}
 .btn:disabled{opacity:.55;cursor:wait}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:560px){.grid{grid-template-columns:1fr}}
@@ -39,7 +39,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--acc)}
 textarea{min-height:96px;resize:vertical}
 .opts{display:flex;flex-wrap:wrap;gap:8px}
 .opt{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:99px;padding:9px 16px;font-weight:500;margin:0;cursor:pointer;background:#fff;font-size:14.5px;transition:.15s}
-.opt:hover{border-color:#D9D5CC}
+.opt:hover{border-color:#D6CCB8}
 .opt:has(input:checked){border-color:var(--acc);background:var(--acc2);color:var(--accink)}
 .opt input{margin:0}
 .consent{background:var(--warnbg);border:1px solid #FDE68A;border-radius:16px;padding:16px;margin-top:20px}
