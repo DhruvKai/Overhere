@@ -77,14 +77,14 @@ window.APP_CONFIG = {
 ## Part C. Publish the site (GitHub Pages)
 
 ### C1. Make sure the files are on GitHub
-The files are at **https://github.com/DhruvKai/Tagalong**. You should see `index.html`, `demo.html`, `config.js`, `schema.sql` and this guide.
+The files are at **https://github.com/DhruvKai/Overhere**. You should see `index.html`, `demo.html`, `config.js`, `schema.sql` and this guide.
 
 ### C2. Turn on the website
 1. On the repository page click **Settings** (top tab).
 2. In the left menu click **Pages**.
 3. Under **Build and deployment**, set **Source** to **Deploy from a branch**.
 4. Under **Branch** choose **main** and folder **/ (root)**, then click **Save**.
-5. Wait 1 to 2 minutes and refresh the page. A box appears saying **Your site is live at** with a link, likely `https://dhruvkai.github.io/Tagalong/`.
+5. Wait 1 to 2 minutes and refresh the page. A box appears saying **Your site is live at** with a link, likely `https://dhruvkai.github.io/Overhere/`.
 
 > GitHub Pages is free for **public** repositories. If your repository is private, either make it public (Settings, scroll to the bottom, **Change visibility**) or use the alternative below. The repository contains no passwords. The public key is safe to expose.
 
