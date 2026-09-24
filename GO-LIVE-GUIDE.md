@@ -1,6 +1,6 @@
 # Go-live guide (no technical knowledge needed)
 
-**Goal:** get the Tagalong beta site online so people can sign up, try the sample app, and leave feedback, with their answers saved where only you can see them.
+**Goal:** get the Overhere beta site online so people can sign up, try the sample app, and leave feedback, with their answers saved where only you can see them.
 
 **Time:** about 30 minutes. **Cost:** free.
 
@@ -24,9 +24,9 @@ You will do three things: (A) set up Supabase, (B) connect it to the site, (C) p
 2. Sign up with GitHub or with your email. Confirm your email if asked.
 
 ### A2. Create a project
-1. Click **New project**. If asked to create an organization first, give it any name (for example "Tagalong") and choose the **Free** plan.
+1. Click **New project**. If asked to create an organization first, give it any name (for example "Overhere") and choose the **Free** plan.
 2. Fill in:
-   - **Name:** `tagalong-beta`
+   - **Name:** `overhere-beta`
    - **Database password:** click **Generate a password**, then copy it somewhere safe (a notes app). You will not need it for the site, but keep it.
    - **Region:** pick the one closest to your testers.
 3. Click **Create new project**. Wait 1 to 2 minutes until the dashboard appears.

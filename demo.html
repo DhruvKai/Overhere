@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Tagalong - sample app</title>
+<title>Overhere - sample app</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -31,8 +31,10 @@ header{background:var(--card);border-bottom:1px solid var(--line)}
 .hr{display:flex;align-items:center;gap:4px}
 .ib{border:0;background:none;width:38px;height:38px;border-radius:50%;cursor:pointer;position:relative;color:var(--ink);display:inline-flex;align-items:center;justify-content:center;padding:0}
 .ib:hover{background:var(--grey)}
+.ib.on .av{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--acc)}
 .dot{position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--acc);border:2px solid #fff}
-.av{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;color:#fff;font-weight:700;font-size:13px;flex:0 0 auto}
+.av{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;color:#fff;font-weight:700;font-size:13px;flex:0 0 auto;overflow:hidden}
+.av img{width:100%;height:100%;object-fit:cover;display:block}
 .av.sm{width:24px;height:24px;font-size:11px}
 .av.lg{width:72px;height:72px;border-radius:20px;font-size:28px;box-shadow:0 6px 16px rgba(26,26,26,.12)}
 main{flex:1;overflow-y:auto;padding:18px 16px;min-height:0}
@@ -134,6 +136,11 @@ input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--acc)}
 .filters{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:flex-end;margin:16px 0}
 .filters .f{flex:1 1 260px}
 .filters label{margin:0 0 6px;font-weight:500;font-size:12.5px}
+.filters .fl{display:flex;align-items:center;justify-content:space-between;min-height:26px}
+.filters .fl label{margin:0}
+.filters .fl .lnk{padding:4px 2px}
+.fshow{margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.fshow .lnk{padding:2px 4px}
 
 /* lists */
 .li{display:flex;gap:12px;align-items:center}
@@ -159,22 +166,25 @@ input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--acc)}
 .warnbox .i{color:#F59E0B;margin-top:1px}
 
 /* notifications */
-.nh{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px}
-.nh .ic{color:var(--acc);margin-top:4px}
+.nh{display:flex;align-items:center;gap:12px;margin-bottom:6px}
 .lnk{white-space:nowrap;border:0;background:none;color:var(--acc);font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:6px}
 .lnk.m{color:var(--mute);font-weight:500}
-.nf{display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
-.nc{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);border:1px solid var(--line);margin-bottom:12px;position:relative}
-.nc .top{display:flex;gap:12px;padding:16px 18px}
+.nsh{font-size:13px;font-weight:600;color:var(--mute);margin:18px 2px 8px;display:flex;align-items:center;gap:6px}
+.nsh b{background:var(--acc);color:#fff;border-radius:99px;padding:0 7px;font-size:11px;line-height:18px}
+.nnone{margin:0 2px}
+.nl{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.nr{display:flex;align-items:flex-start;gap:12px;padding:13px 8px 13px 16px;cursor:pointer;transition:background .15s}
+.nr+.nr{border-top:1px solid var(--line)}
+.nr:hover{background:#FAF6EE}
+.nr.new{background:#F4F8F0}
+.nr .nm{flex:1;min-width:0}
+.nr .udot{width:8px;height:8px;border-radius:50%;background:var(--acc);flex:0 0 auto;margin-top:16px}
+.nr .nd{width:30px;height:30px;color:var(--mute);margin-top:3px}
+.nr .nd:hover{color:var(--bad)}
 .nic{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
-.nt{font-weight:600;font-size:14px;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-.nx{font-size:13px;color:#3F3F3F;margin:3px 0 5px}
+.nt{font-weight:600;font-size:14px}
+.nx{font-size:13px;color:#3F3F3F;margin:2px 0 3px}
 .tm{font-size:11.5px;color:var(--mute);display:flex;align-items:center;gap:5px}
-.unread{position:absolute;top:18px;right:18px;width:8px;height:8px;border-radius:50%;background:var(--acc)}
-.nb{display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-top:1px solid var(--line);padding:10px 18px}
-.pb{white-space:nowrap;border:0;border-radius:99px;padding:6px 12px;font-size:12px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:5px;background:var(--grey);color:var(--mute)}
-.pb.o{background:var(--acc2);color:var(--accink)}
-.pb.d{background:none;margin-left:auto}.pb.d:hover{color:var(--bad)}
 
 /* profile */
 .ph{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px}
@@ -195,6 +205,18 @@ input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--acc)}
 @media(max-width:420px){.vg{grid-template-columns:1fr}}
 
 /* chat, misc */
+/* profile photo */
+.phw{position:relative;flex:0 0 auto}
+.phw .pe{position:absolute;right:-6px;bottom:-6px;width:30px;height:30px;border-radius:50%;border:2px solid var(--card);background:var(--acc);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.phw .pe:hover{background:var(--acch)}
+.crop{position:relative;width:min(100%,300px);aspect-ratio:1;margin:4px auto 10px;border-radius:18px;overflow:hidden;background:#1A1A1A;touch-action:none;user-select:none;cursor:grab;outline:none}
+.crop:active{cursor:grabbing}
+.crop:focus-visible{box-shadow:0 0 0 3px var(--acc)}
+.crop canvas{width:100%;height:100%;display:block}
+.crop::after{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid rgba(255,255,255,.9);box-shadow:0 0 0 999px rgba(20,16,10,.55);pointer-events:none}
+.cz{display:flex;align-items:center;gap:10px;color:var(--mute);margin:14px 0 16px}
+.cz input{flex:1;padding:0;background:none;accent-color:var(--acc)}
+
 .msgs{flex:1;overflow-y:auto;padding:12px 18px;background:var(--bg)}
 .msg{max-width:80%;margin-bottom:8px;padding:9px 13px;border-radius:18px 18px 18px 6px;background:#fff;box-shadow:var(--shadow)}
 .msg.me{margin-left:auto;background:var(--acc);color:#fff;border-radius:18px 18px 6px 18px}
@@ -258,12 +280,16 @@ const IC={
   filter:'<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>',
   eye:'<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
   trash:'<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
-  search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>'
+  search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  camera:'<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+  'rotate-cw':'<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
+  'zoom-in':'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><path d="M11 8v6"/><path d="M8 11h6"/>',
+  'zoom-out':'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><path d="M8 11h6"/>'
 };
 const I=(n,s=16)=>`<svg class="i" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||''}</svg>`;
 
 /* ---------- constants ---------- */
-const KEY='tagalong_demo_v2';
+const KEY='overhere_demo_v2';
 const HOODS=['Central Market','Lakeside','Old Quarter'];
 const GENDERS=['Woman','Man','Non-binary'];
 const INTERESTS=['Movies','Cafe / Food','Concerts'];
@@ -295,8 +321,10 @@ const REPLIES=['Sounds good!','See you there','Running 5 min late, save me a sea
 const NK={req:{ic:'user-check',bg:'#E7F0E1',fg:'#336842'},update:{ic:'layers',bg:'#DBEAFE',fg:'#1D4ED8'},remind:{ic:'calendar',bg:'#FEF3C7',fg:'#A16207'}};
 
 /* ---------- state ---------- */
+/* One-time move of browser data saved under the app's old name (Tagalong). */
+try{[['tagalong_demo_v2',KEY],['tagalong_participant','overhere_participant']].forEach(([o,n])=>{const v=localStorage.getItem(o);if(v===null)return;if(localStorage.getItem(n)===null)localStorage.setItem(n,v);localStorage.removeItem(o)})}catch(e){}
 let S=load()||seed();
-const freshUi=()=>({tab:'swipe',ob:{step:2,d:{}},modal:null,f:{cat:'all',date:'',tod:'any'},nf:'all'});
+const freshUi=()=>({tab:'swipe',ob:{step:2,d:{}},modal:null,f:{cat:'all',date:'',tod:'any'}});
 let ui=freshUi();
 
 function seed(){
@@ -373,7 +401,7 @@ function seed(){
   return {offset:0,me:null,acts,reqs,dismissed:[],chats,notes,forceFail:false,seq:100};
 }
 function load(){try{const v=localStorage.getItem(KEY);return v?JSON.parse(v):null}catch(e){return null}}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));return true}catch(e){return false}}
 
 /* ---------- helpers ---------- */
 const now=()=>Date.now()+S.offset;
@@ -407,8 +435,10 @@ function profileOf(id){
 }
 function av(id,cls=''){
   const n=id==='me'?(S.me?.name||'?'):(USERS[id]?.name||'?'),hues=['#3F7D4E','#8B5CF6','#10B981','#EC4899','#0EA5E9','#EAB308'];
+  const me=id==='me'?' data-me':'';
+  if(me&&PHOTO_RE.test(S.me?.photo||''))return `<span class="av ${cls}"${me}><img src="${S.me.photo}" alt="${esc(n)}"></span>`;
   let h=0;for(const c of n)h+=c.charCodeAt(0);
-  return `<span class="av ${cls}" style="background:${hues[h%hues.length]}">${esc(n[0].toUpperCase())}</span>`;
+  return `<span class="av ${cls}"${me} style="background:${hues[h%hues.length]}">${esc(n[0].toUpperCase())}</span>`;
 }
 const catPill=(k,tint)=>{const c=CATS[k];return `<span class="cat" style="color:${c.fg}${tint?';background:'+c.bg:''}">${I(c.icon,12)}${c.label}</span>`};
 const opts=(name,list,sel)=>`<div class="opts">${list.map(v=>`<label class="opt"><input type="checkbox" name="${name}" value="${esc(v)}" ${sel&&sel.includes(v)?'checked':''}>${esc(v)}</label>`).join('')}</div>`;
@@ -583,12 +613,13 @@ function tabDiscover(){
   const list=all.filter(a=>(f.cat==='all'||a.cat===f.cat)&&(!f.date||dayKey(a.when)===f.date)&&(f.tod==='any'||tod(a.when)===f.tod));
   const C=(k,l)=>`<button class="fc ${f.cat===k?'on':''}" data-a="fcat" data-k="${k}">${l}</button>`;
   const T=(k,l)=>`<button class="fc ${f.tod===k?'on':''}" data-a="ftod" data-k="${k}">${l}</button>`;
+  const busy=f.cat!=='all'||!!f.date||f.tod!=='any';
   return `<div class="hd"><div><h1 class="pt">Plan ahead</h1><p class="sub">Activities more than 36 hours away · ${all.length} upcoming in ${esc(S.me.hood)}</p></div><button class="btn sm mobonly" data-a="newpost">${I('plus',15)} Post</button></div>
   <div class="fchips">${C('all','All')}${Object.entries(CATS).map(([k,c])=>C(k,c.label)).join('')}</div>
-  <div class="filters"><div class="f"><label for="d_date">Date</label><input type="date" id="d_date" value="${esc(f.date)}"></div>
+  <div class="filters"><div class="f"><div class="fl"><label for="d_date">Date</label>${f.date?`<button class="lnk" data-a="fdate" title="Show all dates">${I('x',13)} Clear</button>`:''}</div><input type="date" id="d_date" value="${esc(f.date)}"></div>
   <div><label>Time of day</label><div class="fchips">${T('any',I('clock',13)+' Any time')}${T('morning','Morning')}${T('afternoon','Afternoon')}${T('evening','Evening')}${T('night','Night')}</div></div></div>
-  <p class="small mute" style="margin:0 0 12px">Showing <b>${list.length}</b> ${list.length===1?'activity':'activities'}</p>
-  ${list.length?`<div class="grid">${list.map(acCard).join('')}</div>`:empty('calendar',all.length?'No matches':'No plans yet',all.length?'Try a different filter.':'Be the first to post one in your neighborhood.')}`;
+  <p class="small mute fshow">Showing <b>${list.length}</b> ${list.length===1?'activity':'activities'}${busy?`<button class="lnk" data-a="freset">Reset filters</button>`:''}</p>
+  ${list.length?`<div class="grid">${list.map(acCard).join('')}</div>`:empty('calendar',all.length?'No matches':'No plans yet',all.length?'Try a different filter.':'Be the first to post one in your neighborhood.',busy&&all.length?'<button class="btn sec" data-a="freset">Reset filters</button>':'')}`;
 }
 function tabActs(){
   const mine=S.acts.filter(a=>a.host==='me').sort((a,b)=>a.when-b.when);
@@ -606,28 +637,29 @@ function tabReqs(){
       r.status==='accepted'?`<button class="btn sm sec" style="flex:0 0 auto" data-a="chat" data-id="${a.id}">${I('message-circle',14)} Chat</button>`:'');
   }).join(''):empty('mail','No requests yet','Swipe right on a plan or request one from Discover.'));
 }
+/* One compact row per notification: tap opens it (and marks it read), x dismisses. */
 function noteHtml(n){
-  const k=NK[n.kind]||NK.update,has=n.act&&actOf(n.act);
-  return `<div class="nc">${n.read?'':'<span class="unread"></span>'}<div class="top"><div class="nic" style="background:${k.bg};color:${k.fg}">${I(k.ic,17)}</div>
-  <div style="flex:1;min-width:0;padding-right:14px"><div class="nt">${esc(n.title||'Update')}${n.tag?`<span class="chip ${n.tone||''}">${esc(n.tag)}</span>`:''}</div>
-  <div class="nx">${esc(n.text)}</div><div class="tm">${I('clock',12)}${ago(n.at)}</div></div></div>
-  <div class="nb">${has?`<button class="pb o" data-a="viewact" data-id="${n.act}">${I('eye',13)} View Activity ${I('chevron-right',12)}</button>`:''}${n.read?'':`<button class="pb" data-a="markread" data-id="${n.id}">${I('circle-check',13)} Mark read</button>`}<button class="pb d" data-a="dismiss" data-id="${n.id}">${I('trash',13)} Dismiss</button></div></div>`;
+  const k=NK[n.kind]||NK.update;
+  return `<div class="nr ${n.read?'':'new'}" data-a="opennote" data-id="${n.id}" role="button" tabindex="0"><div class="nic" style="background:${k.bg};color:${k.fg}">${I(k.ic,17)}</div>
+  <div class="nm"><div class="nt">${esc(n.title||'Update')}</div><div class="nx">${esc(n.text)}</div><div class="tm">${ago(n.at)}</div></div>
+  ${n.read?'':'<span class="udot" aria-label="Unread"></span>'}<button class="ib nd" data-a="dismiss" data-id="${n.id}" title="Dismiss" aria-label="Dismiss">${I('x',15)}</button></div>`;
 }
 function tabNotes(){
-  const N=S.notes,k=n=>n.kind||'update',cnt=x=>N.filter(n=>k(n)===x).length,unread=N.filter(n=>!n.read).length;
-  const list=ui.nf==='all'?N:N.filter(n=>k(n)===ui.nf);
-  const F=(x,l,c)=>`<button class="fc ${ui.nf===x?'on':''}" data-a="nf" data-k="${x}">${l} <b>${c}</b></button>`;
-  return `<div class="nh"><span class="ic">${I('bell',22)}</span><div style="flex:1"><h1 class="pt" style="font-size:22px">Notifications</h1><p class="sub" style="margin:0">${unread} unread</p></div>
-  ${N.length?`<button class="lnk" data-a="readall">Mark all read</button><button class="lnk m" data-a="clearall">${I('bell-off',14)} Clear all</button>`:''}</div>
-  <div class="nf"><span class="mute">${I('filter',16)}</span>${F('all','All',N.length)}${F('req','Requests',cnt('req'))}${F('update','Updates',cnt('update'))}${F('remind','Reminders',cnt('remind'))}</div>
-  ${list.length?list.map(noteHtml).join(''):empty('bell','All caught up','New requests, updates and reminders will show up here.')}`;
+  const N=S.notes,unread=N.filter(n=>!n.read).length;
+  const sec=(title,list,none)=>`<h3 class="nsh">${title}${list.some(n=>!n.read)?` <b>${list.filter(n=>!n.read).length}</b>`:''}</h3>
+  ${list.length?`<div class="nl">${list.map(noteHtml).join('')}</div>`:`<p class="small mute nnone">${none}</p>`}`;
+  return `<div class="nh"><h1 class="pt" style="font-size:22px;flex:1;margin:0">Notifications</h1>${unread?`<button class="lnk" data-a="readall">Mark all read</button>`:''}</div>
+  ${sec('Notifications',N.filter(n=>n.kind!=='req'),'Updates and reminders about your activities will show up here.')}
+  ${sec('Requests',N.filter(n=>n.kind==='req'),'Join requests, and replies to yours, will show up here.')}`;
 }
 function tabProfile(){
   const m=S.me;
   const V=[['mail','Email Verified',true],['scan-face','Face Verified',!!m.face],['id-card','Identity Verified',!!m.kyc],['user','Profile Complete',!!(m.job&&m.bio&&(m.ints||[]).length&&(m.avail||[]).length)]];
   const done=V.filter(v=>v[2]).length;
   const soft=(arr,none)=>arr&&arr.length?`<div class="soft">${arr.map(x=>`<span>${esc(x)}</span>`).join('')}</div>`:`<p class="small mute">${none}</p>`;
-  return `<div class="panel"><div class="pt2">${av('me','lg')}<div><div class="pn">${esc(m.name)} ${m.kyc?`<span class="vf">${I('badge-check',14)} Verified</span>`:''}</div><div class="small mute">${esc(m.hood)}, Demo City</div></div></div>
+  return `<div class="panel"><div class="pt2"><div class="phw">${av('me','lg')}<button class="pe" data-a="photo" title="Change profile photo" aria-label="Change profile photo">${I('camera',14)}</button></div><div><div class="pn">${esc(m.name)} ${m.kyc?`<span class="vf">${I('badge-check',14)} Verified</span>`:''}</div><div class="small mute">${esc(m.hood)}, Demo City</div>
+  <button class="lnk m" id="p_rmphoto" data-a="rmphoto" style="padding:6px 0" ${m.photo?'':'hidden'}>${I('trash',13)} Remove photo</button></div></div>
+  <input type="file" id="p_photo" accept="image/jpeg,image/png,image/webp,image/*" hidden>
   <div class="facts"><span>${ageOf(m.dob)} yrs</span><span>${esc(m.gender)}</span>${m.job?`<span>${I('briefcase',14)}${esc(m.job)}</span>`:''}<span>${I('map-pin',14)}${esc(m.hood)}</span></div>
   <p>${m.bio?esc(m.bio):'<span class="mute">Add a short bio so hosts know who you are.</span>'}</p></div>
   <div class="panel"><div class="ph">${I('star',15)} Interests</div>${soft(m.ints,'Pick what you would like to do with company below.')}</div>
@@ -748,7 +780,7 @@ function modalHtml(){
 function onboardHtml(){
   const d=ui.ob.d;let step=ui.ob.step,body='';
   if(S.me){step=S.me.face?4:3}
-  if(step===0)body=`<div class="logo" style="font-size:22px;margin-bottom:14px"><span class="dots"><i></i><i></i></span>Tagalong</div><p class="mute">Do things in your city with company. Post a plan you are already making, pick who joins. Not a dating app.</p>
+  if(step===0)body=`<div class="logo" style="font-size:22px;margin-bottom:14px"><span class="dots"><i></i><i></i></span>Overhere</div><p class="mute">Do things in your city with company. Post a plan you are already making, pick who joins. Not a dating app.</p>
     <label>Phone number</label><input id="o_phone" type="tel" placeholder="+91 98765 43210" value="${esc(d.phone||'')}">
     <label>Email</label><input id="o_email" type="email" placeholder="you@example.com" value="${esc(d.email||'')}">
     <div style="height:16px"></div><button class="btn" data-a="ob0">Continue</button>`;
@@ -757,7 +789,7 @@ function onboardHtml(){
     <div class="dn">Demo: any 4-digit code works.</div>
     <label>Email</label><div class="panel row"><div class="small">${esc(d.email)}</div><button class="btn sm sec" style="flex:0 0 auto" id="o_mailbtn" data-a="mail">${d.mail?'✓ Confirmed':'I clicked the link'}</button></div>
     <div style="height:10px"></div><button class="btn" data-a="ob1">Continue</button>`;
-  if(step===2)body=`<div class="logo" style="margin-bottom:18px"><span class="dots"><i></i><i></i></span>Tagalong</div><h1 class="pt">Create your profile</h1><p class="sub">A few details so hosts know who is asking to join.</p>
+  if(step===2)body=`<div class="logo" style="margin-bottom:18px"><span class="dots"><i></i><i></i></span>Overhere</div><h1 class="pt">Create your profile</h1><p class="sub">A few details so hosts know who is asking to join.</p>
     <label>Name</label><input id="o_name" value="${esc(d.name||'')}">
     <label>Date of birth</label><input id="o_dob" type="date" value="${esc(d.dob||'')}">
     <label>Gender identity (required)</label><select id="o_gender"><option value="">Select…</option>${GENDERS.map(g=>`<option ${g===d.gender?'selected':''}>${g}</option>`).join('')}</select>
@@ -774,6 +806,123 @@ function onboardHtml(){
   return `<div class="ob">${body}</div>`;
 }
 
+/* ---------- profile photo: pick -> crop -> resize + compress -> stored on this device only ---------- */
+const PHOTO_OUT=400,PHOTO_MAX_BYTES=60*1024,PHOTO_MAX_FILE=20*1024*1024,PHOTO_MIN_SIDE=200,PHOTO_MAX_ZOOM=4,PHOTO_WORK=3000;
+const PHOTO_RE=/^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/;
+let crop=null,cropRaf=0;
+
+async function decodeImage(file){
+  // createImageBitmap applies the EXIF orientation, so phone photos come out upright
+  if(window.createImageBitmap){try{return await createImageBitmap(file,{imageOrientation:'from-image'})}catch(e){}}
+  return new Promise((ok,no)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{URL.revokeObjectURL(u);ok(im)};im.onerror=()=>{URL.revokeObjectURL(u);no(new Error('decode'))};im.src=u});
+}
+/* Copy src to a canvas no longer than max px on its long edge, optionally turned a quarter clockwise. */
+function toCanvas(src,max,quarter=false){
+  const w=src.naturalWidth||src.width,h=src.naturalHeight||src.height,k=Math.min(1,max/Math.max(w,h));
+  const cw=Math.round(w*k),ch=Math.round(h*k),c=document.createElement('canvas'),x=c.getContext('2d');
+  c.width=quarter?ch:cw;c.height=quarter?cw:ch;
+  if(quarter){x.translate(ch,0);x.rotate(Math.PI/2)}
+  x.imageSmoothingQuality='high';x.drawImage(src,0,0,cw,ch);
+  return c;
+}
+/* Keep zoom in range and the image always covering the square. */
+function clampCrop(){
+  const c=crop,W=c.img.width,H=c.img.height;
+  c.z=Math.min(PHOTO_MAX_ZOOM,Math.max(1,c.z));
+  const half=Math.min(W,H)/(2*c.z);
+  c.cx=Math.min(W-half,Math.max(half,c.cx));c.cy=Math.min(H-half,Math.max(half,c.cy));
+}
+function drawCrop(ctx,D){
+  const {img,z,cx,cy}=crop,s=D/Math.min(img.width,img.height)*z;
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,D,D); // flatten transparent PNGs
+  ctx.imageSmoothingQuality='high';
+  ctx.drawImage(img,D/2-cx*s,D/2-cy*s,img.width*s,img.height*s);
+}
+function paintCrop(){
+  cancelAnimationFrame(cropRaf);
+  cropRaf=requestAnimationFrame(()=>{
+    const cv=document.getElementById('cr_cv');if(!cv||!crop)return;
+    const D=Math.round(cv.clientWidth*(window.devicePixelRatio||1));
+    if(cv.width!==D)cv.width=cv.height=D;
+    clampCrop();drawCrop(cv.getContext('2d'),D);
+    document.getElementById('cr_z').value=crop.z;
+  });
+}
+async function compressPhoto(canvas){
+  const enc=(t,q)=>new Promise(r=>canvas.toBlob(r,t,q));
+  let type='image/webp',q=.85,b=await enc(type,q);
+  if(!b||b.type!==type){type='image/jpeg';b=await enc(type,q)} // older Safari cannot encode WebP
+  while(b.size>PHOTO_MAX_BYTES&&q>.5){q-=.1;b=await enc(type,q)}
+  return b;
+}
+async function openCropper(file){
+  if(!file)return;
+  if(file.type&&!file.type.startsWith('image/'))return toast('Pick an image file (JPG, PNG or WebP)');
+  if(file.size>PHOTO_MAX_FILE)return toast('That photo is over 20 MB. Pick a smaller one.');
+  let src;
+  try{src=await decodeImage(file)}catch(e){return toast("Couldn't open that image. Try a JPG, PNG or WebP.")}
+  const w=src.naturalWidth||src.width,h=src.naturalHeight||src.height;
+  if(Math.min(w,h)<PHOTO_MIN_SIDE){src.close?.();return toast(`That photo is too small. Use one at least ${PHOTO_MIN_SIDE}×${PHOTO_MIN_SIDE} px.`)}
+  const img=toCanvas(src,PHOTO_WORK);src.close?.();
+  crop={img,z:1,cx:img.width/2,cy:img.height/2,ptrs:new Map(),pinch:null};
+  showCropper();
+}
+function closeCropper(){crop=null;document.getElementById('cr_ov')?.remove()}
+function showCropper(){
+  document.getElementById('cr_ov')?.remove();
+  const ov=document.createElement('div');ov.className='ov';ov.id='cr_ov';
+  ov.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cr_t"><div class="sh"><h2 id="cr_t">Crop your photo</h2><button class="ib" id="cr_x" title="Close">${I('x',18)}</button></div>
+  <div class="sb"><div class="crop" id="cr_box" tabindex="0" aria-label="Crop area. Drag or use arrow keys to move, plus and minus to zoom."><canvas id="cr_cv"></canvas></div>
+  <p class="small mute" style="text-align:center;margin:0">Drag to reposition. Pinch, scroll or use the slider to zoom.</p>
+  <div class="cz">${I('zoom-out',16)}<input type="range" id="cr_z" min="1" max="${PHOTO_MAX_ZOOM}" step="0.01" value="1" aria-label="Zoom">${I('zoom-in',16)}<button class="ib" id="cr_rot" title="Rotate">${I('rotate-cw',18)}</button></div>
+  <div class="row"><button class="btn ghost" id="cr_pick">Choose another</button><button class="btn" id="cr_ok">Use photo</button></div>
+  <p class="small mute" style="text-align:center;margin:12px 0 0">Saved at ${PHOTO_OUT}×${PHOTO_OUT}, compressed, and kept only in this browser.</p></div></div>`;
+  document.getElementById('shell').appendChild(ov);
+  const box=document.getElementById('cr_box'),$$=id=>document.getElementById(id);
+  const scale=()=>box.clientWidth/Math.min(crop.img.width,crop.img.height)*crop.z; // CSS px per image px
+  box.onpointerdown=e=>{box.setPointerCapture(e.pointerId);crop.ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});crop.pinch=null};
+  box.onpointermove=e=>{
+    const p=crop?.ptrs.get(e.pointerId);if(!p)return;
+    if(crop.ptrs.size===1){const k=scale();crop.cx-=(e.clientX-p.x)/k;crop.cy-=(e.clientY-p.y)/k}
+    p.x=e.clientX;p.y=e.clientY;
+    if(crop.ptrs.size===2){const [a,b]=[...crop.ptrs.values()],d=Math.hypot(a.x-b.x,a.y-b.y);if(crop.pinch)crop.z*=d/crop.pinch;crop.pinch=d}
+    paintCrop();
+  };
+  box.onpointerup=box.onpointercancel=e=>{crop?.ptrs.delete(e.pointerId);if(crop)crop.pinch=null};
+  box.addEventListener('wheel',e=>{e.preventDefault();crop.z*=Math.exp(-e.deltaY*.0015);paintCrop()},{passive:false});
+  box.onkeydown=e=>{
+    const k=scale(),mv={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];
+    if(mv){crop.cx+=mv[0]*10/k;crop.cy+=mv[1]*10/k}
+    else if(e.key==='+'||e.key==='=')crop.z*=1.1;
+    else if(e.key==='-')crop.z/=1.1;
+    else return;
+    e.preventDefault();paintCrop();
+  };
+  $$('cr_z').oninput=e=>{crop.z=+e.target.value;paintCrop()};
+  $$('cr_rot').onclick=()=>{const img=toCanvas(crop.img,PHOTO_WORK,true);Object.assign(crop,{img,z:1,cx:img.width/2,cy:img.height/2});paintCrop()};
+  $$('cr_pick').onclick=()=>$$('p_photo')?.click();
+  $$('cr_x').onclick=closeCropper;
+  $$('cr_ok').onclick=commitCrop;
+  ov.onclick=e=>{if(e.target===ov)closeCropper()};
+  ov.onkeydown=e=>{e.stopPropagation();if(e.key==='Escape')closeCropper()};
+  paintCrop();box.focus();
+}
+async function commitCrop(){
+  const btn=document.getElementById('cr_ok');btn.disabled=true;btn.textContent='Saving…';
+  const c=document.createElement('canvas');c.width=c.height=PHOTO_OUT;
+  clampCrop();drawCrop(c.getContext('2d'),PHOTO_OUT);
+  const blob=await compressPhoto(c);
+  const url=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(blob)});
+  const prev=S.me.photo;S.me.photo=url;
+  if(!save()){S.me.photo=prev;btn.disabled=false;btn.textContent='Use photo';return toast('This browser is out of storage space, so the photo could not be saved')}
+  closeCropper();refreshMyPhoto();toast(`Photo updated (${Math.max(1,Math.round(blob.size/1024))} KB)`);
+}
+/* Swap my avatars in place so unsaved edits in the profile form are kept. */
+function refreshMyPhoto(){
+  document.querySelectorAll('.av[data-me]').forEach(el=>{el.outerHTML=av('me',[...el.classList].filter(c=>c!=='av').join(' '))});
+  const rm=document.getElementById('p_rmphoto');if(rm)rm.hidden=!S.me.photo;
+}
+
 /* ---------- main render ---------- */
 function render(){
   const scr=document.getElementById('screen');
@@ -783,11 +932,11 @@ function render(){
   const pend=S.reqs.filter(r=>r.status==='pending'&&actOf(r.act)?.host==='me').length;
   const TT=(k,l)=>`<button class="tt ${ui.tab===k?'on':''}" data-a="tab" data-t="${k}">${l}</button>`;
   const T=(k,ic,l)=>`<button class="${ui.tab===k?'on':''}" data-a="tab" data-t="${k}">${I(ic,20)}${l}</button>`;
-  scr.innerHTML=`<header><div class="hb"><div class="logo"><span class="dots"><i></i><i></i></span>Tagalong</div>
-  <div class="tnav">${TT('swipe','Swipe')}${TT('discover','Discover')}<button class="btn sm" data-a="newpost">${I('plus',15)} Create Activity</button>${TT('acts','Activities'+(pend?` (${pend})`:''))}${TT('reqs','Requests')}${TT('profile','Profile')}</div>
-  <div class="hr"><button class="ib" data-a="bell" title="Notifications">${I('bell',19)}${unread?'<span class="dot"></span>':''}</button>${window.parent!==window?`<button class="ib" data-a="fb" title="Leave feedback">${I('message-circle',19)}</button>`:''}<button class="ib" data-a="demo" title="Demo tools">${I('settings-2',19)}</button><button class="ib" data-a="tab" data-t="profile" title="Profile">${av('me')}</button></div></div></header>
+  scr.innerHTML=`<header><div class="hb"><div class="logo"><span class="dots"><i></i><i></i></span>Overhere</div>
+  <div class="tnav">${TT('swipe','Swipe')}${TT('discover','Discover')}<button class="btn sm" data-a="newpost">${I('plus',15)} Create Activity</button>${TT('acts','Activities'+(pend?` (${pend})`:''))}${TT('reqs','Requests')}</div>
+  <div class="hr"><button class="ib" data-a="bell" title="Notifications">${I('bell',19)}${unread?'<span class="dot"></span>':''}</button>${window.parent!==window?`<button class="ib" data-a="fb" title="Leave feedback">${I('message-circle',19)}</button>`:''}<button class="ib" data-a="demo" title="Demo tools">${I('settings-2',19)}</button><button class="ib${ui.tab==='profile'?' on':''}" data-a="tab" data-t="profile" title="Your profile" aria-label="Your profile">${av('me')}</button></div></div></header>
   <main><div class="${ui.tab==='discover'?'wrap':'narrow'}">${view}</div></main>
-  <nav>${T('swipe','flame','Swipe')}${T('discover','compass','Discover')}${T('acts','calendar-check','Activities'+(pend?` (${pend})`:''))}${T('reqs','mail','Requests')}${T('profile','user','Profile')}</nav>${modalHtml()}`;
+  <nav>${T('swipe','flame','Swipe')}${T('discover','compass','Discover')}${T('acts','calendar-check','Activities'+(pend?` (${pend})`:''))}${T('reqs','mail','Requests')}</nav>${modalHtml()}`;
   afterRender();
 }
 function afterRender(){
@@ -807,14 +956,20 @@ const A={
   closebg:(d,e)=>{if(e.target.classList.contains('ov')&&ui.modal?.type!=='verify'&&ui.modal?.type!=='chat'){ui.modal=null;render()}},
   bell:()=>{ui.tab='notes';ui.modal=null;render()},
   demo:()=>{ui.modal={type:'demo'};render()},
-  fb:()=>{try{window.parent.postMessage('tagalong-feedback','*')}catch(e){}},
+  fb:()=>{try{window.parent.postMessage('overhere-feedback','*')}catch(e){}},
   scan:()=>scan(),
   fcat:d=>{ui.f.cat=d.k;render()},
   ftod:d=>{ui.f.tod=d.k;render()},
-  nf:d=>{ui.nf=d.k;render()},
+  fdate:()=>{ui.f.date='';render()},
+  freset:()=>{ui.f={cat:'all',date:'',tod:'any'};render()},
   readall:()=>{S.notes.forEach(n=>n.read=true);save();render()},
-  clearall:()=>{S.notes=[];save();render()},
-  markread:d=>{const n=S.notes.find(x=>x.id===d.id);if(n)n.read=true;save();render()},
+  opennote:d=>{
+    const n=S.notes.find(x=>x.id===d.id);if(!n)return;
+    n.read=true;save();
+    const a=n.act&&actOf(n.act);
+    if(a)ui.modal={type:a.host==='me'?'host':'detail',id:a.id};
+    render();
+  },
   dismiss:d=>{S.notes=S.notes.filter(x=>x.id!==d.id);save();render()},
   viewact:d=>{
     const a=actOf(d.id);if(!a)return toast('That activity is no longer available');
@@ -854,6 +1009,8 @@ const A={
     Object.assign(S.me,{name:val('p_name')||S.me.name,dob:val('p_dob')||S.me.dob,gender:val('p_gender'),hood:val('p_hood'),job:val('p_job'),bio:document.getElementById('p_bio').value,ints:many('p_int'),avail:many('p_avail')});
     save();toast('Profile saved');render();
   },
+  photo:()=>document.getElementById('p_photo')?.click(),
+  rmphoto:()=>{delete S.me.photo;save();refreshMyPhoto();toast('Photo removed')},
   adv:d=>{S.offset+=+d.h*3600e3;tick();save();toast('Moved forward '+d.h+' hours');render()},
   simreq:()=>{incoming();render()},
   simacc:()=>hostDecide(true),
@@ -918,8 +1075,12 @@ document.addEventListener('click',e=>{
   const fn=A[el.dataset.a];if(fn){e.stopPropagation();fn(el.dataset,e)}
 });
 document.addEventListener('input',e=>{if(e.target.id==='r_note'){const c=document.getElementById('r_cnt');if(c)c.textContent=e.target.value.length}});
-document.addEventListener('change',e=>{if(e.target.id==='d_date'){ui.f.date=e.target.value;render()}});
+document.addEventListener('change',e=>{
+  if(e.target.id==='d_date'){ui.f.date=e.target.value;render()}
+  if(e.target.id==='p_photo'){const f=e.target.files[0];e.target.value='';openCropper(f)}
+});
 document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.matches('[role=button][data-a]')){e.target.click();return}
   if(e.key==='Enter'&&e.target.id==='c_in'){const b=document.querySelector('[data-a=send]');if(b)b.click();return}
   if(e.key==='Escape'&&ui.modal&&ui.modal.type!=='verify'){ui.modal=null;render();return}
   if(ui.modal||ui.tab!=='swipe'||!S.me?.obDone||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
@@ -930,7 +1091,7 @@ document.addEventListener('keydown',e=>{
 function initMe(){
   if(S.me)return;
   try{
-    const p=JSON.parse(localStorage.getItem('tagalong_participant'));
+    const p=JSON.parse(localStorage.getItem('overhere_participant'));
     if(p&&p.name&&p.gender&&p.hood)S.me={name:p.name,dob:p.dob||'1995-01-01',gender:p.gender,hood:p.hood,ints:p.ints||[],avail:p.avail||[],face:true,kyc:true,obDone:true};
   }catch(e){}
   if(S.me)save();

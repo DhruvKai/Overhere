@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tagalong - join the beta</title>
+<title>Overhere - join the beta</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -63,7 +63,7 @@ textarea{min-height:96px;resize:vertical}
 </head>
 <body>
 <header><div class="bar">
-  <div class="logo" id="logo"><span class="dots"><i></i><i></i></span>Tagalong</div>
+  <div class="logo" id="logo"><span class="dots"><i></i><i></i></span>Overhere</div>
   <button class="tab" id="t_try" disabled>Try it</button>
   <button class="tab" id="t_fb">Feedback</button>
   <button class="tab" id="t_admin">Admin</button>
@@ -80,7 +80,9 @@ const HOODS=['Central Market','Lakeside','Old Quarter'];
 const GENDERS=['Woman','Man','Non-binary'];
 const INTERESTS=['Movies','Cafe / Food','Concerts'];
 const TIMES=['Weekday evenings','Weekend days','Weekend evenings','Late nights'];
-const PKEY='tagalong_participant',LKEY='tagalong_local_data';
+const PKEY='overhere_participant',LKEY='overhere_local_data';
+/* One-time move of browser data saved under the app's old name (Tagalong). */
+try{[['tagalong_participant',PKEY],['tagalong_local_data',LKEY]].forEach(([o,n])=>{const v=localStorage.getItem(o);if(v===null)return;if(localStorage.getItem(n)===null)localStorage.setItem(n,v);localStorage.removeItem(o)})}catch(e){}
 /* Admin shortcut for testing only: the password is visible in the page source, so it does not protect anything. */
 const ADMIN_PASS='kajal';
 const ADMIN_USER={id:null,admin:true,name:'Kajal',gender:'Woman',dob:'1998-02-02',hood:'Central Market',ints:['Movies','Cafe / Food','Concerts'],avail:['Weekday evenings','Late nights']};
@@ -107,7 +109,7 @@ async function store(table,row){
 }
 function download(){
   const blob=new Blob([localStorage.getItem(LKEY)||'{}'],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='tagalong-local-data.json';a.click();
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='overhere-local-data.json';a.click();
 }
 const localBanner=()=>REMOTE?'':'<div class="note">Backend not connected yet: submissions are saved in this browser only. See GO-LIVE-GUIDE.md to connect Supabase. <a href="#" id="dl">Download saved data</a></div>';
 
@@ -123,7 +125,7 @@ function nav(v){
 function home(){
   const p=getP();
   return `<h1>Find people to do things with.</h1>
-  <p class="mute">Tagalong helps you turn a plan you are already making, like a movie, a coffee or a concert, into an outing with company. You post it, people ask to join, you choose who comes.</p>
+  <p class="mute">Overhere helps you turn a plan you are already making, like a movie, a coffee or a concert, into an outing with company. You post it, people ask to join, you choose who comes.</p>
   <div class="steps"><div><b>1</b>Tell us about yourself</div><div><b>2</b>Try the app in your browser</div><div><b>3</b>Tell us what you think</div></div>
   <p class="small mute">This is an early test. We are collecting a little information to learn who would use this and what should be built first. Not a dating app.</p>
   ${p?`<div class="ok">Welcome back, ${esc(p.name)}.</div><button class="btn" data-go="try">Try the platform</button> <button class="btn sec" data-go="feedback">Leave feedback</button>`
@@ -141,7 +143,7 @@ function signup(){
   <label>What would you want to do with company?</label><div class="opts">${INTERESTS.map(i=>`<label class="opt"><input type="checkbox" name="int" value="${i}">${i}</label>`).join('')}</div>
   <label>When are you usually free?</label><div class="opts">${TIMES.map(i=>`<label class="opt"><input type="checkbox" name="time" value="${i}">${i}</label>`).join('')}</div>
   <div class="consent"><strong>Your consent</strong>
-   <label><input type="checkbox" id="c_data"> <span>I agree that Tagalong may store the details above to run this beta, contact me about it, and decide what to build. I am 18 or older. I can ask for my data to be deleted at any time by emailing <b>${esc(CFG.CONTACT_EMAIL||'the beta team')}</b>. We will not sell it or share it.</span></label>
+   <label><input type="checkbox" id="c_data"> <span>I agree that Overhere may store the details above to run this beta, contact me about it, and decide what to build. I am 18 or older. I can ask for my data to be deleted at any time by emailing <b>${esc(CFG.CONTACT_EMAIL||'the beta team')}</b>. We will not sell it or share it.</span></label>
   </div>
   <div id="err"></div>
   <p style="margin-top:16px"><button class="btn" id="go" type="submit">Join and try the platform</button></p></form></div>`;
@@ -154,7 +156,7 @@ function admin(){
 function tryView(){
   return `<h2>Try the platform</h2><p class="mute small">This is a sample version with pretend people and plans. Nothing you do here is real. Try swiping, posting a plan, requesting to join, and chatting. The ⚙️ button in the app has shortcuts to simulate other people.</p>
   <p class="small" style="text-align:center"><a href="demo.html" target="_blank" rel="noopener" style="color:var(--acch);font-weight:600">Open full screen ↗</a></p>
-  <div class="frame"><iframe src="demo.html?embed=1" title="Tagalong demo"></iframe></div>
+  <div class="frame"><iframe src="demo.html?embed=1" title="Overhere demo"></iframe></div>
   <p style="text-align:center;margin-top:16px"><button class="btn" data-go="feedback">I have tried it, leave feedback</button></p>`;
 }
 function feedback(){
@@ -165,7 +167,7 @@ function feedback(){
   <label for="improve">What was confusing or missing?</label><textarea id="improve" maxlength="1000"></textarea>
   <label>Would you use this in your city?</label><div class="opts">${['Yes','Maybe','No'].map(v=>`<label class="opt"><input type="radio" name="use" value="${v}">${v}</label>`).join('')}</div>
   <div class="consent"><strong>Your consent</strong>
-   <label><input type="checkbox" id="c_store"> <span><b>Required:</b> I agree that my feedback may be stored and used to improve Tagalong.</span></label>
+   <label><input type="checkbox" id="c_store"> <span><b>Required:</b> I agree that my feedback may be stored and used to improve Overhere.</span></label>
    <label><input type="checkbox" id="c_quote"> <span>Optional: you may quote my feedback publicly, without my name or email.</span></label>
    <label><input type="checkbox" id="c_contact"> <span>Optional: you may contact me with follow-up questions.</span></label>
   </div>
@@ -222,7 +224,7 @@ async function submitFeedback(e,getRating){
   $('#go').disabled=true;
   try{await store('feedback',row);nav('thanks')}catch(err){showErr(err.message);$('#go').disabled=false}
 }
-window.addEventListener('message',e=>{if(e.data==='tagalong-feedback'&&e.source===document.querySelector('iframe')?.contentWindow)nav('feedback')});
+window.addEventListener('message',e=>{if(e.data==='overhere-feedback'&&e.source===document.querySelector('iframe')?.contentWindow)nav('feedback')});
 $('#logo').onclick=()=>nav('home');
 $('#t_try').onclick=()=>nav('try');
 $('#t_fb').onclick=()=>nav('feedback');
