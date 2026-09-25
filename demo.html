@@ -937,7 +937,7 @@ function bindDrag(){
   const el=document.querySelector('.card.top');if(!el)return;
   let sx=0,dx=0,down=false;
   const st=el.querySelector('.stamp');
-  el.onpointerdown=e=>{down=true;sx=e.clientX;el.setPointerCapture(e.pointerId);el.style.transition='none'};
+  el.onpointerdown=e=>{if(e.target.closest('button'))return;down=true;sx=e.clientX;el.setPointerCapture(e.pointerId);el.style.transition='none'};
   el.onpointermove=e=>{
     if(!down)return;dx=e.clientX-sx;
     el.style.transform=`translateX(${dx}px) rotate(${dx/18}deg)`;
@@ -955,7 +955,7 @@ function cardHtml(a,cls){
   const c=CATS[a.cat],h=profileOf(a.host);
   return `<div class="card ${cls}" style="background:${c.g}"><div class="art">${I(c.icon,120)}</div><div class="shade"></div><div class="stamp"></div>
   <div class="cp">${catPill(a.cat)}</div>
-  <div class="body"><div class="who">${av(a.host,'sm')}${esc(h.name)}, ${h.age} ${vf(a.host)}</div>
+  <div class="body"><div class="who">${a.host==='me'?`${av('me','sm')}You`:`<button class="hlink" data-a="user" data-id="${a.host}" title="View ${esc(h.name)}'s profile">${av(a.host,'sm')}<span><span class="hname">${esc(h.name)}</span>, ${h.age}</span></button>`} ${vf(a.host)}</div>
   <h2>${esc(a.desc)}</h2>
   <div class="meta"><span>${I('calendar',14)}${whenStr(a.when)}</span><span>${I('map-pin',14)}${esc(a.venue)}</span><span>${I('users',14)}${spotTxt(a)}</span></div>
   <div class="tags">${tags(a).map(t=>`<span>${esc(t)}</span>`).join('')}</div></div></div>`;
