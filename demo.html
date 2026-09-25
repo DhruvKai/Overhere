@@ -1466,9 +1466,20 @@ function photoMenu(open){
 }
 
 /* ---------- main render ---------- */
+/* Re-rendering replaces the page, so remember where the list (and an open sheet) was scrolled and put it back.
+   A different tab starts at the top; a different sheet starts at its top. */
+function keepScroll(){
+  const m=document.querySelector('main'),sb=document.querySelector('.sheet .sb'),mk=ui.modal?ui.modal.type+':'+(ui.modal.id||''):'';
+  const top=m&&keepScroll.tab===ui.tab?m.scrollTop:0,sbTop=sb&&keepScroll.modal===mk?sb.scrollTop:0;
+  return ()=>{
+    keepScroll.tab=ui.tab;keepScroll.modal=mk;
+    const m2=document.querySelector('main'),sb2=document.querySelector('.sheet .sb');
+    if(m2)m2.scrollTop=top;if(sb2&&sbTop)sb2.scrollTop=sbTop;
+  };
+}
 function render(){
-  const scr=document.getElementById('screen');
-  if(!S.me||!S.me.face||!S.me.obDone){scr.innerHTML=onboardHtml()+modalHtml();afterRender();return}
+  const scr=document.getElementById('screen'),restore=keepScroll();
+  if(!S.me||!S.me.face||!S.me.obDone){scr.innerHTML=onboardHtml()+modalHtml();restore();afterRender();return}
   const unread=S.notes.filter(n=>!n.read).length;
   const view={swipe:tabSwipe,discover:tabDiscover,acts:tabActs,reqs:tabReqs,profile:tabProfile,notes:tabNotes}[ui.tab]();
   const pend=S.reqs.filter(r=>r.status==='pending'&&actOf(r.act)?.host==='me').length;
@@ -1479,7 +1490,7 @@ function render(){
   <div class="hr"><button class="ib" data-a="bell" title="Notifications">${I('bell',19)}${unread?'<span class="dot"></span>':''}</button>${window.parent!==window?`<button class="ib" data-a="fb" title="Leave feedback">${I('message-circle',19)}</button>`:''}<button class="ib" data-a="demo" title="Demo tools">${I('settings-2',19)}</button><button class="ib${ui.tab==='profile'?' on':''}" data-a="tab" data-t="profile" title="Your profile" aria-label="Your profile">${av('me')}</button></div></div></header>
   <main><div class="${ui.tab==='discover'?'wrap':'narrow'}">${view}</div></main>
   <nav>${T('swipe','flame','Swipe')}${T('discover','compass','Discover')}${T('acts','calendar-check','Activities'+(pend?` (${pend})`:''))}${T('reqs','mail','Requests')}</nav>${microHtml()}${modalHtml()}`;
-  afterRender();
+  restore();afterRender();
 }
 function afterRender(){
   bindDrag();
