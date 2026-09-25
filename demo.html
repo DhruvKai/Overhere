@@ -213,6 +213,7 @@ a.btn{text-decoration:none}
 .sorto.on{border-color:var(--acc);background:var(--acc2);color:var(--accink)}
 .sorto span{flex:1;display:flex;flex-direction:column;gap:2px}
 .sorto small{font-size:12.5px;opacity:.75}
+.drange{align-items:flex-start;margin-top:4px}.drange>div{min-width:0}.drange label{margin:6px 0 4px;font-weight:500;color:var(--mute)}.drange input{min-width:0;width:100%}
 .fact{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 12px}
 .fact .lnk{padding:2px 4px}
 .sfoot{display:flex;gap:8px;padding:12px 18px 16px;border-top:1px solid var(--line);background:var(--card)}
@@ -502,7 +503,7 @@ let S=load()||seed();
 S.blocked=S.blocked||[];S.reports=S.reports||[];S.ratings=S.ratings||{};
 if(S.me){delete S.me.pic;S.me.hood=fixHood(S.me.hood);if(!S.me.emo)S.me.emo=ACCOUNTS[ACCT]?.emo||defEmo(S.me.gender)}
 S.following=S.following||[];S.alerts=S.alerts||[];S.muted=S.muted||{};S.tips=S.tips||{};S.asked=S.asked||{};
-const freshF=()=>({cat:'all',date:'',tod:'any',ver:false,amin:18,amax:99,dist:0,sort:'for',view:'list'});
+const freshF=()=>({cat:'all',dfrom:'',dto:'',tod:'any',ver:false,amin:18,amax:99,dist:0,sort:'for',view:'list'});
 const SORTS={for:['sparkles','My interests','Plans that match what you like come first'],soon:['clock','Time','Soonest first'],near:['map-pin','Distance','Closest to you first']};
 const DISTS=[1,2,3];
 const freshUi=()=>({tab:'swipe',ob:{step:2,d:{}},modal:null,f:freshF()});
@@ -676,7 +677,7 @@ function signals(u){
   if(t.met>=3&&t.rate<90)chips.push(`<span class="chip warn">${I('alert-triangle',11)} Missed ${t.met-t.shows} of ${t.met} meetups</span>`);
   return `<div class="sig">${chips.length?chips.join(''):'<span class="small mute">Nothing in common yet</span>'}</div>`;
 }
-function matchF(a,f){const age=profileOf(a.host).age;return (f.cat==='all'||a.cat===f.cat)&&(!f.date||dayKey(a.when)===f.date)&&(f.tod==='any'||tod(a.when)===f.tod)&&(!f.ver||isVer(a.host))&&age>=f.amin&&age<=f.amax&&(!f.dist||geo(a).d<=f.dist)}
+function matchF(a,f){const age=profileOf(a.host).age;return (f.cat==='all'||a.cat===f.cat)&&(!f.dfrom||dayKey(a.when)>=f.dfrom)&&(!f.dto||dayKey(a.when)<=f.dto)&&(f.tod==='any'||tod(a.when)===f.tod)&&(!f.ver||isVer(a.host))&&age>=f.amin&&age<=f.amax&&(!f.dist||geo(a).d<=f.dist)}
 function alertLabel(f){const p=[f.cat==='all'?'Any plan':CATS[f.cat].label];if(f.tod!=='any')p.push(f.tod[0].toUpperCase()+f.tod.slice(1));if(f.ver)p.push('Verified hosts');if(f.amin!==18||f.amax!==99)p.push(`Host ${f.amin}${f.amax===99?'+':'–'+f.amax}`);if(f.dist)p.push(`Within ${f.dist} km`);return p.join(' · ')}
 /* ---- usage events: sent to Supabase from the published site, kept in this browser when running from a file ---- */
 const uuid4=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)});
@@ -717,7 +718,7 @@ const themePref=()=>{try{return localStorage.getItem('overhere_theme')||'system'
 /* ---- new plans from other people (demo) ---- */
 function newPlanPosted(a){
   if(!visible(a))return;
-  const fol=S.following.includes(a.host),al=S.alerts.find(x=>matchF(a,{...x,date:''}));
+  const fol=S.following.includes(a.host),al=S.alerts.find(x=>matchF(a,{...x,dfrom:'',dto:''}));
   if(fol)notify(`${uname(a.host)} posted "${short(a.desc)}" for ${whenStr(a.when)}.`,{kind:'update',title:'New plan from someone you follow',tag:'Following',tone:'info',act:a.id});
   if(al)notify(`"${short(a.desc)}", ${whenStr(a.when)}, matches your alert "${al.label}".`,{kind:'update',title:'New plan for your alert',tag:'Alert',tone:'info',act:a.id});
   if(!fol&&!al)toast(`${uname(a.host)} posted "${short(a.desc)}". It didn't match any of your alerts.`);
@@ -776,14 +777,14 @@ function visible(a){return (a.status==='open'||a.status==='full')&&a.host!=='me'
 function eligible(a){return visible(a)&&a.status==='open'&&spots(a)>0&&!S.dismissed.includes(a.id)}
 const deck=()=>S.acts.filter(a=>eligible(a)&&!myReq(a.id)&&a.when<=now()+SWIPE_WINDOW).sort((a,b)=>a.when-b.when);
 /* Plans that declined you drop out of Discover; they stay in Requests (where you can still share them). */
-const feed=()=>S.acts.filter(a=>visible(a)&&a.when>now()+SWIPE_WINDOW&&myReq(a.id)?.status!=='rejected').sort((a,b)=>a.when-b.when);
+const feed=()=>S.acts.filter(a=>visible(a)&&a.when>now()+SWIPE_WINDOW&&!myReq(a.id)).sort((a,b)=>a.when-b.when);
 
 function sendReq(actId,note){
   const a=actOf(actId);
   if(!a||a.host==='me'||!visible(a)||myReq(actId))return false;
   const wait=a.status==='full'||spots(a)<=0;
   S.reqs.push({id:nextId('r'),act:actId,user:'me',note:note||'',status:wait?'waitlist':'pending'});
-  toast(wait?`You're #${waitlist(actId).length} on the waitlist. Your request goes to ${uname(a.host)} if a spot opens.`:'Request sent to '+uname(a.host));save();return true;
+  toast(wait?`You're #${waitlist(actId).length} on the waitlist. Your request goes to ${uname(a.host)} if a spot opens.`:'Request sent to '+uname(a.host)+'. Follow it in Requests.');save();return true;
 }
 function addMsg(actId,from,text){(S.chats[actId]=S.chats[actId]||[]).push({from,text,at:now()})}
 function accept(reqId){
@@ -993,11 +994,19 @@ function tabSwipe(){
   <button class="rb go" data-a="swipe" data-d="right" title="Request to join">${I('heart',24)}</button></div>
   <p class="small mute kb" style="margin-top:6px">Use ← → arrow keys to navigate</p></div>`;
 }
+/* Date range: YYYY-MM-DD strings, either end optional */
+const dLbl=k=>new Date(k+'T12:00:00').toLocaleDateString([], {weekday:'short',day:'numeric',month:'short'});
+const rangeLbl=f=>f.dfrom&&f.dto?(f.dfrom===f.dto?dLbl(f.dfrom):dLbl(f.dfrom)+' – '+dLbl(f.dto)):f.dfrom?'From '+dLbl(f.dfrom):'Until '+dLbl(f.dto);
+function datePresets(){
+  const t=new Date(now()),k=d=>dayKey(d.getTime()),plus=n=>{const d=new Date(t);d.setDate(d.getDate()+n);return d};
+  const dow=t.getDay(),sat=dow===0?-1:6-dow;
+  return {weekend:['This weekend',k(plus(Math.max(sat,0))),k(plus(dow===0?0:sat+1))],week:['Next 7 days',k(t),k(plus(6))],month:['Next 30 days',k(t),k(plus(29))]};
+}
 /* Active filters, as removable chips: [key, label] */
 function activeFilters(f){
   const a=[];
   if(f.cat!=='all')a.push(['cat',CATS[f.cat].label]);
-  if(f.date)a.push(['date',new Date(f.date+'T12:00:00').toLocaleDateString([], {weekday:'short',day:'numeric',month:'short'})]);
+  if(f.dfrom||f.dto)a.push(['date',rangeLbl(f)]);
   if(f.tod!=='any')a.push(['tod',f.tod[0].toUpperCase()+f.tod.slice(1)]);
   if(f.ver)a.push(['ver','Verified hosts']);
   if(f.amin!==18||f.amax!==99)a.push(['age',`Host ${f.amin}${f.amax===99?'+':'–'+f.amax}`]);
@@ -1259,8 +1268,8 @@ function modalHtml(){
     return `<div class="ov" data-a="closebg"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="fl_t"><div class="sh"><h2 id="fl_t">Filters</h2><button class="ib" data-a="close" title="Close">${I('x',18)}</button></div>
       <div class="sb fsec">
       <h3>Category</h3><div class="fchips">${C('all','All')}${Object.entries(CATS).map(([k,c])=>C(k,c.label)).join('')}</div>
-      <h3><label for="d_date" style="margin:0;font:inherit">Date</label></h3><div class="row" style="align-items:center"><input type="date" id="d_date" value="${esc(f.date)}">${f.date?`<button class="lnk" style="flex:0 0 auto" data-a="fdate">${I('x',13)} Any date</button>`:''}</div>
-      ${f.date?'':'<p class="small mute" style="margin:6px 0 0">Leave empty to see every date.</p>'}
+      <h3>Date</h3><div class="fchips"><button class="fc ${!f.dfrom&&!f.dto?'on':''}" data-a="fdate" aria-pressed="${!f.dfrom&&!f.dto}">${I('calendar',13)} Any date</button>${Object.entries(datePresets()).map(([k,[l,a,b]])=>{const on=f.dfrom===a&&f.dto===b;return `<button class="fc ${on?'on':''}" data-a="fdate" data-k="${k}" aria-pressed="${on}">${l}</button>`}).join('')}</div>
+      <div class="row drange"><div><label for="d_from">From</label><input type="date" id="d_from" value="${esc(f.dfrom)}" ${f.dto?`max="${f.dto}"`:''}></div><div><label for="d_to">To</label><input type="date" id="d_to" value="${esc(f.dto)}" ${f.dfrom?`min="${f.dfrom}"`:''}></div></div>
       <h3>Time of day</h3><div class="fchips">${T('any',I('clock',13)+' Any time')}${T('morning','Morning')}${T('afternoon','Afternoon')}${T('evening','Evening')}${T('night','Night')}</div>
       <h3>Distance</h3><div class="fchips"><button class="fc ${!f.dist?'on':''}" data-a="fdist" data-k="0" aria-pressed="${!f.dist}">${I('map-pin',13)} Any distance</button>${DISTS.map(k=>`<button class="fc ${f.dist===k?'on':''}" data-a="fdist" data-k="${k}" aria-pressed="${f.dist===k}">Within ${k} km</button>`).join('')}</div>
       <h3>Host</h3><div class="fchips"><button class="fc ${f.ver?'on':''}" data-a="fver" aria-pressed="${f.ver}">${I('badge-check',13)} Verified only</button>
@@ -1570,10 +1579,10 @@ const A={
   scan:()=>scan(),
   fcat:d=>{ui.f.cat=d.k;track('filter',{type:'category'});render()},
   ftod:d=>{ui.f.tod=d.k;track('filter',{type:'time'});render()},
-  fdate:()=>{ui.f.date='';render()},
+  fdate:d=>{const p=d.k&&datePresets()[d.k];ui.f.dfrom=p?p[1]:'';ui.f.dto=p?p[2]:'';if(p)track('filter',{type:'date',preset:d.k});render()},
   freset:()=>{ui.f={...freshF(),sort:ui.f.sort,view:ui.f.view};render()},
   filters:()=>{track('filters_opened');ui.modal={type:'filters'};render()},
-  fclear:d=>{const f=ui.f,base=freshF();if(d.k==='age'){f.amin=base.amin;f.amax=base.amax}else f[d.k]=base[d.k];render()},
+  fclear:d=>{const f=ui.f,base=freshF();if(d.k==='age'){f.amin=base.amin;f.amax=base.amax}else if(d.k==='date'){f.dfrom=f.dto=''}else f[d.k]=base[d.k];render()},
   fver:()=>{ui.f.ver=!ui.f.ver;track('filter',{type:'verified'});render()},
   sortmenu:()=>{ui.modal={type:'sort'};render()},
   fsort:d=>{ui.f.sort=d.k;ui.modal=null;track('sort',{by:d.k});render()},
@@ -1814,7 +1823,10 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('input',e=>{if(e.target.id==='r_note'){const c=document.getElementById('r_cnt');if(c)c.textContent=e.target.value.length}});
 document.addEventListener('change',e=>{
-  if(e.target.id==='d_date'){ui.f.date=e.target.value;track('filter',{type:'date'});render()}
+  if(e.target.id==='d_from'||e.target.id==='d_to'){
+    const f=ui.f;f[e.target.id==='d_from'?'dfrom':'dto']=e.target.value;
+    if(f.dfrom&&f.dto&&f.dfrom>f.dto)[f.dfrom,f.dto]=[f.dto,f.dfrom];
+    track('filter',{type:'date'});render()}
   if(e.target.id==='f_tpl'&&ui.modal?.type==='post'){ui.modal.tpl=e.target.value||null;render()}
   if(e.target.id==='f_amin'||e.target.id==='f_amax'){
     ui.f[e.target.id==='f_amin'?'amin':'amax']=+e.target.value;
