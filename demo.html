@@ -4,14 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Overhere - sample app</title>
+<meta name="theme-color" content="#3F7D4E">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Overhere">
+<script>if(location.protocol!=='file:'){const l=document.createElement('link');l.rel='manifest';l.href='manifest.webmanifest';document.head.appendChild(l)}
+try{const t=localStorage.getItem('overhere_theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#F5F0E6;--card:#FFFDF8;--ink:#1A1A1A;--mute:#6B6B6B;--line:#E7DFCF;--field:#EFE8DA;--acc:#3F7D4E;--acch:#336842;--acc2:#E7F0E1;--accink:#2E6139;--ok:#15803D;--okbg:#DCFCE7;--bad:#B91C1C;--badbg:#FEE2E2;--warn:#A16207;--warnbg:#FEF3C7;--info:#1D4ED8;--infobg:#DBEAFE;--grey:#EFE8DA;--shadow:0 2px 14px rgba(26,26,26,.06);--r:20px}
+:root{--bg:#F5F0E6;--card:#FFFDF8;--ink:#1A1A1A;--mute:#6B6B6B;--line:#E7DFCF;--field:#EFE8DA;--acc:#3F7D4E;--acch:#336842;--acc2:#E7F0E1;--accink:#2E6139;--ok:#15803D;--okbg:#DCFCE7;--bad:#B91C1C;--badbg:#FEE2E2;--warn:#A16207;--warnbg:#FEF3C7;--info:#1D4ED8;--infobg:#DBEAFE;--grey:#EFE8DA;--shadow:0 2px 14px rgba(26,26,26,.06);--r:20px;--page:#E8E0CF;--chip:#fff;--lineh:#D6CCB8;--ph:#A8A08E;--acc2h:#D8E8CF;--badh:#FECACA;--okh:#BBF7D0;--greyh:#E6DECE;--wbg:#FFFBEB;--wline:#FDE68A;--wink:#92400E;--hover:#FAF6EE;--newbg:#F4F8F0;--ink2:#3F3F3F;--okline:#A7F3D0;--mapbg:#E9E3D6;--mapwater:#CFE0E6;--mappark:#D5E4C8;--maproad:#FBF8F1;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15130F;--card:#201D18;--ink:#F2EDE4;--mute:#A39C8E;--line:#34302A;--field:#2A2620;--acc:#4A8F5B;--acch:#5AA06B;--acc2:#1F3325;--accink:#9FD3AA;--ok:#4ADE80;--okbg:#14301F;--bad:#F87171;--badbg:#3A1717;--warn:#FBBF24;--warnbg:#3A2E10;--info:#93C5FD;--infobg:#172A45;--grey:#2A2620;--shadow:0 2px 14px rgba(0,0,0,.35);--page:#0C0B09;--chip:#26221C;--lineh:#4A443A;--ph:#6F685C;--acc2h:#28432F;--badh:#4A1D1D;--okh:#1B3F28;--greyh:#332E27;--wbg:#33280E;--wline:#5C4812;--wink:#FCD34D;--hover:#27231D;--newbg:#1C2A1F;--ink2:#CFC8BB;--okline:#1F5134;--mapbg:#1E1B16;--mapwater:#1B2A30;--mappark:#1E2A1C;--maproad:#2E2A23;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15130F;--card:#201D18;--ink:#F2EDE4;--mute:#A39C8E;--line:#34302A;--field:#2A2620;--acc:#4A8F5B;--acch:#5AA06B;--acc2:#1F3325;--accink:#9FD3AA;--ok:#4ADE80;--okbg:#14301F;--bad:#F87171;--badbg:#3A1717;--warn:#FBBF24;--warnbg:#3A2E10;--info:#93C5FD;--infobg:#172A45;--grey:#2A2620;--shadow:0 2px 14px rgba(0,0,0,.35);--page:#0C0B09;--chip:#26221C;--lineh:#4A443A;--ph:#6F685C;--acc2h:#28432F;--badh:#4A1D1D;--okh:#1B3F28;--greyh:#332E27;--wbg:#33280E;--wline:#5C4812;--wink:#FCD34D;--hover:#27231D;--newbg:#1C2A1F;--ink2:#CFC8BB;--okline:#1F5134;--mapbg:#1E1B16;--mapwater:#1B2A30;--mappark:#1E2A1C;--maproad:#2E2A23;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%}
-body{font:14.5px/1.45 "Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:#E8E0CF;display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased}
+body{font:14.5px/1.45 "Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--page);display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font:inherit}
 .i{flex:0 0 auto;vertical-align:-3px}
 #shell{position:relative;width:min(100%,420px);height:min(100dvh,880px);background:var(--bg);overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(60,40,20,.18)}
@@ -32,7 +42,7 @@ header{background:var(--card);border-bottom:1px solid var(--line)}
 .ib{border:0;background:none;width:38px;height:38px;border-radius:50%;cursor:pointer;position:relative;color:var(--ink);display:inline-flex;align-items:center;justify-content:center;padding:0}
 .ib:hover{background:var(--grey)}
 .ib.on .av{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--acc)}
-.dot{position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--acc);border:2px solid #fff}
+.dot{position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--acc);border:2px solid var(--card)}
 .av{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;color:#fff;font-weight:700;font-size:13px;flex:0 0 auto;overflow:hidden}
 .av{position:relative}
 .av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
@@ -59,10 +69,10 @@ p{margin:0 0 6px}
 /* buttons */
 .btn{border:0;background:var(--acc);color:#fff;font-weight:600;padding:13px 18px;border-radius:99px;font-size:14.5px;cursor:pointer;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:background .15s,transform .1s}
 .btn:hover{background:var(--acch)}.btn:active{transform:scale(.98)}
-.btn.sec{background:var(--acc2);color:var(--accink)}.btn.sec:hover{background:#D8E8CF}
-.btn.bad{background:var(--badbg);color:var(--bad)}.btn.bad:hover{background:#FECACA}
-.btn.ok{background:var(--okbg);color:var(--ok)}.btn.ok:hover{background:#BBF7D0}
-.btn.ghost{background:var(--grey);color:var(--ink)}.btn.ghost:hover{background:#E6DECE}
+.btn.sec{background:var(--acc2);color:var(--accink)}.btn.sec:hover{background:var(--acc2h)}
+.btn.bad{background:var(--badbg);color:var(--bad)}.btn.bad:hover{background:var(--badh)}
+.btn.ok{background:var(--okbg);color:var(--ok)}.btn.ok:hover{background:var(--okh)}
+.btn.ghost{background:var(--grey);color:var(--ink)}.btn.ghost:hover{background:var(--greyh)}
 .btn.sm{width:auto;padding:8px 16px;font-size:13px}
 .btn.xs{width:auto;padding:6px 12px 6px 14px;font-size:12px;gap:3px}
 .btn:disabled{opacity:.5}
@@ -72,14 +82,14 @@ p{margin:0 0 6px}
 /* forms */
 label{display:block;font-size:13px;font-weight:600;margin:14px 0 6px}
 input,select,textarea{width:100%;padding:12px 14px;border:1px solid transparent;border-radius:14px;background:var(--field);color:var(--ink);outline:none;transition:border-color .15s,background .15s}
-input:focus,select:focus,textarea:focus{border-color:var(--acc);background:#fff}
-input::placeholder,textarea::placeholder{color:#A8A08E}
+input:focus,select:focus,textarea:focus{border-color:var(--acc);background:var(--card)}
+input::placeholder,textarea::placeholder{color:var(--ph)}
 textarea{resize:none;min-height:96px}
 input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--acc)}
 .chk{display:flex;align-items:center;gap:8px;font-weight:500;margin:6px 0}
 .opts{display:flex;flex-wrap:wrap;gap:8px}
-.opt{display:inline-flex;align-items:center;gap:8px;margin:0;border:1px solid var(--line);border-radius:99px;padding:9px 16px;background:#fff;font-weight:500;font-size:13.5px;cursor:pointer;transition:.15s}
-.opt:hover{border-color:#D6CCB8}
+.opt{display:inline-flex;align-items:center;gap:8px;margin:0;border:1px solid var(--line);border-radius:99px;padding:9px 16px;background:var(--chip);font-weight:500;font-size:13.5px;cursor:pointer;transition:.15s}
+.opt:hover{border-color:var(--lineh)}
 .opt:has(input:checked){border-color:var(--acc);background:var(--acc2);color:var(--accink)}
 .opt input{margin:0}
 
@@ -91,8 +101,8 @@ input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--acc)}
 .cat{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:99px;background:#fff}
 .vf{color:var(--acc);font-weight:600;font-size:12px;display:inline-flex;align-items:center;gap:3px}
 .fchips{display:flex;flex-wrap:wrap;gap:8px}
-.fc{border:1px solid var(--line);background:#fff;padding:7px 16px;border-radius:99px;cursor:pointer;font-size:13px;color:var(--ink);display:inline-flex;align-items:center;gap:6px;transition:.15s}
-.fc:hover{border-color:#D6CCB8}
+.fc{border:1px solid var(--line);background:var(--chip);padding:7px 16px;border-radius:99px;cursor:pointer;font-size:13px;color:var(--ink);display:inline-flex;align-items:center;gap:6px;transition:.15s}
+.fc:hover{border-color:var(--lineh)}
 .fc.on{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
 .fc b{font-weight:600;background:rgba(0,0,0,.06);border-radius:99px;padding:0 7px;font-size:11px}
 .fc.on b{background:rgba(255,255,255,.25)}
@@ -115,7 +125,7 @@ input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--acc)}
 .card .tags span{font-size:11.5px;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.14)}
 .stamp{position:absolute;top:56px;right:18px;font-size:22px;font-weight:800;border:3px solid;border-radius:10px;padding:2px 10px;transform:rotate(12deg);opacity:0;z-index:2}
 .acts{display:flex;align-items:center;justify-content:center;gap:26px;padding:24px 0 6px}
-.rb{width:58px;height:58px;border-radius:50%;border:0;background:#fff;color:var(--mute);box-shadow:0 6px 18px rgba(26,26,26,.1);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:transform .12s}
+.rb{width:58px;height:58px;border-radius:50%;border:0;background:var(--chip);color:var(--mute);box-shadow:0 6px 18px rgba(26,26,26,.1);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:transform .12s}
 .rb:hover{transform:scale(1.06)}
 .rb.go{background:var(--acc);color:#fff;box-shadow:0 8px 22px rgba(63,125,78,.35)}
 .cnt{font-size:11.5px;color:var(--mute);line-height:1.6}
@@ -163,7 +173,7 @@ input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--acc)}
 .sum .t{font-weight:600;font-size:15px;margin:5px 0 3px}
 a.btn{text-decoration:none}
 .agesel{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--mute)}
-.agesel select{width:auto;padding:7px 10px;border-radius:99px;font-size:13px;background:#fff;border:1px solid var(--line)}
+.agesel select{width:auto;padding:7px 10px;border-radius:99px;font-size:13px;background:var(--chip);border:1px solid var(--line)}
 .dlinks{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 18px;margin-top:14px}
 .dlinks:empty{display:none}
 .stars{color:#B7791F;font-weight:700;font-size:13px;white-space:nowrap}
@@ -179,7 +189,7 @@ a.btn{text-decoration:none}
 .rstars{display:flex;flex-direction:row-reverse;justify-content:flex-end;gap:2px}
 .rstars label{margin:0;position:relative;cursor:pointer}
 .rstars input{position:absolute;opacity:0;pointer-events:none}
-.rstars span{font-size:32px;line-height:1;color:#D6CCB8;transition:color .1s}
+.rstars span{font-size:32px;line-height:1;color:var(--lineh);transition:color .1s}
 .rstars label:hover span,.rstars label:hover~label span,.rstars label:has(input:checked) span,.rstars label:has(input:checked)~label span{color:#E0A526}
 .rstars label:has(input:focus-visible) span{outline:2px solid var(--acc);border-radius:4px}
 .rp{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13.5px}
@@ -187,13 +197,55 @@ a.btn{text-decoration:none}
 .rp .opt{padding:6px 12px;font-size:12.5px}
 .blk{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13.5px}
 .blk .lnk{margin-left:auto}
+.fshow{flex-wrap:wrap;row-gap:8px}
+.seg{display:inline-flex;background:var(--grey);border-radius:99px;padding:3px;gap:2px}
+.seg button{border:0;background:none;padding:5px 12px;border-radius:99px;font-size:12.5px;color:var(--mute);cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.seg button.on{background:var(--card);color:var(--ink);font-weight:600;box-shadow:var(--shadow)}
+.why{font-size:12px;color:var(--accink);display:flex;align-items:center;gap:5px;font-weight:600}
+.sig{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.alerts{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 12px}
+.alchip{display:inline-flex;align-items:center;gap:4px;background:var(--acc2);color:var(--accink);border-radius:99px;padding:4px 6px 4px 12px;font-size:12.5px;font-weight:600}
+.alchip button{border:0;background:none;color:inherit;cursor:pointer;display:inline-flex;padding:3px;border-radius:50%}
+.map{position:relative;height:400px;border-radius:var(--r);overflow:hidden;background:var(--mapbg);box-shadow:var(--shadow)}
+@media(min-width:900px){.map{height:500px}}
+.map svg{position:absolute;inset:0;width:100%;height:100%}
+.map .mw{fill:var(--mapwater)}.map .mp{fill:var(--mappark)}
+.map .mr{stroke:var(--maproad);stroke-width:5;fill:none}.map .mr path{vector-effect:non-scaling-stroke}
+.you{position:absolute;z-index:2;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:var(--info);border:3px solid var(--card);box-shadow:0 0 0 7px rgba(59,130,246,.2)}
+.pin{position:absolute;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;border:2px solid var(--card);background:var(--pc);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.25);padding:0;transition:transform .12s}
+.pin:hover,.pin:focus-visible{z-index:3;transform:translate(-50%,-50%) scale(1.12);outline:2px solid var(--ink);outline-offset:2px}
+.pin .pl{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);font-size:11.5px;font-weight:600;padding:4px 8px;border-radius:8px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s}
+.pin:hover .pl,.pin:focus-visible .pl{opacity:1}
+.micro{position:absolute;left:12px;right:12px;bottom:72px;z-index:15;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:10px 14px 14px;animation:up .2s ease-out}
+@media(min-width:900px){.micro{left:auto;right:24px;bottom:24px;width:360px}}
+.micro .mq{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--mute)}
+.micro .mq .ib{width:30px;height:30px}
+.micro p{margin:0 0 10px;font-size:14px;font-weight:600}
+.micro .mf{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.micro .mf button{border:1px solid var(--line);background:var(--chip);border-radius:12px;padding:6px 2px;font-size:11.5px;color:var(--mute);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+.micro .mf button:hover,.micro .mf button:focus-visible{border-color:var(--acc);color:var(--ink)}
+.micro .mf span{font-size:20px;line-height:1.2}
+.sosb{border:0;background:var(--bad);color:#fff;font-weight:800;font-size:11.5px;letter-spacing:.05em;border-radius:99px;padding:6px 11px;cursor:pointer;margin:0 4px}
+.msg .who{display:flex;align-items:center;gap:6px}
+.mflag{border:0;background:none;color:var(--mute);cursor:pointer;padding:2px;margin-left:auto;opacity:.55;display:inline-flex}
+.mflag:hover,.mflag:focus-visible{opacity:1;color:var(--bad)}
+.msg.rep{opacity:.65;font-size:12.5px}
+.msg.poll{max-width:88%;background:var(--card)}.msg.poll.mine{margin-left:auto}
+.pq{font-weight:600;margin:2px 0 8px;display:flex;align-items:center;gap:6px}
+.po{position:relative;display:flex;align-items:center;gap:8px;width:100%;border:1px solid var(--line);background:var(--chip);border-radius:10px;padding:8px 10px;margin-bottom:6px;cursor:pointer;overflow:hidden;color:var(--ink);font-size:13px;text-align:left}
+.po .pb{position:absolute;left:0;top:0;bottom:0;background:var(--acc2);transition:width .2s}
+.po .pt3,.po .pn2{position:relative}.po .pt3{flex:1}.po .pn2{font-weight:600;color:var(--mute)}
+.po.on{border-color:var(--acc)}.po.on .pn2{color:var(--accink)}
+.tips{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:12px;font-size:13px}
+.tips b{display:flex;align-items:center;gap:6px}.tips ul{margin:6px 0 10px;padding-left:18px;color:var(--mute)}.tips li{margin:3px 0}.tips .lnk{padding:0 2px}
+.cin .ib{flex:0 0 auto}
 .sum .tg span{background:var(--card)}
 .hostline{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mute);margin:16px 0 2px}
 .hlink{border:0;background:none;padding:2px 4px;margin:-2px -4px;border-radius:8px;font:inherit;color:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
 .hlink:hover b,.hlink:hover .hname{text-decoration:underline;text-underline-offset:3px}
 .hlink:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .cc{text-align:right;font-size:11.5px;color:var(--mute);margin-top:4px}
-.warnbox{display:flex;gap:10px;align-items:flex-start;background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;border-radius:14px;padding:12px 14px;font-size:12.5px;margin:14px 0}
+.warnbox{display:flex;gap:10px;align-items:flex-start;background:var(--wbg);border:1px solid var(--wline);color:var(--wink);border-radius:14px;padding:12px 14px;font-size:12.5px;margin:14px 0}
 .warnbox .i{color:#F59E0B;margin-top:1px}
 
 /* notifications */
@@ -206,13 +258,13 @@ a.btn{text-decoration:none}
 .nl{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
 .nr{display:flex;align-items:flex-start;gap:12px;padding:13px 8px 13px 16px;cursor:pointer;transition:background .15s}
 .nr+.nr{border-top:1px solid var(--line)}
-.nr:hover{background:#FAF6EE}
-.nr.new{background:#F4F8F0}
+.nr:hover{background:var(--hover)}
+.nr.new{background:var(--newbg)}
 .nr .nm{flex:1;min-width:0}
 .nr .udot{width:8px;height:8px;border-radius:50%;background:var(--acc);flex:0 0 auto;margin-top:16px}
 .nic{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
 .nt{font-weight:600;font-size:14px}
-.nx{font-size:13px;color:#3F3F3F;margin:2px 0 3px}
+.nx{font-size:13px;color:var(--ink2);margin:2px 0 3px}
 .tm{font-size:11.5px;color:var(--mute);display:flex;align-items:center;gap:5px}
 
 /* profile */
@@ -230,7 +282,7 @@ a.btn{text-decoration:none}
 .vg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .vi{display:flex;align-items:center;gap:8px;border-radius:99px;padding:9px 14px;font-size:13px;border:1px solid var(--line);background:var(--grey);color:var(--mute)}
 .vi .e{margin-left:auto;display:inline-flex}
-.vi.y{background:#ECFDF5;border-color:#A7F3D0;color:#047857}
+.vi.y{background:var(--okbg);border-color:var(--okline);color:var(--ok)}
 @media(max-width:420px){.vg{grid-template-columns:1fr}}
 
 /* chat, misc */
@@ -253,13 +305,13 @@ a.btn{text-decoration:none}
 .cz input{flex:1;padding:0;background:none;accent-color:var(--acc)}
 
 .msgs{flex:1;overflow-y:auto;padding:12px 18px;background:var(--bg)}
-.msg{max-width:80%;margin-bottom:8px;padding:9px 13px;border-radius:18px 18px 18px 6px;background:#fff;box-shadow:var(--shadow)}
+.msg{max-width:80%;margin-bottom:8px;padding:9px 13px;border-radius:18px 18px 18px 6px;background:var(--card);box-shadow:var(--shadow)}
 .msg.me{margin-left:auto;background:var(--acc);color:#fff;border-radius:18px 18px 6px 18px}
 .msg .who{font-size:11px;font-weight:700;color:var(--acch)}
 .msg.sys{margin:8px auto;background:none;box-shadow:none;font-size:12px;color:var(--mute);text-align:center;max-width:100%}
 .cin{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--line)}
 .cin input{flex:1}.cin button{width:auto}
-#toast{position:absolute;left:14px;right:14px;top:14px;z-index:50;background:#1A1A1A;color:#fff;padding:12px 16px;border-radius:14px;font-size:13.5px;opacity:0;transform:translateY(-12px);transition:.25s;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+#toast{position:absolute;left:14px;right:14px;top:14px;z-index:50;background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:14px;font-size:13.5px;opacity:0;transform:translateY(-12px);transition:.25s;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.2)}
 #toast.show{opacity:1;transform:none}
 @media(min-width:900px){#toast{left:auto;right:24px;top:74px;width:360px}}
 .ob{padding:28px 22px;overflow-y:auto;flex:1;width:100%}
@@ -276,6 +328,7 @@ a.btn{text-decoration:none}
 </head>
 <body>
 <div id="shell"><div id="screen"></div><div id="toast"></div></div>
+<script src="config.js"></script>
 <script>
 "use strict";
 /* ---------- icons (Lucide, ISC licence) ---------- */
@@ -303,6 +356,17 @@ const IC={
   plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
   'chevron-right':'<path d="m9 18 6-6-6-6"/>',
   'chevron-left':'<path d="m15 18-6-6 6-6"/>',
+  flag:'<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
+  'bar-chart':'<path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/>',
+  wallet:'<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+  map:'<path d="M14.1 6 9.9 3.9a2 2 0 0 0-1.8 0L3.6 6.2A1 1 0 0 0 3 7.1v12.3a1 1 0 0 0 1.4.9l4.2-2.1a2 2 0 0 1 1.8 0l4.2 2.1a2 2 0 0 0 1.8 0l4.5-2.3a1 1 0 0 0 .6-.9V4.6a1 1 0 0 0-1.4-.9l-4.2 2.1a2 2 0 0 1-1.8 0z"/><path d="M15 5.8v15"/><path d="M9 3.2v15"/>',
+  list:'<path d="M3 12h.01"/><path d="M3 18h.01"/><path d="M3 6h.01"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M8 6h13"/>',
+  sparkles:'<path d="M9.9 15.5A2 2 0 0 0 8.5 14.1l-6.1-1.6a.5.5 0 0 1 0-1l6.1-1.6a2 2 0 0 0 1.4-1.4l1.6-6.1a.5.5 0 0 1 1 0l1.6 6.1a2 2 0 0 0 1.4 1.4l6.1 1.6a.5.5 0 0 1 0 1l-6.1 1.6a2 2 0 0 0-1.4 1.4l-1.6 6.1a.5.5 0 0 1-1 0z"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.9 4.9 1.4 1.4"/><path d="m17.7 17.7 1.4 1.4"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.3 17.7-1.4 1.4"/><path d="m19.1 4.9-1.4 1.4"/>',
+  download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+  phone:'<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>',
+  'user-plus':'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/>',
+  repeat:'<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>',
   'circle-check':'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
   'badge-check':'<path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/>',
   'shield-check':'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
@@ -372,6 +436,13 @@ const HIST={
   u11:[["Women's film club: Qala",'movies',7,'Hosted',4.9,5],['Subtitled classics night','movies',28,'Hosted',4.8,4],['Short film festival','movies',47,'Joined',4.7,3]],
   u12:[['Crossword and coffee','cafe',14,'Hosted',4.8,2]]
 };
+/* What other people like and when they're free: drives "in common" signals for hosts. */
+const UPREF={u1:[['Movies'],['Weekend evenings','Late nights']],u2:[['Cafe / Food','Concerts'],['Weekend days']],u3:[['Concerts'],['Weekday evenings','Late nights']],u4:[['Cafe / Food'],['Weekend days']],u5:[['Movies','Cafe / Food'],['Late nights']],u6:[['Cafe / Food','Movies'],['Weekday evenings','Weekend days']],u7:[['Concerts'],['Weekday evenings','Weekend evenings']],u8:[['Cafe / Food','Movies'],['Late nights']],u9:[['Concerts','Cafe / Food'],['Weekend evenings']],u10:[['Cafe / Food','Concerts'],['Late nights']],u11:[['Movies'],['Weekend days','Weekday evenings']],u12:[['Cafe / Food'],['Weekend days']]};
+const CAT_INT={movies:'Movies',cafe:'Cafe / Food',concerts:'Concerts'};
+const NEW_PLANS=[['movies','Late show of the new thriller','Grand Cinema, Screen 2'],['cafe','Trying the new South Indian place','Dakshin Kitchen'],['concerts','Jazz trio on the rooftop','Skyline Terrace'],['movies','Anime movie night','Old Rex Cinema'],['cafe','Bakery crawl, three stops','Starts at Bread Co.'],['concerts','Unplugged night, local bands','The Hangar']];
+const CHAT_REASONS=['Harassment or threats','Sexual or unwanted messages','Spam or scam','Hate speech','Something else'];
+const MICRO={swipe:'Was swiping an easy way to find plans?',request:'How easy was it to ask to join?',post:'How easy was posting your plan?',rating:'Was rating the meetup quick enough?'};
+const MAP_SVG='<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="mw" d="M72 0C62 18 82 30 75 46C70 58 86 66 100 64V0Z"/><path class="mp" d="M8 62C18 56 30 60 32 72C34 84 20 92 10 88C2 84 0 70 8 62Z"/><path class="mp" d="M40 8C48 6 54 12 52 20C50 26 42 26 38 20C36 14 36 10 40 8Z"/><g class="mr"><path d="M0 50H100"/><path d="M50 0V100"/><path d="M0 22C30 26 60 18 100 30"/><path d="M0 80C30 74 70 86 100 78"/><path d="M22 0C26 40 18 70 26 100"/><path d="M80 0C76 40 84 70 78 100"/></g></svg>';
 const REPORT_REASONS=['Made me feel unsafe','Inappropriate messages or behaviour','Fake profile or scam',"Didn't show up",'Something else'];
 const REPEAT={weekly:'Every week',biweekly:'Every 2 weeks'};
 /* Demo accounts opened from the Admin tab of the beta site (passwords live there). Each keeps its own data. */
@@ -393,7 +464,8 @@ const NK={req:{ic:'user-check',bg:'#E7F0E1',fg:'#336842'},update:{ic:'layers',bg
 try{[['tagalong_demo_v2',KEY],['tagalong_participant','overhere_participant']].forEach(([o,n])=>{const v=localStorage.getItem(o);if(v===null)return;if(localStorage.getItem(n)===null)localStorage.setItem(n,v);localStorage.removeItem(o)})}catch(e){}
 let S=load()||seed();
 S.blocked=S.blocked||[];S.reports=S.reports||[];S.ratings=S.ratings||{};
-const freshF=()=>({cat:'all',date:'',tod:'any',ver:false,amin:18,amax:99});
+S.following=S.following||[];S.alerts=S.alerts||[];S.muted=S.muted||{};S.tips=S.tips||{};S.asked=S.asked||{};
+const freshF=()=>({cat:'all',date:'',tod:'any',ver:false,amin:18,amax:99,sort:'for',view:'list'});
 const freshUi=()=>({tab:'swipe',ob:{step:2,d:{}},modal:null,f:freshF()});
 let ui=freshUi();
 
@@ -441,6 +513,9 @@ function seed(){
     A('m2','me','movies','Late show and street food after',2,at(4,21,30),['Woman','Non-binary'],'PVR Phoenix','split',CM),
     {...A('m3','me','concerts','Qawwali evening',4,h(-26),'everyone','Courtyard Stage','own',CM,['u4','u6']),status:'past',checkin:true}
   ];
+  /* Rough total cost in rupees, so each person's share can be shown. */
+  const TOT={n1:4000,a1:1600,a4:2000,n2:1800,a7:2400,a8:1000,a9:3200,n5:2400,d4:2000,d5:1600,d6:1500,m2:1200,a14:1200,a13:900};
+  acts.forEach(a=>{if(TOT[a.id])a.total=TOT[a.id]});
   const reqs=[
     /* incoming, on your activities */
     {id:'r1',act:'m1',user:'u9',note:'Love specialty coffee, would be fun to compare notes!',status:'pending'},
@@ -470,7 +545,7 @@ function seed(){
     {...N('n7',60,'remind','How did it go?','Check in','warn','m3','"Qawwali evening" has ended. Let us know it went OK and who showed up.'),check:true}
   ];
   notes.sort((a,b)=>b.at-a.at);
-  return {offset:0,me:null,acts,reqs,dismissed:[],chats,notes,forceFail:false,seq:100,blocked:[],reports:[],ratings:{}};
+  return {offset:0,me:null,acts,reqs,dismissed:[],chats,notes,forceFail:false,seq:100,blocked:[],reports:[],ratings:{},following:[],alerts:[],muted:{},tips:{},asked:{}};
 }
 function load(){try{const v=localStorage.getItem(SKEY);return v?JSON.parse(v):null}catch(e){return null}}
 function save(){try{localStorage.setItem(SKEY,JSON.stringify(S));return true}catch(e){return false}}
@@ -512,7 +587,7 @@ const actLink=a=>location.href.split('#')[0].split('?')[0]+'#act='+a.id;
 function trust(id){
   let [met,shows]=(id==='me'?S.me.trust:TRUST[id])||[0,0];
   Object.values(S.ratings).forEach(r=>{const v=r.people?.[id];if(v){met++;if(v==='show')shows++}});
-  return {met,rate:met?Math.round(shows/met*100):null};
+  return {met,shows,rate:met?Math.round(shows/met*100):null};
 }
 const trustTxt=id=>{const t=trust(id);return t.met?`${t.met} ${t.met===1?'meetup':'meetups'} · showed up ${t.rate}%`:'New to meetups'};
 /* Past activities for a profile: the dummy history plus real ones from this demo. */
@@ -533,6 +608,103 @@ function pastHtml(list,none){
   return `<div class="past">${list.slice(0,6).map(x=>{const c=CATS[x.cat],a=x.act&&actOf(x.act);
     const rate=x.stars?`<span class="stars">★ ${x.stars.toFixed(1)}</span>`:a&&attended(a)&&a.members.length?`<button class="btn xs" data-a="rate" data-id="${a.id}">Rate</button>`:'';
     return `<div class="pi"><div class="pth" style="background:${c.g}">${I(c.icon,16)}</div><div class="pm"><div class="t">${esc(x.t)}</div><div class="small mute">${x.role} · ${ago(x.at)}</div></div>${rate}</div>`}).join('')}</div>`;
+}
+/* ---- recommendations, distance, cost, host signals ---- */
+function slotOf(t){const d=new Date(t),h=d.getHours(),we=d.getDay()===0||d.getDay()===6;if(h>=23||h<5)return 'Late nights';if(we)return h<17?'Weekend days':'Weekend evenings';return h>=17?'Weekday evenings':null}
+function reasons(a){
+  const r=[],s=slotOf(a.when);
+  if(S.following.includes(a.host))r.push(['You follow '+uname(a.host),3]);
+  if((S.me.ints||[]).includes(CAT_INT[a.cat]))r.push(['You like '+CAT_INT[a.cat],2]);
+  if(s&&(S.me.avail||[]).includes(s))r.push(['Fits your '+s.toLowerCase(),1]);
+  return r;
+}
+const score=a=>reasons(a).reduce((n,x)=>n+x[1],0);
+/* Approximate spot for the map and distance, stable per activity, within ~4 km of your neighbourhood centre. */
+function geo(a){let h=2166136261;for(const c of a.id+a.venue){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}h>>>=0;const ang=(h%360)*Math.PI/180,rad=0.4+((h>>>9)%40)/10;return {x:rad*Math.cos(ang),y:rad*Math.sin(ang)*0.85,d:rad}}
+const distKm=a=>geo(a).d.toFixed(1);
+const rupees=n=>'₹'+Math.round(n).toLocaleString('en-IN');
+function costLine(a){
+  const t=a.total,each=t?Math.ceil(t/(a.cap+1)/10)*10:0;
+  if(a.cost==='host')return a.host==='me'?`You cover everyone${t?' · about '+rupees(t)+' total':''}`:'Host covers it · free for you';
+  if(a.cost==='own')return 'Everyone pays their own way'+(t?` · about ${rupees(each)} each`:'');
+  return t?`Split equally · about ${rupees(each)} each when full (${rupees(t)} total)`:'Split equally';
+}
+const metWith=u=>S.acts.filter(a=>a.status==='past'&&attended(a)&&(a.host===u||a.members.includes(u))).length;
+function signals(u){
+  const [ints,av]=UPREF[u]||[[],[]],t=trust(u),met=metWith(u);
+  const chips=[...ints.filter(x=>(S.me.ints||[]).includes(x)).map(x=>'Both like '+x),...av.filter(x=>(S.me.avail||[]).includes(x)).map(x=>'Both free '+x.toLowerCase())].map(x=>`<span class="chip acc">${esc(x)}</span>`);
+  if(met)chips.push(`<span class="chip ok">${I('users',11)} Met you ${met}× before</span>`);
+  if(t.met>=3&&t.rate<90)chips.push(`<span class="chip warn">${I('alert-triangle',11)} Missed ${t.met-t.shows} of ${t.met} meetups</span>`);
+  return `<div class="sig">${chips.length?chips.join(''):'<span class="small mute">Nothing in common yet</span>'}</div>`;
+}
+function matchF(a,f){const age=profileOf(a.host).age;return (f.cat==='all'||a.cat===f.cat)&&(!f.date||dayKey(a.when)===f.date)&&(f.tod==='any'||tod(a.when)===f.tod)&&(!f.ver||isVer(a.host))&&age>=f.amin&&age<=f.amax}
+function alertLabel(f){const p=[f.cat==='all'?'Any plan':CATS[f.cat].label];if(f.tod!=='any')p.push(f.tod[0].toUpperCase()+f.tod.slice(1));if(f.ver)p.push('Verified hosts');if(f.amin!==18||f.amax!==99)p.push(`Host ${f.amin}${f.amax===99?'+':'–'+f.amax}`);return p.join(' · ')}
+/* ---- usage events: sent to Supabase from the published site, kept in this browser when running from a file ---- */
+const uuid4=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)});
+const SESSION=uuid4();
+function track(name,props={}){
+  try{
+    let pid=null;try{const pp=JSON.parse(localStorage.getItem('overhere_participant'));if(/^[0-9a-f-]{36}$/i.test(pp?.id||''))pid=pp.id}catch(e){}
+    const row={id:uuid4(),participant_id:pid,session_id:SESSION,name,props:{...props,...(ACCT?{acct:ACCT}:{})}};
+    const C=window.APP_CONFIG||{};
+    if(C.SUPABASE_URL&&C.SUPABASE_ANON_KEY&&location.protocol.startsWith('http')){
+      const h={apikey:C.SUPABASE_ANON_KEY,'Content-Type':'application/json',Prefer:'return=minimal'};
+      if(C.SUPABASE_ANON_KEY.startsWith('eyJ'))h.Authorization='Bearer '+C.SUPABASE_ANON_KEY;
+      fetch(C.SUPABASE_URL.replace(/\/+$/,'').replace(/\/rest\/v1$/,'')+'/rest/v1/events',{method:'POST',headers:h,body:JSON.stringify(row),keepalive:true}).catch(()=>{});
+    }else{
+      const k='overhere_local_data',all=JSON.parse(localStorage.getItem(k)||'{"participants":[],"feedback":[]}');
+      (all.events=all.events||[]).push({...row,created_at:new Date().toISOString()});
+      if(all.events.length>2000)all.events.splice(0,all.events.length-2000);
+      localStorage.setItem(k,JSON.stringify(all));
+    }
+  }catch(e){}
+}
+/* ---- one-question feedback after key moments, asked once each ---- */
+function askMicro(k){if(MICRO[k]&&!S.asked[k])ui.micro=k}
+function microHtml(){
+  const k=ui.micro;if(!k||ui.modal)return '';
+  return `<div class="micro" role="dialog" aria-label="Quick question"><div class="mq"><span>Quick question</span><button class="ib" data-a="microx" aria-label="Dismiss question">${I('x',15)}</button></div><p>${MICRO[k]}</p>
+  <div class="mf">${[['😞','Hard',1],['😐','OK',2],['🙂','Easy',3],['😀','Very easy',4]].map(([e,l,n])=>`<button data-a="microans" data-n="${n}"><span aria-hidden="true">${e}</span>${l}</button>`).join('')}</div></div>`;
+}
+/* ---- theme + install ---- */
+let installEvt=null;
+const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+function applyTheme(t){
+  if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');
+  const dark=t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);
+  document.querySelector('meta[name=theme-color]')?.setAttribute('content',dark?'#15130F':'#3F7D4E');
+}
+const themePref=()=>{try{return localStorage.getItem('overhere_theme')||'system'}catch(e){return 'system'}};
+/* ---- new plans from other people (demo) ---- */
+function newPlanPosted(a){
+  if(!visible(a))return;
+  const fol=S.following.includes(a.host),al=S.alerts.find(x=>matchF(a,{...x,date:''}));
+  if(fol)notify(`${uname(a.host)} posted "${short(a.desc)}" for ${whenStr(a.when)}.`,{kind:'update',title:'New plan from someone you follow',tag:'Following',tone:'info',act:a.id});
+  if(al)notify(`"${short(a.desc)}", ${whenStr(a.when)}, matches your alert "${al.label}".`,{kind:'update',title:'New plan for your alert',tag:'Alert',tone:'info',act:a.id});
+  if(!fol&&!al)toast(`${uname(a.host)} posted "${short(a.desc)}". It didn't match any of your alerts.`);
+}
+function simPost(host){
+  const [cat,desc,venue]=NEW_PLANS[Math.floor(Math.random()*NEW_PLANS.length)],d=new Date(now()+(3+Math.floor(Math.random()*5))*864e5);
+  d.setHours([11,16,19,21][Math.floor(Math.random()*4)],0,0,0);
+  const cost=['split','own','host'][Math.floor(Math.random()*3)];
+  const a={id:nextId('a'),host,cat,desc,cap:3+Math.floor(Math.random()*3),when:d.getTime(),aud:'everyone',venue,cost,hood:S.me.hood,members:[],status:'open',...(cost==='own'?{}:{total:1200+Math.floor(Math.random()*8)*200})};
+  S.acts.push(a);newPlanPosted(a);save();return a;
+}
+function msgHtml(a,x,i){
+  if(x.from==='sys')return `<div class="msg sys">${esc(x.text)}</div>`;
+  const me=x.from==='me',who=me?'':`<div class="who">${esc(uname(x.from))}${x.poll||x.reported?'':`<button class="mflag" data-a="msgrep" data-id="${a.id}" data-m="${i}" title="Report message" aria-label="Report this message">${I('flag',12)}</button>`}</div>`;
+  if(x.poll){
+    const tot=x.poll.opts.reduce((n,o)=>n+o.v.length,0);
+    return `<div class="msg poll ${me?'mine':''}">${who}<div class="pq">${I('bar-chart',14)} ${esc(x.poll.q)}</div>${x.poll.opts.map((o,j)=>{const on=o.v.includes('me'),pct=tot?Math.round(o.v.length/tot*100):0;
+      return `<button class="po ${on?'on':''}" data-a="vote" data-id="${a.id}" data-m="${i}" data-o="${j}" aria-pressed="${on}" aria-label="${esc(o.t)}: ${o.v.length} ${o.v.length===1?'vote':'votes'}"><span class="pb" style="width:${pct}%"></span><span class="pt3">${esc(o.t)}</span><span class="pn2">${o.v.length}</span></button>`}).join('')}
+      <div class="small mute">${tot} ${tot===1?'vote':'votes'} · tap to vote</div></div>`;
+  }
+  return `<div class="msg ${me?'me':''} ${x.reported?'rep':''}">${who}${x.reported?'<i>You reported this message.</i>':esc(x.text)}</div>`;
+}
+function getLoc(){
+  const done=(st,loc)=>{if(ui.modal?.type==='sos'){ui.modal.locState=st;if(loc)ui.modal.loc=loc;render()}};
+  if(!navigator.geolocation)return done('fail');
+  navigator.geolocation.getCurrentPosition(p=>done('ok',{lat:p.coords.latitude,lng:p.coords.longitude,acc:p.coords.accuracy}),()=>done('fail'),{enableHighAccuracy:true,timeout:10000,maximumAge:60000});
 }
 const backB=m=>m.back?`<button class="ib" data-a="close" title="Back" aria-label="Back" style="margin-left:-8px">${I('chevron-left',18)}</button>`:'';
 const ageOf=dob=>{const d=new Date(dob);return isNaN(d)?'?':Math.floor((Date.now()-d)/31557600000)};
@@ -555,7 +727,7 @@ const opts=(name,list,sel)=>`<div class="opts">${list.map(v=>`<label class="opt"
 const many=n=>[...document.querySelectorAll(`input[name="${n}"]:checked`)].map(x=>x.value);
 let toastT;
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600)}
-function notify(text,o={}){S.notes.unshift({id:nextId('n'),text,at:now(),read:false,kind:o.kind||'update',title:o.title||'Update',tag:o.tag||'',tone:o.tone||'',act:o.act||null,...(o.check?{check:true}:{})});toast(o.title?o.title+' · '+text:text);save()}
+function notify(text,o={}){S.notes.unshift({id:nextId('n'),text,at:now(),read:false,kind:o.kind||'update',title:o.title||'Update',tag:o.tag||'',tone:o.tone||'',act:o.act||null,...(o.check?{check:true}:{}),...(o.safe?{safe:true}:{}),...(o.chat?{chat:true}:{})});toast(o.title?o.title+' · '+text:text);save()}
 
 /* ---------- domain logic ---------- */
 /* visible: listed in Discover (full ones too, for the waitlist). eligible: can be requested right now. */
@@ -643,6 +815,15 @@ function tick(){
   let ch=false;
   S.acts.slice().forEach(a=>{
     const mine=attended(a),left=a.when-now();
+    /* Safety check-in when the meetup starts, and a nudge if there's no answer after 30 minutes. */
+    if(mine&&a.members.length&&!a.arrive&&left<=0&&-left<3*3600e3){
+      a.arrive='asked';a.arriveAt=now();ch=true;
+      notify(`"${short(a.desc)}" is starting. Tap to confirm you arrived safely.`,{kind:'remind',title:'Arrived safely?',tag:'Check in',tone:'warn',act:a.id,safe:true});
+    }
+    if(a.arrive==='asked'&&!a.arriveNag&&now()-a.arriveAt>=30*6e4){
+      a.arriveNag=true;ch=true;
+      notify(`You haven't confirmed you're OK at "${short(a.desc)}". Tap to answer or alert ${S.me.trusted?S.me.trusted.name:'your trusted contact'}.`,{kind:'remind',title:'No reply yet',tag:'Safety',tone:'bad',act:a.id,safe:true});
+    }
     if(a.status!=='past'&&mine&&left>0){
       if(!a.reminded&&left<=2*3600e3){
         a.reminded=a.remind24=true;ch=true;
@@ -701,10 +882,11 @@ const gate=fn=>{if(S.me.kyc)fn();else openVerify('kyc',fn)};
 function swipe(dir){
   const a=deck()[0];if(!a)return;
   const el=document.querySelector('.card.top');
+  track('swipe',{dir});
   if(dir==='right'){if(el)el.style.transform='';ui.modal={type:'confirm',id:a.id};render();return}
   if(el){el.style.transition='transform .25s';el.style.transform='translateX(-600px) rotate(-25deg)'}
   setTimeout(()=>{
-    S.dismissed.push(a.id);save();
+    S.dismissed.push(a.id);askMicro('swipe');save();
     if(!deck().length){ui.tab='discover';toast("You've seen everything nearby. Here's Discover.")}
     render();
   },230);
@@ -741,8 +923,8 @@ const REQ_TONE={pending:'acc',accepted:'ok',rejected:'bad',waitlist:'info'};
 function acCard(a){
   const c=CATS[a.cat],rq=myReq(a.id),full=spots(a)<=0;
   return `<div class="ac" data-a="detail" data-id="${a.id}"><div class="media" style="background:${c.g}">${I(c.icon,56)}${catPill(a.cat)}</div>
-  <div class="bd"><h4>${esc(a.desc)}</h4>
-  <div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)}</span></div>
+  <div class="bd">${ui.f.sort==='for'&&reasons(a)[0]?`<div class="why">${I('sparkles',12)} ${esc(reasons(a)[0][0])}</div>`:''}<h4>${esc(a.desc)}</h4>
+  <div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)} · ${distKm(a)} km</span></div>
   <div class="tg"><span>${I('users',12)}${spotTxt(a)}</span>${tags(a).map(t=>`<span>${esc(t)}</span>`).join('')}</div>
   <div class="ft"><div class="hn">${av(a.host,'sm')}${hostName(a.host)} ${vf(a.host)}</div>
   ${rq?`<span class="chip ${REQ_TONE[rq.status]||''}">${REQ_LBL[rq.status]||esc(rq.status)}</span>`
@@ -770,20 +952,32 @@ function tabSwipe(){
   <p class="small mute kb" style="margin-top:6px">Use ← → arrow keys to navigate</p></div>`;
 }
 function tabDiscover(){
-  const all=feed(),f=ui.f;
-  const list=all.filter(a=>{const age=profileOf(a.host).age;return (f.cat==='all'||a.cat===f.cat)&&(!f.date||dayKey(a.when)===f.date)&&(f.tod==='any'||tod(a.when)===f.tod)&&(!f.ver||isVer(a.host))&&age>=f.amin&&age<=f.amax});
+  const all=feed(),f=ui.f,list=all.filter(a=>matchF(a,f));
+  if(f.sort==='for')list.sort((a,b)=>score(b)-score(a)||a.when-b.when);
   const C=(k,l)=>`<button class="fc ${f.cat===k?'on':''}" data-a="fcat" data-k="${k}">${l}</button>`;
   const T=(k,l)=>`<button class="fc ${f.tod===k?'on':''}" data-a="ftod" data-k="${k}">${l}</button>`;
-  const busy=f.cat!=='all'||!!f.date||f.tod!=='any'||f.ver||f.amin!==18||f.amax!==99;
+  const alertable=f.cat!=='all'||f.tod!=='any'||f.ver||f.amin!==18||f.amax!==99;
+  const busy=alertable||!!f.date,saved=S.alerts.some(x=>x.label===alertLabel(f));
   const ageOpt=(list,sel)=>list.map(n=>`<option value="${n}" ${n===sel?'selected':''}>${n===99?'any age':n}</option>`).join('');
+  const SEG=(act,cur,opts)=>`<span class="seg" role="radiogroup">${opts.map(([k,l])=>`<button role="radio" aria-checked="${cur===k}" class="${cur===k?'on':''}" data-a="${act}" data-k="${k}">${l}</button>`).join('')}</span>`;
   return `<div class="hd"><div><h1 class="pt">Plan ahead</h1><p class="sub">Activities more than 36 hours away · ${all.length} upcoming in ${esc(S.me.hood)}</p></div><button class="btn sm mobonly" data-a="newpost">${I('plus',15)} Post</button></div>
+  ${S.alerts.length?`<div class="alerts"><span class="small mute" style="display:inline-flex;align-items:center;gap:4px">${I('bell',13)} Your alerts</span>${S.alerts.map(al=>`<span class="alchip">${esc(al.label)}<button data-a="rmalert" data-id="${al.id}" aria-label="Remove alert ${esc(al.label)}">${I('x',12)}</button></span>`).join('')}</div>`:''}
   <div class="fchips">${C('all','All')}${Object.entries(CATS).map(([k,c])=>C(k,c.label)).join('')}</div>
   <div class="filters"><div class="f"><div class="fl"><label for="d_date">Date</label>${f.date?`<button class="lnk" data-a="fdate" title="Show all dates">${I('x',13)} Clear</button>`:''}</div><input type="date" id="d_date" value="${esc(f.date)}"></div>
   <div><div class="fl"><label>Time of day</label></div><div class="fchips">${T('any',I('clock',13)+' Any time')}${T('morning','Morning')}${T('afternoon','Afternoon')}${T('evening','Evening')}${T('night','Night')}</div></div>
   <div><div class="fl"><label for="f_amin">Host</label></div><div class="fchips"><button class="fc ${f.ver?'on':''}" data-a="fver" aria-pressed="${f.ver}">${I('badge-check',13)} Verified only</button>
   <span class="agesel">Age <select id="f_amin" aria-label="Youngest host age">${ageOpt([18,21,25,30,35,40],f.amin)}</select> to <select id="f_amax" aria-label="Oldest host age">${ageOpt([25,30,35,40,50,99],f.amax)}</select></span></div></div></div>
-  <p class="small mute fshow">Showing <b>${list.length}</b> ${list.length===1?'activity':'activities'}${busy?`<button class="lnk" data-a="freset">Reset filters</button>`:''}</p>
-  ${list.length?`<div class="grid">${list.map(acCard).join('')}</div>`:empty('calendar',all.length?'No matches':'No plans yet',all.length?'Try a different filter.':'Be the first to post one in your neighborhood.',busy&&all.length?'<button class="btn sec" data-a="freset">Reset filters</button>':'')}`;
+  <div class="small mute fshow"><span>Showing <b>${list.length}</b> ${list.length===1?'activity':'activities'}</span>
+  ${SEG('fsort',f.sort,[['for',I('sparkles',12)+' For you'],['soon','Soonest']])}${SEG('fview',f.view,[['list',I('list',12)+' List'],['map',I('map',12)+' Map']])}
+  ${busy?`<button class="lnk" data-a="freset">Reset filters</button>`:''}${alertable&&!saved?`<button class="lnk" data-a="saveal">${I('bell',13)} Alert me about new matches</button>`:''}</div>
+  ${!list.length?empty('calendar',all.length?'No matches':'No plans yet',all.length?'Try a different filter.':'Be the first to post one in your neighborhood.',busy&&all.length?'<button class="btn sec" data-a="freset">Reset filters</button>':'')
+   :f.view==='map'?mapHtml(list):`<div class="grid">${list.map(a=>acCard(a)).join('')}</div>`}`;
+}
+function mapHtml(list){
+  const pos=a=>{const g=geo(a);return `left:${50+g.x/4.4*45}%;top:${50+g.y/4.4*45}%`};
+  return `<div class="map" role="region" aria-label="Map of plans near you">${MAP_SVG}<span class="you" style="left:50%;top:50%" title="You (${esc(S.me.hood)})"></span>
+  ${list.map(a=>{const c=CATS[a.cat];return `<button class="pin" style="${pos(a)};--pc:${c.fg}" data-a="detail" data-id="${a.id}" aria-label="${esc(a.desc)}, ${whenStr(a.when)}, ${distKm(a)} km away">${I(c.icon,15)}<span class="pl">${esc(short(a.desc))} · ${distKm(a)} km</span></button>`}).join('')}</div>
+  <p class="small mute" style="margin-top:8px">The blue dot is the centre of ${esc(S.me.hood)}. Pins are approximate: hosts share the exact spot once you're accepted.</p>`;
 }
 function tabActs(){
   const mine=S.acts.filter(a=>a.host==='me').sort((a,b)=>(a.status==='past')-(b.status==='past')||(a.status==='past'?b.when-a.when:a.when-b.when));
@@ -820,7 +1014,7 @@ function tabNotes(){
   ${sec('Requests',N.filter(n=>n.kind==='req'),'Join requests, and replies to yours, will show up here.')}`;
 }
 function tabProfile(){
-  const m=S.me;
+  const m=S.me,th=themePref(),ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
   const V=[['mail','Email Verified',true],['scan-face','Face Verified',!!m.face],['id-card','Identity Verified',!!m.kyc],['user','Profile Complete',!!(m.job&&m.bio&&(m.ints||[]).length&&(m.avail||[]).length)]];
   const done=V.filter(v=>v[2]).length;
   const soft=(arr,none)=>arr&&arr.length?`<div class="soft">${arr.map(x=>`<span>${esc(x)}</span>`).join('')}</div>`:`<p class="small mute">${none}</p>`;
@@ -835,6 +1029,10 @@ function tabProfile(){
   <div class="panel"><div class="ph">${I('shield-check',15)} Verifications <span class="r">${done}/${V.length} complete</span></div>
   <div class="bar"><i style="width:${done/V.length*100}%"></i></div>
   <div class="vg">${V.map(([ic,l,y])=>`<div class="vi ${y?'y':''}">${I(ic,14)}${l}${y?`<span class="e">${I('circle-check',14)}</span>`:''}</div>`).join('')}</div></div>
+  <div class="panel"><div class="ph">${I('user-plus',15)} Following</div>${S.following.length?S.following.map(u=>`<div class="blk">${av(u,'sm')}<button class="hlink" data-a="user" data-id="${u}">${esc(uname(u))}</button><button class="lnk" data-a="follow" data-id="${u}">Unfollow</button></div>`).join(''):'<p class="small mute" style="margin:0">Follow hosts from their profile to hear when they post a new plan.</p>'}</div>
+  <div class="panel"><div class="ph">${I('sun',15)} App</div>
+  <label style="margin-top:0">Appearance</label><span class="seg" role="radiogroup" aria-label="Appearance">${[['system','System'],['light','Light'],['dark','Dark']].map(([k,l])=>`<button role="radio" aria-checked="${th===k}" class="${th===k?'on':''}" data-a="theme" data-k="${k}">${l}</button>`).join('')}</span>
+  <label>Install</label>${isStandalone()?'<p class="small mute" style="margin:0">Overhere is installed on this device.</p>':installEvt?`<button class="btn sm sec" data-a="install">${I('download',14)} Install Overhere</button>`:ios?'<p class="small mute" style="margin:0">On iPhone: tap Share, then “Add to Home Screen”.</p>':'<p class="small mute" style="margin:0">Open the published site in Chrome or Edge and use “Install app” in the address bar. Installing is not available from a file or inside the beta page.</p>'}</div>
   <div class="panel"><div class="ph">${I('shield-check',15)} Safety</div>
   <label style="margin-top:0">Trusted contact</label><p class="small mute" style="margin-top:0">Someone you can send your plans to in one tap. Only you see this.</p>
   <div class="row"><input id="t_name" placeholder="Name" aria-label="Trusted contact name" value="${esc(m.trusted?.name||'')}"><input id="t_phone" type="tel" placeholder="Phone" aria-label="Trusted contact phone" value="${esc(m.trusted?.phone||'')}"></div>
@@ -869,21 +1067,26 @@ function modalHtml(){
     return sheet(face?'Face verification':'Identity verification',`<div class="sb">${inner}</div>`);
   }
   if(m.type==='post'){
-    const mn=localInput(now()+3600e3),e=m.id&&actOf(m.id),minCap=Math.max(1,e?e.members.length:1),aud=e?e.aud:'everyone';
+    const mn=localInput(now()+3600e3),e=m.id&&actOf(m.id),t=!e&&m.tpl&&actOf(m.tpl),src=e||t,minCap=Math.max(1,e?e.members.length:1),aud=src?src.aud:'everyone';
+    const tplWhen=t?(()=>{let w=t.when;while(w<now()+3600e3)w+=7*864e5;return w})():0;
+    const past=[...new Map(S.acts.filter(a=>a.host==='me').sort((a,b)=>b.when-a.when).map(a=>[a.desc,a])).values()].slice(0,8);
     return sheet(e?'Edit activity':'Create Activity',`<div class="sb">
       ${e&&e.members.length?`<div class="dn" style="margin-top:0">${e.members.length} ${e.members.length===1?'person is':'people are'} already going. They'll see a note about your changes in the group chat.</div>`:''}
-      <label style="margin-top:0">Category</label><select id="f_cat">${Object.entries(CATS).map(([k,c])=>`<option value="${k}" ${e&&e.cat===k?'selected':''}>${c.label}</option>`).join('')}</select>
-      <label>What is the plan?</label><textarea id="f_desc" maxlength="160" placeholder="Short description of what you are doing">${e?esc(e.desc):''}</textarea>
-      <label>Group capacity <span class="mute" style="font-weight:400">(excluding you)</span></label><select id="f_cap">${[1,2,3,4,5,6,7,8,9,10].filter(n=>n>=minCap).map(n=>`<option ${n===(e?e.cap:2)?'selected':''}>${n}</option>`).join('')}</select>
+      ${!e&&past.length?`<label style="margin-top:0" for="f_tpl">Start from a past plan <span class="mute" style="font-weight:400">(optional)</span></label><select id="f_tpl"><option value="">Start fresh</option>${past.map(a=>`<option value="${a.id}" ${t&&t.id===a.id?'selected':''}>${esc(short(a.desc))}</option>`).join('')}</select>`:''}
+      <label ${!e&&past.length?'':'style="margin-top:0"'}>Category</label><select id="f_cat">${Object.entries(CATS).map(([k,c])=>`<option value="${k}" ${src&&src.cat===k?'selected':''}>${c.label}</option>`).join('')}</select>
+      <label>What is the plan?</label><textarea id="f_desc" maxlength="160" placeholder="Short description of what you are doing">${src?esc(src.desc):''}</textarea>
+      <label>Group capacity <span class="mute" style="font-weight:400">(excluding you)</span></label><select id="f_cap">${[1,2,3,4,5,6,7,8,9,10].filter(n=>n>=minCap).map(n=>`<option ${n===(src?src.cap:2)?'selected':''}>${n}</option>`).join('')}</select>
       <p class="small mute" style="margin-top:6px">Shows on your card as "spots open", so 2 means two people can join you.</p>
-      <label>Date and time</label><input id="f_when" type="datetime-local" min="${mn}" value="${localInput(e?e.when:now()+26*3600e3)}">
-      <label>Repeats</label><select id="f_rep"><option value="">Does not repeat</option>${Object.entries(REPEAT).map(([k,v])=>`<option value="${k}" ${e&&e.repeat===k?'selected':''}>${v}</option>`).join('')}</select>
+      <label>Date and time</label><input id="f_when" type="datetime-local" min="${mn}" value="${localInput(e?e.when:t?tplWhen:now()+26*3600e3)}">
+      <label>Repeats</label><select id="f_rep"><option value="">Does not repeat</option>${Object.entries(REPEAT).map(([k,v])=>`<option value="${k}" ${src&&src.repeat===k?'selected':''}>${v}</option>`).join('')}</select>
       <p class="small mute" style="margin-top:6px">The next one is posted automatically when this one ends.</p>
       <label>Who can see and request this?</label>
       <label class="chk"><input type="checkbox" id="f_all" ${aud==='everyone'?'checked':''}> Everyone</label>
       ${GENDERS.map(g=>`<label class="chk"><input type="checkbox" class="f_g" value="${g}" ${aud!=='everyone'&&aud.includes(g)?'checked':''}> ${g}</label>`).join('')}
-      <label>Venue</label><input id="f_venue" placeholder="e.g. Grand Cinema, Screen 4" value="${e?esc(e.venue):''}">
-      <label>How will costs work? (informational only)</label><select id="f_cost">${Object.entries(COST).map(([k,v])=>`<option value="${k}" ${e&&e.cost===k?'selected':''}>${v}</option>`).join('')}</select>
+      <label>Venue</label><input id="f_venue" placeholder="e.g. Grand Cinema, Screen 4" value="${src?esc(src.venue):''}">
+      <label>How will costs work? (informational only)</label><select id="f_cost">${Object.entries(COST).map(([k,v])=>`<option value="${k}" ${src&&src.cost===k?'selected':''}>${v}</option>`).join('')}</select>
+      <label for="f_total">Estimated total cost <span class="mute" style="font-weight:400">(₹, optional)</span></label><input id="f_total" type="number" min="0" max="1000000" step="50" inputmode="numeric" placeholder="e.g. 1200" value="${src?.total||''}">
+      <p class="small mute" style="margin-top:6px">We show each person's rough share. Payments stay between you.</p>
       <div style="height:16px"></div><button class="btn" data-a="submitpost">${e?'Save changes':'Post activity'}</button></div>`,'full wide');
   }
   if(m.type==='detail'||m.type==='confirm'){
@@ -892,8 +1095,9 @@ function modalHtml(){
     const open=a.host!=='me'&&!past&&(a.status==='open'||a.status==='full')&&audOK(a)&&!isBlocked(a.host)&&!rq;
     const can=open&&a.status==='open'&&spots(a)>0,canWait=open&&!can;
     const top=`<div class="sum"><div class="thumb" style="background:${c.g}">${I(c.icon,26)}</div><div style="min-width:0">${catPill(a.cat,true)}<div class="t">${esc(a.desc)}</div>
-      <div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)}</span></div>
+      <div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)}${a.host==='me'?'':` · ${distKm(a)} km`}</span></div>
       <div class="meta2" style="margin-top:3px"><span>${I('users',13)}${a.members.length} going · ${spotTxt(a)}${wl?` · ${wl} on waitlist`:''}</span></div>
+      <div class="meta2" style="margin-top:3px"><span>${I('wallet',13)}${costLine(a)}</span></div>
       <div class="tg" style="margin-top:8px"><span>${COST_S[a.cost]}</span><span>${a.aud==='everyone'?'Open to everyone':esc(a.aud.join(' / '))+' only'}</span>${a.repeat?`<span>${REPEAT[a.repeat]}</span>`:''}</div></div></div>
       <div class="hostline">Hosted by ${a.host==='me'?`${av('me','sm')}<b style="color:var(--ink);font-weight:600">You</b>`:`<button class="hlink" data-a="user" data-id="${a.host}" title="View ${esc(h.name)}'s profile">${av(a.host,'sm')}<span><b style="color:var(--ink);font-weight:600">${esc(h.name)}</b>, ${h.age}</span></button> ${vf(a.host,true)}`}</div>
       ${a.host==='me'?'':`<div class="small" style="margin:2px 0 0 32px">${rateTxt(a.host)} <span class="mute">· ${trustTxt(a.host)}</span></div>`}`;
@@ -924,6 +1128,9 @@ function modalHtml(){
       <div class="pt2">${av(m.id,'lg')}<div><div class="pn">${esc(p.name)} ${vf(m.id,true)}</div><div class="small mute">${esc(p.gender)}, ${p.age}${p.job?' · '+esc(p.job):''}</div></div></div>
       ${p.bio?`<p style="margin:16px 0 0">${esc(p.bio)}</p>`:''}
       <div class="tstats"><div><b>${rt?'★ '+rt.avg:'–'}</b><span>${rt?rt.n+' ratings':'no ratings'}</span></div><div><b>${t.met}</b><span>meetups</span></div><div><b>${t.rate==null?'–':t.rate+'%'}</b><span>showed up</span></div></div>
+      ${signals(m.id)}
+      <div style="height:12px"></div><button class="btn ${S.following.includes(m.id)?'ghost':'sec'}" data-a="follow" data-id="${m.id}" aria-pressed="${S.following.includes(m.id)}">${S.following.includes(m.id)?I('circle-check',16)+' Following':I('user-plus',16)+' Follow'}</button>
+      <p class="small mute" style="margin:6px 0 0;text-align:center">${S.following.includes(m.id)?`You'll hear when ${esc(p.name)} posts a new plan.`:`Get notified when ${esc(p.name)} posts a new plan.`}</p>
       ${isVer(m.id)?'':`<div class="warnbox">${I('alert-triangle',16)}<span>${esc(p.name)} has not verified their ID yet. Meet in busy public places and share your plan with someone you trust.</span></div>`}
       <h3>Past activities</h3>${pastHtml(pastList(m.id),'No past activities yet.')}
       <p class="small mute" style="margin-top:14px">${hosting?`Hosting ${hosting} upcoming ${hosting===1?'activity':'activities'} near you`:'No other upcoming activities near you'}</p>
@@ -989,11 +1196,11 @@ function modalHtml(){
   if(m.type==='host'){
     const a=actOf(m.id);if(!a)return '';
     const reqs=S.reqs.filter(r=>r.act===a.id),pend=reqs.filter(r=>r.status==='pending'),wl=waitlist(a.id),done=reqs.filter(r=>r.status!=='pending'&&r.status!=='waitlist'),past=isPast(a);
-    const person=r=>{const p=profileOf(r.user);return `<div class="panel" style="background:var(--bg);box-shadow:none"><div class="hn">${av(r.user)}<div><button class="hlink" data-a="user" data-id="${r.user}"><strong>${esc(p.name)}</strong></button> ${vf(r.user)}<div class="mute small">${esc(p.gender)}, ${p.age}${p.job?' · '+esc(p.job):''}</div><div class="small" style="margin-top:2px">${rateTxt(r.user)} <span class="mute">· ${trustTxt(r.user)}</span></div></div></div><p class="small mute" style="margin:8px 0 4px">${esc(p.bio)}</p>${r.note?`<div class="dn">Note: ${esc(r.note)}</div>`:'<p class="small mute">No note attached</p>'}`;};
+    const person=r=>{const p=profileOf(r.user);return `<div class="panel" style="background:var(--bg);box-shadow:none"><div class="hn">${av(r.user)}<div><button class="hlink" data-a="user" data-id="${r.user}"><strong>${esc(p.name)}</strong></button> ${vf(r.user)}<div class="mute small">${esc(p.gender)}, ${p.age}${p.job?' · '+esc(p.job):''}</div><div class="small" style="margin-top:2px">${rateTxt(r.user)} <span class="mute">· ${trustTxt(r.user)}</span></div></div></div>${signals(r.user)}<p class="small mute" style="margin:8px 0 4px">${esc(p.bio)}</p>${r.note?`<div class="dn">Note: ${esc(r.note)}</div>`:'<p class="small mute">No note attached</p>'}`;};
     return sheet('Manage activity',`<div class="sb"><div class="sum"><div class="thumb" style="background:${CATS[a.cat].g}">${I(CATS[a.cat].icon,26)}</div><div style="min-width:0"><div class="t">${esc(a.desc)}</div><div class="meta2" style="margin-bottom:6px"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)}</span></div>${actChip(a.status)} <span class="chip">${a.members.length}/${a.cap} accepted</span></div></div>
       <div style="height:12px"></div>
       ${a.members.length?`<button class="btn sec" data-a="chat" data-id="${a.id}">${I('message-circle',16)} Open group chat</button>`:'<p class="small mute">Chat opens when you accept the first member.</p>'}
-      ${past?(a.members.length?(S.ratings[a.id]?`<p class="small mute">${I('circle-check',14)} You rated this meetup.</p>`:`<div style="height:8px"></div><button class="btn" data-a="rate" data-id="${a.id}">${I('star',16)} Rate the meetup</button>`):'')
+      ${past?`<div class="row" style="margin-top:8px"><button class="btn sm ghost" data-a="postagain" data-id="${a.id}">${I('repeat',14)} Post again</button></div>`+(a.members.length?(S.ratings[a.id]?`<p class="small mute">${I('circle-check',14)} You rated this meetup.</p>`:`<div style="height:8px"></div><button class="btn" data-a="rate" data-id="${a.id}">${I('star',16)} Rate the meetup</button>`):'')
         :`<div class="row" style="margin-top:8px"><button class="btn sm ghost" data-a="editact" data-id="${a.id}">${I('pencil',14)} Edit details</button><button class="btn sm ghost" data-a="share" data-k="invite" data-id="${a.id}">${I('send',14)} Invite a friend</button></div>`}
       <h3>Pending requests (${pend.length})</h3>
       ${pend.length?pend.map(r=>person(r)+`<div class="row" style="margin-top:10px"><button class="btn sm bad" data-a="rej" data-id="${r.id}">Decline</button><button class="btn sm ok" data-a="acc" data-id="${r.id}">Accept</button></div></div>`).join(''):'<p class="mute small">No pending requests. Use Demo tools to simulate some.</p>'}
@@ -1003,10 +1210,50 @@ function modalHtml(){
   }
   if(m.type==='chat'){
     const a=actOf(m.id);if(!a)return '';
-    const msgs=(S.chats[a.id]||[]).map(x=>x.from==='sys'?`<div class="msg sys">${esc(x.text)}</div>`:`<div class="msg ${x.from==='me'?'me':''}">${x.from==='me'?'':`<div class="who">${esc(uname(x.from))}</div>`}${esc(x.text)}</div>`).join('');
-    return `<div class="ov"><div class="sheet full chat"><div class="sh"><h2 style="font-size:15px">${esc(a.desc.slice(0,34))}</h2><button class="ib" data-a="close" title="Close">${I('x',18)}</button></div>
-      <p class="small mute" style="padding:8px 18px;margin:0">Members: ${[a.host,...a.members].map(uname).join(', ')} · full history visible to everyone</p>
-      <div class="msgs" id="msgs">${msgs}</div><div class="cin"><input id="c_in" placeholder="Message the group" autocomplete="off"><button class="btn sm" data-a="send" data-id="${a.id}">${I('send',15)}</button></div></div></div>`;
+    const muted=!!S.muted[a.id],msgs=(S.chats[a.id]||[]).map((x,i)=>msgHtml(a,x,i)).join('');
+    const tips=S.tips[a.id]?'':`<div class="tips"><b>${I('shield-check',15)} Meeting new people? A few tips</b><ul><li>Meet in a busy public place and make your own way there.</li><li>Tell someone you trust where you'll be. <button class="lnk" data-a="share" data-k="trust" data-id="${a.id}">Share plan</button></li><li>Leave whenever you like. Tap SOS if you ever feel unsafe.</li><li>Tap ${I('flag',11)} next to a name to report a message.</li></ul><button class="btn sm sec" data-a="tipsok" data-id="${a.id}">Got it</button></div>`;
+    return `<div class="ov"><div class="sheet full chat"><div class="sh"><h2 style="font-size:15px">${esc(a.desc.slice(0,34))}</h2>
+      <button class="ib" data-a="mute" data-id="${a.id}" title="${muted?'Unmute':'Mute'} chat notifications" aria-label="${muted?'Unmute':'Mute'} chat notifications" aria-pressed="${muted}">${I(muted?'bell-off':'bell',17)}</button>
+      <button class="sosb" data-a="sos" data-id="${a.id}" aria-label="SOS: get help now">SOS</button>
+      <button class="ib" data-a="close" title="Close">${I('x',18)}</button></div>
+      <p class="small mute" style="padding:8px 18px;margin:0">Members: ${[a.host,...a.members].map(uname).join(', ')} · full history visible to everyone${muted?' · notifications muted':''}</p>
+      <div class="msgs" id="msgs">${tips}${msgs}</div><div class="cin"><button class="ib" data-a="newpoll" data-id="${a.id}" title="Create a poll" aria-label="Create a poll">${I('bar-chart',18)}</button><input id="c_in" placeholder="Message the group" autocomplete="off" aria-label="Message the group"><button class="btn sm" data-a="send" data-id="${a.id}" aria-label="Send">${I('send',15)}</button></div></div></div>`;
+  }
+  if(m.type==='poll'){
+    return sheet(backB(m)+'New poll',`<div class="sb"><label for="pl_q" style="margin-top:0">Question</label><input id="pl_q" maxlength="80" placeholder="e.g. Which time works best?">
+      <label>Options <span class="mute" style="font-weight:400">(at least 2)</span></label>${[0,1,2,3].map(i=>`<input id="pl_o${i}" maxlength="40" placeholder="Option ${i+1}${i>1?' (optional)':''}" aria-label="Option ${i+1}" style="margin-bottom:8px">`).join('')}
+      <div style="height:8px"></div><button class="btn" data-a="dopoll" data-id="${m.id}">Post poll</button></div>`);
+  }
+  if(m.type==='msgrep'){
+    const x=S.chats[m.id]?.[m.m];if(!x)return '';
+    return sheet(backB(m)+'Report message',`<div class="sb"><div class="dn" style="margin-top:0"><b>${esc(uname(x.from))}:</b> ${esc(x.text)}</div>
+      <label>What's wrong with it?</label>${CHAT_REASONS.map(r=>`<label class="chk"><input type="radio" name="mr_r" value="${esc(r)}"> ${esc(r)}</label>`).join('')}
+      ${isBlocked(x.from)?'':`<label class="chk"><input type="checkbox" id="mr_block"> Also block ${esc(uname(x.from))}</label>`}
+      <p class="small mute">Reports are confidential. Our safety team reviews them within 24 hours.</p>
+      <button class="btn bad" data-a="domsgrep" data-id="${m.id}" data-m="${m.m}">Send report</button></div>`);
+  }
+  if(m.type==='sos'){
+    const a=actOf(m.id),t=S.me.trusted,loc=m.loc;
+    const where=loc?`https://maps.google.com/?q=${loc.lat.toFixed(5)},${loc.lng.toFixed(5)}`:'';
+    const text=`SOS from Overhere: I need help.${a?` I'm at "${a.desc}" (${a.venue}).`:''}${where?' My location: '+where:''} Please call me now.`;
+    const enc=encodeURIComponent(text),ph=t?t.phone.replace(/[^\d+]/g,''):'';
+    const st=m.locState==='wait'?'Finding your location…':loc?`${I('map-pin',13)} Location found (within about ${Math.max(5,Math.round(loc.acc))} m)`:`${I('alert-triangle',13)} Couldn't get your location, so the message names the venue instead. <button class="lnk" data-a="sosloc">Try again</button>`;
+    return sheet(backB(m)+'Get help',`<div class="sb">
+      <a class="btn" style="background:var(--bad);color:#fff" href="tel:112">${I('phone',16)} Call emergency services (112)</a>
+      <h3>Alert your trusted contact</h3>
+      ${t?`<p class="small" style="margin-top:0">${st}</p>
+        <a class="btn" href="sms:${esc(ph)}?&amp;body=${enc}">${I('message-circle',16)} Text ${esc(t.name)}${loc?' my location':''}</a><div style="height:8px"></div>
+        <a class="btn sec" href="https://wa.me/${esc(ph.replace('+',''))}?text=${enc}" target="_blank" rel="noopener">WhatsApp ${esc(t.name)}</a><div style="height:8px"></div>
+        <a class="btn ghost" href="tel:${esc(ph)}">${I('phone',16)} Call ${esc(t.name)}</a>`
+      :`<p class="small mute" style="margin-top:0">Add someone now so you can alert them in one tap.</p><label>Name</label><input id="t_name" placeholder="e.g. Mum, Riya"><label>Phone</label><input id="t_phone" type="tel" placeholder="+91 98765 43210"><div style="height:12px"></div><button class="btn" data-a="savetrusted">Save contact</button>`}
+      <p class="small mute" style="margin-top:14px">Demo: nothing is sent until you press send in your own SMS or WhatsApp app.</p></div>`);
+  }
+  if(m.type==='safe'){
+    const a=actOf(m.id);if(!a)return '';
+    return sheet('Arrived safely?',`<div class="sb"><p style="margin-top:0">"${esc(a.desc)}" at ${esc(a.venue)} started ${ago(a.when)}. Let us know you're OK.</p>
+      <button class="btn" data-a="safeok" data-id="${a.id}">${I('circle-check',16)} Yes, I'm OK</button><div style="height:8px"></div>
+      <button class="btn bad" data-a="sos" data-id="${a.id}">${I('alert-triangle',16)} I need help</button>
+      <p class="small mute" style="margin-top:12px">No answer within 30 minutes? We'll remind you and offer to alert ${S.me.trusted?esc(S.me.trusted.name):'your trusted contact'}.</p></div>`);
   }
   if(m.type==='demo'){
     return sheet('Demo tools',`<div class="sb"><p class="small mute">Shortcuts so you can show the whole flow without waiting for other people. Virtual time now: <b>${fmt(now())}</b></p>
@@ -1019,6 +1266,9 @@ function modalHtml(){
       <button class="btn sm sec" style="width:100%;margin-bottom:8px" data-a="simcancel">A host cancels an activity I was accepted to</button>
       <button class="btn sm sec" style="width:100%;margin-bottom:8px" data-a="simreply">Chat members send a message (open chat first)</button>
       <button class="btn sm sec" style="width:100%;margin-bottom:8px" data-a="simleave">A member leaves a full activity (waitlist moves up)</button>
+      <button class="btn sm sec" style="width:100%;margin-bottom:8px" data-a="simpost">Someone posts a new plan nearby (checks your alerts)</button>
+      <button class="btn sm sec" style="width:100%;margin-bottom:8px" data-a="simfollow">A host you follow posts a new plan</button>
+      <button class="btn sm sec" style="width:100%;margin-bottom:8px" data-a="simstart">Jump to the start of my next plan (safety check-in)</button>
       <h3>Account</h3><p class="small mute">${ACCT?`Signed in to the <b>${esc(ACCOUNTS[ACCT].name)}</b> demo account. Switch accounts from the Admin tab on the beta site.`:'Using your own profile. Demo accounts open from the Admin tab on the beta site.'}</p>
       ${ACCT?'<button class="btn sm sec" style="width:100%;margin-bottom:8px" data-a="signout">Sign out of demo account</button>':''}
       <h3>Reset</h3><button class="btn sm bad" style="width:100%" data-a="reset">Reset whole demo</button></div>`,'full');
@@ -1190,7 +1440,7 @@ function render(){
   <div class="tnav">${TT('swipe','Swipe')}${TT('discover','Discover')}<button class="btn sm" data-a="newpost">${I('plus',15)} Create Activity</button>${TT('acts','Activities'+(pend?` (${pend})`:''))}${TT('reqs','Requests')}</div>
   <div class="hr"><button class="ib" data-a="bell" title="Notifications">${I('bell',19)}${unread?'<span class="dot"></span>':''}</button>${window.parent!==window?`<button class="ib" data-a="fb" title="Leave feedback">${I('message-circle',19)}</button>`:''}<button class="ib" data-a="demo" title="Demo tools">${I('settings-2',19)}</button><button class="ib${ui.tab==='profile'?' on':''}" data-a="tab" data-t="profile" title="Your profile" aria-label="Your profile">${av('me')}</button></div></div></header>
   <main><div class="${ui.tab==='discover'?'wrap':'narrow'}">${view}</div></main>
-  <nav>${T('swipe','flame','Swipe')}${T('discover','compass','Discover')}${T('acts','calendar-check','Activities'+(pend?` (${pend})`:''))}${T('reqs','mail','Requests')}</nav>${modalHtml()}`;
+  <nav>${T('swipe','flame','Swipe')}${T('discover','compass','Discover')}${T('acts','calendar-check','Activities'+(pend?` (${pend})`:''))}${T('reqs','mail','Requests')}</nav>${microHtml()}${modalHtml()}`;
   afterRender();
 }
 function afterRender(){
@@ -1201,7 +1451,7 @@ function afterRender(){
 /* ---------- actions ---------- */
 const val=id=>document.getElementById(id)?.value?.trim()||'';
 const A={
-  tab:d=>{ui.tab=d.t;ui.modal=null;render()},
+  tab:d=>{if(ui.tab!==d.t)track('tab_view',{tab:d.t});ui.tab=d.t;ui.modal=null;render()},
   swipe:d=>swipe(d.d),
   detail:d=>{ui.modal={type:'detail',id:d.id};render()},
   hostview:d=>{ui.modal={type:'host',id:d.id};render()},
@@ -1213,17 +1463,21 @@ const A={
   demo:()=>{ui.modal={type:'demo'};render()},
   fb:()=>{try{window.parent.postMessage('overhere-feedback','*')}catch(e){}},
   scan:()=>scan(),
-  fcat:d=>{ui.f.cat=d.k;render()},
-  ftod:d=>{ui.f.tod=d.k;render()},
+  fcat:d=>{ui.f.cat=d.k;track('filter',{type:'category'});render()},
+  ftod:d=>{ui.f.tod=d.k;track('filter',{type:'time'});render()},
   fdate:()=>{ui.f.date='';render()},
   freset:()=>{ui.f=freshF();render()},
-  fver:()=>{ui.f.ver=!ui.f.ver;render()},
+  fver:()=>{ui.f.ver=!ui.f.ver;track('filter',{type:'verified'});render()},
+  fsort:d=>{ui.f.sort=d.k;track('sort',{by:d.k});render()},
+  fview:d=>{ui.f.view=d.k;if(d.k==='map')track('map_view');render()},
+  saveal:()=>{const f=ui.f,al={id:nextId('al'),cat:f.cat,tod:f.tod,ver:f.ver,amin:f.amin,amax:f.amax,label:alertLabel(f)};S.alerts.push(al);save();track('alert_saved');toast(`Alert saved: we'll tell you about new "${al.label}" plans.`);render()},
+  rmalert:d=>{S.alerts=S.alerts.filter(x=>x.id!==d.id);save();toast('Alert removed');render()},
   readall:()=>{S.notes.forEach(n=>n.read=true);save();render()},
   opennote:d=>{
     const n=S.notes.find(x=>x.id===d.id);if(!n)return;
     n.read=true;save();
     const a=n.act&&actOf(n.act);
-    if(a)ui.modal=n.check&&!S.ratings[a.id]?{type:'rate',id:a.id}:{type:a.host==='me'?'host':'detail',id:a.id};
+    if(a)ui.modal=n.safe&&a.arrive==='asked'?{type:'safe',id:a.id}:n.chat&&S.chats[a.id]?{type:'chat',id:a.id}:n.check&&!S.ratings[a.id]?{type:'rate',id:a.id}:{type:a.host==='me'?'host':'detail',id:a.id};
     render();
   },
   viewact:d=>{
@@ -1239,23 +1493,27 @@ const A={
     if(!(when>now()))return toast('Pick a future date and time');
     if(!all&&!gs.length)return toast('Choose Everyone or at least one identity');
     const f={cat:val('f_cat'),desc,cap,when,aud:all?'everyone':gs,venue,cost:val('f_cost')};
-    if(rep)f.repeat=rep;
+    const tot=Math.max(0,Math.min(1e6,Math.round(+val('f_total')||0)));
+    if(rep)f.repeat=rep;if(tot)f.total=tot;
     if(e){
       const moved=e.when!==when||e.venue!==venue;
       if(moved)e.reminded=e.remind24=false;
-      delete e.repeat;Object.assign(e,f);
+      delete e.repeat;delete e.total;Object.assign(e,f);track('activity_edited');
       if(e.members.length)addMsg(e.id,'sys','The host updated the details'+(moved?`: now ${whenStr(when)} at ${venue}`:''));
       if(spots(e)<=0){if(e.status==='open')fillUp(e)}else spotOpened(e);
       save();ui.modal={type:'host',id:e.id};toast('Changes saved'+(e.members.length?'. Members see a note in the chat.':''));render();return;
     }
     S.acts.push({id:nextId('a'),host:'me',...f,hood:S.me.hood,members:[],status:'open'});
+    track('post_created',{cat:f.cat,repeat:!!rep,audience:all?'everyone':'limited',cost:f.cost,template:!!ui.modal?.tpl});askMicro('post');
     save();ui.modal=null;ui.tab='acts';toast('Posted. Now visible to eligible people.');render();
   },
   editact:d=>{ui.modal={type:'post',id:d.id};render()},
+  postagain:d=>{ui.modal={type:'post',tpl:d.id};render()},
   request:d=>{
     const note=val('r_note');
     gate(()=>{
       if(!sendReq(d.id,note))return;
+      track('request_sent',{waitlist:myReq(d.id)?.status==='waitlist',note:!!note});askMicro('request');
       ui.modal=null;
       if(ui.tab==='swipe'&&!deck().length){ui.tab='discover';toast("Request sent. You've seen everything nearby, here's Discover.")}
       render();
@@ -1265,9 +1523,9 @@ const A={
   rej:d=>{reject(d.id);render()},
   askreq:d=>{ui.modal={type:'confirm',id:d.id};render()},
   cancelact:d=>{ui.modal={type:'cancelconfirm',id:d.id};render()},
-  withdraw:d=>{S.reqs=S.reqs.filter(r=>!(r.act===d.id&&r.user==='me'&&(r.status==='pending'||r.status==='waitlist')));save();toast('Request withdrawn');render()},
+  withdraw:d=>{track('request_withdrawn');S.reqs=S.reqs.filter(r=>!(r.act===d.id&&r.user==='me'&&(r.status==='pending'||r.status==='waitlist')));save();toast('Request withdrawn');render()},
   leave:d=>{ui.modal={type:'leave',id:d.id,back:ui.modal};render()},
-  doleave:d=>{const a=actOf(d.id);leaveAct(d.id,'me');toast(`You left "${short(a.desc)}". ${uname(a.host)} has been told.`);ui.modal={type:'detail',id:d.id};render()},
+  doleave:d=>{const a=actOf(d.id);leaveAct(d.id,'me');track('left_activity');toast(`You left "${short(a.desc)}". ${uname(a.host)} has been told.`);ui.modal={type:'detail',id:d.id};render()},
   rate:d=>{ui.modal={type:'rate',id:d.id,back:ui.modal};render()},
   dorate:d=>{
     const a=actOf(d.id);if(!a)return;
@@ -1276,18 +1534,53 @@ const A={
     [a.host,...a.members].filter(x=>x!=='me').forEach(u=>{people[u]=document.querySelector(`input[name="rt_${u}"]:checked`)?.value||'show'});
     S.ratings[a.id]={at:now(),ok,stars:+st.value,people};
     if(ok==='no')S.reports.push({act:a.id,reason:'Check-in: something went wrong',at:now()});
+    track('rating_submitted',{stars:+st.value,ok});askMicro('rating');
     save();ui.modal=null;toast(ok==='no'?'Thanks for telling us. Our safety team will follow up with you.':'Thanks! Your rating helps keep meetups reliable.');render();
   },
   report:d=>{ui.modal={type:'report',id:d.id,back:ui.modal};render()},
   dorep:d=>{
     const r=document.querySelector('input[name=rp_r]:checked');if(!r)return toast('Pick what happened');
     S.reports.push({user:d.id,reason:r.value,note:document.getElementById('rp_note').value.trim(),at:now()});
-    const bl=!!document.getElementById('rp_block')?.checked;if(bl)blockUser(d.id);save();
+    const bl=!!document.getElementById('rp_block')?.checked;if(bl)blockUser(d.id);save();track('report_sent',{kind:'user',reason:r.value,block:bl});
     ui.modal=ui.modal.back||null;toast('Report sent. Our safety team reviews reports within 24 hours.'+(bl?` ${uname(d.id)} is blocked.`:''));render();
   },
-  block:d=>{blockUser(d.id);toast(`Blocked ${uname(d.id)}. You won't see their activities and they can't request yours.`);render()},
+  block:d=>{blockUser(d.id);track('block');toast(`Blocked ${uname(d.id)}. You won't see their activities and they can't request yours.`);render()},
   unblock:d=>{S.blocked=S.blocked.filter(x=>x!==d.id);save();toast(`Unblocked ${uname(d.id)}`);render()},
-  share:d=>{ui.modal={type:'share',id:d.id,k:d.k,back:ui.modal};render()},
+  share:d=>{track('share_opened',{kind:d.k});ui.modal={type:'share',id:d.id,k:d.k,back:ui.modal};render()},
+  follow:d=>{const on=S.following.includes(d.id);S.following=on?S.following.filter(x=>x!==d.id):[...S.following,d.id];save();track(on?'unfollow':'follow');toast(on?`Unfollowed ${uname(d.id)}`:`Following ${uname(d.id)}. You'll hear when they post.`);render()},
+  mute:d=>{S.muted[d.id]=!S.muted[d.id];save();track('chat_mute',{on:S.muted[d.id]});toast(S.muted[d.id]?'Chat muted. You can still open it any time.':'Chat notifications on');render()},
+  tipsok:d=>{S.tips[d.id]=true;save();render()},
+  newpoll:d=>{ui.modal={type:'poll',id:d.id,back:ui.modal};render()},
+  dopoll:d=>{
+    const q=val('pl_q'),opts=[0,1,2,3].map(i=>val('pl_o'+i)).filter(Boolean);
+    if(!q||opts.length<2)return toast('Add a question and at least 2 options');
+    (S.chats[d.id]=S.chats[d.id]||[]).push({from:'me',at:now(),text:'Poll: '+q,poll:{q,opts:opts.map(t=>({t,v:[]}))}});
+    save();track('poll_created',{options:opts.length});ui.modal=ui.modal.back||{type:'chat',id:d.id};render();
+    const i=S.chats[d.id].length-1;
+    setTimeout(()=>{const a=actOf(d.id),x=S.chats[d.id]?.[i];if(!a||!x)return;const ppl=[a.host,...a.members].filter(u=>u!=='me'),voters=ppl.filter(()=>Math.random()<.8);(voters.length?voters:ppl.slice(0,1)).forEach(u=>x.poll.opts[Math.floor(Math.random()*x.poll.opts.length)].v.push(u));save();if(ui.modal?.type==='chat'&&ui.modal.id===d.id)render()},1500);
+  },
+  vote:d=>{const x=S.chats[d.id]?.[+d.m];if(!x?.poll)return;const was=x.poll.opts[+d.o].v.includes('me');x.poll.opts.forEach(o=>{o.v=o.v.filter(u=>u!=='me')});if(!was)x.poll.opts[+d.o].v.push('me');save();track('poll_vote');render()},
+  msgrep:d=>{ui.modal={type:'msgrep',id:d.id,m:+d.m,back:ui.modal};render()},
+  domsgrep:d=>{
+    const x=S.chats[d.id]?.[+d.m],r=document.querySelector('input[name=mr_r]:checked');if(!x)return;if(!r)return toast('Pick what is wrong with it');
+    const bl=!!document.getElementById('mr_block')?.checked;
+    S.reports.push({user:x.from,act:d.id,msg:x.text,reason:r.value,at:now()});x.reported=true;if(bl)blockUser(x.from);save();
+    track('report_sent',{kind:'message',reason:r.value,block:bl});ui.modal=ui.modal.back||null;toast('Message reported. Our safety team reviews reports within 24 hours.');render();
+  },
+  sos:d=>{track('sos_opened');ui.modal={type:'sos',id:d.id,back:ui.modal?.type==='safe'?null:ui.modal,locState:'wait'};render();getLoc()},
+  sosloc:()=>{ui.modal.locState='wait';render();getLoc()},
+  safeok:d=>{const a=actOf(d.id);if(a){a.arrive='ok'}save();track('safe_checkin',{answer:'ok'});ui.modal=null;toast("Great, have fun! We'll check in again afterwards.");render()},
+  microans:d=>{const k=ui.micro;if(!k)return;track('micro_feedback',{moment:k,score:+d.n});S.asked[k]=true;ui.micro=null;save();toast('Thanks! That helps us improve.');render()},
+  microx:()=>{const k=ui.micro;if(k){track('micro_dismissed',{moment:k});S.asked[k]=true}ui.micro=null;save();render()},
+  theme:d=>{try{localStorage.setItem('overhere_theme',d.k)}catch(e){}applyTheme(d.k);track('theme',{mode:d.k});render()},
+  install:()=>{if(!installEvt)return;installEvt.prompt();installEvt.userChoice.then(c=>{track('pwa_install',{outcome:c.outcome});installEvt=null;render()}).catch(()=>{})},
+  simpost:()=>{const pool=Object.keys(USERS).filter(u=>!isBlocked(u));simPost(pool[Math.floor(Math.random()*pool.length)]);ui.modal=null;render()},
+  simfollow:()=>{const u=S.following.find(x=>!isBlocked(x));if(!u)return toast('Follow a host first: open their profile and tap Follow');simPost(u);ui.modal=null;render()},
+  simstart:()=>{
+    const a=S.acts.filter(x=>attended(x)&&x.members.length&&x.when>now()).sort((x,y)=>x.when-y.when)[0];
+    if(!a)return toast('Join or host a plan with other people first');
+    S.offset+=a.when-now()+6e4;tick();save();ui.modal=null;render();
+  },
   edittrusted:()=>{ui.modal.edit=true;render()},
   savetrusted:()=>{
     const name=val('t_name'),phone=val('t_phone');
@@ -1312,7 +1605,7 @@ const A={
   docancel:d=>{cancelAct(d.id,'me');ui.modal=null;render()},
   send:d=>{
     const t=val('c_in');if(!t)return;
-    addMsg(d.id,'me',t);save();render();
+    addMsg(d.id,'me',t);save();track('chat_message');render();
     document.getElementById('c_in')?.focus();
     setTimeout(()=>{if(ui.modal?.type==='chat'&&ui.modal.id===d.id)simReply(d.id)},1400);
   },
@@ -1337,7 +1630,10 @@ const A={
     cancelAct(a.id,a.host);ui.modal=null;render();
   },
   simreply:()=>{
-    if(ui.modal?.type==='chat')simReply(ui.modal.id);else toast('Open a group chat first, then use this from a fresh chat');
+    if(ui.modal?.type==='chat')return simReply(ui.modal.id);
+    const a=S.acts.find(x=>S.chats[x.id]&&attended(x)&&!isPast(x));
+    if(!a)return toast('You are not in any group chat yet');
+    ui.modal=null;simReply(a.id);render();
   },
   togfail:()=>{S.forceFail=document.getElementById('d_fail').checked;save()},
   approve:()=>{['face','kyc'].forEach(k=>{if(S.me[k+'Flag']){S.me[k+'Flag']=false;S.me[k+'Fails']=0;S.me[k]=true}});save();toast('Reviewer approved flagged verifications');render()},
@@ -1359,12 +1655,13 @@ const A={
     const d=ui.ob.d;d.name=val('o_name');d.dob=val('o_dob');d.gender=val('o_gender');d.hood=val('o_hood');d.ints=many('o_int');d.avail=many('o_avail');
     if(!d.name||!d.dob||!d.gender)return toast('Name, date of birth and gender identity are required');
     if(ageOf(d.dob)<18)return toast('You must be 18 or over (demo rule)');
-    S.me={name:d.name,dob:d.dob,gender:d.gender,hood:d.hood,ints:d.ints,avail:d.avail,face:true,kyc:true,obDone:true};
+    S.me={name:d.name,dob:d.dob,gender:d.gender,hood:d.hood,ints:d.ints,avail:d.avail,face:true,kyc:true,obDone:false};
     save();render();
   },
   obface:()=>openVerify('face',()=>render()),
   obdone:d=>{
     if(d.save)Object.assign(S.me,{job:val('o_job'),bio:val('o_bio')});
+    track('onboarding_done',{details:!!d.save});
     S.me.obDone=true;save();ui.tab='swipe';render();
   }
 };
@@ -1377,8 +1674,11 @@ function simReply(actId){
   const a=actOf(actId);if(!a)return;
   const others=[a.host,...a.members].filter(x=>x!=='me');
   if(!others.length)return;
-  addMsg(actId,others[Math.floor(Math.random()*others.length)],REPLIES[Math.floor(Math.random()*REPLIES.length)]);
-  save();if(ui.modal?.type==='chat'&&ui.modal.id===actId)render();
+  const from=others[Math.floor(Math.random()*others.length)],text=REPLIES[Math.floor(Math.random()*REPLIES.length)];
+  addMsg(actId,from,text);
+  const open=ui.modal?.type==='chat'&&ui.modal.id===actId;
+  if(!open&&!S.muted[actId])notify(`${uname(from)}: ${text}`,{kind:'update',title:`New message in "${short(a.desc)}"`,tag:'Chat',tone:'info',act:actId,chat:true});
+  save();if(open)render();
 }
 
 document.addEventListener('click',e=>{
@@ -1393,7 +1693,8 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('input',e=>{if(e.target.id==='r_note'){const c=document.getElementById('r_cnt');if(c)c.textContent=e.target.value.length}});
 document.addEventListener('change',e=>{
-  if(e.target.id==='d_date'){ui.f.date=e.target.value;render()}
+  if(e.target.id==='d_date'){ui.f.date=e.target.value;track('filter',{type:'date'});render()}
+  if(e.target.id==='f_tpl'&&ui.modal?.type==='post'){ui.modal.tpl=e.target.value||null;render()}
   if(e.target.id==='f_amin'||e.target.id==='f_amax'){
     ui.f[e.target.id==='f_amin'?'amin':'amax']=+e.target.value;
     if(ui.f.amin>ui.f.amax)[ui.f.amin,ui.f.amax]=[ui.f.amax,ui.f.amin];
@@ -1439,6 +1740,11 @@ function initMe(){
   if(S.me)save();
 }
 initMe();tick();render();
+track('app_open',{standalone:isStandalone(),embedded:window.parent!==window});
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>applyTheme(themePref()));
+applyTheme(themePref());
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(ui.tab==='profile'&&!ui.modal)render()});
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 /* Invite links open straight to the activity. */
 (()=>{const mm=location.hash.match(/^#act=(\w+)$/),a=mm&&S.me?.obDone&&actOf(mm[1]);
   if(a){ui.modal={type:a.host==='me'?'host':'detail',id:a.id};render()}})();

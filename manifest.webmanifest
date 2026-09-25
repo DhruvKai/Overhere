@@ -1,0 +1,16 @@
+{
+  "name": "Overhere",
+  "short_name": "Overhere",
+  "description": "Do things in your city with company. Post a plan, pick who joins.",
+  "start_url": "demo.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F5F0E6",
+  "theme_color": "#3F7D4E",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
