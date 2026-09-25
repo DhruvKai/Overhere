@@ -153,12 +153,6 @@ input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--acc)}
 .tg span{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 9px;border-radius:99px;background:var(--grey);color:var(--mute)}
 .ft{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:8px}
 .hn{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500}
-.filters{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:flex-start;margin:16px 0}
-.filters .f{flex:1 1 260px}
-.filters label{margin:0 0 6px;font-weight:500;font-size:12.5px}
-.filters .fl{display:flex;align-items:center;justify-content:space-between;min-height:26px}
-.filters .fl label{margin:0}
-.filters .fl .lnk{padding:4px 2px}
 .fshow{margin:0 0 12px;display:flex;align-items:center;gap:8px}
 .fshow .lnk{padding:2px 4px}
 
@@ -207,6 +201,17 @@ a.btn{text-decoration:none}
 .blk{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13.5px}
 .blk .lnk{margin-left:auto}
 .fshow{flex-wrap:wrap;row-gap:8px}
+.dtools{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0 10px}
+.fbtn{border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:99px;padding:7px 14px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.fbtn:hover{border-color:var(--lineh)}
+.fbtn.on{border-color:var(--acc);background:var(--acc2);color:var(--accink)}
+.fbtn b{background:var(--acc);color:#fff;border-radius:99px;padding:0 7px;font-size:11px;line-height:18px}
+@media(max-width:480px){.dtools{gap:6px}.dtools .seg .tl{display:none}.dtools .seg button{padding:5px 9px;font-size:12px}.dtools .fbtn{padding:6px 11px;font-size:12.5px}}
+.fact{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 12px}
+.fact .lnk{padding:2px 4px}
+.sfoot{display:flex;gap:8px;padding:12px 18px 16px;border-top:1px solid var(--line);background:var(--card)}
+.sfoot .btn{flex:1}.sfoot .btn.ghost{flex:0 0 auto;width:auto;padding:13px 20px}
+.fsec h3:first-child{margin-top:0}
 .seg{display:inline-flex;background:var(--grey);border-radius:99px;padding:3px;gap:2px}
 .seg button{border:0;background:none;padding:5px 12px;border-radius:99px;font-size:12.5px;color:var(--mute);cursor:pointer;display:inline-flex;align-items:center;gap:5px}
 .seg button.on{background:var(--card);color:var(--ink);font-weight:600;box-shadow:var(--shadow)}
@@ -964,26 +969,29 @@ function tabSwipe(){
   <button class="rb go" data-a="swipe" data-d="right" title="Request to join">${I('heart',24)}</button></div>
   <p class="small mute kb" style="margin-top:6px">Use ← → arrow keys to navigate</p></div>`;
 }
+/* Active filters, as removable chips: [key, label] */
+function activeFilters(f){
+  const a=[];
+  if(f.cat!=='all')a.push(['cat',CATS[f.cat].label]);
+  if(f.date)a.push(['date',new Date(f.date+'T12:00:00').toLocaleDateString([], {weekday:'short',day:'numeric',month:'short'})]);
+  if(f.tod!=='any')a.push(['tod',f.tod[0].toUpperCase()+f.tod.slice(1)]);
+  if(f.ver)a.push(['ver','Verified hosts']);
+  if(f.amin!==18||f.amax!==99)a.push(['age',`Host ${f.amin}${f.amax===99?'+':'–'+f.amax}`]);
+  return a;
+}
+const SEG=(act,cur,opts)=>`<span class="seg" role="radiogroup">${opts.map(([k,l,name])=>`<button role="radio" aria-checked="${cur===k}" class="${cur===k?'on':''}" data-a="${act}" data-k="${k}"${name?` aria-label="${name}" title="${name}"`:''}>${l}</button>`).join('')}</span>`;
 function tabDiscover(){
-  const all=feed(),f=ui.f,list=all.filter(a=>matchF(a,f));
+  const all=feed(),f=ui.f,list=all.filter(a=>matchF(a,f)),act=activeFilters(f);
   if(f.sort==='for')list.sort((a,b)=>score(b)-score(a)||a.when-b.when);
-  const C=(k,l)=>`<button class="fc ${f.cat===k?'on':''}" data-a="fcat" data-k="${k}">${l}</button>`;
-  const T=(k,l)=>`<button class="fc ${f.tod===k?'on':''}" data-a="ftod" data-k="${k}">${l}</button>`;
-  const alertable=f.cat!=='all'||f.tod!=='any'||f.ver||f.amin!==18||f.amax!==99;
-  const busy=alertable||!!f.date,saved=S.alerts.some(x=>x.label===alertLabel(f));
-  const ageOpt=(list,sel)=>list.map(n=>`<option value="${n}" ${n===sel?'selected':''}>${n===99?'any age':n}</option>`).join('');
-  const SEG=(act,cur,opts)=>`<span class="seg" role="radiogroup">${opts.map(([k,l])=>`<button role="radio" aria-checked="${cur===k}" class="${cur===k?'on':''}" data-a="${act}" data-k="${k}">${l}</button>`).join('')}</span>`;
+  const alertable=act.some(([k])=>k!=='date'),saved=S.alerts.some(x=>x.label===alertLabel(f));
   return `<div class="hd"><div><h1 class="pt">Plan ahead</h1><p class="sub">Activities more than 36 hours away · ${all.length} upcoming in ${esc(S.me.hood)}</p></div><button class="btn sm mobonly" data-a="newpost">${I('plus',15)} Post</button></div>
   ${S.alerts.length?`<div class="alerts"><span class="small mute" style="display:inline-flex;align-items:center;gap:4px">${I('bell',13)} Your alerts</span>${S.alerts.map(al=>`<span class="alchip">${esc(al.label)}<button data-a="rmalert" data-id="${al.id}" aria-label="Remove alert ${esc(al.label)}">${I('x',12)}</button></span>`).join('')}</div>`:''}
-  <div class="fchips">${C('all','All')}${Object.entries(CATS).map(([k,c])=>C(k,c.label)).join('')}</div>
-  <div class="filters"><div class="f"><div class="fl"><label for="d_date">Date</label>${f.date?`<button class="lnk" data-a="fdate" title="Show all dates">${I('x',13)} Clear</button>`:''}</div><input type="date" id="d_date" value="${esc(f.date)}"></div>
-  <div><div class="fl"><label>Time of day</label></div><div class="fchips">${T('any',I('clock',13)+' Any time')}${T('morning','Morning')}${T('afternoon','Afternoon')}${T('evening','Evening')}${T('night','Night')}</div></div>
-  <div><div class="fl"><label for="f_amin">Host</label></div><div class="fchips"><button class="fc ${f.ver?'on':''}" data-a="fver" aria-pressed="${f.ver}">${I('badge-check',13)} Verified only</button>
-  <span class="agesel">Age <select id="f_amin" aria-label="Youngest host age">${ageOpt([18,21,25,30,35,40],f.amin)}</select> to <select id="f_amax" aria-label="Oldest host age">${ageOpt([25,30,35,40,50,99],f.amax)}</select></span></div></div></div>
-  <div class="small mute fshow"><span>Showing <b>${list.length}</b> ${list.length===1?'activity':'activities'}</span>
-  ${SEG('fsort',f.sort,[['for',I('sparkles',12)+' For you'],['soon','Soonest']])}${SEG('fview',f.view,[['list',I('list',12)+' List'],['map',I('map',12)+' Map']])}
-  ${busy?`<button class="lnk" data-a="freset">Reset filters</button>`:''}${alertable&&!saved?`<button class="lnk" data-a="saveal">${I('bell',13)} Alert me about new matches</button>`:''}</div>
-  ${!list.length?empty('calendar',all.length?'No matches':'No plans yet',all.length?'Try a different filter.':'Be the first to post one in your neighborhood.',busy&&all.length?'<button class="btn sec" data-a="freset">Reset filters</button>':'')
+  <div class="dtools"><button class="fbtn ${act.length?'on':''}" data-a="filters" aria-haspopup="dialog">${I('filter',14)} Filters${act.length?`<b aria-label="${act.length} active">${act.length}</b>`:''}</button>
+  ${SEG('fsort',f.sort,[['for',I('sparkles',12)+' For you'],['soon','Soonest']])}${SEG('fview',f.view,[['list',I('list',13)+'<span class="tl">List</span>','List view'],['map',I('map',13)+'<span class="tl">Map</span>','Map view']])}</div>
+  <div class="small mute fact"><span>Showing <b>${list.length}</b> ${list.length===1?'activity':'activities'}</span>
+  ${act.map(([k,l])=>`<span class="alchip">${esc(l)}<button data-a="fclear" data-k="${k}" aria-label="Remove filter ${esc(l)}">${I('x',12)}</button></span>`).join('')}
+  ${act.length?`<button class="lnk" data-a="freset">Reset</button>`:''}${alertable&&!saved?`<button class="lnk" data-a="saveal">${I('bell',13)} Alert me about new matches</button>`:''}</div>
+  ${!list.length?empty('calendar',all.length?'No matches':'No plans yet',all.length?'Try different filters.':'Be the first to post one in your neighborhood.',act.length&&all.length?'<button class="btn sec" data-a="freset">Reset filters</button>':'')
    :f.view==='map'?mapHtml(list):`<div class="grid">${list.map(a=>acCard(a)).join('')}</div>`}`;
 }
 function mapHtml(list){
@@ -1211,6 +1219,22 @@ function modalHtml(){
       ${wl.length?`<h3>Waitlist (${wl.length})</h3><p class="small mute" style="margin-top:0">They move up to requests automatically, in this order, when a spot opens.</p>`+wl.map((r,i)=>`<div class="panel row" style="padding:12px 16px"><div class="hn">${av(r.user,'sm')}${esc(uname(r.user))}</div><div style="text-align:right"><span class="chip info">#${i+1}</span></div></div>`).join(''):''}
       ${done.length?`<h3>Decided</h3>`+done.map(r=>`<div class="panel row" style="padding:12px 16px"><div class="hn">${av(r.user,'sm')}${esc(uname(r.user))}</div><div style="text-align:right">${statusChip(r.status)}</div></div>`).join(''):''}
       ${past?'':`<div style="height:10px"></div><button class="btn bad" data-a="cancelact" data-id="${a.id}">Cancel this activity</button>`}</div>`,'full wide');
+  }
+  if(m.type==='filters'){
+    const f=ui.f,n=feed().filter(a=>matchF(a,f)).length,any=activeFilters(f).length;
+    const C=(k,l)=>`<button class="fc ${f.cat===k?'on':''}" data-a="fcat" data-k="${k}" aria-pressed="${f.cat===k}">${l}</button>`;
+    const T=(k,l)=>`<button class="fc ${f.tod===k?'on':''}" data-a="ftod" data-k="${k}" aria-pressed="${f.tod===k}">${l}</button>`;
+    const ageOpt=(list,sel)=>list.map(v=>`<option value="${v}" ${v===sel?'selected':''}>${v===99?'any age':v}</option>`).join('');
+    return `<div class="ov" data-a="closebg"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="fl_t"><div class="sh"><h2 id="fl_t">Filters</h2><button class="ib" data-a="close" title="Close">${I('x',18)}</button></div>
+      <div class="sb fsec">
+      <h3>Category</h3><div class="fchips">${C('all','All')}${Object.entries(CATS).map(([k,c])=>C(k,c.label)).join('')}</div>
+      <h3><label for="d_date" style="margin:0;font:inherit">Date</label></h3><div class="row" style="align-items:center"><input type="date" id="d_date" value="${esc(f.date)}">${f.date?`<button class="lnk" style="flex:0 0 auto" data-a="fdate">${I('x',13)} Any date</button>`:''}</div>
+      ${f.date?'':'<p class="small mute" style="margin:6px 0 0">Leave empty to see every date.</p>'}
+      <h3>Time of day</h3><div class="fchips">${T('any',I('clock',13)+' Any time')}${T('morning','Morning')}${T('afternoon','Afternoon')}${T('evening','Evening')}${T('night','Night')}</div>
+      <h3>Host</h3><div class="fchips"><button class="fc ${f.ver?'on':''}" data-a="fver" aria-pressed="${f.ver}">${I('badge-check',13)} Verified only</button>
+      <span class="agesel">Age <select id="f_amin" aria-label="Youngest host age">${ageOpt([18,21,25,30,35,40],f.amin)}</select> to <select id="f_amax" aria-label="Oldest host age">${ageOpt([25,30,35,40,50,99],f.amax)}</select></span></div>
+      </div>
+      <div class="sfoot">${any?'<button class="btn ghost" data-a="freset">Reset</button>':''}<button class="btn" data-a="close">Show ${n} ${n===1?'activity':'activities'}</button></div></div></div>`;
   }
   if(m.type==='editprofile'){
     const me=S.me,cur=m.emo||me.emo||defEmo(me.gender),photo=!!me.photo&&!m.emo;
@@ -1515,7 +1539,9 @@ const A={
   fcat:d=>{ui.f.cat=d.k;track('filter',{type:'category'});render()},
   ftod:d=>{ui.f.tod=d.k;track('filter',{type:'time'});render()},
   fdate:()=>{ui.f.date='';render()},
-  freset:()=>{ui.f=freshF();render()},
+  freset:()=>{ui.f={...freshF(),sort:ui.f.sort,view:ui.f.view};render()},
+  filters:()=>{track('filters_opened');ui.modal={type:'filters'};render()},
+  fclear:d=>{const f=ui.f,base=freshF();if(d.k==='age'){f.amin=base.amin;f.amax=base.amax}else f[d.k]=base[d.k];render()},
   fver:()=>{ui.f.ver=!ui.f.ver;track('filter',{type:'verified'});render()},
   fsort:d=>{ui.f.sort=d.k;track('sort',{by:d.k});render()},
   fview:d=>{ui.f.view=d.k;if(d.k==='map')track('map_view');render()},
