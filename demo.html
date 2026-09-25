@@ -48,6 +48,15 @@ header{background:var(--card);border-bottom:1px solid var(--line)}
 .av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .av.sm{width:24px;height:24px;font-size:11px}
 .av.lg{width:72px;height:72px;border-radius:20px;font-size:28px;box-shadow:0 6px 16px rgba(26,26,26,.12)}
+.av.emo,.emogrid button{font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif;font-weight:400;line-height:1;color:#1A1A1A}
+.av.emo{font-size:19px}.av.sm.emo{font-size:14px}.av.lg.emo{font-size:44px}
+.emogrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(48px,1fr));gap:8px}
+.emogrid button{aspect-ratio:1;border:1px solid var(--line);background:var(--chip);border-radius:14px;font-size:26px;cursor:pointer;padding:0}
+.emogrid button:hover{border-color:var(--lineh)}
+.emogrid button.on{border-color:var(--acc);background:var(--acc2);box-shadow:0 0 0 2px var(--acc)}
+.ph .btn{margin-left:auto;text-transform:none;letter-spacing:0}
+.epav{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.epav .row{flex-wrap:wrap}
 main{flex:1;overflow-y:auto;padding:18px 16px;min-height:0}
 .wrap{max-width:1180px;margin:0 auto}.narrow{max-width:620px;margin:0 auto}
 nav{display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
@@ -403,21 +412,22 @@ const COST={split:'Split equally',own:'Everyone pays their own way',host:'Host i
 const COST_S={split:'Equal Split',own:'Everyone Pays',host:'Host Pays'};
 const SWIPE_WINDOW=36*3600e3;
 /* Dummy portraits for the demo; if one fails to load the initial shows instead. */
-const P=(g,n)=>`https://randomuser.me/api/portraits/${g}/${n}.jpg`;
-const PIC_RE=/^https:\/\/randomuser\.me\/api\/portraits\/(men|women)\/\d{1,2}\.jpg$/;
+/* Everyone gets an emoji avatar; your own can be an uploaded photo instead. */
+const defEmo=g=>g==='Woman'?'👩':g==='Man'?'👨':'🧑';
+const EMOJIS=['👩🏻','👩🏽','👩🏿','👨🏻','👨🏽','👨🏿','🧑🏼','🧑🏾','👩🏽‍🦱','👨🏻‍🦱','👩🏾‍🦳','🧔🏽','👱🏻‍♀️','👳🏽‍♂️','🧕🏽','👩🏽‍💻','👨🏾‍💻','👩🏻‍🎨','👨🏽‍🍳','🧑🏽‍🎤','👩🏾‍🏫','👨🏻‍🎓','👩🏽‍🔬','🧑🏻‍🚀','😀','😎','🤓','🥳','🦊','🐼','🐯','🐨','🦉','🌻','🎧','🎬','☕','🎸'];
 const USERS={
-  u1:{name:'Aarav',gender:'Man',age:27,job:'Designer',bio:'Will watch anything with good sound design.',pic:P('men',11)},
-  u2:{name:'Meera',gender:'Woman',age:29,job:'Architect',bio:'Coffee snob, jazz fan, always early.',pic:P('women',21)},
-  u3:{name:'Rohan',gender:'Man',age:31,job:'Developer',bio:'Live gigs > streaming. Ask me about my vinyl.',pic:P('men',45)},
-  u4:{name:'Sara',gender:'Woman',age:25,job:'Journalist',bio:'New in town, collecting good brunch spots.',pic:P('women',33)},
-  u5:{name:'Kabir',gender:'Man',age:28,job:'Chef',bio:'Cooks all day, so I eat out on my days off.',pic:P('men',52),verified:false},
-  u6:{name:'Ananya',gender:'Woman',age:26,job:'Teacher',bio:'Board games evangelist.',pic:P('women',47)},
-  u7:{name:'Alex',gender:'Non-binary',age:30,job:'Musician',bio:'Open mics, always.',pic:P('men',75)},
-  u8:{name:'Ishaan',gender:'Man',age:24,job:'Student',bio:'Ramen is a personality.',pic:P('men',19)},
-  u9:{name:'Priya',gender:'Woman',age:27,job:'Product Manager',bio:'Jazz, sunsets and very strong coffee.',pic:P('women',65)},
-  u10:{name:'Dev',gender:'Man',age:32,job:'Photographer',bio:'Will find the best late-night food in any city.',pic:P('men',36),verified:false},
-  u11:{name:'Zoya',gender:'Woman',age:24,job:'Film student',bio:'Runs a tiny film club. Subtitles always on.',pic:P('women',12)},
-  u12:{name:'Sam',gender:'Non-binary',age:29,job:'Copywriter',bio:'Crosswords, filter coffee, early mornings.',pic:P('women',90)}
+  u1:{name:'Aarav',gender:'Man',age:27,job:'Designer',bio:'Will watch anything with good sound design.',emo:'👨🏽‍🎨'},
+  u2:{name:'Meera',gender:'Woman',age:29,job:'Architect',bio:'Coffee snob, jazz fan, always early.',emo:'👩🏾‍💼'},
+  u3:{name:'Rohan',gender:'Man',age:31,job:'Developer',bio:'Live gigs > streaming. Ask me about my vinyl.',emo:'👨🏽‍💻'},
+  u4:{name:'Sara',gender:'Woman',age:25,job:'Journalist',bio:'New in town, collecting good brunch spots.',emo:'👩🏻‍🦱'},
+  u5:{name:'Kabir',gender:'Man',age:28,job:'Chef',bio:'Cooks all day, so I eat out on my days off.',emo:'👨🏾‍🍳',verified:false},
+  u6:{name:'Ananya',gender:'Woman',age:26,job:'Teacher',bio:'Board games evangelist.',emo:'👩🏽‍🏫'},
+  u7:{name:'Alex',gender:'Non-binary',age:30,job:'Musician',bio:'Open mics, always.',emo:'🧑🏽‍🎤'},
+  u8:{name:'Ishaan',gender:'Man',age:24,job:'Student',bio:'Ramen is a personality.',emo:'👨🏻‍🎓'},
+  u9:{name:'Priya',gender:'Woman',age:27,job:'Product Manager',bio:'Jazz, sunsets and very strong coffee.',emo:'👩🏽‍💻'},
+  u10:{name:'Dev',gender:'Man',age:32,job:'Photographer',bio:'Will find the best late-night food in any city.',emo:'🧔🏾',verified:false},
+  u11:{name:'Zoya',gender:'Woman',age:24,job:'Film student',bio:'Runs a tiny film club. Subtitles always on.',emo:'👩🏻‍🎓'},
+  u12:{name:'Sam',gender:'Non-binary',age:29,job:'Copywriter',bio:'Crosswords, filter coffee, early mornings.',emo:'🧑🏼'}
 };
 /* Meetups before the demo started: [meetups attended, times they showed up]. */
 const TRUST={u1:[12,12],u2:[21,21],u3:[8,7],u4:[3,3],u5:[6,5],u6:[17,17],u7:[25,24],u8:[4,4],u9:[14,14],u10:[9,7],u11:[11,11],u12:[2,2]};
@@ -447,11 +457,11 @@ const REPORT_REASONS=['Made me feel unsafe','Inappropriate messages or behaviour
 const REPEAT={weekly:'Every week',biweekly:'Every 2 weeks'};
 /* Demo accounts opened from the Admin tab of the beta site (passwords live there). Each keeps its own data. */
 const ACCOUNTS={
-  kajal:{name:'Kajal',gender:'Woman',dob:'1998-02-02',hood:'Central Market',job:'UX Researcher',bio:'Weekend brunches, indie gigs and the occasional horror movie. Always on time.',ints:['Movies','Cafe / Food','Concerts'],avail:['Weekday evenings','Late nights'],pic:P('women',44),
+  kajal:{name:'Kajal',gender:'Woman',dob:'1998-02-02',hood:'Central Market',job:'UX Researcher',bio:'Weekend brunches, indie gigs and the occasional horror movie. Always on time.',ints:['Movies','Cafe / Food','Concerts'],avail:['Weekday evenings','Late nights'],emo:'👩🏽‍🔬',
     trust:[18,18],hist:[['Sunday brunch club','cafe',5,'Hosted',4.9,6],['Indie night at The Hangar','concerts',16,'Joined',4.7,1],['Horror double bill','movies',31,'Hosted',4.8,4]]},
-  arjun:{name:'Arjun',gender:'Man',dob:'1995-09-18',hood:'Central Market',job:'Software Engineer',bio:'Weekend cricket, Friday night movies, always up for street food.',ints:['Movies','Cafe / Food'],avail:['Weekend days','Weekend evenings'],pic:P('men',22),
+  arjun:{name:'Arjun',gender:'Man',dob:'1995-09-18',hood:'Central Market',job:'Software Engineer',bio:'Weekend cricket, Friday night movies, always up for street food.',ints:['Movies','Cafe / Food'],avail:['Weekend days','Weekend evenings'],emo:'👨🏾‍💻',
     trust:[9,9],hist:[['Friday night thriller','movies',8,'Hosted',4.7,4],['Biryani crawl','cafe',22,'Joined',4.5,1]]},
-  neha:{name:'Neha',gender:'Woman',dob:'2001-06-14',hood:'Central Market',job:'',bio:'',ints:['Cafe / Food'],avail:['Weekend days'],pic:P('women',29),fresh:true}
+  neha:{name:'Neha',gender:'Woman',dob:'2001-06-14',hood:'Central Market',job:'',bio:'',ints:['Cafe / Food'],avail:['Weekend days'],emo:'👩🏻',fresh:true}
 };
 const ACCT=(()=>{try{const a=localStorage.getItem('overhere_acct')||'';return ACCOUNTS[a]?a:''}catch(e){return ''}})();
 const SKEY=ACCT?KEY+':'+ACCT:KEY;
@@ -464,6 +474,7 @@ const NK={req:{ic:'user-check',bg:'#E7F0E1',fg:'#336842'},update:{ic:'layers',bg
 try{[['tagalong_demo_v2',KEY],['tagalong_participant','overhere_participant']].forEach(([o,n])=>{const v=localStorage.getItem(o);if(v===null)return;if(localStorage.getItem(n)===null)localStorage.setItem(n,v);localStorage.removeItem(o)})}catch(e){}
 let S=load()||seed();
 S.blocked=S.blocked||[];S.reports=S.reports||[];S.ratings=S.ratings||{};
+if(S.me){delete S.me.pic;if(!S.me.emo)S.me.emo=ACCOUNTS[ACCT]?.emo||defEmo(S.me.gender)}
 S.following=S.following||[];S.alerts=S.alerts||[];S.muted=S.muted||{};S.tips=S.tips||{};S.asked=S.asked||{};
 const freshF=()=>({cat:'all',date:'',tod:'any',ver:false,amin:18,amax:99,sort:'for',view:'list'});
 const freshUi=()=>({tab:'swipe',ob:{step:2,d:{}},modal:null,f:freshF()});
@@ -714,13 +725,15 @@ function profileOf(id){
   if(id==='me')return {name:S.me.name,gender:S.me.gender,age:ageOf(S.me.dob),job:S.me.job||'',bio:S.me.bio||''};
   return USERS[id];
 }
+const PASTEL=['#E3EFDB','#E9E4FB','#D9F2E6','#FBE3EE','#DDEEFB','#FBF0D2'];
 function av(id,cls=''){
   const n=id==='me'?(S.me?.name||'?'):(USERS[id]?.name||'?'),hues=['#3F7D4E','#8B5CF6','#10B981','#EC4899','#0EA5E9','#EAB308'];
   const me=id==='me'?' data-me':'';
   if(me&&PHOTO_RE.test(S.me?.photo||''))return `<span class="av ${cls}"${me}><img src="${S.me.photo}" alt="${esc(n)}"></span>`;
   let h=0;for(const c of n)h+=c.charCodeAt(0);
-  const pic=me?S.me?.pic:USERS[id]?.pic;
-  return `<span class="av ${cls}"${me} style="background:${hues[h%hues.length]}">${esc(n[0].toUpperCase())}${PIC_RE.test(pic||'')?`<img src="${pic}" alt="" loading="lazy" onerror="this.remove()">`:''}</span>`;
+  const emo=me?(S.me?.emo||defEmo(S.me?.gender)):USERS[id]?.emo;
+  if(emo)return `<span class="av emo ${cls}"${me} style="background:${PASTEL[h%PASTEL.length]}" aria-hidden="true">${esc(emo)}</span>`;
+  return `<span class="av ${cls}"${me} style="background:${hues[h%hues.length]}">${esc(n[0].toUpperCase())}</span>`;
 }
 const catPill=(k,tint)=>{const c=CATS[k];return `<span class="cat" style="color:${c.fg}${tint?';background:'+c.bg:''}">${I(c.icon,12)}${c.label}</span>`};
 const opts=(name,list,sel)=>`<div class="opts">${list.map(v=>`<label class="opt"><input type="checkbox" name="${name}" value="${esc(v)}" ${sel&&sel.includes(v)?'checked':''}>${esc(v)}</label>`).join('')}</div>`;
@@ -1018,13 +1031,14 @@ function tabProfile(){
   const V=[['mail','Email Verified',true],['scan-face','Face Verified',!!m.face],['id-card','Identity Verified',!!m.kyc],['user','Profile Complete',!!(m.job&&m.bio&&(m.ints||[]).length&&(m.avail||[]).length)]];
   const done=V.filter(v=>v[2]).length;
   const soft=(arr,none)=>arr&&arr.length?`<div class="soft">${arr.map(x=>`<span>${esc(x)}</span>`).join('')}</div>`:`<p class="small mute">${none}</p>`;
-  return `<div class="panel"><div class="pt2"><div class="phw" data-a="photo">${av('me','lg')}<button class="pe" id="p_pe" title="Profile photo" aria-label="Profile photo" aria-haspopup="menu" aria-expanded="false">${I('camera',14)}</button>
-  <div class="pmenu" id="p_menu" role="menu" hidden><button role="menuitem" data-a="pickphoto">${I('camera',15)} Change photo</button><button role="menuitem" class="bad" data-a="rmphoto">${I('trash',15)} Remove photo</button></div></div><div><div class="pn">${esc(m.name)} ${m.kyc?`<span class="vf">${I('badge-check',14)} Verified</span>`:''}</div><div class="small mute">${esc(m.hood)}, Demo City</div><div class="small" style="margin-top:4px">${rateTxt('me')} <span class="mute">· ${trustTxt('me')}</span></div></div></div>
+  return `<div class="panel"><div class="ph">${I('user',15)} Your profile<button class="btn sm sec" data-a="editprofile">${I('pencil',14)} Edit profile</button></div>
+  <div class="pt2"><div class="phw" data-a="photo">${av('me','lg')}<button class="pe" id="p_pe" title="Change profile picture" aria-label="Change profile picture" aria-haspopup="menu" aria-expanded="false">${I('camera',14)}</button>
+  <div class="pmenu" id="p_menu" role="menu" hidden></div></div><div><div class="pn">${esc(m.name)} ${m.kyc?`<span class="vf">${I('badge-check',14)} Verified</span>`:''}</div><div class="small mute">${esc(m.hood)}, Demo City</div><div class="small" style="margin-top:4px">${rateTxt('me')} <span class="mute">· ${trustTxt('me')}</span></div></div></div>
   <input type="file" id="p_photo" accept="image/jpeg,image/png,image/webp,image/*" hidden>
   <div class="facts"><span>${ageOf(m.dob)} yrs</span><span>${esc(m.gender)}</span>${m.job?`<span>${I('briefcase',14)}${esc(m.job)}</span>`:''}</div>
-  <p>${m.bio?esc(m.bio):'<span class="mute">Add a short bio so hosts know who you are.</span>'}</p></div>
-  <div class="panel"><div class="ph">${I('star',15)} Interests</div>${soft(m.ints,'Pick what you would like to do with company below.')}</div>
-  <div class="panel"><div class="ph">${I('clock',15)} Usually free</div>${soft(m.avail,'Tell hosts when you are usually free.')}</div>
+  <p>${m.bio?esc(m.bio):'<span class="mute">Add a short bio so hosts know who you are. Tap Edit profile.</span>'}</p></div>
+  <div class="panel"><div class="ph">${I('star',15)} Interests</div>${soft(m.ints,'Add what you would like to do with company in Edit profile.')}</div>
+  <div class="panel"><div class="ph">${I('clock',15)} Usually free</div>${soft(m.avail,'Tell hosts when you are usually free in Edit profile.')}</div>
   <div class="panel"><div class="ph">${I('calendar-check',15)} Past activities</div>${pastHtml(pastList('me'),'Activities you host or join show up here with their ratings.')}</div>
   <div class="panel"><div class="ph">${I('shield-check',15)} Verifications <span class="r">${done}/${V.length} complete</span></div>
   <div class="bar"><i style="width:${done/V.length*100}%"></i></div>
@@ -1034,20 +1048,10 @@ function tabProfile(){
   <label style="margin-top:0">Appearance</label><span class="seg" role="radiogroup" aria-label="Appearance">${[['system','System'],['light','Light'],['dark','Dark']].map(([k,l])=>`<button role="radio" aria-checked="${th===k}" class="${th===k?'on':''}" data-a="theme" data-k="${k}">${l}</button>`).join('')}</span>
   <label>Install</label>${isStandalone()?'<p class="small mute" style="margin:0">Overhere is installed on this device.</p>':installEvt?`<button class="btn sm sec" data-a="install">${I('download',14)} Install Overhere</button>`:ios?'<p class="small mute" style="margin:0">On iPhone: tap Share, then “Add to Home Screen”.</p>':'<p class="small mute" style="margin:0">Open the published site in Chrome or Edge and use “Install app” in the address bar. Installing is not available from a file or inside the beta page.</p>'}</div>
   <div class="panel"><div class="ph">${I('shield-check',15)} Safety</div>
-  <label style="margin-top:0">Trusted contact</label><p class="small mute" style="margin-top:0">Someone you can send your plans to in one tap. Only you see this.</p>
-  <div class="row"><input id="t_name" placeholder="Name" aria-label="Trusted contact name" value="${esc(m.trusted?.name||'')}"><input id="t_phone" type="tel" placeholder="Phone" aria-label="Trusted contact phone" value="${esc(m.trusted?.phone||'')}"></div>
-  <div style="height:10px"></div><button class="btn sm sec" data-a="savetrusted">Save contact</button>
+  <label style="margin-top:0">Trusted contact</label><p class="small mute" style="margin-top:0">Someone you can send your plans to, or alert with SOS, in one tap. Only you see this.</p>
+  ${m.trusted?`<div class="blk">${I('phone',15)}<span><b>${esc(m.trusted.name)}</b> · ${esc(m.trusted.phone)}</span><button class="lnk" data-a="editprofile" data-k="safety">Change</button></div>`:`<button class="btn sm sec" data-a="editprofile" data-k="safety">${I('user-plus',14)} Add a trusted contact</button>`}
   <label>Blocked people</label>${S.blocked.length?S.blocked.map(u=>`<div class="blk">${av(u,'sm')}${esc(uname(u))}<button class="lnk" data-a="unblock" data-id="${u}">Unblock</button></div>`).join(''):'<p class="small mute" style="margin:0">You have not blocked anyone.</p>'}</div>
-  <div class="panel"><div class="ph">${I('pencil',15)} Edit profile</div>
-  <label style="margin-top:0">Name</label><input id="p_name" value="${esc(m.name)}">
-  <label>Date of birth</label><input id="p_dob" type="date" value="${esc(m.dob)}">
-  <label>Gender identity</label><select id="p_gender">${GENDERS.map(g=>`<option ${g===m.gender?'selected':''}>${g}</option>`).join('')}</select>
-  <label>City: Demo City · Neighborhood</label><select id="p_hood">${HOODS.map(g=>`<option ${g===m.hood?'selected':''}>${g}</option>`).join('')}</select>
-  <label>Profession</label><input id="p_job" value="${esc(m.job||'')}">
-  <label>Bio</label><textarea id="p_bio">${esc(m.bio||'')}</textarea>
-  <label>What would you want to do with company?</label>${opts('p_int',INTERESTS,m.ints)}
-  <label>When are you usually free?</label>${opts('p_avail',TIMES,m.avail)}
-  <div style="height:18px"></div><button class="btn" data-a="saveprofile">Save profile</button></div>`;
+`;
 }
 
 /* ---------- render: modals ---------- */
@@ -1207,6 +1211,35 @@ function modalHtml(){
       ${wl.length?`<h3>Waitlist (${wl.length})</h3><p class="small mute" style="margin-top:0">They move up to requests automatically, in this order, when a spot opens.</p>`+wl.map((r,i)=>`<div class="panel row" style="padding:12px 16px"><div class="hn">${av(r.user,'sm')}${esc(uname(r.user))}</div><div style="text-align:right"><span class="chip info">#${i+1}</span></div></div>`).join(''):''}
       ${done.length?`<h3>Decided</h3>`+done.map(r=>`<div class="panel row" style="padding:12px 16px"><div class="hn">${av(r.user,'sm')}${esc(uname(r.user))}</div><div style="text-align:right">${statusChip(r.status)}</div></div>`).join(''):''}
       ${past?'':`<div style="height:10px"></div><button class="btn bad" data-a="cancelact" data-id="${a.id}">Cancel this activity</button>`}</div>`,'full wide');
+  }
+  if(m.type==='editprofile'){
+    const me=S.me,cur=m.emo||me.emo||defEmo(me.gender),photo=!!me.photo&&!m.emo;
+    return sheet('Edit profile',`<div class="sb">
+      <h3 style="margin-top:0">Profile picture</h3>
+      <div class="epav"><span id="ep_av">${photo?av('me','lg'):`<span class="av emo lg" style="background:${PASTEL[0]}" aria-hidden="true">${esc(cur)}</span>`}</span>
+        <div><p class="small mute" style="margin:0 0 8px">${photo?'You are using a photo. Pick an emoji below to switch back.':'Pick the emoji that feels like you.'}</p>
+        <div class="row" style="gap:8px"><button class="btn sm ghost" data-a="pickphoto">${I('camera',14)} Upload a photo</button>${photo?`<button class="btn sm bad" data-a="rmphoto">${I('trash',14)} Remove photo</button>`:''}</div></div></div>
+      <div class="emogrid" role="radiogroup" aria-label="Emoji">${EMOJIS.map(e=>`<button role="radio" aria-checked="${!photo&&e===cur}" class="${!photo&&e===cur?'on':''}" data-a="pickemo" data-e="${esc(e)}" aria-label="${esc(e)}">${esc(e)}</button>`).join('')}</div>
+      <h3>About you</h3>
+      <label for="p_name" style="margin-top:0">Name</label><input id="p_name" maxlength="40" value="${esc(me.name)}">
+      <label for="p_dob">Date of birth</label><input id="p_dob" type="date" value="${esc(me.dob)}">
+      <label for="p_gender">Gender identity</label><select id="p_gender">${GENDERS.map(g=>`<option ${g===me.gender?'selected':''}>${g}</option>`).join('')}</select>
+      <p class="small mute" style="margin-top:6px">Decides which audience-limited plans you can see.</p>
+      <label for="p_hood">Neighbourhood <span class="mute" style="font-weight:400">(Demo City)</span></label><select id="p_hood">${HOODS.map(g=>`<option ${g===me.hood?'selected':''}>${g}</option>`).join('')}</select>
+      <label for="p_job">Profession</label><input id="p_job" maxlength="40" value="${esc(me.job||'')}" placeholder="e.g. Designer">
+      <label for="p_bio">Bio</label><textarea id="p_bio" maxlength="300" placeholder="A line or two so hosts know who you are">${esc(me.bio||'')}</textarea>
+      <label>What would you want to do with company?</label>${opts('p_int',INTERESTS,me.ints)}
+      <label>When are you usually free?</label>${opts('p_avail',TIMES,me.avail)}
+      <h3 id="ep_safety">Safety</h3>
+      <p class="small mute" style="margin-top:0">Trusted contact: someone you can send your plans to, or alert with SOS. Leave both empty to remove.</p>
+      <div class="row"><input id="t_name" placeholder="Name" aria-label="Trusted contact name" value="${esc(me.trusted?.name||'')}"><input id="t_phone" type="tel" placeholder="Phone" aria-label="Trusted contact phone" value="${esc(me.trusted?.phone||'')}"></div>
+      <div style="height:18px"></div><button class="btn" data-a="saveprofile">Save changes</button>
+      <div style="height:8px"></div><button class="btn ghost" data-a="close">Cancel</button></div>`,'full wide');
+  }
+  if(m.type==='emoji'){
+    const cur=S.me.photo?'':(S.me.emo||defEmo(S.me.gender));
+    return sheet('Choose your emoji',`<div class="sb"><p class="small mute" style="margin-top:0">This is what other people see next to your name.</p>
+      <div class="emogrid" role="radiogroup" aria-label="Emoji">${EMOJIS.map(e=>`<button role="radio" aria-checked="${e===cur}" class="${e===cur?'on':''}" data-a="setemo" data-e="${esc(e)}" aria-label="${esc(e)}">${esc(e)}</button>`).join('')}</div></div>`);
   }
   if(m.type==='chat'){
     const a=actOf(m.id);if(!a)return '';
@@ -1415,14 +1448,19 @@ async function commitCrop(){
   const url=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(blob)});
   const prev=S.me.photo;S.me.photo=url;
   if(!save()){S.me.photo=prev;btn.disabled=false;btn.textContent='Use photo';return toast('This browser is out of storage space, so the photo could not be saved')}
-  closeCropper();refreshMyPhoto();toast(`Photo updated (${Math.max(1,Math.round(blob.size/1024))} KB)`);
+  closeCropper();refreshMyPhoto();
+  const pv=document.getElementById('ep_av');if(pv){pv.innerHTML=av('me','lg');if(ui.modal)delete ui.modal.emo;document.querySelectorAll('[data-a=pickemo]').forEach(b=>{b.classList.remove('on');b.setAttribute('aria-checked','false')})}
+  toast(`Photo updated (${Math.max(1,Math.round(blob.size/1024))} KB)`);
 }
 /* Swap my avatars in place so unsaved edits in the profile form are kept. */
 function refreshMyPhoto(){
-  document.querySelectorAll('.av[data-me]').forEach(el=>{el.outerHTML=av('me',[...el.classList].filter(c=>c!=='av').join(' '))});
+  document.querySelectorAll('.av[data-me]').forEach(el=>{el.outerHTML=av('me',[...el.classList].filter(c=>c!=='av'&&c!=='emo').join(' '))});
 }
+/* The file input lives on the Profile tab; make one when uploading from elsewhere (the edit sheet). */
+function photoInput(){const i=document.createElement('input');i.type='file';i.id='p_photo';i.accept='image/jpeg,image/png,image/webp,image/*';i.hidden=true;document.getElementById('screen').appendChild(i);return i}
 function photoMenu(open){
   const mn=document.getElementById('p_menu'),pe=document.getElementById('p_pe');if(!mn)return;
+  if(open)mn.innerHTML=`<button role="menuitem" data-a="emojipick">${I('user',15)} Choose emoji</button><button role="menuitem" data-a="pickphoto">${I('camera',15)} Upload a photo</button>${S.me.photo?`<button role="menuitem" class="bad" data-a="rmphoto">${I('trash',15)} Remove photo</button>`:''}`;
   mn.hidden=!open;pe?.setAttribute('aria-expanded',String(open));
   if(open)mn.querySelector('button')?.focus();
 }
@@ -1610,16 +1648,28 @@ const A={
     setTimeout(()=>{if(ui.modal?.type==='chat'&&ui.modal.id===d.id)simReply(d.id)},1400);
   },
   saveprofile:()=>{
-    Object.assign(S.me,{name:val('p_name')||S.me.name,dob:val('p_dob')||S.me.dob,gender:val('p_gender'),hood:val('p_hood'),job:val('p_job'),bio:document.getElementById('p_bio').value,ints:many('p_int'),avail:many('p_avail')});
-    save();toast('Profile saved');render();
+    const name=val('p_name'),dob=val('p_dob'),tn=val('t_name'),tp=val('t_phone');
+    if(!name)return toast('Add your name');
+    if(!dob||!(ageOf(dob)>=18))return toast('Check your date of birth: you must be 18 or over');
+    if((tn||tp)&&(!tn||tp.replace(/\D/g,'').length<7))return toast('Add a name and a valid phone for your trusted contact, or leave both empty');
+    Object.assign(S.me,{name,dob,gender:val('p_gender'),hood:val('p_hood'),job:val('p_job'),bio:document.getElementById('p_bio').value.trim(),ints:many('p_int'),avail:many('p_avail')});
+    if(tn)S.me.trusted={name:tn,phone:tp};else delete S.me.trusted;
+    if(ui.modal?.emo){S.me.emo=ui.modal.emo;delete S.me.photo}
+    track('profile_saved');save();ui.modal=null;toast('Profile saved');render();
   },
+  editprofile:d=>{ui.modal={type:'editprofile'};render();if(d.k==='safety')document.getElementById('ep_safety')?.scrollIntoView({block:'start'})},
+  /* In the edit sheet the emoji is applied on Save; update the preview without losing typed changes. */
+  pickemo:d=>{
+    ui.modal.emo=d.e;
+    document.querySelectorAll('[data-a=pickemo]').forEach(b=>{const on=b.dataset.e===d.e;b.classList.toggle('on',on);b.setAttribute('aria-checked',on)});
+    const pv=document.getElementById('ep_av');if(pv)pv.innerHTML=`<span class="av emo lg" style="background:${PASTEL[0]}" aria-hidden="true">${esc(d.e)}</span>`;
+  },
+  emojipick:()=>{photoMenu(false);ui.modal={type:'emoji'};render()},
+  setemo:d=>{S.me.emo=d.e;delete S.me.photo;save();track('avatar_emoji');ui.modal=null;toast('Emoji updated');render()},
   /* No photo yet: go straight to the picker. Otherwise offer change/remove. */
-  photo:()=>{
-    if(!S.me.photo&&!S.me.pic)return document.getElementById('p_photo')?.click();
-    photoMenu(document.getElementById('p_menu')?.hidden);
-  },
-  pickphoto:()=>{photoMenu(false);document.getElementById('p_photo')?.click()},
-  rmphoto:()=>{photoMenu(false);delete S.me.photo;delete S.me.pic;save();refreshMyPhoto();toast('Photo removed')},
+  photo:()=>{photoMenu(document.getElementById('p_menu')?.hidden)},
+  pickphoto:()=>{photoMenu(false);(document.getElementById('p_photo')||photoInput()).click()},
+  rmphoto:()=>{photoMenu(false);delete S.me.photo;save();toast('Photo removed. Showing your emoji.');if(ui.modal?.type==='editprofile')render();else refreshMyPhoto()},
   adv:d=>{S.offset+=+d.h*3600e3;tick();save();toast('Moved forward '+d.h+' hours');render()},
   simreq:()=>{incoming();render()},
   simacc:()=>hostDecide(true),
@@ -1655,7 +1705,7 @@ const A={
     const d=ui.ob.d;d.name=val('o_name');d.dob=val('o_dob');d.gender=val('o_gender');d.hood=val('o_hood');d.ints=many('o_int');d.avail=many('o_avail');
     if(!d.name||!d.dob||!d.gender)return toast('Name, date of birth and gender identity are required');
     if(ageOf(d.dob)<18)return toast('You must be 18 or over (demo rule)');
-    S.me={name:d.name,dob:d.dob,gender:d.gender,hood:d.hood,ints:d.ints,avail:d.avail,face:true,kyc:true,obDone:false};
+    S.me={name:d.name,dob:d.dob,gender:d.gender,hood:d.hood,ints:d.ints,avail:d.avail,face:true,kyc:true,obDone:false,emo:defEmo(d.gender)};
     save();render();
   },
   obface:()=>openVerify('face',()=>render()),
@@ -1735,7 +1785,7 @@ function initMe(){
   }
   try{
     const p=JSON.parse(localStorage.getItem('overhere_participant'));
-    if(p&&p.name&&p.gender&&p.hood)S.me={name:p.name,dob:p.dob||'1995-01-01',gender:p.gender,hood:p.hood,ints:p.ints||[],avail:p.avail||[],face:true,kyc:true,obDone:true};
+    if(p&&p.name&&p.gender&&p.hood)S.me={name:p.name,dob:p.dob||'1995-01-01',gender:p.gender,hood:p.hood,ints:p.ints||[],avail:p.avail||[],face:true,kyc:true,obDone:true,emo:defEmo(p.gender)};
   }catch(e){}
   if(S.me)save();
 }
