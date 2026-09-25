@@ -207,6 +207,12 @@ a.btn{text-decoration:none}
 .fbtn.on{border-color:var(--acc);background:var(--acc2);color:var(--accink)}
 .fbtn b{background:var(--acc);color:#fff;border-radius:99px;padding:0 7px;font-size:11px;line-height:18px}
 @media(max-width:480px){.dtools{gap:6px}.dtools .seg .tl{display:none}.dtools .seg button{padding:5px 9px;font-size:12px}.dtools .fbtn{padding:6px 11px;font-size:12.5px}}
+.sortl{display:flex;flex-direction:column;gap:8px}
+.sorto{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:14px;padding:12px 14px;cursor:pointer;font:inherit}
+.sorto:hover{border-color:var(--lineh)}
+.sorto.on{border-color:var(--acc);background:var(--acc2);color:var(--accink)}
+.sorto span{flex:1;display:flex;flex-direction:column;gap:2px}
+.sorto small{font-size:12.5px;opacity:.75}
 .fact{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 12px}
 .fact .lnk{padding:2px 4px}
 .sfoot{display:flex;gap:8px;padding:12px 18px 16px;border-top:1px solid var(--line);background:var(--card)}
@@ -348,6 +354,8 @@ a.btn{text-decoration:none}
 "use strict";
 /* ---------- icons (Lucide, ISC licence) ---------- */
 const IC={
+  'arrow-up-down':'<path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>',
   x:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
   heart:'<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
   calendar:'<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
@@ -494,7 +502,9 @@ let S=load()||seed();
 S.blocked=S.blocked||[];S.reports=S.reports||[];S.ratings=S.ratings||{};
 if(S.me){delete S.me.pic;S.me.hood=fixHood(S.me.hood);if(!S.me.emo)S.me.emo=ACCOUNTS[ACCT]?.emo||defEmo(S.me.gender)}
 S.following=S.following||[];S.alerts=S.alerts||[];S.muted=S.muted||{};S.tips=S.tips||{};S.asked=S.asked||{};
-const freshF=()=>({cat:'all',date:'',tod:'any',ver:false,amin:18,amax:99,sort:'for',view:'list'});
+const freshF=()=>({cat:'all',date:'',tod:'any',ver:false,amin:18,amax:99,dist:0,sort:'for',view:'list'});
+const SORTS={for:['sparkles','My interests','Plans that match what you like come first'],soon:['clock','Time','Soonest first'],near:['map-pin','Distance','Closest to you first']};
+const DISTS=[1,2,3];
 const freshUi=()=>({tab:'swipe',ob:{step:2,d:{}},modal:null,f:freshF()});
 let ui=freshUi();
 
@@ -666,8 +676,8 @@ function signals(u){
   if(t.met>=3&&t.rate<90)chips.push(`<span class="chip warn">${I('alert-triangle',11)} Missed ${t.met-t.shows} of ${t.met} meetups</span>`);
   return `<div class="sig">${chips.length?chips.join(''):'<span class="small mute">Nothing in common yet</span>'}</div>`;
 }
-function matchF(a,f){const age=profileOf(a.host).age;return (f.cat==='all'||a.cat===f.cat)&&(!f.date||dayKey(a.when)===f.date)&&(f.tod==='any'||tod(a.when)===f.tod)&&(!f.ver||isVer(a.host))&&age>=f.amin&&age<=f.amax}
-function alertLabel(f){const p=[f.cat==='all'?'Any plan':CATS[f.cat].label];if(f.tod!=='any')p.push(f.tod[0].toUpperCase()+f.tod.slice(1));if(f.ver)p.push('Verified hosts');if(f.amin!==18||f.amax!==99)p.push(`Host ${f.amin}${f.amax===99?'+':'–'+f.amax}`);return p.join(' · ')}
+function matchF(a,f){const age=profileOf(a.host).age;return (f.cat==='all'||a.cat===f.cat)&&(!f.date||dayKey(a.when)===f.date)&&(f.tod==='any'||tod(a.when)===f.tod)&&(!f.ver||isVer(a.host))&&age>=f.amin&&age<=f.amax&&(!f.dist||geo(a).d<=f.dist)}
+function alertLabel(f){const p=[f.cat==='all'?'Any plan':CATS[f.cat].label];if(f.tod!=='any')p.push(f.tod[0].toUpperCase()+f.tod.slice(1));if(f.ver)p.push('Verified hosts');if(f.amin!==18||f.amax!==99)p.push(`Host ${f.amin}${f.amax===99?'+':'–'+f.amax}`);if(f.dist)p.push(`Within ${f.dist} km`);return p.join(' · ')}
 /* ---- usage events: sent to Supabase from the published site, kept in this browser when running from a file ---- */
 const uuid4=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)});
 const SESSION=uuid4();
@@ -991,17 +1001,20 @@ function activeFilters(f){
   if(f.tod!=='any')a.push(['tod',f.tod[0].toUpperCase()+f.tod.slice(1)]);
   if(f.ver)a.push(['ver','Verified hosts']);
   if(f.amin!==18||f.amax!==99)a.push(['age',`Host ${f.amin}${f.amax===99?'+':'–'+f.amax}`]);
+  if(f.dist)a.push(['dist',`Within ${f.dist} km`]);
   return a;
 }
 const SEG=(act,cur,opts)=>`<span class="seg" role="radiogroup">${opts.map(([k,l,name])=>`<button role="radio" aria-checked="${cur===k}" class="${cur===k?'on':''}" data-a="${act}" data-k="${k}"${name?` aria-label="${name}" title="${name}"`:''}>${l}</button>`).join('')}</span>`;
 function tabDiscover(){
   const all=feed(),f=ui.f,list=all.filter(a=>matchF(a,f)),act=activeFilters(f);
   if(f.sort==='for')list.sort((a,b)=>score(b)-score(a)||a.when-b.when);
+  else if(f.sort==='near')list.sort((a,b)=>geo(a).d-geo(b).d||a.when-b.when);
   const alertable=act.some(([k])=>k!=='date'),saved=S.alerts.some(x=>x.label===alertLabel(f));
   return `<div class="hd"><div><h1 class="pt">Plan ahead</h1><p class="sub">Activities more than 36 hours away · ${all.length} upcoming in ${esc(S.me.hood)}</p></div><button class="btn sm mobonly" data-a="newpost">${I('plus',15)} Post</button></div>
   ${S.alerts.length?`<div class="alerts"><span class="small mute" style="display:inline-flex;align-items:center;gap:4px">${I('bell',13)} Your alerts</span>${S.alerts.map(al=>`<span class="alchip">${esc(al.label)}<button data-a="rmalert" data-id="${al.id}" aria-label="Remove alert ${esc(al.label)}">${I('x',12)}</button></span>`).join('')}</div>`:''}
   <div class="dtools"><button class="fbtn ${act.length?'on':''}" data-a="filters" aria-haspopup="dialog">${I('filter',14)} Filters${act.length?`<b aria-label="${act.length} active">${act.length}</b>`:''}</button>
-  ${SEG('fsort',f.sort,[['for',I('sparkles',12)+' For you'],['soon','Soonest']])}${SEG('fview',f.view,[['list',I('list',13)+'<span class="tl">List</span>','List view'],['map',I('map',13)+'<span class="tl">Map</span>','Map view']])}</div>
+  <button class="fbtn" data-a="sortmenu" aria-haspopup="dialog" aria-label="Sort by ${SORTS[f.sort][1]}">${I('arrow-up-down',14)} Sort: ${SORTS[f.sort][1]}</button>
+  ${SEG('fview',f.view,[['list',I('list',13)+'<span class="tl">List</span>','List view'],['map',I('map',13)+'<span class="tl">Map</span>','Map view']])}</div>
   <div class="small mute fact"><span>Showing <b>${list.length}</b> ${list.length===1?'activity':'activities'}</span>
   ${act.map(([k,l])=>`<span class="alchip">${esc(l)}<button data-a="fclear" data-k="${k}" aria-label="Remove filter ${esc(l)}">${I('x',12)}</button></span>`).join('')}
   ${act.length?`<button class="lnk" data-a="freset">Reset</button>`:''}${alertable&&!saved?`<button class="lnk" data-a="saveal">${I('bell',13)} Alert me about new matches</button>`:''}</div>
@@ -1234,6 +1247,10 @@ function modalHtml(){
       ${done.length?`<h3>Decided</h3>`+done.map(r=>`<div class="panel row" style="padding:12px 16px"><div class="hn">${av(r.user,'sm')}${esc(uname(r.user))}</div><div style="text-align:right">${statusChip(r.status)}</div></div>`).join(''):''}
       ${past?'':`<div style="height:10px"></div><button class="btn bad" data-a="cancelact" data-id="${a.id}">Cancel this activity</button>`}</div>`,'full wide');
   }
+  if(m.type==='sort'){
+    const cur=ui.f.sort;
+    return sheet('Sort by',`<div class="sb sortl" role="radiogroup" aria-label="Sort by">${Object.entries(SORTS).map(([k,[ic,l,sub]])=>`<button class="sorto ${cur===k?'on':''}" role="radio" aria-checked="${cur===k}" data-a="fsort" data-k="${k}">${I(ic,18)}<span><b>${l}</b><small>${sub}</small></span>${cur===k?I('check',18):''}</button>`).join('')}</div>`);
+  }
   if(m.type==='filters'){
     const f=ui.f,n=feed().filter(a=>matchF(a,f)).length,any=activeFilters(f).length;
     const C=(k,l)=>`<button class="fc ${f.cat===k?'on':''}" data-a="fcat" data-k="${k}" aria-pressed="${f.cat===k}">${l}</button>`;
@@ -1245,6 +1262,7 @@ function modalHtml(){
       <h3><label for="d_date" style="margin:0;font:inherit">Date</label></h3><div class="row" style="align-items:center"><input type="date" id="d_date" value="${esc(f.date)}">${f.date?`<button class="lnk" style="flex:0 0 auto" data-a="fdate">${I('x',13)} Any date</button>`:''}</div>
       ${f.date?'':'<p class="small mute" style="margin:6px 0 0">Leave empty to see every date.</p>'}
       <h3>Time of day</h3><div class="fchips">${T('any',I('clock',13)+' Any time')}${T('morning','Morning')}${T('afternoon','Afternoon')}${T('evening','Evening')}${T('night','Night')}</div>
+      <h3>Distance</h3><div class="fchips"><button class="fc ${!f.dist?'on':''}" data-a="fdist" data-k="0" aria-pressed="${!f.dist}">${I('map-pin',13)} Any distance</button>${DISTS.map(k=>`<button class="fc ${f.dist===k?'on':''}" data-a="fdist" data-k="${k}" aria-pressed="${f.dist===k}">Within ${k} km</button>`).join('')}</div>
       <h3>Host</h3><div class="fchips"><button class="fc ${f.ver?'on':''}" data-a="fver" aria-pressed="${f.ver}">${I('badge-check',13)} Verified only</button>
       <span class="agesel">Age <select id="f_amin" aria-label="Youngest host age">${ageOpt([18,21,25,30,35,40],f.amin)}</select> to <select id="f_amax" aria-label="Oldest host age">${ageOpt([25,30,35,40,50,99],f.amax)}</select></span></div>
       </div>
@@ -1557,9 +1575,11 @@ const A={
   filters:()=>{track('filters_opened');ui.modal={type:'filters'};render()},
   fclear:d=>{const f=ui.f,base=freshF();if(d.k==='age'){f.amin=base.amin;f.amax=base.amax}else f[d.k]=base[d.k];render()},
   fver:()=>{ui.f.ver=!ui.f.ver;track('filter',{type:'verified'});render()},
-  fsort:d=>{ui.f.sort=d.k;track('sort',{by:d.k});render()},
+  sortmenu:()=>{ui.modal={type:'sort'};render()},
+  fsort:d=>{ui.f.sort=d.k;ui.modal=null;track('sort',{by:d.k});render()},
+  fdist:d=>{ui.f.dist=+d.k;track('filter',{type:'distance'});render()},
   fview:d=>{ui.f.view=d.k;if(d.k==='map')track('map_view');render()},
-  saveal:()=>{const f=ui.f,al={id:nextId('al'),cat:f.cat,tod:f.tod,ver:f.ver,amin:f.amin,amax:f.amax,label:alertLabel(f)};S.alerts.push(al);save();track('alert_saved');toast(`Alert saved: we'll tell you about new "${al.label}" plans.`);render()},
+  saveal:()=>{const f=ui.f,al={id:nextId('al'),cat:f.cat,tod:f.tod,ver:f.ver,amin:f.amin,amax:f.amax,dist:f.dist,label:alertLabel(f)};S.alerts.push(al);save();track('alert_saved');toast(`Alert saved: we'll tell you about new "${al.label}" plans.`);render()},
   rmalert:d=>{S.alerts=S.alerts.filter(x=>x.id!==d.id);save();toast('Alert removed');render()},
   readall:()=>{S.notes.forEach(n=>n.read=true);save();render()},
   opennote:d=>{
