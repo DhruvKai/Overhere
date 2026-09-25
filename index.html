@@ -83,7 +83,10 @@ textarea{min-height:96px;resize:vertical}
 const CFG=window.APP_CONFIG||{};
 const REMOTE=!!(CFG.SUPABASE_URL&&CFG.SUPABASE_ANON_KEY);
 const CONSENT_VERSION='v1';
-const HOODS=['Central Market','Lakeside','Old Quarter'];
+const HOODS=['Sector 17','Sector 7','Sector 22'];   // Chandigarh launch areas
+/* Until the database is updated (see schema.sql, "Moved to Chandigarh"), it only accepts the old demo names.
+   If a sign-up is rejected for that reason, it is saved under the matching old name instead. Safe to delete after running the SQL. */
+const LEGACY_HOOD={'Sector 17':'Central Market','Sector 7':'Lakeside','Sector 22':'Old Quarter'};
 const GENDERS=['Woman','Man','Non-binary'];
 const INTERESTS=['Movies','Cafe / Food','Concerts'];
 const TIMES=['Weekday evenings','Weekend days','Weekend evenings','Late nights'];
@@ -93,9 +96,9 @@ try{[['tagalong_participant',PKEY],['tagalong_local_data',LKEY]].forEach(([o,n])
 /* Admin shortcut for testing only: the passwords are visible in the page source, so they do not protect anything.
    Each password opens a different demo account in demo.html, which keeps its own sample data. */
 const ADMIN_ACCOUNTS={
-  kajal:{acct:'kajal',name:'Kajal',gender:'Woman',dob:'1998-02-02',hood:'Central Market',ints:['Movies','Cafe / Food','Concerts'],avail:['Weekday evenings','Late nights']},
-  arjun:{acct:'arjun',name:'Arjun',gender:'Man',dob:'1995-09-18',hood:'Central Market',ints:['Movies','Cafe / Food'],avail:['Weekend days','Weekend evenings']},
-  neha:{acct:'neha',name:'Neha',gender:'Woman',dob:'2001-06-14',hood:'Central Market',ints:['Cafe / Food'],avail:['Weekend days']}
+  kajal:{acct:'kajal',name:'Kajal',gender:'Woman',dob:'1998-02-02',hood:'Sector 17',ints:['Movies','Cafe / Food','Concerts'],avail:['Weekday evenings','Late nights']},
+  arjun:{acct:'arjun',name:'Arjun',gender:'Man',dob:'1995-09-18',hood:'Sector 17',ints:['Movies','Cafe / Food'],avail:['Weekend days','Weekend evenings']},
+  neha:{acct:'neha',name:'Neha',gender:'Woman',dob:'2001-06-14',hood:'Sector 17',ints:['Cafe / Food'],avail:['Weekend days']}
 };
 const AKEY='overhere_acct';
 
@@ -112,6 +115,7 @@ async function store(table,row){
     if(CFG.SUPABASE_ANON_KEY.startsWith('eyJ'))headers.Authorization='Bearer '+CFG.SUPABASE_ANON_KEY; // legacy JWT-style anon key only
     const r=await fetch(CFG.SUPABASE_URL.replace(/\/+$/,'').replace(/\/rest\/v1$/,'')+'/rest/v1/'+table,{method:'POST',headers,body:JSON.stringify(row)});
     if(r.status===409)return 'duplicate';
+    if(!r.ok&&table==='participants'&&LEGACY_HOOD[row.neighborhood]&&/neighborhood_check/.test(await r.text()))return store(table,{...row,neighborhood:LEGACY_HOOD[row.neighborhood]});
     if(!r.ok)throw new Error('Could not save ('+r.status+'). Please try again.');
     return 'ok';
   }
@@ -139,7 +143,7 @@ function home(){
   return `<h1>Find people to do things with.</h1>
   <p class="mute">Overhere helps you turn a plan you are already making, like a movie, a coffee or a concert, into an outing with company. You post it, people ask to join, you choose who comes.</p>
   <div class="steps"><div><b>1</b>Tell us about yourself</div><div><b>2</b>Try the app in your browser</div><div><b>3</b>Tell us what you think</div></div>
-  <p class="small mute">This is an early test. We are collecting a little information to learn who would use this and what should be built first. Not a dating app.</p>
+  <p class="small mute">Launching first in Chandigarh. This is an early test. We are collecting a little information to learn who would use this and what should be built first. Not a dating app.</p>
   ${p?`<div class="ok">Welcome back, ${esc(p.name)}.</div><button class="btn" data-go="try">Try the platform</button> <button class="btn sec" data-go="feedback">Leave feedback</button>`
      :`<button class="btn" data-go="signup">Join the beta</button>`}`;
 }
@@ -151,7 +155,7 @@ function signup(){
   <div><label for="dob">Date of birth</label><input type="date" id="dob" required></div>
   <div><label for="gender">Gender identity</label><select id="gender" required><option value="">Select…</option>${GENDERS.map(g=>`<option>${g}</option>`).join('')}</select></div></div>
   <p class="small mute" style="margin-top:6px">Gender is used only to test the audience-visibility safety control (who can see a plan).</p>
-  <label for="hood">Which neighborhood are you in? (Demo City)</label><select id="hood" required>${HOODS.map(g=>`<option>${g}</option>`).join('')}</select>
+  <label for="hood">Which part of Chandigarh are you in?</label><select id="hood" required>${HOODS.map(g=>`<option>${g}</option>`).join('')}</select>
   <label>What would you want to do with company?</label><div class="opts">${INTERESTS.map(i=>`<label class="opt"><input type="checkbox" name="int" value="${i}">${i}</label>`).join('')}</div>
   <label>When are you usually free?</label><div class="opts">${TIMES.map(i=>`<label class="opt"><input type="checkbox" name="time" value="${i}">${i}</label>`).join('')}</div>
   <div class="consent"><strong>Your consent</strong>
@@ -222,7 +226,7 @@ async function submitSignup(e){
   if(!$('#c_data').checked)return showErr('Please tick the consent box to continue.');
   if(!(ageOf(v('dob'))>=18))return showErr('You must be 18 or older to join.');
   if(!many('int').length)return showErr('Pick at least one thing you would want to do.');
-  const id=uuid(),row={id,name:v('name'),email:v('email'),dob:v('dob'),gender:v('gender'),city:'Demo City',neighborhood:v('hood'),interests:many('int'),availability:many('time'),consent_data:true,consent_version:CONSENT_VERSION};
+  const id=uuid(),row={id,name:v('name'),email:v('email'),dob:v('dob'),gender:v('gender'),city:'Chandigarh',neighborhood:v('hood'),interests:many('int'),availability:many('time'),consent_data:true,consent_version:CONSENT_VERSION};
   $('#go').disabled=true;
   try{
     const r=await store('participants',row);

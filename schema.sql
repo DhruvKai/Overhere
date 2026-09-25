@@ -9,8 +9,9 @@ create table if not exists participants (
   email           text not null check (char_length(email) between 3 and 120),
   dob             date not null check (dob <= current_date - interval '18 years'),
   gender          text not null check (gender in ('Woman','Man','Non-binary')),
-  city            text not null default 'Demo City',
-  neighborhood    text not null check (neighborhood in ('Central Market','Lakeside','Old Quarter')),
+  city            text not null default 'Chandigarh',
+  -- Chandigarh launch areas; the old demo names stay valid for earlier sign-ups
+  neighborhood    text not null check (neighborhood in ('Sector 17','Sector 7','Sector 22','Central Market','Lakeside','Old Quarter')),
   interests       text[] not null check (cardinality(interests) >= 1),
   availability    text[] not null default '{}',
   consent_data    boolean not null check (consent_data = true),
@@ -98,3 +99,12 @@ begin
 end $$;
 revoke all on function admin_stats(text) from public;
 grant execute on function admin_stats(text) to anon;
+
+-- =====================================================================================
+-- Moved to Chandigarh. If you created the tables before this change, run this once.
+-- It only widens the allowed neighbourhoods; existing rows are not changed.
+-- =====================================================================================
+alter table participants drop constraint if exists participants_neighborhood_check;
+alter table participants add constraint participants_neighborhood_check
+  check (neighborhood in ('Sector 17','Sector 7','Sector 22','Central Market','Lakeside','Old Quarter'));
+alter table participants alter column city set default 'Chandigarh';

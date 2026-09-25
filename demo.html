@@ -225,6 +225,7 @@ a.btn{text-decoration:none}
 .map svg{position:absolute;inset:0;width:100%;height:100%}
 .map .mw{fill:var(--mapwater)}.map .mp{fill:var(--mappark)}
 .map .mr{stroke:var(--maproad);stroke-width:5;fill:none}.map .mr path{vector-effect:non-scaling-stroke}
+.mlab{position:absolute;font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--mute);pointer-events:none}
 .you{position:absolute;z-index:2;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:var(--info);border:3px solid var(--card);box-shadow:0 0 0 7px rgba(59,130,246,.2)}
 .pin{position:absolute;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;border:2px solid var(--card);background:var(--pc);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.25);padding:0;transition:transform .12s}
 .pin:hover,.pin:focus-visible{z-index:3;transform:translate(-50%,-50%) scale(1.12);outline:2px solid var(--ink);outline-offset:2px}
@@ -403,8 +404,8 @@ const IC={
 const I=(n,s=16)=>`<svg class="i" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||''}</svg>`;
 
 /* ---------- constants ---------- */
-const KEY='overhere_demo_v2';
-const HOODS=['Central Market','Lakeside','Old Quarter'];
+const KEY='overhere_demo_v3';   // v3: the demo moved to Chandigarh
+const HOODS=['Sector 17','Sector 7','Sector 22'];   // Chandigarh launch areas
 const GENDERS=['Woman','Man','Non-binary'];
 const INTERESTS=['Movies','Cafe / Food','Concerts'];
 const TIMES=['Weekday evenings','Weekend days','Weekend evenings','Late nights'];
@@ -438,23 +439,23 @@ const USERS={
 const TRUST={u1:[12,12],u2:[21,21],u3:[8,7],u4:[3,3],u5:[6,5],u6:[17,17],u7:[25,24],u8:[4,4],u9:[14,14],u10:[9,7],u11:[11,11],u12:[2,2]};
 /* Past activities shown on profiles: [title, category, days ago, role, average stars, number of ratings]. */
 const HIST={
-  u1:[['Nolan retrospective: Interstellar on IMAX','movies',9,'Hosted',4.9,5],['Filter coffee tasting','cafe',23,'Joined',4.6,4],['Anime night at the Rex','movies',41,'Hosted',4.8,6]],
-  u2:[['Jazz brunch at Bean & Leaf','cafe',6,'Hosted',5.0,4],['Architecture walk and chai','cafe',19,'Hosted',4.9,7],['Sunday sitar recital','concerts',33,'Joined',4.7,5]],
-  u3:[['Vinyl listening session','concerts',12,'Hosted',4.6,5],['Indie night at The Hangar','concerts',27,'Joined',4.3,6],['Late-night dosa run','cafe',52,'Joined',4.5,3]],
+  u1:[['Nolan retrospective: Interstellar on IMAX','movies',9,'Hosted',4.9,5],['Filter coffee tasting','cafe',23,'Joined',4.6,4],['Anime night at Elante','movies',41,'Hosted',4.8,6]],
+  u2:[['Jazz brunch in Sector 7','cafe',6,'Hosted',5.0,4],['Le Corbusier architecture walk and chai','cafe',19,'Hosted',4.9,7],['Sunday sitar recital','concerts',33,'Joined',4.7,5]],
+  u3:[['Vinyl listening session','concerts',12,'Hosted',4.6,5],['Indie night in Sector 26','concerts',27,'Joined',4.3,6],['Late-night dosa run','cafe',52,'Joined',4.5,3]],
   u4:[['Brunch spot hunt #3','cafe',8,'Hosted',4.8,3],['Open-mic poetry','concerts',30,'Joined',4.6,5]],
   u5:[['Street food crawl','cafe',15,'Hosted',4.2,4],['Midnight action double bill','movies',38,'Hosted',3.9,5]],
   u6:[['Board game Friday','cafe',4,'Hosted',5.0,8],['Catan tournament','cafe',18,'Hosted',4.9,6],['Documentary and discussion','movies',32,'Hosted',4.8,5]],
   u7:[['Open-mic night','concerts',5,'Hosted',4.9,9],['Karaoke, no talent required','concerts',20,'Hosted',4.8,7],['Songwriting circle','concerts',44,'Hosted',4.7,6]],
   u8:[['Ramen ranking night','cafe',10,'Hosted',4.7,3],['Marvel marathon','movies',36,'Joined',4.4,5]],
   u9:[['Sunset acoustic set','concerts',7,'Hosted',4.9,6],['Jazz on the lawn','concerts',21,'Hosted',5.0,4],['Third-wave coffee crawl','cafe',40,'Joined',4.8,5]],
-  u10:[['Midnight biryani run','cafe',11,'Hosted',4.1,5],['Night photo walk','cafe',29,'Hosted',3.8,4]],
+  u10:[['Late-night parantha run','cafe',11,'Hosted',4.1,5],['Night photo walk','cafe',29,'Hosted',3.8,4]],
   u11:[["Women's film club: Qala",'movies',7,'Hosted',4.9,5],['Subtitled classics night','movies',28,'Hosted',4.8,4],['Short film festival','movies',47,'Joined',4.7,3]],
   u12:[['Crossword and coffee','cafe',14,'Hosted',4.8,2]]
 };
 /* What other people like and when they're free: drives "in common" signals for hosts. */
 const UPREF={u1:[['Movies'],['Weekend evenings','Late nights']],u2:[['Cafe / Food','Concerts'],['Weekend days']],u3:[['Concerts'],['Weekday evenings','Late nights']],u4:[['Cafe / Food'],['Weekend days']],u5:[['Movies','Cafe / Food'],['Late nights']],u6:[['Cafe / Food','Movies'],['Weekday evenings','Weekend days']],u7:[['Concerts'],['Weekday evenings','Weekend evenings']],u8:[['Cafe / Food','Movies'],['Late nights']],u9:[['Concerts','Cafe / Food'],['Weekend evenings']],u10:[['Cafe / Food','Concerts'],['Late nights']],u11:[['Movies'],['Weekend days','Weekday evenings']],u12:[['Cafe / Food'],['Weekend days']]};
 const CAT_INT={movies:'Movies',cafe:'Cafe / Food',concerts:'Concerts'};
-const NEW_PLANS=[['movies','Late show of the new thriller','Grand Cinema, Screen 2'],['cafe','Trying the new South Indian place','Dakshin Kitchen'],['concerts','Jazz trio on the rooftop','Skyline Terrace'],['movies','Anime movie night','Old Rex Cinema'],['cafe','Bakery crawl, three stops','Starts at Bread Co.'],['concerts','Unplugged night, local bands','The Hangar']];
+const NEW_PLANS=[['movies','Late show of the new thriller','PVR, Elante Mall'],['cafe','Trying the new South Indian place','Sector 35 market'],['concerts','Jazz trio on a rooftop','Rooftop café, Sector 26'],['movies','Anime movie night','Government Museum auditorium, Sector 10'],['cafe','Bakery crawl, three stops','Starts at Sector 8 market'],['concerts','Unplugged night, local bands','Music café, Sector 7']];
 const CHAT_REASONS=['Harassment or threats','Sexual or unwanted messages','Spam or scam','Hate speech','Something else'];
 const MICRO={swipe:'Was swiping an easy way to find plans?',request:'How easy was it to ask to join?',post:'How easy was posting your plan?',rating:'Was rating the meetup quick enough?'};
 const MAP_SVG='<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="mw" d="M72 0C62 18 82 30 75 46C70 58 86 66 100 64V0Z"/><path class="mp" d="M8 62C18 56 30 60 32 72C34 84 20 92 10 88C2 84 0 70 8 62Z"/><path class="mp" d="M40 8C48 6 54 12 52 20C50 26 42 26 38 20C36 14 36 10 40 8Z"/><g class="mr"><path d="M0 50H100"/><path d="M50 0V100"/><path d="M0 22C30 26 60 18 100 30"/><path d="M0 80C30 74 70 86 100 78"/><path d="M22 0C26 40 18 70 26 100"/><path d="M80 0C76 40 84 70 78 100"/></g></svg>';
@@ -462,11 +463,11 @@ const REPORT_REASONS=['Made me feel unsafe','Inappropriate messages or behaviour
 const REPEAT={weekly:'Every week',biweekly:'Every 2 weeks'};
 /* Demo accounts opened from the Admin tab of the beta site (passwords live there). Each keeps its own data. */
 const ACCOUNTS={
-  kajal:{name:'Kajal',gender:'Woman',dob:'1998-02-02',hood:'Central Market',job:'UX Researcher',bio:'Weekend brunches, indie gigs and the occasional horror movie. Always on time.',ints:['Movies','Cafe / Food','Concerts'],avail:['Weekday evenings','Late nights'],emo:'👩🏽‍🔬',
-    trust:[18,18],hist:[['Sunday brunch club','cafe',5,'Hosted',4.9,6],['Indie night at The Hangar','concerts',16,'Joined',4.7,1],['Horror double bill','movies',31,'Hosted',4.8,4]]},
-  arjun:{name:'Arjun',gender:'Man',dob:'1995-09-18',hood:'Central Market',job:'Software Engineer',bio:'Weekend cricket, Friday night movies, always up for street food.',ints:['Movies','Cafe / Food'],avail:['Weekend days','Weekend evenings'],emo:'👨🏾‍💻',
-    trust:[9,9],hist:[['Friday night thriller','movies',8,'Hosted',4.7,4],['Biryani crawl','cafe',22,'Joined',4.5,1]]},
-  neha:{name:'Neha',gender:'Woman',dob:'2001-06-14',hood:'Central Market',job:'',bio:'',ints:['Cafe / Food'],avail:['Weekend days'],emo:'👩🏻',fresh:true}
+  kajal:{name:'Kajal',gender:'Woman',dob:'1998-02-02',hood:'Sector 17',job:'UX Researcher',bio:'Weekend brunches, indie gigs and the occasional horror movie. Always on time.',ints:['Movies','Cafe / Food','Concerts'],avail:['Weekday evenings','Late nights'],emo:'👩🏽‍🔬',
+    trust:[18,18],hist:[['Sunday brunch club','cafe',5,'Hosted',4.9,6],['Indie night in Sector 26','concerts',16,'Joined',4.7,1],['Horror double bill','movies',31,'Hosted',4.8,4]]},
+  arjun:{name:'Arjun',gender:'Man',dob:'1995-09-18',hood:'Sector 17',job:'Software Engineer',bio:'Weekend cricket, Friday night movies, always up for street food.',ints:['Movies','Cafe / Food'],avail:['Weekend days','Weekend evenings'],emo:'👨🏾‍💻',
+    trust:[9,9],hist:[['Friday night thriller','movies',8,'Hosted',4.7,4],['Sector 35 food crawl','cafe',22,'Joined',4.5,1]]},
+  neha:{name:'Neha',gender:'Woman',dob:'2001-06-14',hood:'Sector 17',job:'',bio:'',ints:['Cafe / Food'],avail:['Weekend days'],emo:'👩🏻',fresh:true}
 };
 const ACCT=(()=>{try{const a=localStorage.getItem('overhere_acct')||'';return ACCOUNTS[a]?a:''}catch(e){return ''}})();
 const SKEY=ACCT?KEY+':'+ACCT:KEY;
@@ -477,9 +478,21 @@ const NK={req:{ic:'user-check',bg:'#E7F0E1',fg:'#336842'},update:{ic:'layers',bg
 /* ---------- state ---------- */
 /* One-time move of browser data saved under the app's old name (Tagalong). */
 try{[['tagalong_demo_v2',KEY],['tagalong_participant','overhere_participant']].forEach(([o,n])=>{const v=localStorage.getItem(o);if(v===null)return;if(localStorage.getItem(n)===null)localStorage.setItem(n,v);localStorage.removeItem(o)})}catch(e){}
+/* The demo moved to Chandigarh. Old neighbourhood names map to the new sectors. */
+const HOOD_MAP={'Central Market':'Sector 17','Lakeside':'Sector 7','Old Quarter':'Sector 22'};
+const fixHood=h=>HOOD_MAP[h]||(HOODS.includes(h)?h:HOODS[0]);
+/* Your own profile carries over from the previous save; the sample plans start fresh. Demo accounts simply restart. */
+(()=>{try{
+  const old=SKEY.replace('overhere_demo_v3','overhere_demo_v2');
+  if(localStorage.getItem(SKEY)===null&&localStorage.getItem(old)!==null){
+    const o=JSON.parse(localStorage.getItem(old));
+    if(!ACCT&&o&&o.me){const s=seed();s.me={...o.me,hood:fixHood(o.me.hood)};delete s.me.pic;localStorage.setItem(SKEY,JSON.stringify(s))}
+    localStorage.removeItem(old);
+  }
+}catch(e){}})();
 let S=load()||seed();
 S.blocked=S.blocked||[];S.reports=S.reports||[];S.ratings=S.ratings||{};
-if(S.me){delete S.me.pic;if(!S.me.emo)S.me.emo=ACCOUNTS[ACCT]?.emo||defEmo(S.me.gender)}
+if(S.me){delete S.me.pic;S.me.hood=fixHood(S.me.hood);if(!S.me.emo)S.me.emo=ACCOUNTS[ACCT]?.emo||defEmo(S.me.gender)}
 S.following=S.following||[];S.alerts=S.alerts||[];S.muted=S.muted||{};S.tips=S.tips||{};S.asked=S.asked||{};
 const freshF=()=>({cat:'all',date:'',tod:'any',ver:false,amin:18,amax:99,sort:'for',view:'list'});
 const freshUi=()=>({tab:'swipe',ob:{step:2,d:{}},modal:null,f:freshF()});
@@ -492,42 +505,42 @@ function seed(){
   /* next occurrence of a clock time, at least 1h away: always inside the 36h swipe window */
   const next=(hr,mi)=>{const d=new Date(n);d.setHours(hr,mi||0,0,0);if(d.getTime()<n+3600e3)d.setDate(d.getDate()+1);return d.getTime()};
   const A=(id,host,cat,desc,cap,when,aud,venue,cost,hood,members)=>({id,host,cat,desc,cap,when,aud,venue,cost,hood,members:members||[],status:'open'});
-  const CM='Central Market';
+  const S17='Sector 17';
   const acts=[
     /* Swipe deck: within the next 36 hours */
-    A('n1','u9','concerts','Sunset acoustic set on the terrace',4,next(18,30),'everyone','Skyline Terrace','host',CM),
-    A('a1','u2','movies','Catching the 8pm show of the new sci-fi release, chai after',3,next(20),'everyone','Grand Cinema, Screen 4','split',CM,['u1']),
-    A('a4','u5','movies','Late-night horror double feature',4,next(22,30),['Man','Non-binary'],'Regal Multiplex','split',CM),
-    A('n2','u10','cafe','Midnight biryani run',3,next(23,45),'everyone','Bawarchi, Old Lane','split',CM,['u8','me']),
-    {...A('n4','u12','cafe','Morning filter coffee and the Sunday crossword',2,next(8),'everyone','Madras Coffee House','own',CM),repeat:'weekly'},
-    A('a2','u4','cafe','Slow brunch. Bring a book or a laptop',4,next(11),['Woman'],'Bean & Leaf','own',CM),
-    A('n3','u11','movies',"Women's film club: Sairat screening and discussion",4,next(16),['Woman'],'Prithvi Studio','own',CM,['u9']),
-    A('a5','u6','cafe','Board games and coffee, beginners welcome',5,next(15),'everyone','Meeple Cafe','own',CM,['u2','u7','u1']),
-    A('a3','u3','concerts','Indie band live set, got spare spots',2,next(21),'everyone','The Hangar','own',CM),
-    A('n5','u7','concerts','Karaoke night, no talent required',6,next(21,30),'everyone','Mic Drop Bar','split',CM,['u1','u4','u6','u8','u3']),
+    A('n1','u9','concerts','Sunset acoustic set by Sukhna Lake',4,next(18,30),'everyone','Sukhna Lake, near the boat club','host',S17),
+    A('a1','u2','movies','Catching the 8pm show of the new sci-fi release, chai after',3,next(20),'everyone','PVR, Elante Mall','split',S17,['u1']),
+    A('a4','u5','movies','Late-night horror double feature',4,next(22,30),['Man','Non-binary'],'Elante Mall multiplex','split',S17),
+    A('n2','u10','cafe','Late-night parantha run',3,next(23,45),'everyone','Sector 35 market','split',S17,['u8','me']),
+    {...A('n4','u12','cafe','Morning filter coffee and the Sunday crossword',2,next(8),'everyone','Indian Coffee House, Sector 17','own',S17),repeat:'weekly'},
+    A('a2','u4','cafe','Slow brunch. Bring a book or a laptop',4,next(11),['Woman'],'Café in Sector 7 inner market','own',S17),
+    A('n3','u11','movies',"Women's film club: Punjabi short films and discussion",4,next(16),['Woman'],'Punjab Kala Bhawan, Sector 16','own',S17,['u9']),
+    A('a5','u6','cafe','Board games and coffee, beginners welcome',5,next(15),'everyone','Board game café, Sector 8','own',S17,['u2','u7','u1']),
+    A('a3','u3','concerts','Indie band live set, got spare spots',2,next(21),'everyone','Live music bar, Sector 26','own',S17),
+    A('n5','u7','concerts','Karaoke night, no talent required',6,next(21,30),'everyone','Karaoke bar, Sector 26','split',S17,['u1','u4','u6','u8','u3']),
     /* Discover: 3+ days out, spread across morning / afternoon / evening / night */
-    A('d1','u12','cafe','Sunrise walk around the lake, then breakfast',4,at(3,6,30),'everyone','Lake gate no. 2','own',CM,['u6']),
-    A('a7','u8','cafe','Trying the new ramen place (only 1 spot left)',3,at(3,13),'everyone','Ramen Yokocho','split',CM,['u5','u3']),
-    A('a6','u7','concerts','Open-mic night, come cheer for friends',6,at(3,20),'everyone','Blue Note Lounge','own',CM),
-    A('a8','u1','movies','Classic film re-run matinee',4,at(4,11),'everyone','Old Rex Cinema','split',CM),
-    A('a9','u9','concerts','Jazz night on the lawn, table for 4',4,at(4,21),['Woman'],'Riverside Lawn','host',CM,['u2']),
-    A('a10','u3','cafe','Coffee and sketching afternoon',3,at(5,16),'everyone','Paper & Pour','own',CM),
-    A('d2','u11','movies','Marathi film screening, post-film chai',5,at(5,19,30),'everyone','Film Society Hall','own',CM,['u4']),
-    A('d3','u10','concerts','Techno night, leaving early is allowed',3,at(6,22,30),'everyone','Antisocial','own',CM),
-    A('d4','u4','cafe','Pancake brunch and a long walk',4,at(7,10),'everyone','Flipside Diner','split',CM),
-    A('a11','u6','movies','Documentary night and discussion',3,at(8,18),'everyone','Film Society Hall','own',CM),
-    A('d5','u5','movies','Midnight show of the big release',4,at(9,23,45),['Man','Non-binary'],'Regal Multiplex','split',CM),
-    {...A('d6','u2','cafe','Dessert crawl: three places, one evening',3,at(10,19),'everyone','Starts at Theobroma','split',CM,['u6','u9','u4']),status:'full'},
-    /* Other neighborhoods (switch neighborhood in Profile to see these) */
-    A('a12','u5','concerts','Rock night at the lake',4,next(19),'everyone','Lakeside Amphitheatre','own','Lakeside'),
-    A('a14','u8','movies','Sunday matinee',4,at(4,14),'everyone','Lakeview Cinema','split','Lakeside'),
-    A('l1','u9','cafe','Lakeside picnic, bring one snack',6,at(5,12),'everyone','North lawn','own','Lakeside',['u2']),
-    A('a13','u6','cafe','Tea tasting flight',3,next(17),'everyone','Chai Lab','split','Old Quarter'),
-    A('o1','u3','concerts','Heritage walk and a sitar recital',4,at(6,17),'everyone','Town Hall steps','own','Old Quarter'),
+    A('d1','u12','cafe','Sunrise walk around Sukhna Lake, then breakfast',4,at(3,6,30),'everyone','Sukhna Lake, main gate','own',S17,['u6']),
+    A('a7','u8','cafe','Trying the new ramen place (only 1 spot left)',3,at(3,13),'everyone','Ramen bar, Sector 9','split',S17,['u5','u3']),
+    A('a6','u7','concerts','Open-mic night, come cheer for friends',6,at(3,20),'everyone','Open-mic café, Sector 15','own',S17),
+    A('a8','u1','movies','Classic film re-run matinee',4,at(4,11),'everyone','Government Museum auditorium, Sector 10','split',S17),
+    A('a9','u9','concerts','Jazz night on the lawn, table for 4',4,at(4,21),['Woman'],'Leisure Valley lawns','host',S17,['u2']),
+    A('a10','u3','cafe','Sketching at the Rock Garden, coffee after',3,at(5,16),'everyone','Rock Garden, Sector 1','own',S17),
+    A('d2','u11','movies','Punjabi film screening, post-film chai',5,at(5,19,30),'everyone','Tagore Theatre, Sector 18','own',S17,['u4']),
+    A('d3','u10','concerts','Techno night, leaving early is allowed',3,at(6,22,30),'everyone','Club in Sector 26','own',S17),
+    A('d4','u4','cafe','Pancake brunch, then a walk in the Rose Garden',4,at(7,10),'everyone','Rose Garden, Sector 16','split',S17),
+    A('a11','u6','movies','Documentary night and discussion',3,at(8,18),'everyone','Panjab University, Sector 14','own',S17),
+    A('d5','u5','movies','Midnight show of the big release',4,at(9,23,45),['Man','Non-binary'],'Elante Mall multiplex','split',S17),
+    {...A('d6','u2','cafe','Dessert crawl: three places, one evening',3,at(10,19),'everyone','Starts at Sector 17 Plaza','split',S17,['u6','u9','u4']),status:'full'},
+    /* Other neighbourhoods (switch neighbourhood in Edit profile to see these) */
+    A('a12','u5','concerts','Rock night, local bands',4,next(19),'everyone','Music café, Sector 7','own','Sector 7'),
+    A('a14','u8','movies','Sunday matinee at Elante',4,at(4,14),'everyone','PVR, Elante Mall','split','Sector 7'),
+    A('l1','u9','cafe','Picnic at Sukhna Lake, bring one snack',6,at(5,12),'everyone','Sukhna Lake lawns','own','Sector 7',['u2']),
+    A('a13','u6','cafe','Tea tasting flight',3,next(17),'everyone','Tea room, Sector 22 market','split','Sector 22'),
+    A('o1','u3','concerts','Le Corbusier heritage walk and a sitar recital',4,at(6,17),'everyone','Capitol Complex, Sector 1','own','Sector 22'),
     /* Hosted by you */
-    A('m1','me','cafe','Filter coffee crawl',3,h(50),'everyone','Blue Tokai','own',CM,['u2']),
-    A('m2','me','movies','Late show and street food after',2,at(4,21,30),['Woman','Non-binary'],'PVR Phoenix','split',CM),
-    {...A('m3','me','concerts','Qawwali evening',4,h(-26),'everyone','Courtyard Stage','own',CM,['u4','u6']),status:'past',checkin:true}
+    A('m1','me','cafe','Filter coffee crawl',3,h(50),'everyone','Indian Coffee House, Sector 17','own',S17,['u2']),
+    A('m2','me','movies','Late show and street food after',2,at(4,21,30),['Woman','Non-binary'],'PVR, Elante Mall','split',S17),
+    {...A('m3','me','concerts','Qawwali evening',4,h(-26),'everyone','Punjab Kala Bhawan courtyard, Sector 16','own',S17,['u4','u6']),status:'past',checkin:true}
   ];
   /* Rough total cost in rupees, so each person's share can be shown. */
   const TOT={n1:4000,a1:1600,a4:2000,n2:1800,a7:2400,a8:1000,a9:3200,n5:2400,d4:2000,d5:1600,d6:1500,m2:1200,a14:1200,a13:900};
@@ -540,7 +553,7 @@ function seed(){
     {id:'r4',act:'m1',user:'u2',note:'',status:'accepted'},
     {id:'r8',act:'m3',user:'u8',note:'',status:'no_action'},
     /* yours, one in each state */
-    {id:'r5',act:'n2',user:'me',note:'Biryani is my love language.',status:'accepted'},
+    {id:'r5',act:'n2',user:'me',note:'Paranthas are my love language.',status:'accepted'},
     {id:'r6',act:'a6',user:'me',note:'',status:'pending'},
     {id:'r7',act:'a11',user:'me',note:'I watch a lot of docs!',status:'rejected'}
   ];
@@ -549,14 +562,14 @@ function seed(){
     const other=a.members.find(x=>x!=='me')||a.host;
     chats[a.id]=[{from:'sys',text:'Chat created',at:n-7200e3},{from:a.host,text:'Hey all! Excited for this one.',at:n-3600e3},{from:other,text:'Me too, what time should we meet?',at:n-3000e3},{from:a.host,text:'Let us meet 15 min before at the entrance.',at:n-2400e3}];
   });
-  chats.n2.push({from:'sys',text:'You joined the chat',at:n-1800e3},{from:'u10',text:'Welcome! We are ordering the family pack.',at:n-1500e3});
+  chats.n2.push({from:'sys',text:'You joined the chat',at:n-1800e3},{from:'u10',text:'Welcome! We are getting the butter paranthas.',at:n-1500e3});
   const N=(id,mins,kind,title,tag,tone,act,text,read)=>({id,at:n-mins*6e4,kind,title,tag,tone,act,text,read:!!read});
   const notes=[
     N('n1',20,'req','New join request','Pending','warn','m1','Priya wants to join "Filter coffee crawl".'),
-    N('n2',95,'req','Request Accepted 🎉','Accepted','ok','n2','Dev accepted your join request for "Midnight biryani run".'),
+    N('n2',95,'req','Request Accepted 🎉','Accepted','ok','n2','Dev accepted your join request for "Late-night parantha run".'),
     N('n3',180,'update','Spot opened up','1 spot left','info','n5','"Karaoke night, no talent required" now has 1 spot available.'),
     N('n4',300,'req','Request Declined','Declined','bad','a11','Ananya declined your join request for "Documentary night and discussion". You can browse similar activities.',true),
-    N('n5',420,'update','Activity updated','Details changed','info','a6','Alex moved "Open-mic night" to Blue Note Lounge.',true),
+    N('n5',420,'update','Activity updated','Details changed','info','a6','Alex moved "Open-mic night" to the open-mic café in Sector 15.',true),
     N('n6',1440,'req','New join request','Pending','warn','m2','Zoya wants to join "Late show and street food after".',true),
     {...N('n7',60,'remind','How did it go?','Check in','warn','m3','"Qawwali evening" has ended. Let us know it went OK and who showed up.'),check:true}
   ];
@@ -752,7 +765,8 @@ function notify(text,o={}){S.notes.unshift({id:nextId('n'),text,at:now(),read:fa
 function visible(a){return (a.status==='open'||a.status==='full')&&a.host!=='me'&&a.hood===S.me.hood&&audOK(a)&&!isBlocked(a.host)&&a.when>now()}
 function eligible(a){return visible(a)&&a.status==='open'&&spots(a)>0&&!S.dismissed.includes(a.id)}
 const deck=()=>S.acts.filter(a=>eligible(a)&&!myReq(a.id)&&a.when<=now()+SWIPE_WINDOW).sort((a,b)=>a.when-b.when);
-const feed=()=>S.acts.filter(a=>visible(a)&&a.when>now()+SWIPE_WINDOW).sort((a,b)=>a.when-b.when);
+/* Plans that declined you drop out of Discover; they stay in Requests (where you can still share them). */
+const feed=()=>S.acts.filter(a=>visible(a)&&a.when>now()+SWIPE_WINDOW&&myReq(a.id)?.status!=='rejected').sort((a,b)=>a.when-b.when);
 
 function sendReq(actId,note){
   const a=actOf(actId);
@@ -996,9 +1010,9 @@ function tabDiscover(){
 }
 function mapHtml(list){
   const pos=a=>{const g=geo(a);return `left:${50+g.x/4.4*45}%;top:${50+g.y/4.4*45}%`};
-  return `<div class="map" role="region" aria-label="Map of plans near you">${MAP_SVG}<span class="you" style="left:50%;top:50%" title="You (${esc(S.me.hood)})"></span>
+  return `<div class="map" role="region" aria-label="Map of plans near you">${MAP_SVG}<span class="you" style="left:50%;top:50%" title="You (${esc(S.me.hood)})"></span><span class="mlab" style="right:5%;top:13%">Sukhna Lake</span>
   ${list.map(a=>{const c=CATS[a.cat];return `<button class="pin" style="${pos(a)};--pc:${c.fg}" data-a="detail" data-id="${a.id}" aria-label="${esc(a.desc)}, ${whenStr(a.when)}, ${distKm(a)} km away">${I(c.icon,15)}<span class="pl">${esc(short(a.desc))} · ${distKm(a)} km</span></button>`}).join('')}</div>
-  <p class="small mute" style="margin-top:8px">The blue dot is the centre of ${esc(S.me.hood)}. Pins are approximate: hosts share the exact spot once you're accepted.</p>`;
+  <p class="small mute" style="margin-top:8px">The blue dot is the centre of ${esc(S.me.hood)}, Chandigarh. Pins are approximate: hosts share the exact spot once you're accepted.</p>`;
 }
 function tabActs(){
   const mine=S.acts.filter(a=>a.host==='me').sort((a,b)=>(a.status==='past')-(b.status==='past')||(a.status==='past'?b.when-a.when:a.when-b.when));
@@ -1041,7 +1055,7 @@ function tabProfile(){
   const soft=(arr,none)=>arr&&arr.length?`<div class="soft">${arr.map(x=>`<span>${esc(x)}</span>`).join('')}</div>`:`<p class="small mute">${none}</p>`;
   return `<div class="panel"><div class="ph">${I('user',15)} Your profile<button class="btn sm sec" data-a="editprofile">${I('pencil',14)} Edit profile</button></div>
   <div class="pt2"><div class="phw" data-a="photo">${av('me','lg')}<button class="pe" id="p_pe" title="Change profile picture" aria-label="Change profile picture" aria-haspopup="menu" aria-expanded="false">${I('camera',14)}</button>
-  <div class="pmenu" id="p_menu" role="menu" hidden></div></div><div><div class="pn">${esc(m.name)} ${m.kyc?`<span class="vf">${I('badge-check',14)} Verified</span>`:''}</div><div class="small mute">${esc(m.hood)}, Demo City</div><div class="small" style="margin-top:4px">${rateTxt('me')} <span class="mute">· ${trustTxt('me')}</span></div></div></div>
+  <div class="pmenu" id="p_menu" role="menu" hidden></div></div><div><div class="pn">${esc(m.name)} ${m.kyc?`<span class="vf">${I('badge-check',14)} Verified</span>`:''}</div><div class="small mute">${esc(m.hood)}, Chandigarh</div><div class="small" style="margin-top:4px">${rateTxt('me')} <span class="mute">· ${trustTxt('me')}</span></div></div></div>
   <input type="file" id="p_photo" accept="image/jpeg,image/png,image/webp,image/*" hidden>
   <div class="facts"><span>${ageOf(m.dob)} yrs</span><span>${esc(m.gender)}</span>${m.job?`<span>${I('briefcase',14)}${esc(m.job)}</span>`:''}</div>
   <p>${m.bio?esc(m.bio):'<span class="mute">Add a short bio so hosts know who you are. Tap Edit profile.</span>'}</p></div>
@@ -1095,7 +1109,7 @@ function modalHtml(){
       <label>Who can see and request this?</label>
       <label class="chk"><input type="checkbox" id="f_all" ${aud==='everyone'?'checked':''}> Everyone</label>
       ${GENDERS.map(g=>`<label class="chk"><input type="checkbox" class="f_g" value="${g}" ${aud!=='everyone'&&aud.includes(g)?'checked':''}> ${g}</label>`).join('')}
-      <label>Venue</label><input id="f_venue" placeholder="e.g. Grand Cinema, Screen 4" value="${src?esc(src.venue):''}">
+      <label>Venue</label><input id="f_venue" placeholder="e.g. PVR, Elante Mall" value="${src?esc(src.venue):''}">
       <label>How will costs work? (informational only)</label><select id="f_cost">${Object.entries(COST).map(([k,v])=>`<option value="${k}" ${src&&src.cost===k?'selected':''}>${v}</option>`).join('')}</select>
       <label for="f_total">Estimated total cost <span class="mute" style="font-weight:400">(₹, optional)</span></label><input id="f_total" type="number" min="0" max="1000000" step="50" inputmode="numeric" placeholder="e.g. 1200" value="${src?.total||''}">
       <p class="small mute" style="margin-top:6px">We show each person's rough share. Payments stay between you.</p>
@@ -1249,7 +1263,7 @@ function modalHtml(){
       <label for="p_dob">Date of birth</label><input id="p_dob" type="date" value="${esc(me.dob)}">
       <label for="p_gender">Gender identity</label><select id="p_gender">${GENDERS.map(g=>`<option ${g===me.gender?'selected':''}>${g}</option>`).join('')}</select>
       <p class="small mute" style="margin-top:6px">Decides which audience-limited plans you can see.</p>
-      <label for="p_hood">Neighbourhood <span class="mute" style="font-weight:400">(Demo City)</span></label><select id="p_hood">${HOODS.map(g=>`<option ${g===me.hood?'selected':''}>${g}</option>`).join('')}</select>
+      <label for="p_hood">Neighbourhood <span class="mute" style="font-weight:400">(Chandigarh)</span></label><select id="p_hood">${HOODS.map(g=>`<option ${g===me.hood?'selected':''}>${g}</option>`).join('')}</select>
       <label for="p_job">Profession</label><input id="p_job" maxlength="40" value="${esc(me.job||'')}" placeholder="e.g. Designer">
       <label for="p_bio">Bio</label><textarea id="p_bio" maxlength="300" placeholder="A line or two so hosts know who you are">${esc(me.bio||'')}</textarea>
       <label>What would you want to do with company?</label>${opts('p_int',INTERESTS,me.ints)}
@@ -1351,7 +1365,7 @@ function onboardHtml(){
     <label>Date of birth</label><input id="o_dob" type="date" value="${esc(d.dob||'')}">
     <label>Gender identity (required)</label><select id="o_gender"><option value="">Select…</option>${GENDERS.map(g=>`<option ${g===d.gender?'selected':''}>${g}</option>`).join('')}</select>
     <p class="small mute" style="margin-top:6px">Used only for the safety-oriented audience filter on posts.</p>
-    <label>City</label><input value="Demo City" disabled>
+    <label>City</label><input value="Chandigarh" disabled>
     <label>Neighborhood (launch areas)</label><select id="o_hood">${HOODS.map(g=>`<option ${g===d.hood?'selected':''}>${g}</option>`).join('')}</select>
     <label>What would you want to do with company?</label>${opts('o_int',INTERESTS,d.ints)}
     <label>When are you usually free?</label>${opts('o_avail',TIMES,d.avail)}
@@ -1822,7 +1836,7 @@ function initMe(){
   }
   try{
     const p=JSON.parse(localStorage.getItem('overhere_participant'));
-    if(p&&p.name&&p.gender&&p.hood)S.me={name:p.name,dob:p.dob||'1995-01-01',gender:p.gender,hood:p.hood,ints:p.ints||[],avail:p.avail||[],face:true,kyc:true,obDone:true,emo:defEmo(p.gender)};
+    if(p&&p.name&&p.gender&&p.hood)S.me={name:p.name,dob:p.dob||'1995-01-01',gender:p.gender,hood:fixHood(p.hood),ints:p.ints||[],avail:p.avail||[],face:true,kyc:true,obDone:true,emo:defEmo(p.gender)};
   }catch(e){}
   if(S.me)save();
 }
