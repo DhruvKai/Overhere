@@ -83,9 +83,14 @@ const TIMES=['Weekday evenings','Weekend days','Weekend evenings','Late nights']
 const PKEY='overhere_participant',LKEY='overhere_local_data';
 /* One-time move of browser data saved under the app's old name (Tagalong). */
 try{[['tagalong_participant',PKEY],['tagalong_local_data',LKEY]].forEach(([o,n])=>{const v=localStorage.getItem(o);if(v===null)return;if(localStorage.getItem(n)===null)localStorage.setItem(n,v);localStorage.removeItem(o)})}catch(e){}
-/* Admin shortcut for testing only: the password is visible in the page source, so it does not protect anything. */
-const ADMIN_PASS='kajal';
-const ADMIN_USER={id:null,admin:true,name:'Kajal',gender:'Woman',dob:'1998-02-02',hood:'Central Market',ints:['Movies','Cafe / Food','Concerts'],avail:['Weekday evenings','Late nights']};
+/* Admin shortcut for testing only: the passwords are visible in the page source, so they do not protect anything.
+   Each password opens a different demo account in demo.html, which keeps its own sample data. */
+const ADMIN_ACCOUNTS={
+  kajal:{acct:'kajal',name:'Kajal',gender:'Woman',dob:'1998-02-02',hood:'Central Market',ints:['Movies','Cafe / Food','Concerts'],avail:['Weekday evenings','Late nights']},
+  arjun:{acct:'arjun',name:'Arjun',gender:'Man',dob:'1995-09-18',hood:'Central Market',ints:['Movies','Cafe / Food'],avail:['Weekend days','Weekend evenings']},
+  neha:{acct:'neha',name:'Neha',gender:'Woman',dob:'2001-06-14',hood:'Central Market',ints:['Cafe / Food'],avail:['Weekend days']}
+};
+const AKEY='overhere_acct';
 
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -149,7 +154,7 @@ function signup(){
   <p style="margin-top:16px"><button class="btn" id="go" type="submit">Join and try the platform</button></p></form></div>`;
 }
 function admin(){
-  return `<div class="panel" style="max-width:420px;margin:0 auto"><h2>Admin mode</h2><p class="mute small">Skip sign-up and go straight to the app as a sample user (Kajal, Central Market). Nothing is sent to the backend.</p>
+  return `<div class="panel" style="max-width:420px;margin:0 auto"><h2>Admin mode</h2><p class="mute small">Skip sign-up and go straight to the app as a sample user. Each password opens a different account with its own sample data. Nothing is sent to the backend.</p>
   <form id="f"><label for="pw">Password</label><input type="password" id="pw" autocomplete="off" required>
   <div id="err"></div><p style="margin-top:16px"><button class="btn" type="submit" style="width:100%">Enter the app</button></p></form></div>`;
 }
@@ -189,8 +194,11 @@ function bind(){
     $('#pw').focus();
     $('#f').onsubmit=e=>{
       e.preventDefault();
-      if($('#pw').value.trim()!==ADMIN_PASS)return showErr('Wrong password.');
-      if(!getP())localStorage.setItem(PKEY,JSON.stringify(ADMIN_USER));
+      const ac=ADMIN_ACCOUNTS[$('#pw').value.trim().toLowerCase()];
+      if(!ac)return showErr('Wrong password.');
+      localStorage.setItem(AKEY,ac.acct);
+      const p=getP();
+      if(!p||p.admin){const {acct,...u}=ac;localStorage.setItem(PKEY,JSON.stringify({id:null,admin:true,...u}))}
       nav('try');
     };
   }
@@ -210,6 +218,7 @@ async function submitSignup(e){
   $('#go').disabled=true;
   try{
     const r=await store('participants',row);
+    localStorage.removeItem(AKEY);
     localStorage.setItem(PKEY,JSON.stringify({id:r==='duplicate'?null:id,name:row.name,gender:row.gender,dob:row.dob,hood:row.neighborhood,ints:row.interests,avail:row.availability}));
     nav('try');
   }catch(err){showErr(err.message);$('#go').disabled=false}
