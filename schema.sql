@@ -68,7 +68,7 @@ create policy "anyone can log events" on events for insert to anon with check (t
 create table if not exists admin_secret (pass text not null check (char_length(pass) >= 10));
 alter table admin_secret enable row level security;
 
--- dashboard.html calls this with the password. It returns totals only, never names or emails,
+-- addmin/index.html calls this with the password. It returns totals only, never names or emails,
 -- and feedback text only where the person agreed to be quoted.
 create or replace function admin_stats(pass text) returns jsonb
 language plpgsql security definer set search_path = public as $$

@@ -73,7 +73,6 @@ textarea{min-height:96px;resize:vertical}
   <div class="logo" id="logo"><span class="dots"><i></i><i></i></span>Overhere</div>
   <button class="tab" id="t_try" disabled>Try it</button>
   <button class="tab" id="t_fb">Feedback</button>
-  <button class="tab" id="t_admin">Admin</button>
 </div></header>
 <main id="main"></main>
 
@@ -134,7 +133,7 @@ let view='home';
 function nav(v){
   view=v;const p=getP();
   $('#t_try').disabled=!p;
-  $('#t_try').classList.toggle('on',v==='try');$('#t_fb').classList.toggle('on',v==='feedback');$('#t_admin').classList.toggle('on',v==='admin');
+  $('#t_try').classList.toggle('on',v==='try');$('#t_fb').classList.toggle('on',v==='feedback');
   $('#main').innerHTML=({home,signup,try_:tryView,feedback,thanks,admin})[v==='try'?'try_':v]();
   bind();window.scrollTo(0,0);
 }
@@ -168,7 +167,7 @@ function admin(){
   return `<div class="panel" style="max-width:420px;margin:0 auto"><h2>Admin mode</h2><p class="mute small">Skip sign-up and go straight to the app as a sample user. Each password opens a different account with its own sample data. Nothing is sent to the backend.</p>
   <form id="f"><label for="pw">Password</label><input type="password" id="pw" autocomplete="off" required>
   <div id="err"></div><p style="margin-top:16px"><button class="btn" type="submit" style="width:100%">Enter the app</button></p></form>
-  <p class="small mute" style="margin:18px 0 0;text-align:center">Looking for results? <a href="dashboard.html" style="color:var(--acch);font-weight:600">Open the beta dashboard</a></p></div>`;
+  <p class="small mute" style="margin:18px 0 0;text-align:center">Looking for results? <a href="addmin/" style="color:var(--acch);font-weight:600">Open the beta dashboard</a></p></div>`;
 }
 function tryView(){
   return `<h2>Try the platform</h2><p class="mute small">This is a sample version with pretend people and plans. Nothing you do here is real. Try swiping, posting a plan, requesting to join, and chatting. The ⚙️ button in the app has shortcuts to simulate other people.</p>
@@ -249,8 +248,7 @@ window.addEventListener('message',e=>{if(e.data==='overhere-feedback'&&e.source=
 $('#logo').onclick=()=>nav('home');
 $('#t_try').onclick=()=>nav('try');
 $('#t_fb').onclick=()=>nav('feedback');
-$('#t_admin').onclick=()=>nav('admin');
-nav('home');
+nav(location.hash==='#admin'?'admin':'home');   // demo accounts: no tab, opened from /addmin
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>

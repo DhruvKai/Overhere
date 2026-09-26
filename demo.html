@@ -470,7 +470,7 @@ const MICRO={swipe:'Was swiping an easy way to find plans?',request:'How easy wa
 const MAP_SVG='<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="mw" d="M72 0C62 18 82 30 75 46C70 58 86 66 100 64V0Z"/><path class="mp" d="M8 62C18 56 30 60 32 72C34 84 20 92 10 88C2 84 0 70 8 62Z"/><path class="mp" d="M40 8C48 6 54 12 52 20C50 26 42 26 38 20C36 14 36 10 40 8Z"/><g class="mr"><path d="M0 50H100"/><path d="M50 0V100"/><path d="M0 22C30 26 60 18 100 30"/><path d="M0 80C30 74 70 86 100 78"/><path d="M22 0C26 40 18 70 26 100"/><path d="M80 0C76 40 84 70 78 100"/></g></svg>';
 const REPORT_REASONS=['Made me feel unsafe','Inappropriate messages or behaviour','Fake profile or scam',"Didn't show up",'Something else'];
 const REPEAT={weekly:'Every week',biweekly:'Every 2 weeks'};
-/* Demo accounts opened from the Admin tab of the beta site (passwords live there). Each keeps its own data. */
+/* Demo accounts opened from index.html#admin (linked from /addmin) (passwords live there). Each keeps its own data. */
 const ACCOUNTS={
   kajal:{name:'Kajal',gender:'Woman',dob:'1998-02-02',hood:'Sector 17',job:'UX Researcher',bio:'Weekend brunches, indie gigs and the occasional horror movie. Always on time.',ints:['Movies','Cafe / Food','Concerts'],avail:['Weekday evenings','Late nights'],emo:'👩🏽‍🔬',
     trust:[18,18],hist:[['Sunday brunch club','cafe',5,'Hosted',4.9,6],['Indie night in Sector 26','concerts',16,'Joined',4.7,1],['Horror double bill','movies',31,'Hosted',4.8,4]]},
@@ -1367,7 +1367,7 @@ function modalHtml(){
       <button class="btn sm sec" style="width:100%;margin-bottom:8px" data-a="simpost">Someone posts a new plan nearby (checks your alerts)</button>
       <button class="btn sm sec" style="width:100%;margin-bottom:8px" data-a="simfollow">A host you follow posts a new plan</button>
       <button class="btn sm sec" style="width:100%;margin-bottom:8px" data-a="simstart">Jump to the start of my next plan (safety check-in)</button>
-      <h3>Account</h3><p class="small mute">${ACCT?`Signed in to the <b>${esc(ACCOUNTS[ACCT].name)}</b> demo account. Switch accounts from the Admin tab on the beta site.`:'Using your own profile. Demo accounts open from the Admin tab on the beta site.'}</p>
+      <h3>Account</h3><p class="small mute">${ACCT?`Signed in to the <b>${esc(ACCOUNTS[ACCT].name)}</b> demo account. Switch accounts from the admin page (/addmin).`:'Using your own profile. Demo accounts open from the admin page (/addmin).'}</p>
       ${ACCT?'<button class="btn sm sec" style="width:100%;margin-bottom:8px" data-a="signout">Sign out of demo account</button>':''}
       <h3>Reset</h3><button class="btn sm bad" style="width:100%" data-a="reset">Reset whole demo</button></div>`,'full');
   }
