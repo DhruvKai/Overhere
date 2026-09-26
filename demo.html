@@ -503,6 +503,10 @@ let S=load()||seed();
 S.blocked=S.blocked||[];S.reports=S.reports||[];S.ratings=S.ratings||{};
 if(S.me){delete S.me.pic;S.me.hood=fixHood(S.me.hood);if(!S.me.emo)S.me.emo=ACCOUNTS[ACCT]?.emo||defEmo(S.me.gender)}
 S.following=S.following||[];S.alerts=S.alerts||[];S.muted=S.muted||{};S.tips=S.tips||{};S.asked=S.asked||{};
+/* One time: saves made before the extra sample plans get them (with their chats and requests) without losing anything. */
+if(!S.extra1){const f=seed(),has=new Set(S.acts.map(a=>a.id)),rq=new Set(S.reqs.map(r=>r.id));
+  f.acts.filter(a=>!has.has(a.id)).forEach(a=>{S.acts.push(a);if(f.chats[a.id]&&!S.chats[a.id])S.chats[a.id]=f.chats[a.id]});
+  f.reqs.filter(r=>!rq.has(r.id)&&!has.has(r.act)).forEach(r=>S.reqs.push(r));S.extra1=true}
 const freshF=()=>({cat:'all',dfrom:'',dto:'',tod:'any',ver:false,amin:18,amax:99,dist:0,sort:'for',view:'list'});
 const SORTS={for:['sparkles','My interests','Plans that match what you like come first'],soon:['clock','Time','Soonest first'],near:['map-pin','Distance','Closest to you first']};
 const DISTS=[1,2,3];
@@ -529,6 +533,16 @@ function seed(){
     A('a5','u6','cafe','Board games and coffee, beginners welcome',5,next(15),'everyone','Board game café, Sector 8','own',S17,['u2','u7','u1']),
     A('a3','u3','concerts','Indie band live set, got spare spots',2,next(21),'everyone','Live music bar, Sector 26','own',S17),
     A('n5','u7','concerts','Karaoke night, no talent required',6,next(21,30),'everyone','Karaoke bar, Sector 26','split',S17,['u1','u4','u6','u8','u3']),
+    A('s1','u1','movies','Re-release of a 90s classic, popcorn on me',4,next(19),'everyone','Piccadily Square, Sector 34','host',S17),
+    A('s2','u8','cafe','Momos crawl through the Sector 15 market',4,next(18),'everyone','Sector 15 market','split',S17,['u5']),
+    A('s3','u2','concerts','Sufi night on the Kala Bhawan lawns',3,next(19,30),'everyone','Punjab Kala Bhawan, Sector 16','own',S17),
+    A('s4','u12','cafe','Morning chai and a walk in Leisure Valley',3,next(7,30),'everyone','Leisure Valley, Sector 10','own',S17),
+    A('s5','u4','cafe','Book swap over cold coffee',5,next(17),'everyone','Café, Sector 9 market','own',S17,['u6']),
+    A('s6','u3','concerts','Vinyl listening evening, bring a record',4,next(20,30),'everyone','Record store café, Sector 26','own',S17,['u1']),
+    A('s7','u11','movies','Anime movie night, subtitles on',5,next(18,30),'everyone','Government Museum auditorium, Sector 10','own',S17),
+    A('s8','u10','cafe','Midnight Maggi and chai at the dhaba',4,next(0,30),'everyone','Dhaba, Sector 22','split',S17,['u8']),
+    A('s9','u7','concerts','Retro Bollywood karaoke',6,next(21),'everyone','Karaoke bar, Sector 26','split',S17,['u9','u2']),
+    A('s10','u6','cafe','Pictionary and pizza, beginners welcome',6,next(14),'everyone','Board game café, Sector 8','split',S17,['u12']),
     /* Discover: 3+ days out, spread across morning / afternoon / evening / night */
     A('d1','u12','cafe','Sunrise walk around Sukhna Lake, then breakfast',4,at(3,6,30),'everyone','Sukhna Lake, main gate','own',S17,['u6']),
     A('a7','u8','cafe','Trying the new ramen place (only 1 spot left)',3,at(3,13),'everyone','Ramen bar, Sector 9','split',S17,['u5','u3']),
@@ -542,6 +556,16 @@ function seed(){
     A('a11','u6','movies','Documentary night and discussion',3,at(8,18),'everyone','Panjab University, Sector 14','own',S17),
     A('d5','u5','movies','Midnight show of the big release',4,at(9,23,45),['Man','Non-binary'],'Elante Mall multiplex','split',S17),
     {...A('d6','u2','cafe','Dessert crawl: three places, one evening',3,at(10,19),'everyone','Starts at Sector 17 Plaza','split',S17,['u6','u9','u4']),status:'full'},
+    A('x1','u9','concerts','Carnatic classical evening',4,at(3,18,30),'everyone','Tagore Theatre, Sector 18','own',S17),
+    A('x2','u5','cafe','Cook-along: butter chicken from scratch',4,at(4,17),'everyone','Community kitchen, Sector 22','split',S17,['u8']),
+    A('x3','u1','movies','Outdoor movie on the lawns, bring a blanket',6,at(5,20),'everyone','Leisure Valley lawns','own',S17,['u6','u11']),
+    A('x4','u2','cafe','Sector 17 architecture walk, coffee after',5,at(6,9,30),'everyone','Sector 17 Plaza fountain','own',S17),
+    A('x5','u7','concerts','Songwriting circle, bring a half-finished song',5,at(6,16),'everyone','Open-mic café, Sector 15','own',S17,['u3']),
+    A('x6','u11','movies','Satyajit Ray double bill',4,at(7,15),'everyone','Panjab University, Sector 14','own',S17),
+    A('x7','u4','cafe','Rose Garden picnic, everyone brings one dish',6,at(8,12),'everyone','Rose Garden, Sector 16','own',S17,['u12']),
+    A('x8','u3','concerts','Punjabi folk night with live dhol',4,at(9,20,30),'everyone','Music café, Sector 26','split',S17),
+    A('x9','u8','cafe','Chole bhature taste test, four stops',3,at(11,11),'everyone','Sector 22 market','split',S17),
+    A('x10','u10','movies','Horror marathon, lights off',4,at(12,22),'everyone','Elante Mall multiplex','split',S17),
     /* Other neighbourhoods (switch neighbourhood in Edit profile to see these) */
     A('a12','u5','concerts','Rock night, local bands',4,next(19),'everyone','Music café, Sector 7','own','Sector 7'),
     A('a14','u8','movies','Sunday matinee at Elante',4,at(4,14),'everyone','PVR, Elante Mall','split','Sector 7'),
@@ -551,10 +575,21 @@ function seed(){
     /* Hosted by you */
     A('m1','me','cafe','Filter coffee crawl',3,h(50),'everyone','Indian Coffee House, Sector 17','own',S17,['u2']),
     A('m2','me','movies','Late show and street food after',2,at(4,21,30),['Woman','Non-binary'],'PVR, Elante Mall','split',S17),
-    {...A('m3','me','concerts','Qawwali evening',4,h(-26),'everyone','Punjab Kala Bhawan courtyard, Sector 16','own',S17,['u4','u6']),status:'past',checkin:true}
+    {...A('m3','me','concerts','Qawwali evening',4,h(-26),'everyone','Punjab Kala Bhawan courtyard, Sector 16','own',S17,['u4','u6']),status:'past',checkin:true},
+    A('m7','me','cafe','Street food crawl in Sector 35',4,next(19),'everyone','Sector 35 market','split',S17,['u10']),
+    {...A('m4','me','cafe','Sunday brunch club',4,at(3,11),'everyone','Café in Sector 7 inner market','split',S17,['u4']),repeat:'weekly'},
+    A('m5','me','concerts','Open-mic night, come cheer',5,at(5,20),'everyone','Open-mic café, Sector 15','own',S17,['u7','u3']),
+    A('m6','me','movies','Marvel rewatch before the new release',4,at(6,18),'everyone','PVR, Elante Mall','split',S17),
+    A('m8','me','cafe','Board game evening, I will bring Catan',5,at(9,17),'everyone','Board game café, Sector 8','own',S17,['u6']),
+    A('m9','me','concerts','Jazz evening on the lawns',3,at(11,19,30),['Woman','Non-binary'],'Leisure Valley lawns','own',S17),
+    {...A('m10','me','movies','Short film screening and chat',6,at(13,16),'everyone','Tagore Theatre, Sector 18','own',S17),repeat:'biweekly'},
+    {...A('m11','me','cafe','Parantha breakfast in Sector 35',4,h(-72),'everyone','Sector 35 market','split',S17,['u10','u8']),status:'past',checkin:true},
+    {...A('m12','me','movies','Documentary night',3,h(-150),'everyone','Panjab University, Sector 14','own',S17,['u6']),status:'past',checkin:true},
+    {...A('m13','me','concerts','Sunset guitar jam by the lake',5,h(-300),'everyone','Sukhna Lake, near the boat club','own',S17,['u9','u7','u2']),status:'past',checkin:true}
   ];
   /* Rough total cost in rupees, so each person's share can be shown. */
-  const TOT={n1:4000,a1:1600,a4:2000,n2:1800,a7:2400,a8:1000,a9:3200,n5:2400,d4:2000,d5:1600,d6:1500,m2:1200,a14:1200,a13:900};
+  const TOT={n1:4000,a1:1600,a4:2000,n2:1800,a7:2400,a8:1000,a9:3200,n5:2400,d4:2000,d5:1600,d6:1500,m2:1200,a14:1200,a13:900,
+    s1:1200,s2:1000,s8:600,s9:3000,s10:1800,x2:2000,x8:1600,x9:900,x10:1600,m4:2400,m6:1200,m7:1200,m11:800};
   acts.forEach(a=>{if(TOT[a.id])a.total=TOT[a.id]});
   const reqs=[
     /* incoming, on your activities */
@@ -563,6 +598,8 @@ function seed(){
     {id:'r3',act:'m2',user:'u11',note:'Happy to split an auto after.',status:'pending'},
     {id:'r4',act:'m1',user:'u2',note:'',status:'accepted'},
     {id:'r8',act:'m3',user:'u8',note:'',status:'no_action'},
+    {id:'r9',act:'m5',user:'u11',note:'I have a short poem ready!',status:'pending'},
+    {id:'r10',act:'m6',user:'u1',note:'',status:'pending'},
     /* yours, one in each state */
     {id:'r5',act:'n2',user:'me',note:'Paranthas are my love language.',status:'accepted'},
     {id:'r6',act:'a6',user:'me',note:'',status:'pending'},
