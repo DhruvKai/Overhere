@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Overhere credits</title>
+<meta name="description" content="Who made the photos, icons and font used in Overhere, and their licences.">
+<meta name="theme-color" content="#3F7D4E">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<script src="head.js" data-manifest="manifest.webmanifest"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F5F0E6;--card:#FFFDF8;--ink:#1A1A1A;--mute:#6B6B6B;--line:#E7DFCF;--acc:#3F7D4E;--acch:#336842;--acc2:#E7F0E1;--accink:#2E6139;--shadow:0 2px 14px rgba(26,26,26,.06);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15130F;--card:#201D18;--ink:#F2EDE4;--mute:#A39C8E;--line:#34302A;--acc:#4A8F5B;--acch:#5AA06B;--acc2:#1F3325;--accink:#9FD3AA;--shadow:0 2px 14px rgba(0,0,0,.35);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15130F;--card:#201D18;--ink:#F2EDE4;--mute:#A39C8E;--line:#34302A;--acc:#4A8F5B;--acch:#5AA06B;--acc2:#1F3325;--accink:#9FD3AA;--shadow:0 2px 14px rgba(0,0,0,.35);color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;font:15.5px/1.6 "Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
+header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.bar{max-width:760px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:10px}
+.logo{font-weight:800;font-size:18px;letter-spacing:-.02em;flex:1;display:flex;align-items:center;gap:9px;color:inherit;text-decoration:none}
+.dots{display:flex;gap:2px}.dots i{width:11px;height:11px;border-radius:50%;background:#1A1A1A;box-shadow:inset 0 0 0 2.5px var(--acc)}
+.open{background:var(--acc2);color:var(--accink);font-weight:600;font-size:14px;padding:8px 16px;border-radius:99px;text-decoration:none;white-space:nowrap}
+.open:hover{background:var(--acc);color:#fff}
+main{max-width:760px;margin:0 auto;padding:28px 16px 60px}
+h1{font-size:32px;line-height:1.2;margin:0 0 6px;letter-spacing:-.02em;font-weight:600}
+h2{font-size:20px;line-height:1.3;margin:0 0 10px;font-weight:600;letter-spacing:-.01em}
+h3{font-size:16px;margin:18px 0 6px;font-weight:600}
+p{margin:0 0 12px}
+ul{margin:0 0 12px;padding-left:22px}li{margin:4px 0}
+a{color:var(--acch)}
+.mute{color:var(--mute)}
+.panel{background:var(--card);border-radius:22px;padding:24px;margin-bottom:16px;box-shadow:var(--shadow)}
+.short{background:var(--acc2);color:var(--ink)}
+.short h2{color:var(--accink)}
+.tw{overflow-x:auto;margin:0 0 12px}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{text-align:left;vertical-align:top;padding:10px 12px 10px 0;border-bottom:1px solid var(--line)}
+th{font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600;min-width:110px}
+.toc{columns:2;column-gap:24px;padding-left:20px;margin:0}
+@media (max-width:560px){h1{font-size:26px}.panel{padding:20px 18px}.toc{columns:1}}
+.pl{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+.pl li{display:flex;gap:14px;align-items:center;font-size:14.5px;line-height:1.45}
+.pl img{width:96px;height:64px;object-fit:cover;border-radius:12px;flex:0 0 auto;background:var(--line)}
+.small{font-size:13.5px}
+pre{white-space:pre-wrap;font:12.5px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--mute);margin:0}
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <a class="logo" href="index.html"><span class="dots"><i></i><i></i></span>Overhere</a>
+  <a class="open" href="demo.html">Open the app</a>
+</div></header>
+<main>
+  <h1>Credits</h1>
+  <p class="mute">The photos, icons and font used in Overhere, who made them, and their licences.</p>
+
+  <section class="panel">
+    <h2>Photos</h2>
+    <p>All photos come from <a href="https://commons.wikimedia.org" rel="noopener" target="_blank">Wikimedia Commons</a>
+      under free licences. We resized and cropped them to fit the app; the resized copies are shared under the same
+      licence as the original. Photos of activities are illustrations, not the actual venue of a plan.</p>
+    <h3>Places in Chandigarh</h3>
+    <ul class="pl">
+      <li><img src="img/plans/sukhna.webp" alt="Sukhna Lake" loading="lazy" width="96" height="64">
+        <div><b>Sukhna Lake</b><br><span class="mute">Biswarup Ganguly (original), UnpetitproleX (edit) · <a href="https://creativecommons.org/licenses/by/3.0" rel="license noopener" target="_blank">CC BY 3.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Shikara_-_Sukhna_Lake_-_Chandigarh_2016-08-07_(edit).jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/rockgarden.webp" alt="Rock Garden" loading="lazy" width="96" height="64">
+        <div><b>Rock Garden</b><br><span class="mute">Anilsahu84 · <a href="https://creativecommons.org/licenses/by-sa/4.0" rel="license noopener" target="_blank">CC BY-SA 4.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Men_at_rock_garden_chandigarh.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/rosegarden.webp" alt="Zakir Hussain Rose Garden" loading="lazy" width="96" height="64">
+        <div><b>Zakir Hussain Rose Garden</b><br><span class="mute">Harvinder Chandigarh · <a href="https://creativecommons.org/licenses/by-sa/4.0" rel="license noopener" target="_blank">CC BY-SA 4.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Rose_Garden_,Chandigarh,India.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/plaza17.webp" alt="Musical fountain, Sector 17" loading="lazy" width="96" height="64">
+        <div><b>Musical fountain, Sector 17</b><br><span class="mute">Rhythm Kataria · <a href="https://creativecommons.org/licenses/by-sa/4.0" rel="license noopener" target="_blank">CC BY-SA 4.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Musical_Fountain,_Sector_17,_Chandigarh.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/capitol.webp" alt="Capitol Complex" loading="lazy" width="96" height="64">
+        <div><b>Capitol Complex</b><br><span class="mute">Nicholas.iyadurai · <a href="https://creativecommons.org/licenses/by-sa/4.0" rel="license noopener" target="_blank">CC BY-SA 4.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Chandigarh_Capitol_Complex_-_Le_Corbusier_-_Hall_of_Shadows_ramp.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/leisure.webp" alt="Leisure Valley" loading="lazy" width="96" height="64">
+        <div><b>Leisure Valley</b><br><span class="mute">RIDH-1 · <a href="http://creativecommons.org/publicdomain/zero/1.0/deed.en" rel="license noopener" target="_blank">CC0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Leisurevalleymarch2026.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/museum.webp" alt="Government Museum and Art Gallery" loading="lazy" width="96" height="64">
+        <div><b>Government Museum and Art Gallery</b><br><span class="mute">UnpetitproleX · <a href="https://creativecommons.org/licenses/by-sa/4.0" rel="license noopener" target="_blank">CC BY-SA 4.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Chandigarh_Museum_and_Art_Gallery.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/pu.webp" alt="Gandhi Bhawan, Panjab University" loading="lazy" width="96" height="64">
+        <div><b>Gandhi Bhawan, Panjab University</b><br><span class="mute">UnpetitproleX · <a href="https://creativecommons.org/licenses/by-sa/4.0" rel="license noopener" target="_blank">CC BY-SA 4.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Gandhi_Bhawan,_Chandigarh.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/elante.webp" alt="Elante Mall" loading="lazy" width="96" height="64">
+        <div><b>Elante Mall</b><br><span class="mute">Rehman Abubakr · <a href="https://creativecommons.org/licenses/by-sa/4.0" rel="license noopener" target="_blank">CC BY-SA 4.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Elante_Mall_-_August_2016.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+    </ul>
+    <h3>Kinds of plans</h3>
+    <ul class="pl">
+      <li><img src="img/plans/cinema.webp" alt="Cinema hall" loading="lazy" width="96" height="64">
+        <div><b>Cinema hall</b><br><span class="mute">Fred Cherrygarden · <a href="https://creativecommons.org/licenses/by-sa/4.0" rel="license noopener" target="_blank">CC BY-SA 4.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Tengis_Movie_Theater_-_Screen.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/classicfilm.webp" alt="Classic cinema" loading="lazy" width="96" height="64">
+        <div><b>Classic cinema</b><br><span class="mute">Rob Chandler · <a href="https://creativecommons.org/licenses/by/2.0" rel="license noopener" target="_blank">CC BY 2.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Piccadilly_Cinema_screen,_Perth.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/outdoorfilm.webp" alt="Open-air cinema" loading="lazy" width="96" height="64">
+        <div><b>Open-air cinema</b><br><span class="mute">Bdx · <a href="http://creativecommons.org/publicdomain/zero/1.0/deed.en" rel="license noopener" target="_blank">CC0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Luxembourg_City_Open_Air_Cinema,_July_2025,_Knuedler.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/coffee.webp" alt="Filter coffee" loading="lazy" width="96" height="64">
+        <div><b>Filter coffee</b><br><span class="mute">K.Sreeram 2603 · <a href="http://creativecommons.org/publicdomain/zero/1.0/deed.en" rel="license noopener" target="_blank">CC0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Memorable_Coffee.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/brunch.webp" alt="Pancakes" loading="lazy" width="96" height="64">
+        <div><b>Pancakes</b><br><span class="mute">Bernard DUPONT · <a href="https://creativecommons.org/licenses/by-sa/2.0" rel="license noopener" target="_blank">CC BY-SA 2.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Pancakes_for_Breakfast_-_Oxkutzkab_Yucatan.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/chai.webp" alt="Chai and samosa" loading="lazy" width="96" height="64">
+        <div><b>Chai and samosa</b><br><span class="mute">Sarkar Sayantan · <a href="https://creativecommons.org/licenses/by-sa/4.0" rel="license noopener" target="_blank">CC BY-SA 4.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Samosa_with_cutting_chai_-_1.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/boardgames.webp" alt="Board games" loading="lazy" width="96" height="64">
+        <div><b>Board games</b><br><span class="mute">Virginia State Parks staff · <a href="https://creativecommons.org/licenses/by/2.0" rel="license noopener" target="_blank">CC BY 2.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Board_games,_card_games_are_all_fun_at_VSP_(7490672204).jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/books.webp" alt="Book swap" loading="lazy" width="96" height="64">
+        <div><b>Book swap</b><br><span class="mute">Elitre · <a href="https://creativecommons.org/licenses/by-sa/4.0" rel="license noopener" target="_blank">CC BY-SA 4.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Wikimania_2016_-_Book_swapping_05.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/ramen.webp" alt="Ramen" loading="lazy" width="96" height="64">
+        <div><b>Ramen</b><br><span class="mute">Shisma · <a href="https://creativecommons.org/licenses/by/4.0" rel="license noopener" target="_blank">CC BY 4.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Ramen_Bowl_2.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/momos.webp" alt="Momos" loading="lazy" width="96" height="64">
+        <div><b>Momos</b><br><span class="mute">Andy Li · <a href="http://creativecommons.org/publicdomain/zero/1.0/deed.en" rel="license noopener" target="_blank">CC0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Vegetable_Momos_-_Yak_Yeti_Yak_2025-07-23.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/parantha.webp" alt="Aloo paratha" loading="lazy" width="96" height="64">
+        <div><b>Aloo paratha</b><br><span class="mute">AjayDas · <a href="https://creativecommons.org/licenses/by-sa/4.0" rel="license noopener" target="_blank">CC BY-SA 4.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Aloo_paratha_served_with_daal,_curd_and_achar.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/cholebhature.webp" alt="Chole bhature" loading="lazy" width="96" height="64">
+        <div><b>Chole bhature</b><br><span class="mute">Sutapa Pal · <a href="https://creativecommons.org/licenses/by-sa/4.0" rel="license noopener" target="_blank">CC BY-SA 4.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Chole_Bhature-Noida-UP-SP002.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/dhaba.webp" alt="Dhaba" loading="lazy" width="96" height="64">
+        <div><b>Dhaba</b><br><span class="mute">Biswarup Ganguly · <a href="https://creativecommons.org/licenses/by/3.0" rel="license noopener" target="_blank">CC BY 3.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Pranjal_Dhaba_-_National_Highway_76_-_Shivrajpur_-_Shankargarh_-_Allahabad_2014-07-04_5674.JPG" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/dessert.webp" alt="Indian sweets" loading="lazy" width="96" height="64">
+        <div><b>Indian sweets</b><br><span class="mute">Laura · <a href="https://creativecommons.org/licenses/by-sa/2.0" rel="license noopener" target="_blank">CC BY-SA 2.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Sweets_Mithai_for_Diwali_and_other_Festivals_of_India.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/cooking.webp" alt="Butter chicken" loading="lazy" width="96" height="64">
+        <div><b>Butter chicken</b><br><span class="mute">Amar Nath Adak · <a href="https://creativecommons.org/licenses/by-sa/4.0" rel="license noopener" target="_blank">CC BY-SA 4.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:CreamyButterChicken.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/tea.webp" alt="Tea tasting" loading="lazy" width="96" height="64">
+        <div><b>Tea tasting</b><br><span class="mute">Difference engine · <a href="https://creativecommons.org/licenses/by-sa/4.0" rel="license noopener" target="_blank">CC BY-SA 4.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Two_small_tasting_cups_of_Lapsang_Souchong.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/picnic.webp" alt="Picnic" loading="lazy" width="96" height="64">
+        <div><b>Picnic</b><br><span class="mute">Neil Owen · <a href="https://creativecommons.org/licenses/by-sa/2.0" rel="license noopener" target="_blank">CC BY-SA 2.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Picnic_on_the_lawn_-_geograph.org.uk_-_2796752.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/concert.webp" alt="Concert" loading="lazy" width="96" height="64">
+        <div><b>Concert</b><br><span class="mute">PinkBeachPlanet · <a href="https://creativecommons.org/licenses/by-sa/4.0" rel="license noopener" target="_blank">CC BY-SA 4.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Beach-Please-2022-crowd-stage-lights-night-performance.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/liveband.webp" alt="Live band" loading="lazy" width="96" height="64">
+        <div><b>Live band</b><br><span class="mute">Frhuy · <a href="https://creativecommons.org/licenses/by/4.0" rel="license noopener" target="_blank">CC BY 4.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Loupe_live_in_Paradiso_Bitterzoet,_Amsterdam,_3_mei_2024.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/karaoke.webp" alt="Karaoke" loading="lazy" width="96" height="64">
+        <div><b>Karaoke</b><br><span class="mute">Hinnerk Rümenapf · <a href="http://creativecommons.org/licenses/by-sa/3.0/" rel="license noopener" target="_blank">CC BY-SA 3.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Karaoke-irish-pub.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/openmic.webp" alt="Open mic" loading="lazy" width="96" height="64">
+        <div><b>Open mic</b><br><span class="mute">Matt byford · <a href="http://creativecommons.org/publicdomain/zero/1.0/deed.en" rel="license noopener" target="_blank">CC0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Open_mic_night.png" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/jazz.webp" alt="Jazz on the lawn" loading="lazy" width="96" height="64">
+        <div><b>Jazz on the lawn</b><br><span class="mute">Joseolgon · <a href="https://creativecommons.org/licenses/by/4.0" rel="license noopener" target="_blank">CC BY 4.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Jazz_concert_in_Museu_Dom_Diogo_de_Sousa_2026_(2).jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/club.webp" alt="DJ night" loading="lazy" width="96" height="64">
+        <div><b>DJ night</b><br><span class="mute">Arnold Jaeger Werner · <a href="https://creativecommons.org/licenses/by/2.0" rel="license noopener" target="_blank">CC BY 2.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Bob_Beaman_Nightclub_Munich_1.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/vinyl.webp" alt="Record store" loading="lazy" width="96" height="64">
+        <div><b>Record store</b><br><span class="mute">Celsoazevedo · <a href="http://creativecommons.org/publicdomain/zero/1.0/deed.en" rel="license noopener" target="_blank">CC0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Vinyl_Store.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/sufi.webp" alt="Harmonium" loading="lazy" width="96" height="64">
+        <div><b>Harmonium</b><br><span class="mute">David Estes · <a href="https://creativecommons.org/licenses/by-sa/3.0" rel="license noopener" target="_blank">CC BY-SA 3.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Pakistani_Qawwali_Harmonium.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/classical.webp" alt="Sitar recital" loading="lazy" width="96" height="64">
+        <div><b>Sitar recital</b><br><span class="mute">Department of Language and Culture, Government of Telangana · <a href="https://creativecommons.org/licenses/by-sa/4.0" rel="license noopener" target="_blank">CC BY-SA 4.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Sitar_live_performance_at_ISTA_32nd_Congress_in_Hyderabad_(25.06.2019)_04.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+      <li><img src="img/plans/dhol.webp" alt="Dhol players" loading="lazy" width="96" height="64">
+        <div><b>Dhol players</b><br><span class="mute">Vikramarora1981 · <a href="https://creativecommons.org/licenses/by-sa/4.0" rel="license noopener" target="_blank">CC BY-SA 4.0</a> ·
+        <a href="https://commons.wikimedia.org/wiki/File:Dholi.jpg" rel="noopener" target="_blank">source</a></span></div></li>
+    </ul>
+  </section>
+
+  <section class="panel">
+    <h2>Icons</h2>
+    <p>Icons from <a href="https://lucide.dev" rel="noopener" target="_blank">Lucide</a>, under the ISC licence:</p>
+    <pre>ISC License
+
+Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT).
+All other copyright (c) for Lucide are held by Lucide Contributors 2022.
+
+Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is
+hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE
+INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
+DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.</pre>
+  </section>
+
+  <section class="panel">
+    <h2>Font</h2>
+    <p><a href="https://fonts.google.com/specimen/Plus+Jakarta+Sans" rel="noopener" target="_blank">Plus Jakarta Sans</a>
+      by Tokotype, under the SIL Open Font License 1.1, served by Google Fonts.</p>
+  </section>
+
+  <p class="small mute" style="text-align:center"><a href="privacy.html">Privacy policy</a></p>
+</main>
+</body>
+</html>

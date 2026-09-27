@@ -72,6 +72,32 @@ const CATS={
 const COST={split:'Split equally',own:'Everyone pays their own way',host:'Host is covering everyone'};
 const COST_S={split:'Equal Split',own:'Everyone Pays',host:'Host Pays'};
 const SWIPE_WINDOW=36*3600e3;
+
+/* ---------- plan photos ---------- */
+/* Real, freely licensed photos from Wikimedia Commons, stored in img/plans (credits.html names each one).
+   A plan gets, in order: a photo of what it clearly is (karaoke, ramen...), else of its place if that's a
+   Chandigarh landmark, else a looser match within its category, else one of its category's photos. */
+const PHOTO_WHAT=[[/outdoor movie|movie on the lawn/,'outdoorfilm'],[/jazz/,'jazz'],[/karaoke/,'karaoke'],[/sufi|qawwali/,'sufi'],
+  [/carnatic|classical/,'classical'],[/dhol|bhangra|folk/,'dhol'],[/open.?mic|songwriting|poetry/,'openmic'],[/techno|nightclub|\bdj\b|\bedm\b/,'club'],
+  [/vinyl|record store/,'vinyl'],[/ramen/,'ramen'],[/momo/,'momos'],[/paratha|parantha/,'parantha'],[/chole|bhature/,'cholebhature'],
+  [/dessert|sweets|mithai/,'dessert'],[/cook.?along|cooking/,'cooking'],[/tea (tasting|room|flight)/,'tea'],
+  [/board ?game|pictionary|catan/,'boardgames'],[/book (swap|club|exchange)/,'books'],[/maggi|dhaba/,'dhaba'],[/crossword|filter coffee/,'coffee']];
+const PHOTO_PLACE=[[/sukhna/,'sukhna'],[/rock garden/,'rockgarden'],[/rose garden/,'rosegarden'],[/sector 17 (plaza|architecture)|plaza fountain/,'plaza17'],
+  [/capitol|le corbusier/,'capitol'],[/leisure valley/,'leisure'],[/museum/,'museum'],[/panjab university/,'pu'],[/elante/,'elante']];
+const PHOTO_LOOSE={cafe:[[/brunch|pancake|breakfast/,'brunch'],[/chai/,'chai'],[/picnic/,'picnic']],
+  concerts:[[/sitar|recital|raga/,'classical'],[/band|gig|live music|acoustic|rock/,'liveband']],
+  movies:[[/classic|re-?run|re-?release|\b90s\b|matinee|satyajit|retro/,'classicfilm']]};
+const PHOTO_CAT={movies:['cinema','classicfilm'],cafe:['coffee','brunch','chai'],concerts:['concert','liveband']};
+function photoOf(a){
+  const t=(a.venue+' '+a.desc).toLowerCase(),hit=l=>(l.find(([re])=>re.test(t))||[])[1];
+  const k=hit(PHOTO_WHAT)||hit(PHOTO_PLACE)||hit(PHOTO_LOOSE[a.cat]||[]);
+  if(k)return 'img/plans/'+k+'.webp';
+  const pool=PHOTO_CAT[a.cat]||PHOTO_CAT.cafe;let h=0;for(const ch of String(a.id))h=(h*31+ch.charCodeAt(0))>>>0;
+  return 'img/plans/'+pool[h%pool.length]+'.webp';
+}
+/* The photo over the category's colours (shown while it loads), and the category icon only when there's no photo. */
+const planBg=a=>{const c=CATS[a.cat]||CATS.cafe,p=photoOf(a);return p?`url('${p}') center/cover no-repeat,${c.g}`:c.g};
+const planThumb=a=>`<div class="thumb" style="background:${planBg(a)}"></div>`;
 /* Dummy portraits for the demo; if one fails to load the initial shows instead. */
 /* Everyone gets an emoji avatar; your own can be an uploaded photo instead. */
 const defEmo=g=>g==='Woman'?'👩':g==='Man'?'👨':'🧑';
@@ -222,9 +248,9 @@ function pastList(id){
 }
 function pastHtml(list,none){
   if(!list.length)return `<p class="small mute">${none}</p>`;
-  return `<div class="past">${list.slice(0,6).map(x=>{const c=CATS[x.cat]||CATS.cafe,a=x.act&&actOf(x.act);
+  return `<div class="past">${list.slice(0,6).map(x=>{const a=x.act&&actOf(x.act);
     const rate=a&&attended(a)&&a.members.length&&!S.ratings[a.id]?`<button class="btn xs" data-a="rate" data-id="${a.id}">Rate</button>`:'';
-    return `<div class="pi"><div class="pth" style="background:${c.g}">${I(c.icon,16)}</div><div class="pm"><div class="t">${esc(x.t)}</div><div class="small mute">${esc(x.role)} · ${ago(x.at)}</div></div>${rate}</div>`}).join('')}</div>`;
+    return `<div class="pi"><div class="pth" style="background:${planBg(a||{id:x.t,cat:x.cat,venue:'',desc:x.t})}"></div><div class="pm"><div class="t">${esc(x.t)}</div><div class="small mute">${esc(x.role)} · ${ago(x.at)}</div></div>${rate}</div>`}).join('')}</div>`;
 }
 /* ---- recommendations, distance, cost, host signals ---- */
 function slotOf(t){const d=new Date(t),h=d.getHours(),we=d.getDay()===0||d.getDay()===6;if(h>=23||h<5)return 'Late nights';if(we)return h<17?'Weekend days':'Weekend evenings';return h>=17?'Weekday evenings':null}
@@ -524,8 +550,8 @@ function bindDrag(){
 
 /* ---------- render: cards & lists ---------- */
 function cardHtml(a,cls){
-  const c=CATS[a.cat],h=profileOf(a.host);
-  return `<div class="card ${cls}" style="background:${c.g}"${cls==='top'?` data-a="detail" data-id="${a.id}" role="button" tabindex="0" aria-label="${esc(a.desc)}: view details"`:''}><div class="art">${I(c.icon,120)}</div><div class="shade"></div><div class="stamp"></div>
+  const h=profileOf(a.host);
+  return `<div class="card ${cls}" style="background:${planBg(a)}"${cls==='top'?` data-a="detail" data-id="${a.id}" role="button" tabindex="0" aria-label="${esc(a.desc)}: view details"`:''}><div class="shade"></div><div class="stamp"></div>
   <div class="cp">${catPill(a.cat)}</div>
   <div class="body"><div class="who">${a.host==='me'?`${av('me','sm')}You`:`<button class="hlink" data-a="user" data-id="${a.host}" title="View ${esc(h.name)}'s profile">${av(a.host,'sm')}<span><span class="hname">${esc(h.name)}</span>, ${h.age}</span></button>`} ${vf(a.host)}</div>
   <h2>${esc(a.desc)}</h2>
@@ -535,8 +561,8 @@ function cardHtml(a,cls){
 const REQ_LBL={pending:'Requested',accepted:'Accepted',rejected:'Declined',waitlist:'Waitlisted',left:'Left',removed:'Removed',no_action:'No response'};
 const REQ_TONE={pending:'acc',accepted:'ok',rejected:'bad',waitlist:'info'};
 function acCard(a){
-  const c=CATS[a.cat],rq=myReq(a.id),full=spots(a)<=0;
-  return `<div class="ac" data-a="detail" data-id="${a.id}"><div class="media" style="background:${c.g}">${I(c.icon,56)}${catPill(a.cat)}</div>
+  const rq=myReq(a.id),full=spots(a)<=0;
+  return `<div class="ac" data-a="detail" data-id="${a.id}"><div class="media" style="background:${planBg(a)}">${catPill(a.cat)}</div>
   <div class="bd">${ui.f.sort==='for'&&reasons(a)[0]?`<div class="why">${I('sparkles',12)} ${esc(reasons(a)[0][0])}</div>`:''}<h4>${esc(a.desc)}</h4>
   <div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)} · ${distKm(a)} km</span></div>
   <div class="tg"><span>${I('users',12)}${spotTxt(a)}</span>${tags(a).map(t=>`<span>${esc(t)}</span>`).join('')}</div>
@@ -546,8 +572,7 @@ function acCard(a){
     :`<button class="btn xs" data-a="askreq" data-id="${a.id}">Request ${I('chevron-right',13)}</button>`}</div></div></div>`;
 }
 function liHtml(a,act,meta,chips,right){
-  const c=CATS[a.cat];
-  return `<div class="panel tap li" data-a="${act}" data-id="${a.id}"><div class="thumb" style="background:${c.g}">${I(c.icon,22)}</div>
+  return `<div class="panel tap li" data-a="${act}" data-id="${a.id}">${planThumb(a)}
   <div style="flex:1;min-width:0"><div class="t">${esc(a.desc)}</div><div class="meta2" style="margin:4px 0 8px">${meta}</div>${chips}</div>${right||`<span class="mute">${I('chevron-right',18)}</span>`}</div>`;
 }
 // host=true renders from the poster's side (e.g. "Left" instead of "You left")
@@ -671,7 +696,7 @@ function tabProfile(){
   ${m.trusted?`<div class="blk">${I('phone',15)}<span><b>${esc(m.trusted.name)}</b> · ${esc(m.trusted.phone)}</span><button class="lnk" data-a="editprofile" data-k="safety">Change</button></div>`:`<button class="btn sm sec" data-a="editprofile" data-k="safety">${I('user-plus',14)} Add a trusted contact</button>`}
   <label>Blocked people</label>${S.blocked.length?S.blocked.map(u=>`<div class="blk">${av(u,'sm')}${esc(uname(u))}<button class="lnk" data-a="unblock" data-id="${u}">Unblock</button></div>`).join(''):'<p class="small mute" style="margin:0">You have not blocked anyone.</p>'}</div>
   <div class="panel"><div class="ph">${I('user',15)} Account</div>
-  <p class="small mute" style="margin-top:0">To delete your account and data, email ${esc(CFG.CONTACT_EMAIL||'the beta team')}.</p>
+  <p class="small mute" style="margin-top:0">To delete your account and data, email ${esc(CFG.CONTACT_EMAIL||'the beta team')}. <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> · <a href="credits.html" target="_blank" rel="noopener">Credits</a></p>
   <button class="btn sm ghost" data-a="signout">${I('log-out',14)} Sign out</button></div>
 `;
 }
@@ -718,10 +743,10 @@ function modalHtml(){
   }
   if(m.type==='detail'||m.type==='confirm'){
     const a=actOf(m.id);if(!a)return '';
-    const c=CATS[a.cat],h=profileOf(a.host),rq=myReq(a.id),past=isPast(a),wl=waitlist(a.id).length;
+    const h=profileOf(a.host),rq=myReq(a.id),past=isPast(a),wl=waitlist(a.id).length;
     const open=a.host!=='me'&&!past&&(a.status==='open'||a.status==='full')&&audOK(a)&&!isBlocked(a.host)&&!rq;
     const can=open&&a.status==='open'&&spots(a)>0,canWait=open&&!can;
-    const top=`<div class="sum"><div class="thumb" style="background:${c.g}">${I(c.icon,26)}</div><div style="min-width:0">${catPill(a.cat,true)}<div class="t">${esc(a.desc)}</div>
+    const top=`<div class="sum">${planThumb(a)}<div style="min-width:0">${catPill(a.cat,true)}<div class="t">${esc(a.desc)}</div>
       <div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)}${a.host==='me'?'':` · ${distKm(a)} km`}</span></div>
       <div class="meta2" style="margin-top:3px"><span>${I('users',13)}${a.members.length} going · ${spotTxt(a)}${wl?` · ${wl} on waitlist`:''}</span></div>
       <div class="meta2" style="margin-top:3px"><span>${I('wallet',13)}${costLine(a)}</span></div>
@@ -776,9 +801,9 @@ function modalHtml(){
   }
   if(m.type==='rate'){
     const a=actOf(m.id);if(!a)return '';
-    const ppl=[a.host,...a.members].filter(x=>x!=='me'),prev=S.ratings[a.id],c=CATS[a.cat];
+    const ppl=[a.host,...a.members].filter(x=>x!=='me'),prev=S.ratings[a.id];
     return sheet(backB(m)+'How did it go?',`<div class="sb">
-      <div class="sum"><div class="thumb" style="background:${c.g}">${I(c.icon,26)}</div><div style="min-width:0"><div class="t">${esc(a.desc)}</div><div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)}</span></div></div></div>
+      <div class="sum">${planThumb(a)}<div style="min-width:0"><div class="t">${esc(a.desc)}</div><div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)}</span></div></div></div>
       <label>Did everything go OK?</label><div class="opts"><label class="opt"><input type="radio" name="rt_ok" value="yes" ${prev?.ok!=='no'?'checked':''}>Yes, all good</label><label class="opt"><input type="radio" name="rt_ok" value="no" ${prev?.ok==='no'?'checked':''}>Something went wrong</label></div>
       <label>How much did you enjoy it?</label><div class="rstars" role="radiogroup" aria-label="How much you enjoyed it">${[5,4,3,2,1].map(n=>`<label title="${n} star${n>1?'s':''}"><input type="radio" name="rt_star" value="${n}" aria-label="${n} star${n>1?'s':''}" ${prev?.stars===n?'checked':''}><span>★</span></label>`).join('')}</div>
       <label>Who showed up?</label>
@@ -824,7 +849,7 @@ function modalHtml(){
     const a=actOf(m.id);if(!a)return '';
     const reqs=S.reqs.filter(r=>r.act===a.id),pend=reqs.filter(r=>r.status==='pending'),wl=waitlist(a.id),done=reqs.filter(r=>r.status!=='pending'&&r.status!=='waitlist'),past=isPast(a);
     const person=r=>{const p=profileOf(r.user);return `<div class="panel" style="background:var(--bg);box-shadow:none"><div class="hn">${av(r.user)}<div><button class="hlink" data-a="user" data-id="${r.user}"><strong>${esc(p.name)}</strong></button> ${vf(r.user)}<div class="mute small">${esc(p.gender)}, ${p.age}${p.job?' · '+esc(p.job):''}</div><div class="small" style="margin-top:2px">${trustTxt(r.user)}</div></div></div>${signals(r.user)}<p class="small mute" style="margin:8px 0 4px">${esc(p.bio)}</p>${r.note?`<div class="dn">Note: ${esc(r.note)}</div>`:'<p class="small mute">No note attached</p>'}`;};
-    return sheet('Manage activity',`<div class="sb"><div class="sum"><div class="thumb" style="background:${CATS[a.cat].g}">${I(CATS[a.cat].icon,26)}</div><div style="min-width:0"><div class="t">${esc(a.desc)}</div><div class="meta2" style="margin-bottom:6px"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)}</span></div>${actChip(a.status)} <span class="chip">${a.members.length}/${a.cap} accepted</span></div></div>
+    return sheet('Manage activity',`<div class="sb"><div class="sum">${planThumb(a)}<div style="min-width:0"><div class="t">${esc(a.desc)}</div><div class="meta2" style="margin-bottom:6px"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)}</span></div>${actChip(a.status)} <span class="chip">${a.members.length}/${a.cap} accepted</span></div></div>
       <div style="height:12px"></div>
       ${a.members.length?`<button class="btn sec" data-a="chat" data-id="${a.id}">${I('message-circle',16)} Open group chat</button>`:'<p class="small mute">Chat opens when you accept the first member.</p>'}
       ${past?`<div class="row" style="margin-top:8px"><button class="btn sm ghost" data-a="postagain" data-id="${a.id}">${I('repeat',14)} Post again</button></div>`+(a.members.length?(S.ratings[a.id]?`<p class="small mute">${I('circle-check',14)} You rated this meetup.</p>`:`<div style="height:8px"></div><button class="btn" data-a="rate" data-id="${a.id}">${I('star',16)} Rate the meetup</button>`):'')
@@ -987,7 +1012,7 @@ function authHtml(){
     <div style="height:16px"></div><button class="btn" data-a="${up?'signup':'signin'}">${up?'Create account':'Sign in'}</button>
     <p class="small" style="text-align:center;margin-top:14px">${up?'Already have an account? <button class="lnk" data-a="authmode" data-k="in">Sign in</button>'
       :'New here? <button class="lnk" data-a="authmode" data-k="up">Create an account</button> · <button class="lnk" data-a="authmode" data-k="reset">Forgot password?</button>'}</p>
-    <p class="small mute" style="text-align:center;margin-top:10px"><a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a></p></div>`;
+    <p class="small mute" style="text-align:center;margin-top:10px"><a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> · <a href="credits.html" target="_blank" rel="noopener">Credits</a></p></div>`;
 }
 function onboardHtml(){
   let body;
