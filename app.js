@@ -107,7 +107,6 @@ let USERS={};
 const CAT_INT={movies:'Movies',cafe:'Cafe / Food',concerts:'Concerts'};
 const CHAT_REASONS=['Harassment or threats','Sexual or unwanted messages','Spam or scam','Hate speech','Something else'];
 const MICRO={swipe:'Was swiping an easy way to find plans?',request:'How easy was it to ask to join?',post:'How easy was posting your plan?',rating:'Was rating the meetup quick enough?'};
-const MAP_SVG='<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path class="mw" d="M72 0C62 18 82 30 75 46C70 58 86 66 100 64V0Z"/><path class="mp" d="M8 62C18 56 30 60 32 72C34 84 20 92 10 88C2 84 0 70 8 62Z"/><path class="mp" d="M40 8C48 6 54 12 52 20C50 26 42 26 38 20C36 14 36 10 40 8Z"/><g class="mr"><path d="M0 50H100"/><path d="M50 0V100"/><path d="M0 22C30 26 60 18 100 30"/><path d="M0 80C30 74 70 86 100 78"/><path d="M22 0C26 40 18 70 26 100"/><path d="M80 0C76 40 84 70 78 100"/></g></svg>';
 const REPORT_REASONS=['Made me feel unsafe','Inappropriate messages or behaviour','Fake profile or scam',"Didn't show up",'Something else'];
 const REPEAT={weekly:'Every week',biweekly:'Every 2 weeks'};
 const NK={req:{ic:'user-check',bg:'#E7F0E1',fg:'#336842'},update:{ic:'layers',bg:'#DBEAFE',fg:'#1D4ED8'},remind:{ic:'calendar',bg:'#FEF3C7',fg:'#A16207'}};
@@ -129,7 +128,7 @@ const blank=()=>({me:null,acts:[],reqs:[],chats:{},notes:[],ratings:{},blocked:[
 let S=blank();
 const freshF=()=>({cat:'all',dfrom:'',dto:'',tod:'any',ver:false,amin:18,amax:99,dist:0,sort:'for',view:'list'});
 const SORTS={for:['sparkles','My interests','Plans that match what you like come first'],soon:['clock','Time','Soonest first'],near:['map-pin','Distance','Closest to you first']};
-const DISTS=[1,2,3];
+const DISTS=[2,5,10];
 const freshUi=()=>({tab:'swipe',modal:null,f:freshF(),auth:{mode:'in'}});
 let ui=freshUi();
 const sid=id=>id==='me'?ME:id;   // back to a database id
@@ -263,8 +262,37 @@ function reasons(a){
 }
 const score=a=>reasons(a).reduce((n,x)=>n+x[1],0);
 /* Approximate spot for the map and distance, stable per activity, within ~4 km of your neighbourhood centre. */
-function geo(a){let h=2166136261;for(const c of a.id+a.venue){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}h>>>=0;const ang=(h%360)*Math.PI/180,rad=0.4+((h>>>9)%40)/10;return {x:rad*Math.cos(ang),y:rad*Math.sin(ang)*0.85,d:rad}}
-const distKm=a=>geo(a).d.toFixed(1);
+/* ---------- where plans are ---------- */
+/* Real coordinates from OpenStreetMap, looked up once. A plan is pinned at its landmark, else at the centre of the
+   sector its venue names, else at the centre of its neighbourhood. That is approximate on purpose: hosts share the
+   exact spot only once you're accepted. */
+const SECTOR_LL={1:[30.76116,76.80215],2:[30.76379,76.79137],3:[30.75829,76.79616],4:[30.75186,76.80141],5:[30.74556,76.80678],6:[30.73903,76.81245],7:[30.73587,76.80428],8:[30.7417,76.79945],9:[30.7474,76.79393],10:[30.75419,76.78896],11:[30.75987,76.7845],12:[30.7644,76.77885],14:[30.75985,76.76683],15:[30.75299,76.77265],16:[30.74676,76.77752],17:[30.74007,76.78259],18:[30.7345,76.78825],19:[30.7283,76.79306],20:[30.72118,76.78158],21:[30.7269,76.77654],22:[30.73343,76.77135],23:[30.73992,76.7662],24:[30.74578,76.76173],25:[30.75165,76.75673],26:[30.73001,76.80911],27:[30.72275,76.79842],28:[30.71719,76.80372],29:[30.71026,76.79242],30:[30.71568,76.78697],31:[30.70288,76.78109],32:[30.70839,76.77529],33:[30.71413,76.77014],34:[30.71992,76.76521],35:[30.72612,76.75989],36:[30.73247,76.75491],37:[30.73853,76.75034],38:[30.74468,76.74577],39:[30.74374,76.73028],40:[30.73798,76.7354],41:[30.73254,76.7378],42:[30.72608,76.74315],43:[30.71909,76.74879],44:[30.7129,76.75411],45:[30.70659,76.75693],46:[30.7014,76.76423],47:[30.69581,76.76905],48:[30.68794,76.75732],49:[30.69403,76.75214],50:[30.7,76.74775],51:[30.70562,76.74276],52:[30.71217,76.73725],53:[30.71924,76.73215],54:[30.72608,76.72921],55:[30.73008,76.72283],56:[30.73665,76.7189],61:[30.70889,76.73076],63:[30.69297,76.73648]};
+const PLACE_LL=[
+  [/sukhna/,[30.74198,76.81767]],
+  [/rock garden/,[30.7532,76.80663]],
+  [/rose garden/,[30.74582,76.78148]],
+  [/capitol|le corbusier/,[30.76099,76.80322]],
+  [/leisure valley/,[30.7536,76.7938]],
+  [/museum/,[30.74895,76.78744]],
+  [/panjab university/,[30.76024,76.76649]],
+  [/elante/,[30.70544,76.80096]],
+  [/tagore theatre/,[30.73323,76.78954]],
+  [/kala bhawan/,[30.74676,76.77752]],
+  [/piccadily/,[30.72352,76.76759]],
+  [/indian coffee house/,[30.74022,76.7806]]];
+const hoodLL=h=>SECTOR_LL[(/\d+/.exec(h||'')||[17])[0]]||SECTOR_LL[17];
+const spotOf=t=>{t=(t||'').toLowerCase();const p=PLACE_LL.find(([re])=>re.test(t));if(p)return p[1];const s=/sector[\s-]*(\d{1,2})\b/.exec(t);return s&&SECTOR_LL[+s[1]]};
+function geo(a){
+  const base=spotOf(a.venue)||spotOf(a.desc)||hoodLL(a.hood);
+  /* plans at the same spot are spread out a little (up to about 270 m) so their pins don't hide each other */
+  let h=2166136261;for(const c of a.id){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}h>>>=0;
+  const ang=(h%360)*Math.PI/180,r=(0.25+((h>>>9)%75)/100)*0.0025;
+  return [base[0]+r*Math.sin(ang),base[1]+r*Math.cos(ang)];
+}
+function kmBetween([a1,o1],[a2,o2]){const r=Math.PI/180,x=Math.sin((a2-a1)*r/2)**2+Math.cos(a1*r)*Math.cos(a2*r)*Math.sin((o2-o1)*r/2)**2;return 12742*Math.asin(Math.sqrt(x))}
+/* distance from the centre of your neighbourhood (the app never asks for your own location) */
+const kmAway=a=>kmBetween(hoodLL(S.me.hood),geo(a));
+const distKm=a=>kmAway(a).toFixed(1);
 const rupees=n=>'₹'+Math.round(n).toLocaleString('en-IN');
 function costLine(a){
   const t=a.total,each=t?Math.ceil(t/(a.cap+1)/10)*10:0;
@@ -280,7 +308,7 @@ function signals(u){
   if(t.met>=3&&t.rate<90)chips.push(`<span class="chip warn">${I('alert-triangle',11)} Missed ${t.met-t.shows} of ${t.met} meetups</span>`);
   return `<div class="sig">${chips.length?chips.join(''):'<span class="small mute">Nothing in common yet</span>'}</div>`;
 }
-function matchF(a,f){const age=profileOf(a.host).age;return (f.cat==='all'||a.cat===f.cat)&&(!f.dfrom||dayKey(a.when)>=f.dfrom)&&(!f.dto||dayKey(a.when)<=f.dto)&&(f.tod==='any'||tod(a.when)===f.tod)&&(!f.ver||isVer(a.host))&&age>=f.amin&&age<=f.amax&&(!f.dist||geo(a).d<=f.dist)}
+function matchF(a,f){const age=profileOf(a.host).age;return (f.cat==='all'||a.cat===f.cat)&&(!f.dfrom||dayKey(a.when)>=f.dfrom)&&(!f.dto||dayKey(a.when)<=f.dto)&&(f.tod==='any'||tod(a.when)===f.tod)&&(!f.ver||isVer(a.host))&&age>=f.amin&&age<=f.amax&&(!f.dist||kmAway(a)<=f.dist)}
 function alertLabel(f){const p=[f.cat==='all'?'Any plan':CATS[f.cat].label];if(f.tod!=='any')p.push(f.tod[0].toUpperCase()+f.tod.slice(1));if(f.ver)p.push('Verified hosts');if(f.amin!==18||f.amax!==99)p.push(`Host ${f.amin}${f.amax===99?'+':'–'+f.amax}`);if(f.dist)p.push(`Within ${f.dist} km`);return p.join(' · ')}
 /* ---- usage events: sent to Supabase from the published site, kept in this browser when running from a file ---- */
 const uuid4=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)});
@@ -616,7 +644,7 @@ const SEG=(act,cur,opts)=>`<span class="seg" role="radiogroup">${opts.map(([k,l,
 function tabDiscover(){
   const all=feed(),f=ui.f,list=all.filter(a=>matchF(a,f)),act=activeFilters(f);
   if(f.sort==='for')list.sort((a,b)=>score(b)-score(a)||a.when-b.when);
-  else if(f.sort==='near')list.sort((a,b)=>geo(a).d-geo(b).d||a.when-b.when);
+  else if(f.sort==='near')list.sort((a,b)=>kmAway(a)-kmAway(b)||a.when-b.when);
   const alertable=act.some(([k])=>k!=='date'),saved=S.alerts.some(x=>x.label===alertLabel(f));
   return `<div class="hd"><div><h1 class="pt">All upcoming plans</h1><p class="sub">${all.length} upcoming in ${esc(S.me.hood)}, from tonight onwards</p></div><button class="btn sm mobonly" data-a="newpost">${I('plus',15)} Post</button></div>
   ${lockedNote()}${S.alerts.length?`<div class="alerts"><span class="small mute" style="display:inline-flex;align-items:center;gap:4px">${I('bell',13)} Your alerts</span>${S.alerts.map(al=>`<span class="alchip">${esc(al.label)}<button data-a="rmalert" data-id="${al.id}" aria-label="Remove alert ${esc(al.label)}">${I('x',12)}</button></span>`).join('')}</div>`:''}
@@ -629,11 +657,39 @@ function tabDiscover(){
   ${!list.length?empty('calendar',all.length?'No matches':'No plans yet',all.length?'Try different filters.':'Be the first to post one in your neighborhood.',act.length&&all.length?'<button class="btn sec" data-a="freset">Reset filters</button>':'')
    :f.view==='map'?mapHtml(list):`<div class="grid">${list.map(a=>acCard(a)).join('')}</div>`}`;
 }
+/* Discover's map: OpenStreetMap under Leaflet (both loaded only when the map is first opened). */
+let mapList=[],mapView=null,liveMap=null,leafletP=null;
 function mapHtml(list){
-  const pos=a=>{const g=geo(a);return `left:${50+g.x/4.4*45}%;top:${50+g.y/4.4*45}%`};
-  return `<div class="map" role="region" aria-label="Map of plans near you">${MAP_SVG}<span class="you" style="left:50%;top:50%" title="You (${esc(S.me.hood)})"></span><span class="mlab" style="right:5%;top:13%">Sukhna Lake</span>
-  ${list.map(a=>{const c=CATS[a.cat];return `<button class="pin" style="${pos(a)};--pc:${c.fg}" data-a="detail" data-id="${a.id}" aria-label="${esc(a.desc)}, ${whenStr(a.when)}, ${distKm(a)} km away">${I(c.icon,15)}<span class="pl">${esc(short(a.desc))} · ${distKm(a)} km</span></button>`}).join('')}</div>
-  <p class="small mute" style="margin-top:8px">The blue dot is the centre of ${esc(S.me.hood)}, Chandigarh. Pins are approximate: hosts share the exact spot once you're accepted.</p>`;
+  mapList=list;
+  return `<div id="lmap" class="map" role="region" aria-label="Map of plans near you"></div>
+  <p class="small mute" style="margin-top:8px">The blue dot is the centre of ${esc(S.me.hood)}, Chandigarh. Pins show the area of each plan, not the exact spot: hosts share that once you're accepted.</p>`;
+}
+function loadLeaflet(){
+  if(window.L)return Promise.resolve();
+  return leafletP||(leafletP=new Promise((ok,bad)=>{
+    const css=document.createElement('link');css.rel='stylesheet';css.href='vendor/leaflet/leaflet.css';document.head.appendChild(css);
+    const s=document.createElement('script');s.src='vendor/leaflet/leaflet.js';s.onload=ok;s.onerror=()=>{leafletP=null;bad()};document.head.appendChild(s);
+  }));
+}
+async function drawMap(){
+  const el=document.getElementById('lmap');if(!el)return;
+  try{await loadLeaflet()}catch(e){el.innerHTML='<p class="small mute" style="padding:16px">The map could not load. Check your connection, or switch to the list.</p>';return}
+  if(!el.isConnected||el.dataset.on)return;
+  el.dataset.on='1';
+  if(liveMap){liveMap.remove();liveMap=null}   // the previous render's map
+  const home=hoodLL(S.me.hood),m=L.map(el).setView(mapView?.c||home,mapView?.z||13);
+  liveMap=m;
+  m.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>');
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,
+    attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'}).addTo(m);
+  L.marker(home,{zIndexOffset:1000,keyboard:false,icon:L.divIcon({className:'',iconSize:[18,18],iconAnchor:[9,9],html:'<span class="lyou"></span>'})}).addTo(m).bindTooltip('Centre of '+esc(S.me.hood));
+  mapList.forEach(a=>{
+    const c=CATS[a.cat],label=`${short(a.desc)} · ${whenStr(a.when)} · ${distKm(a)} km`;
+    L.marker(geo(a),{title:label,keyboard:true,icon:L.divIcon({className:'',iconSize:[34,34],iconAnchor:[17,17],html:`<span class="lpin" style="--pc:${c.fg}">${I(c.icon,15)}</span>`})})
+      .addTo(m).bindTooltip(esc(label),{direction:'top',offset:[0,-16]}).on('click',()=>A.detail({id:a.id}));
+  });
+  m.on('moveend',()=>{mapView={c:m.getCenter(),z:m.getZoom()}});
+  if(!mapView&&mapList.length)m.fitBounds(L.latLngBounds([home,...mapList.map(geo)]).pad(0.15),{maxZoom:15});
 }
 function tabActs(){
   const mine=S.acts.filter(a=>a.host==='me').sort((a,b)=>(a.status==='past')-(b.status==='past')||(a.status==='past'?b.when-a.when:a.when-b.when));
@@ -1209,6 +1265,7 @@ function redraw(){
 }
 function afterRender(){
   bindDrag();
+  drawMap();
   const ms=document.getElementById('msgs');if(ms)ms.scrollTop=ms.scrollHeight;
 }
 

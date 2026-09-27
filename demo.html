@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.amazonaws.com wss://*.amazonaws.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://tile.openstreetmap.org; media-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.amazonaws.com wss://*.amazonaws.com; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Overhere</title>
@@ -17,9 +17,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#F5F0E6;--card:#FFFDF8;--ink:#1A1A1A;--mute:#6B6B6B;--line:#E7DFCF;--field:#EFE8DA;--acc:#3F7D4E;--acch:#336842;--acc2:#E7F0E1;--accink:#2E6139;--ok:#15803D;--okbg:#DCFCE7;--bad:#B91C1C;--badbg:#FEE2E2;--warn:#A16207;--warnbg:#FEF3C7;--info:#1D4ED8;--infobg:#DBEAFE;--grey:#EFE8DA;--shadow:0 2px 14px rgba(26,26,26,.06);--r:20px;--page:#E8E0CF;--chip:#fff;--lineh:#D6CCB8;--ph:#A8A08E;--acc2h:#D8E8CF;--badh:#FECACA;--okh:#BBF7D0;--greyh:#E6DECE;--wbg:#FFFBEB;--wline:#FDE68A;--wink:#92400E;--hover:#FAF6EE;--newbg:#F4F8F0;--ink2:#3F3F3F;--okline:#A7F3D0;--mapbg:#E9E3D6;--mapwater:#CFE0E6;--mappark:#D5E4C8;--maproad:#FBF8F1;color-scheme:light}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15130F;--card:#201D18;--ink:#F2EDE4;--mute:#A39C8E;--line:#34302A;--field:#2A2620;--acc:#4A8F5B;--acch:#5AA06B;--acc2:#1F3325;--accink:#9FD3AA;--ok:#4ADE80;--okbg:#14301F;--bad:#F87171;--badbg:#3A1717;--warn:#FBBF24;--warnbg:#3A2E10;--info:#93C5FD;--infobg:#172A45;--grey:#2A2620;--shadow:0 2px 14px rgba(0,0,0,.35);--page:#0C0B09;--chip:#26221C;--lineh:#4A443A;--ph:#6F685C;--acc2h:#28432F;--badh:#4A1D1D;--okh:#1B3F28;--greyh:#332E27;--wbg:#33280E;--wline:#5C4812;--wink:#FCD34D;--hover:#27231D;--newbg:#1C2A1F;--ink2:#CFC8BB;--okline:#1F5134;--mapbg:#1E1B16;--mapwater:#1B2A30;--mappark:#1E2A1C;--maproad:#2E2A23;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#15130F;--card:#201D18;--ink:#F2EDE4;--mute:#A39C8E;--line:#34302A;--field:#2A2620;--acc:#4A8F5B;--acch:#5AA06B;--acc2:#1F3325;--accink:#9FD3AA;--ok:#4ADE80;--okbg:#14301F;--bad:#F87171;--badbg:#3A1717;--warn:#FBBF24;--warnbg:#3A2E10;--info:#93C5FD;--infobg:#172A45;--grey:#2A2620;--shadow:0 2px 14px rgba(0,0,0,.35);--page:#0C0B09;--chip:#26221C;--lineh:#4A443A;--ph:#6F685C;--acc2h:#28432F;--badh:#4A1D1D;--okh:#1B3F28;--greyh:#332E27;--wbg:#33280E;--wline:#5C4812;--wink:#FCD34D;--hover:#27231D;--newbg:#1C2A1F;--ink2:#CFC8BB;--okline:#1F5134;--mapbg:#1E1B16;--mapwater:#1B2A30;--mappark:#1E2A1C;--maproad:#2E2A23;color-scheme:dark}
+:root{--bg:#F5F0E6;--card:#FFFDF8;--ink:#1A1A1A;--mute:#6B6B6B;--line:#E7DFCF;--field:#EFE8DA;--acc:#3F7D4E;--acch:#336842;--acc2:#E7F0E1;--accink:#2E6139;--ok:#15803D;--okbg:#DCFCE7;--bad:#B91C1C;--badbg:#FEE2E2;--warn:#A16207;--warnbg:#FEF3C7;--info:#1D4ED8;--infobg:#DBEAFE;--grey:#EFE8DA;--shadow:0 2px 14px rgba(26,26,26,.06);--r:20px;--page:#E8E0CF;--chip:#fff;--lineh:#D6CCB8;--ph:#A8A08E;--acc2h:#D8E8CF;--badh:#FECACA;--okh:#BBF7D0;--greyh:#E6DECE;--wbg:#FFFBEB;--wline:#FDE68A;--wink:#92400E;--hover:#FAF6EE;--newbg:#F4F8F0;--ink2:#3F3F3F;--okline:#A7F3D0;--mapbg:#E9E3D6;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15130F;--card:#201D18;--ink:#F2EDE4;--mute:#A39C8E;--line:#34302A;--field:#2A2620;--acc:#4A8F5B;--acch:#5AA06B;--acc2:#1F3325;--accink:#9FD3AA;--ok:#4ADE80;--okbg:#14301F;--bad:#F87171;--badbg:#3A1717;--warn:#FBBF24;--warnbg:#3A2E10;--info:#93C5FD;--infobg:#172A45;--grey:#2A2620;--shadow:0 2px 14px rgba(0,0,0,.35);--page:#0C0B09;--chip:#26221C;--lineh:#4A443A;--ph:#6F685C;--acc2h:#28432F;--badh:#4A1D1D;--okh:#1B3F28;--greyh:#332E27;--wbg:#33280E;--wline:#5C4812;--wink:#FCD34D;--hover:#27231D;--newbg:#1C2A1F;--ink2:#CFC8BB;--okline:#1F5134;--mapbg:#1E1B16;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15130F;--card:#201D18;--ink:#F2EDE4;--mute:#A39C8E;--line:#34302A;--field:#2A2620;--acc:#4A8F5B;--acch:#5AA06B;--acc2:#1F3325;--accink:#9FD3AA;--ok:#4ADE80;--okbg:#14301F;--bad:#F87171;--badbg:#3A1717;--warn:#FBBF24;--warnbg:#3A2E10;--info:#93C5FD;--infobg:#172A45;--grey:#2A2620;--shadow:0 2px 14px rgba(0,0,0,.35);--page:#0C0B09;--chip:#26221C;--lineh:#4A443A;--ph:#6F685C;--acc2h:#28432F;--badh:#4A1D1D;--okh:#1B3F28;--greyh:#332E27;--wbg:#33280E;--wline:#5C4812;--wink:#FCD34D;--hover:#27231D;--newbg:#1C2A1F;--ink2:#CFC8BB;--okline:#1F5134;--mapbg:#1E1B16;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%}
 body{font:14.5px/1.45 "Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--page);display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased}
@@ -230,17 +230,14 @@ a.btn{text-decoration:none}
 .alerts{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 12px}
 .alchip{display:inline-flex;align-items:center;gap:4px;background:var(--acc2);color:var(--accink);border-radius:99px;padding:4px 6px 4px 12px;font-size:12.5px;font-weight:600}
 .alchip button{border:0;background:none;color:inherit;cursor:pointer;display:inline-flex;padding:3px;border-radius:50%}
-.map{position:relative;height:400px;border-radius:var(--r);overflow:hidden;background:var(--mapbg);box-shadow:var(--shadow)}
+.map{position:relative;z-index:0;height:400px;border-radius:var(--r);overflow:hidden;background:var(--mapbg);box-shadow:var(--shadow);font:inherit}
 @media(min-width:900px){.map{height:500px}}
-.map svg{position:absolute;inset:0;width:100%;height:100%}
-.map .mw{fill:var(--mapwater)}.map .mp{fill:var(--mappark)}
-.map .mr{stroke:var(--maproad);stroke-width:5;fill:none}.map .mr path{vector-effect:non-scaling-stroke}
-.mlab{position:absolute;font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--mute);pointer-events:none}
-.you{position:absolute;z-index:2;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:var(--info);border:3px solid var(--card);box-shadow:0 0 0 7px rgba(59,130,246,.2)}
-.pin{position:absolute;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;border:2px solid var(--card);background:var(--pc);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.25);padding:0;transition:transform .12s}
-.pin:hover,.pin:focus-visible{z-index:3;transform:translate(-50%,-50%) scale(1.12);outline:2px solid var(--ink);outline-offset:2px}
-.pin .pl{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);font-size:11.5px;font-weight:600;padding:4px 8px;border-radius:8px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s}
-.pin:hover .pl,.pin:focus-visible .pl{opacity:1}
+.lyou{display:block;width:18px;height:18px;border-radius:50%;background:var(--info);border:3px solid #fff;box-shadow:0 0 0 7px rgba(59,130,246,.25)}
+.lpin{width:34px;height:34px;border-radius:50%;border:2px solid #fff;background:var(--pc);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,.3);cursor:pointer;transition:transform .12s}
+.leaflet-marker-icon:hover .lpin,.leaflet-marker-icon:focus-visible .lpin{transform:scale(1.12)}
+.leaflet-marker-icon:focus-visible{outline:none}.leaflet-marker-icon:focus-visible .lpin{outline:2px solid var(--ink);outline-offset:2px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .map .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9)}}
+:root[data-theme="dark"] .map .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9)}
 .micro{position:absolute;left:12px;right:12px;bottom:72px;z-index:15;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:10px 14px 14px;animation:up .2s ease-out}
 @media(min-width:900px){.micro{left:auto;right:24px;bottom:24px;width:360px}}
 .micro .mq{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--mute)}
