@@ -506,6 +506,7 @@ update app_config set v = 'live' where k = 'face_check';
 | See people who failed a check 5 times | `/addmin`, **Needs human review** (Approve, or ask them to try again) |
 | See reports | Table Editor → `reports` |
 | Delete someone's account and data | Authentication → Users → the person → **Delete user**. Their profile, plans, requests and notifications go with it. Then delete their rows in `participants` and `feedback` as in GO-LIVE-GUIDE.md. |
+| Refresh the venue search (new cafés, closed places) | From the `web` folder run `python tools/update-places.py`, then publish the new `places.json`. It takes about a minute. |
 | Back up | Free plan has no backups: export `profiles`, `activities`, `requests` and `messages` as CSV now and then |
 
 ## Free plan limits

@@ -283,16 +283,56 @@ const PLACE_LL=[
 const hoodLL=h=>SECTOR_LL[(/\d+/.exec(h||'')||[17])[0]]||SECTOR_LL[17];
 const spotOf=t=>{t=(t||'').toLowerCase();const p=PLACE_LL.find(([re])=>re.test(t));if(p)return p[1];const s=/sector[\s-]*(\d{1,2})\b/.exec(t);return s&&SECTOR_LL[+s[1]]};
 function geo(a){
-  const base=spotOf(a.venue)||spotOf(a.desc)||hoodLL(a.hood);
-  /* plans at the same spot are spread out a little (up to about 270 m) so their pins don't hide each other */
+  const exact=PLACE_AT[(a.venue||'').trim().toLowerCase()],base=exact||spotOf(a.venue)||spotOf(a.desc)||hoodLL(a.hood);
+  /* plans at the same spot are spread out a little (up to about 270 m, or 45 m at a known place) so their pins don't hide each other */
   let h=2166136261;for(const c of a.id){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}h>>>=0;
-  const ang=(h%360)*Math.PI/180,r=(0.25+((h>>>9)%75)/100)*0.0025;
+  const ang=(h%360)*Math.PI/180,r=(0.25+((h>>>9)%75)/100)*(exact?0.0004:0.0025);
   return [base[0]+r*Math.sin(ang),base[1]+r*Math.cos(ang)];
 }
 function kmBetween([a1,o1],[a2,o2]){const r=Math.PI/180,x=Math.sin((a2-a1)*r/2)**2+Math.cos(a1*r)*Math.cos(a2*r)*Math.sin((o2-o1)*r/2)**2;return 12742*Math.asin(Math.sqrt(x))}
 /* distance from the centre of your neighbourhood (the app never asks for your own location) */
 const kmAway=a=>kmBetween(hoodLL(S.me.hood),geo(a));
 const distKm=a=>kmAway(a).toFixed(1);
+
+/* ---------- venue search (post and edit forms) ---------- */
+/* places.json: Chandigarh's named meetup places from OpenStreetMap (tools/update-places.py rebuilds it).
+   Loaded once in the background, and searched in the browser: nothing is sent anywhere while typing. */
+let PLACES=null,placesP=null,PLACE_AT={},vPick=-1;
+const normTxt=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+function loadPlaces(){
+  return placesP||(placesP=fetch('places.json').then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(d=>{
+    PLACES=d.places.map(([label,kind,lat,lon])=>({label,kind,ll:[lat,lon],key:' '+normTxt(label+' '+kind)}));
+    PLACES.forEach(p=>{PLACE_AT[p.label.toLowerCase()]=p.ll});
+    if(loaded)redraw();   // pins and distances for picked venues become exact
+  }).catch(()=>{placesP=null}));
+}
+/* Every word typed must start a word of the place's name, sector or kind ("cafe sector 17" works).
+   Names that start with what was typed come first, then the nearest to your neighbourhood. */
+function findPlaces(q){
+  const whole=normTxt(q),w=whole.split(' ').filter(Boolean),home=hoodLL(S.me.hood);
+  if(!w.length||!PLACES)return [];
+  return PLACES.filter(p=>w.every(x=>p.key.includes(' '+x)))
+    .map(p=>[normTxt(p.label).startsWith(whole)?0:1,kmBetween(home,p.ll),p]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]).slice(0,8).map(x=>x[2]);
+}
+function venueList(show){
+  const inp=document.getElementById('f_venue'),box=document.getElementById('f_vlist');if(!inp||!box)return;
+  const q=inp.value.trim(),list=show&&q.length>=2?findPlaces(q):[];
+  if(show&&q.length>=2&&!PLACES)loadPlaces().then(()=>{if(document.activeElement===inp)venueList(true)});
+  vPick=-1;box.hidden=!list.length;inp.setAttribute('aria-expanded',String(!!list.length));inp.removeAttribute('aria-activedescendant');
+  box.innerHTML=list.map((p,i)=>`<button type="button" class="vopt" role="option" id="f_vo${i}" aria-selected="false" data-a="pickvenue" data-v="${esc(p.label)}"><b>${esc(p.label)}</b><span>${esc(p.kind)} · ${kmBetween(hoodLL(S.me.hood),p.ll).toFixed(1)} km from ${esc(S.me.hood)}</span></button>`).join('');
+}
+/* Arrow keys move through the suggestions, Enter picks one, Escape closes them (and not the whole form). */
+function venueKey(e){
+  const box=document.getElementById('f_vlist'),opts=box&&!box.hidden?[...box.children]:[];
+  if(!opts.length||!['ArrowDown','ArrowUp','Enter','Escape'].includes(e.key))return false;
+  e.preventDefault();
+  if(e.key==='Escape'){venueList(false);return true}
+  if(e.key==='Enter'){opts[Math.max(vPick,0)].click();return true}
+  vPick=(vPick+(e.key==='ArrowDown'?1:-1)+opts.length)%opts.length;
+  opts.forEach((o,i)=>{o.classList.toggle('on',i===vPick);o.setAttribute('aria-selected',String(i===vPick))});
+  opts[vPick].scrollIntoView({block:'nearest'});e.target.setAttribute('aria-activedescendant',opts[vPick].id);
+  return true;
+}
 const rupees=n=>'₹'+Math.round(n).toLocaleString('en-IN');
 function costLine(a){
   const t=a.total,each=t?Math.ceil(t/(a.cap+1)/10)*10:0;
@@ -600,7 +640,7 @@ function acCard(a){
     :`<button class="btn xs" data-a="askreq" data-id="${a.id}">Request ${I('chevron-right',13)}</button>`}</div></div></div>`;
 }
 function liHtml(a,act,meta,chips,right){
-  return `<div class="panel tap li" data-a="${act}" data-id="${a.id}">${planThumb(a)}
+  return `<div class="panel tap li" data-a="${act}" data-id="${a.id}" role="button" tabindex="0">${planThumb(a)}
   <div style="flex:1;min-width:0"><div class="t">${esc(a.desc)}</div><div class="meta2" style="margin:4px 0 8px">${meta}</div>${chips}</div>${right||`<span class="mute">${I('chevron-right',18)}</span>`}</div>`;
 }
 // host=true renders from the poster's side (e.g. "Left" instead of "You left")
@@ -662,7 +702,7 @@ let mapList=[],mapView=null,liveMap=null,leafletP=null;
 function mapHtml(list){
   mapList=list;
   return `<div id="lmap" class="map" role="region" aria-label="Map of plans near you"></div>
-  <p class="small mute" style="margin-top:8px">The blue dot is the centre of ${esc(S.me.hood)}, Chandigarh. Pins show the area of each plan, not the exact spot: hosts share that once you're accepted.</p>`;
+  <p class="small mute" style="margin-top:8px">The blue dot is the centre of ${esc(S.me.hood)}, Chandigarh. A pin is at the place when the host picked it from the list, otherwise in the area of the sector the venue names.</p>`;
 }
 function loadLeaflet(){
   if(window.L)return Promise.resolve();
@@ -791,7 +831,8 @@ function modalHtml(){
       <label>Who can see and request this?</label>
       <label class="chk"><input type="checkbox" id="f_all" ${aud==='everyone'?'checked':''}> Everyone</label>
       ${GENDERS.map(g=>`<label class="chk"><input type="checkbox" class="f_g" value="${g}" ${aud!=='everyone'&&aud.includes(g)?'checked':''}> ${g}</label>`).join('')}
-      <label>Venue</label><input id="f_venue" placeholder="e.g. PVR, Elante Mall" value="${src?esc(src.venue):''}">
+      <label for="f_venue">Venue</label><div class="vbox"><input id="f_venue" maxlength="120" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="f_vlist" placeholder="Search a place, e.g. Indian Coffee House" value="${src?esc(src.venue):''}"><div id="f_vlist" class="vlist" role="listbox" aria-label="Places in Chandigarh" hidden></div></div>
+      <p class="small mute" style="margin-top:6px">Pick a Chandigarh place from the list, or type any venue with its sector, e.g. "Café Nirvana, Sector 26".</p>
       <label>How will costs work? (informational only)</label><select id="f_cost">${Object.entries(COST).map(([k,v])=>`<option value="${k}" ${src&&src.cost===k?'selected':''}>${v}</option>`).join('')}</select>
       <label for="f_total">Estimated total cost <span class="mute" style="font-weight:400">(₹, optional)</span></label><input id="f_total" type="number" min="0" max="1000000" step="50" inputmode="numeric" placeholder="e.g. 1200" value="${src?.total||''}">
       <p class="small mute" style="margin-top:6px">We show each person's rough share. Payments stay between you.</p>
@@ -818,7 +859,7 @@ function modalHtml(){
       <button class="btn" data-a="request" data-id="${a.id}">${I('send',16)} ${canWait?(S.me.kyc?'Join waitlist':'Verify &amp; join waitlist'):(S.me.kyc?'Send Request':'Verify &amp; Send Request')}</button>
       <div style="height:8px"></div><button class="btn ghost" data-a="close">Not now</button></div>`);
     const acc=rq?.status==='accepted',pos=rq?.status==='waitlist'?waitlist(a.id).findIndex(r=>r.user==='me')+1:0;
-    return sheet('Activity',`<div class="sb">${top}
+    return sheet(backB(m)+'Activity',`<div class="sb">${top}
       ${rq?`<p style="margin-top:14px">Your request: ${statusChip(rq.status)}${pos?` <span class="small mute">#${pos} in line</span>`:''}</p>${rq.note?`<p class="small mute">Your note: ${esc(rq.note)}</p>`:''}`:''}
       ${can?`<div style="height:16px"></div><button class="btn" data-a="askreq" data-id="${a.id}">Request to join</button>`
       :canWait?`<div style="height:16px"></div><button class="btn sec" data-a="askreq" data-id="${a.id}">${I('users',16)} Full · Join waitlist</button>`
@@ -831,7 +872,7 @@ function modalHtml(){
   }
   if(m.type==='user'){
     const p=USERS[m.id];if(!p)return '';
-    const hosting=S.acts.filter(a=>a.host===m.id&&visible(a)).length,bl=isBlocked(m.id),t=trust(m.id);
+    const ups=S.acts.filter(a=>a.host===m.id&&visible(a)).sort((a,b)=>a.when-b.when),bl=isBlocked(m.id),t=trust(m.id);
     return sheet(backB(m)+'Profile',`<div class="sb">
       <div class="pt2">${av(m.id,'lg')}<div><div class="pn">${esc(p.name)} ${vf(m.id,true)}</div><div class="small mute">${esc(p.gender)}, ${p.age}${p.job?' · '+esc(p.job):''}</div></div></div>
       ${p.bio?`<p style="margin:16px 0 0">${esc(p.bio)}</p>`:''}
@@ -840,8 +881,11 @@ function modalHtml(){
       <div style="height:12px"></div><button class="btn ${S.following.includes(m.id)?'ghost':'sec'}" data-a="follow" data-id="${m.id}" aria-pressed="${S.following.includes(m.id)}">${S.following.includes(m.id)?I('circle-check',16)+' Following':I('user-plus',16)+' Follow'}</button>
       <p class="small mute" style="margin:6px 0 0;text-align:center">${S.following.includes(m.id)?`You'll hear when ${esc(p.name)} posts a new plan.`:`Get notified when ${esc(p.name)} posts a new plan.`}</p>
       ${isVer(m.id)?'':`<div class="warnbox">${I('alert-triangle',16)}<span>${esc(p.name)} has not verified their ID yet. Meet in busy public places and share your plan with someone you trust.</span></div>`}
+      <h3>Upcoming activities${ups.length?` (${ups.length})`:''}</h3>
+      ${ups.length?ups.map(a=>{const rq=myReq(a.id);return liHtml(a,'detailback',`<span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)} · ${distKm(a)} km</span>`,
+        rq?`<span class="chip ${REQ_TONE[rq.status]||''}">${REQ_LBL[rq.status]||esc(rq.status)}</span>`:`<span class="chip">${spotTxt(a)}</span>`)}).join('')
+        :`<p class="small mute">No upcoming activities near you right now.</p>`}
       <h3>Past activities</h3>${pastHtml(pastList(m.id),'No past activities yet.')}
-      <p class="small mute" style="margin-top:14px">${hosting?`Hosting ${hosting} upcoming ${hosting===1?'activity':'activities'} near you`:'No other upcoming activities near you'}</p>
       <div class="row" style="margin-top:12px">${bl?`<button class="btn sec" data-a="unblock" data-id="${m.id}">Unblock ${esc(p.name)}</button>`
         :`<button class="btn ghost" data-a="report" data-id="${m.id}">${I('alert-triangle',15)} Report</button><button class="btn bad" data-a="block" data-id="${m.id}">Block</button>`}</div>
       ${bl?`<p class="small mute">You blocked ${esc(p.name)}. You won't see their activities and they can't request yours.</p>`:''}</div>`);
@@ -1288,6 +1332,7 @@ const A={
   tab:d=>{if(ui.tab!==d.t)track('tab_view',{tab:d.t});ui.tab=d.t;ui.seen=null;ui.modal=null;render()},
   swipe:d=>swipe(d.d),
   detail:d=>{ui.modal={type:'detail',id:d.id};render()},
+  detailback:d=>{ui.modal={type:'detail',id:d.id,back:ui.modal};render()},   // from a profile: closing goes back to it
   hostview:d=>{ui.modal={type:'host',id:d.id};render()},
   chat:d=>{ui.modal={type:'chat',id:d.id};render()},
   close:()=>{ui.modal=ui.modal?.back||null;render()},
@@ -1386,6 +1431,7 @@ const A={
     const a=actOf(d.id);if(!a)return toast('That activity is no longer available');
     ui.modal={type:a.host==='me'?'host':'detail',id:a.id};render();
   },
+  pickvenue:d=>{const i=document.getElementById('f_venue');if(i){i.value=d.v;i.focus()}venueList(false);track('venue_picked')},
   /* hosting */
   newpost:()=>gate(()=>{ui.modal={type:'post'};render()}),
   unlock:()=>gate(()=>{toast('ID verified. Plans for your group now show too.');render()}),
@@ -1551,6 +1597,7 @@ const A={
 };
 document.addEventListener('click',e=>{
   if(!e.target.closest('.phw'))photoMenu(false);
+  if(!e.target.closest('.vbox'))venueList(false);
   if(e.target.matches('input[type=checkbox]')&&e.target.id!=='d_fail'){
     if(e.target.id==='f_all'&&e.target.checked)document.querySelectorAll('.f_g').forEach(x=>x.checked=false);
     else if(e.target.classList.contains('f_g')&&e.target.checked)document.getElementById('f_all').checked=false;
@@ -1562,7 +1609,11 @@ document.addEventListener('click',e=>{
 document.addEventListener('input',e=>{
   if(e.target.id==='r_note'){const c=document.getElementById('r_cnt');if(c)c.textContent=e.target.value.length}
   if(e.target.id==='a_code'&&e.target.value.replace(/\D/g,'').length===6)A.checkcode();  // phones fill the code in from the SMS
+  if(e.target.id==='f_venue')venueList(true);
 });
+/* Suggestions stay open while focus is in the venue box or its list; clicking one keeps the focus in the box. */
+document.addEventListener('mousedown',e=>{if(e.target.closest('.vopt'))e.preventDefault()});
+document.addEventListener('focusout',e=>{if(e.target.closest?.('.vbox'))setTimeout(()=>{if(!document.activeElement?.closest?.('.vbox'))venueList(false)},200)});
 document.addEventListener('change',e=>{
   if(e.target.id==='d_from'||e.target.id==='d_to'){
     const f=ui.f;f[e.target.id==='d_from'?'dfrom':'dto']=e.target.value;
@@ -1577,6 +1628,7 @@ document.addEventListener('change',e=>{
   if(e.target.id==='p_photo'){const f=e.target.files[0];e.target.value='';openCropper(f)}
 });
 document.addEventListener('keydown',e=>{
+  if(e.target.id==='f_venue'&&venueKey(e))return;
   const pm=document.getElementById('p_menu');
   if(e.key==='Escape'&&pm&&!pm.hidden){photoMenu(false);document.getElementById('p_pe')?.focus();return}
   if(e.key==='Enter'&&e.target.matches('[role=button][data-a]')){e.target.click();return}
@@ -1597,6 +1649,7 @@ async function start(){
     if(!data?.user){ME=null;starting=null;render();return}
     ME=data.user.id;loaded=false;render();
     await refresh();
+    loadPlaces();
     listen();
     track('app_open',{standalone:isStandalone(),embedded:window.parent!==window});
     /* Invite links open straight to the activity. */
