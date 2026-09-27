@@ -33,9 +33,11 @@ const localBanner=()=>REMOTE?'':'<div class="note">Backend not connected yet: su
 let view='home';
 const fromApp=location.hash==='#feedback';   // opened from the full-screen app's feedback button
 function nav(v){
+  /* The app always opens full page; "Join the beta" opens it on "Create your account". */
+  if(v==='try'||v==='join'){location.href=v==='join'?'demo.html?join':'demo.html';return}
   view=v;
-  $('#t_try').classList.toggle('on',v==='try');$('#t_fb').classList.toggle('on',v==='feedback');
-  $('#main').innerHTML=({home,try_:tryView,feedback,thanks,admin})[v==='try'?'try_':v]();
+  $('#t_fb').classList.toggle('on',v==='feedback');
+  $('#main').innerHTML=({home,feedback,thanks,admin})[v]();
   bind();window.scrollTo(0,0);
 }
 function home(){
@@ -45,7 +47,8 @@ function home(){
   <div class="steps"><div><b>1</b>Make an account and a short profile</div><div><b>2</b>Post plans and join other people's</div><div><b>3</b>Tell us what you think</div></div>
   <p class="small mute">Launching first in Chandigarh. This is an early test. We are collecting a little information to learn who would use this and what should be built first. Not a dating app.</p>
   ${p?`<div class="ok">Welcome back, ${esc(p.name)}.</div><button class="btn" data-go="try">Try the platform</button> <button class="btn sec" data-go="feedback">Leave feedback</button>`
-     :`<button class="btn" data-go="try">Join the beta</button>`}`;
+     :`<button class="btn" data-go="join">Join the beta</button>`}
+  <p class="small mute" style="margin-top:14px">Other beta testers are real people: what you post, they can see and join. Some plans come from sample hosts so it's never empty; those say yes straight away.</p>`;
 }
 /* Demo accounts are real accounts now: made once in Supabase (see SETUP-APP.md), signed in to inside the app. */
 function admin(){
@@ -53,12 +56,6 @@ function admin(){
   <p class="small"><b>kajal@overhere.test</b> · woman, ID verified<br><b>arjun@overhere.test</b> · man, ID verified<br><b>neha@overhere.test</b> · woman, new, ID not verified yet</p>
   <p style="margin-top:16px"><button class="btn" data-go="try" style="width:100%">Open the app</button></p>
   <p class="small mute" style="margin:18px 0 0;text-align:center">Looking for results? <a href="addmin/" style="color:var(--acch);font-weight:600">Open the beta dashboard</a></p></div>`;
-}
-function tryView(){
-  return `<h2>Try the platform</h2><p class="mute small">Create an account (or sign in) inside the app below. Other beta testers are real people: what you post, they can see and join. Some plans come from sample hosts so it's never empty; those say yes straight away.</p>
-  <p class="small" style="text-align:center"><a href="demo.html" target="_blank" rel="noopener" style="color:var(--acch);font-weight:600">Open full screen ↗</a></p>
-  <div class="frame"><iframe src="demo.html?embed=1" title="Overhere demo"></iframe></div>
-  <p style="text-align:center;margin-top:16px"><button class="btn" data-go="feedback">I have tried it, leave feedback</button></p>`;
 }
 function feedback(){
   return localBanner()+`${fromApp?'<p class="small"><a href="demo.html" style="color:var(--acch);font-weight:600">← Back to the app</a></p>':''}<div class="panel"><h2>Tell us what you think</h2><p class="mute small">Honest is best. Nothing here is required except the consent box.</p>
@@ -77,7 +74,7 @@ function feedback(){
 }
 function thanks(){
   return `<div class="panel" style="text-align:center"><div style="font-size:48px">🙏</div><h2>Thank you!</h2><p class="mute">Your response has been saved. You can keep trying the platform any time.</p>
-  ${fromApp?'<a class="btn" href="demo.html" style="display:inline-block;text-decoration:none">Back to the app</a>':'<button class="btn" data-go="try">Back to the platform</button>'}</div>`;
+  <a class="btn" href="demo.html" style="display:inline-block;text-decoration:none">Back to the app</a></div>`;
 }
 
 /* ---------- behavior ---------- */
@@ -101,7 +98,6 @@ async function submitFeedback(e,getRating){
   $('#go').disabled=true;
   try{await store('feedback',row);nav('thanks')}catch(err){showErr(err.message);$('#go').disabled=false}
 }
-window.addEventListener('message',e=>{if(e.origin===location.origin&&e.data==='overhere-feedback'&&e.source===document.querySelector('iframe')?.contentWindow)nav('feedback')});
 $('#logo').onclick=()=>nav('home');
 $('#t_try').onclick=()=>nav('try');
 $('#t_fb').onclick=()=>nav('feedback');

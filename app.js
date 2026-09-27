@@ -810,7 +810,7 @@ function tabProfile(){
   ${m.trusted?`<div class="blk">${I('phone',15)}<span><b>${esc(m.trusted.name)}</b> · ${esc(m.trusted.phone)}</span><button class="lnk" data-a="editprofile" data-k="safety">Change</button></div>`:`<button class="btn sm sec" data-a="editprofile" data-k="safety">${I('user-plus',14)} Add a trusted contact</button>`}
   <label>Blocked people</label>${S.blocked.length?S.blocked.map(u=>`<div class="blk">${av(u,'sm')}${esc(uname(u))}<button class="lnk" data-a="unblock" data-id="${u}">Unblock</button></div>`).join(''):'<p class="small mute" style="margin:0">You have not blocked anyone.</p>'}</div>
   <div class="panel"><div class="ph">${I('user',15)} Account</div>
-  <p class="small mute" style="margin-top:0">To delete your account and data, email ${esc(CFG.CONTACT_EMAIL||'the beta team')}. <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> · <a href="credits.html" target="_blank" rel="noopener">Credits</a></p>
+  <p class="small mute" style="margin-top:0">To delete your account and data, email ${esc(CFG.CONTACT_EMAIL||'the beta team')}. <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a> · <a href="credits.html" target="_blank" rel="noopener" style="color:inherit">Credits</a></p>
   <button class="btn sm ghost" data-a="signout">${I('log-out',14)} Sign out</button></div>
 `;
 }
@@ -1131,7 +1131,7 @@ function authHtml(){
     <div style="height:16px"></div><button class="btn" data-a="${up?'signup':'signin'}">${up?'Create account':'Sign in'}</button>
     <p class="small" style="text-align:center;margin-top:14px">${up?'Already have an account? <button class="lnk" data-a="authmode" data-k="in">Sign in</button>'
       :'New here? <button class="lnk" data-a="authmode" data-k="up">Create an account</button> · <button class="lnk" data-a="authmode" data-k="reset">Forgot password?</button>'}</p>
-    <p class="small mute" style="text-align:center;margin-top:10px"><a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a> · <a href="credits.html" target="_blank" rel="noopener">Credits</a></p></div>`;
+    <p class="small mute" style="text-align:center;margin-top:10px"><a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a> · <a href="credits.html" target="_blank" rel="noopener" style="color:inherit">Credits</a></p></div>`;
 }
 function onboardHtml(){
   let body;
@@ -1146,7 +1146,7 @@ function onboardHtml(){
     <label for="o_hood">Neighborhood (launch areas)</label><select id="o_hood">${HOODS.map(g=>`<option ${g===d.hood?'selected':''}>${g}</option>`).join('')}</select>
     <label>What would you want to do with company?</label>${opts('o_int',INTERESTS,d.ints)}
     <label>When are you usually free?</label>${opts('o_avail',TIMES,d.avail)}
-    <label class="chk top" style="margin-top:18px"><input type="checkbox" id="o_ok"> <span>I agree that Overhere may store these details to run the beta and contact me about it. I am 18 or older. I can ask for my data to be deleted at any time by emailing ${esc(CFG.CONTACT_EMAIL||'the beta team')}. <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a></span></label>
+    <label class="chk top" style="margin-top:18px"><input type="checkbox" id="o_ok"> <span>I agree that Overhere may store these details to run the beta and contact me about it. I am 18 or older. I can ask for my data to be deleted at any time by emailing ${esc(CFG.CONTACT_EMAIL||'the beta team')}. <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a></span></label>
     <div style="height:18px"></div><button class="btn" data-a="ob2">Continue</button>
     <p class="small" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p>`;
   }else if(!S.me.face)body=`<h1 class="pt">Quick face check</h1><p class="sub">Confirms your account belongs to a real person. Passing unlocks browsing.</p><div class="scan">${I('scan-face',56)}</div><button class="btn" data-a="obface">Start face check</button>
@@ -1689,6 +1689,8 @@ if(!ONLINE)render();
 else{
   /* Opened from a password-reset email: ask for the new password before anything else. */
   if(/type=recovery/.test(location.hash))ui.auth={mode:'newpw'};
+  /* "Join the beta" on the landing page opens here with ?join: start on "Create your account". */
+  else if(/[?&]join(&|$)/.test(location.search)){ui.auth={mode:'up'};history.replaceState(null,'',here()+location.hash)}
   SB.auth.onAuthStateChange((ev,session)=>{
     /* don't call Supabase from inside this callback: do it just after */
     setTimeout(()=>{
