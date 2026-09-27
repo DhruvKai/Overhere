@@ -179,7 +179,6 @@ a.btn{text-decoration:none}
 .agesel select{width:auto;padding:7px 10px;border-radius:99px;font-size:13px;background:var(--chip);border:1px solid var(--line)}
 .dlinks{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 18px;margin-top:14px}
 .dlinks:empty{display:none}
-.stars{color:#B7791F;font-weight:700;font-size:13px;white-space:nowrap}
 .past{display:flex;flex-direction:column;gap:12px}
 .pi{display:flex;align-items:center;gap:12px}
 .pi .pth{width:40px;height:40px;border-radius:12px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.85)}
@@ -446,7 +445,7 @@ const USERS={
 };
 /* Meetups before the demo started: [meetups attended, times they showed up]. */
 const TRUST={u1:[12,12],u2:[21,21],u3:[8,7],u4:[3,3],u5:[6,5],u6:[17,17],u7:[25,24],u8:[4,4],u9:[14,14],u10:[9,7],u11:[11,11],u12:[2,2]};
-/* Past activities shown on profiles: [title, category, days ago, role, average stars, number of ratings]. */
+/* Past activities shown on profiles: [title, category, days ago, role, average stars, number of ratings]. Stars are activity feedback only, never shown on profiles. */
 const HIST={
   u1:[['Nolan retrospective: Interstellar on IMAX','movies',9,'Hosted',4.9,5],['Filter coffee tasting','cafe',23,'Joined',4.6,4],['Anime night at Elante','movies',41,'Hosted',4.8,6]],
   u2:[['Jazz brunch in Sector 7','cafe',6,'Hosted',5.0,4],['Le Corbusier architecture walk and chai','cafe',19,'Hosted',4.9,7],['Sunday sitar recital','concerts',33,'Joined',4.7,5]],
@@ -666,24 +665,18 @@ function trust(id){
   Object.values(S.ratings).forEach(r=>{const v=r.people?.[id];if(v){met++;if(v==='show')shows++}});
   return {met,shows,rate:met?Math.round(shows/met*100):null};
 }
-const trustTxt=id=>{const t=trust(id);return t.met?`${t.met} ${t.met===1?'meetup':'meetups'} · showed up ${t.rate}%`:'New to meetups'};
+const trustTxt=id=>{const t=trust(id);return t.met?`Showed up ${t.shows} · No-show ${t.met-t.shows}`:'New to meetups'};
 /* Past activities for a profile: the dummy history plus real ones from this demo. */
 function pastList(id){
   const real=S.acts.filter(a=>a.status==='past'&&(a.host===id||a.members.includes(id))&&(id==='me'||S.ratings[a.id]))
-    .map(a=>({t:a.desc,cat:a.cat,at:a.when,role:a.host===id?'Hosted':'Joined',stars:S.ratings[a.id]?.stars||null,n:1,act:a.id}));
-  const old=((id==='me'?S.me.hist:HIST[id])||[]).map(([t,cat,d,role,stars,n])=>({t,cat,at:now()-d*864e5,role,stars,n}));
+    .map(a=>({t:a.desc,cat:a.cat,at:a.when,role:a.host===id?'Hosted':'Joined',act:a.id}));
+  const old=((id==='me'?S.me.hist:HIST[id])||[]).map(([t,cat,d,role])=>({t,cat,at:now()-d*864e5,role}));
   return [...real,...old].sort((a,b)=>b.at-a.at);
 }
-function ratingOf(id){
-  const l=pastList(id).filter(x=>x.stars);let n=0,sum=0;
-  l.forEach(x=>{n+=x.n;sum+=x.stars*x.n});
-  return n?{avg:(sum/n).toFixed(1),n}:null;
-}
-const rateTxt=id=>{const r=ratingOf(id);return r?`<span class="stars">★ ${r.avg}</span> <span class="mute">(${r.n} ${r.n===1?'rating':'ratings'})</span>`:'<span class="mute">No ratings yet</span>'};
 function pastHtml(list,none){
   if(!list.length)return `<p class="small mute">${none}</p>`;
   return `<div class="past">${list.slice(0,6).map(x=>{const c=CATS[x.cat],a=x.act&&actOf(x.act);
-    const rate=x.stars?`<span class="stars">★ ${x.stars.toFixed(1)}</span>`:a&&attended(a)&&a.members.length?`<button class="btn xs" data-a="rate" data-id="${a.id}">Rate</button>`:'';
+    const rate=a&&attended(a)&&a.members.length&&!S.ratings[a.id]?`<button class="btn xs" data-a="rate" data-id="${a.id}">Rate</button>`:'';
     return `<div class="pi"><div class="pth" style="background:${c.g}">${I(c.icon,16)}</div><div class="pm"><div class="t">${esc(x.t)}</div><div class="small mute">${x.role} · ${ago(x.at)}</div></div>${rate}</div>`}).join('')}</div>`;
 }
 /* ---- recommendations, distance, cost, host signals ---- */
@@ -973,8 +966,10 @@ function swipe(dir){
 }
 function bindDrag(){
   const el=document.querySelector('.card.top');if(!el)return;
-  let sx=0,dx=0,down=false;
+  let sx=0,dx=0,down=false,dragged=false;
   const st=el.querySelector('.stamp');
+  /* a tap opens the details; a drag must not */
+  el.addEventListener('click',e=>{if(dragged){e.stopPropagation();dragged=false}});
   el.onpointerdown=e=>{if(e.target.closest('button'))return;down=true;sx=e.clientX;el.setPointerCapture(e.pointerId);el.style.transition='none'};
   el.onpointermove=e=>{
     if(!down)return;dx=e.clientX-sx;
@@ -983,7 +978,7 @@ function bindDrag(){
   };
   el.onpointerup=()=>{
     if(!down)return;down=false;el.style.transition='transform .25s';
-    const d=dx;dx=0;st.style.opacity=0;
+    const d=dx;dx=0;st.style.opacity=0;dragged=Math.abs(d)>6;
     if(d>110)swipe('right');else if(d<-110)swipe('left');else el.style.transform='';
   };
 }
@@ -991,7 +986,7 @@ function bindDrag(){
 /* ---------- render: cards & lists ---------- */
 function cardHtml(a,cls){
   const c=CATS[a.cat],h=profileOf(a.host);
-  return `<div class="card ${cls}" style="background:${c.g}"><div class="art">${I(c.icon,120)}</div><div class="shade"></div><div class="stamp"></div>
+  return `<div class="card ${cls}" style="background:${c.g}"${cls==='top'?` data-a="detail" data-id="${a.id}" role="button" tabindex="0" aria-label="${esc(a.desc)}: view details"`:''}><div class="art">${I(c.icon,120)}</div><div class="shade"></div><div class="stamp"></div>
   <div class="cp">${catPill(a.cat)}</div>
   <div class="body"><div class="who">${a.host==='me'?`${av('me','sm')}You`:`<button class="hlink" data-a="user" data-id="${a.host}" title="View ${esc(h.name)}'s profile">${av(a.host,'sm')}<span><span class="hname">${esc(h.name)}</span>, ${h.age}</span></button>`} ${vf(a.host)}</div>
   <h2>${esc(a.desc)}</h2>
@@ -1024,7 +1019,7 @@ const empty=(ic,t,sub,btn)=>`<div class="empty"><div class="big">${I(ic,30)}</di
 function tabSwipe(){
   const d=deck();
   if(!d.length)return empty('compass','Nothing new right now','You have gone through all plans happening soon in '+esc(S.me.hood)+'. Check Discover for plans further out.','<button class="btn" data-a="tab" data-t="discover">Go to Discover</button>');
-  return `<div class="deck"><h1 class="pt">What's happening tonight?</h1><p class="sub">Activities in the next 36 hours · Swipe right to request</p>
+  return `<div class="deck"><h1 class="pt">What's happening tonight?</h1><p class="sub">Activities in the next 36 hours · Tap a card for details</p>
   <div class="stack">${d[1]?cardHtml(d[1],'back'):''}${cardHtml(d[0],'top')}</div>
   <div class="acts"><button class="rb" data-a="swipe" data-d="left" title="Skip">${I('x',24)}</button>
   <div class="cnt">1 of ${d.length}<br>← dismiss · request →</div>
@@ -1114,13 +1109,13 @@ function tabProfile(){
   const soft=(arr,none)=>arr&&arr.length?`<div class="soft">${arr.map(x=>`<span>${esc(x)}</span>`).join('')}</div>`:`<p class="small mute">${none}</p>`;
   return `<div class="panel"><div class="ph">${I('user',15)} Your profile<button class="btn sm sec" data-a="editprofile">${I('pencil',14)} Edit profile</button></div>
   <div class="pt2"><div class="phw" data-a="photo">${av('me','lg')}<button class="pe" id="p_pe" title="Change profile picture" aria-label="Change profile picture" aria-haspopup="menu" aria-expanded="false">${I('camera',14)}</button>
-  <div class="pmenu" id="p_menu" role="menu" hidden></div></div><div><div class="pn">${esc(m.name)} ${m.kyc?`<span class="vf">${I('badge-check',14)} Verified</span>`:''}</div><div class="small mute">${esc(m.hood)}, Chandigarh</div><div class="small" style="margin-top:4px">${rateTxt('me')} <span class="mute">· ${trustTxt('me')}</span></div></div></div>
+  <div class="pmenu" id="p_menu" role="menu" hidden></div></div><div><div class="pn">${esc(m.name)} ${m.kyc?`<span class="vf">${I('badge-check',14)} Verified</span>`:''}</div><div class="small mute">${esc(m.hood)}, Chandigarh</div><div class="small" style="margin-top:4px">${trustTxt('me')}</div></div></div>
   <input type="file" id="p_photo" accept="image/jpeg,image/png,image/webp,image/*" hidden>
   <div class="facts"><span>${ageOf(m.dob)} yrs</span><span>${esc(m.gender)}</span>${m.job?`<span>${I('briefcase',14)}${esc(m.job)}</span>`:''}</div>
   <p>${m.bio?esc(m.bio):'<span class="mute">Add a short bio so hosts know who you are. Tap Edit profile.</span>'}</p></div>
   <div class="panel"><div class="ph">${I('star',15)} Interests</div>${soft(m.ints,'Add what you would like to do with company in Edit profile.')}</div>
   <div class="panel"><div class="ph">${I('clock',15)} Usually free</div>${soft(m.avail,'Tell hosts when you are usually free in Edit profile.')}</div>
-  <div class="panel"><div class="ph">${I('calendar-check',15)} Past activities</div>${pastHtml(pastList('me'),'Activities you host or join show up here with their ratings.')}</div>
+  <div class="panel"><div class="ph">${I('calendar-check',15)} Past activities</div>${pastHtml(pastList('me'),'Activities you host or join show up here.')}</div>
   <div class="panel"><div class="ph">${I('shield-check',15)} Verifications <span class="r">${done}/${V.length} complete</span></div>
   <div class="bar"><i style="width:${done/V.length*100}%"></i></div>
   <div class="vg">${V.map(([ic,l,y])=>`<div class="vi ${y?'y':''}">${I(ic,14)}${l}${y?`<span class="e">${I('circle-check',14)}</span>`:''}</div>`).join('')}</div></div>
@@ -1185,7 +1180,7 @@ function modalHtml(){
       <div class="meta2" style="margin-top:3px"><span>${I('wallet',13)}${costLine(a)}</span></div>
       <div class="tg" style="margin-top:8px"><span>${COST_S[a.cost]}</span><span>${a.aud==='everyone'?'Open to everyone':esc(a.aud.join(' / '))+' only'}</span>${a.repeat?`<span>${REPEAT[a.repeat]}</span>`:''}</div></div></div>
       <div class="hostline">Hosted by ${a.host==='me'?`${av('me','sm')}<b style="color:var(--ink);font-weight:600">You</b>`:`<button class="hlink" data-a="user" data-id="${a.host}" title="View ${esc(h.name)}'s profile">${av(a.host,'sm')}<span><b style="color:var(--ink);font-weight:600">${esc(h.name)}</b>, ${h.age}</span></button> ${vf(a.host,true)}`}</div>
-      ${a.host==='me'?'':`<div class="small" style="margin:2px 0 0 32px">${rateTxt(a.host)} <span class="mute">· ${trustTxt(a.host)}</span></div>`}`;
+      ${a.host==='me'?'':`<div class="small" style="margin:2px 0 0 32px">${trustTxt(a.host)}</div>`}`;
     if(m.type==='confirm'&&(can||canWait))return sheet(can?'Request to Join':'Join the waitlist',`<div class="sb">${top}
       ${canWait?`<div class="warnbox" style="background:var(--infobg);border-color:#BFDBFE;color:var(--info)">${I('users',16)}<span>This activity is full. Join the waitlist and your request goes to ${esc(h.name)} automatically if a spot opens${wl?` (${wl} ahead of you)`:''}.</span></div>`:''}
       <label for="r_note" style="font-size:14px;margin-top:18px">Add a note <span class="mute" style="font-weight:400">(optional)</span></label>
@@ -1208,11 +1203,11 @@ function modalHtml(){
   }
   if(m.type==='user'){
     const p=USERS[m.id];if(!p)return '';
-    const hosting=S.acts.filter(a=>a.host===m.id&&visible(a)).length,bl=isBlocked(m.id),t=trust(m.id),rt=ratingOf(m.id);
+    const hosting=S.acts.filter(a=>a.host===m.id&&visible(a)).length,bl=isBlocked(m.id),t=trust(m.id);
     return sheet(backB(m)+'Profile',`<div class="sb">
       <div class="pt2">${av(m.id,'lg')}<div><div class="pn">${esc(p.name)} ${vf(m.id,true)}</div><div class="small mute">${esc(p.gender)}, ${p.age}${p.job?' · '+esc(p.job):''}</div></div></div>
       ${p.bio?`<p style="margin:16px 0 0">${esc(p.bio)}</p>`:''}
-      <div class="tstats"><div><b>${rt?'★ '+rt.avg:'–'}</b><span>${rt?rt.n+' ratings':'no ratings'}</span></div><div><b>${t.met}</b><span>meetups</span></div><div><b>${t.rate==null?'–':t.rate+'%'}</b><span>showed up</span></div></div>
+      <div class="tstats"><div><b>${t.met}</b><span>meetups</span></div><div><b>${t.shows}</b><span>showed up</span></div><div><b>${t.met-t.shows}</b><span>no-shows</span></div></div>
       ${signals(m.id)}
       <div style="height:12px"></div><button class="btn ${S.following.includes(m.id)?'ghost':'sec'}" data-a="follow" data-id="${m.id}" aria-pressed="${S.following.includes(m.id)}">${S.following.includes(m.id)?I('circle-check',16)+' Following':I('user-plus',16)+' Follow'}</button>
       <p class="small mute" style="margin:6px 0 0;text-align:center">${S.following.includes(m.id)?`You'll hear when ${esc(p.name)} posts a new plan.`:`Get notified when ${esc(p.name)} posts a new plan.`}</p>
@@ -1238,7 +1233,7 @@ function modalHtml(){
     return sheet(backB(m)+'How did it go?',`<div class="sb">
       <div class="sum"><div class="thumb" style="background:${c.g}">${I(c.icon,26)}</div><div style="min-width:0"><div class="t">${esc(a.desc)}</div><div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)}</span></div></div></div>
       <label>Did everything go OK?</label><div class="opts"><label class="opt"><input type="radio" name="rt_ok" value="yes" ${prev?.ok!=='no'?'checked':''}>Yes, all good</label><label class="opt"><input type="radio" name="rt_ok" value="no" ${prev?.ok==='no'?'checked':''}>Something went wrong</label></div>
-      <label>Rate the meetup</label><div class="rstars" role="radiogroup" aria-label="Rating">${[5,4,3,2,1].map(n=>`<label title="${n} star${n>1?'s':''}"><input type="radio" name="rt_star" value="${n}" aria-label="${n} star${n>1?'s':''}" ${prev?.stars===n?'checked':''}><span>★</span></label>`).join('')}</div>
+      <label>How much did you enjoy it?</label><div class="rstars" role="radiogroup" aria-label="How much you enjoyed it">${[5,4,3,2,1].map(n=>`<label title="${n} star${n>1?'s':''}"><input type="radio" name="rt_star" value="${n}" aria-label="${n} star${n>1?'s':''}" ${prev?.stars===n?'checked':''}><span>★</span></label>`).join('')}</div>
       <label>Who showed up?</label>
       ${ppl.map(u=>{const v=prev?.people?.[u]||'show';return `<div class="rp">${av(u,'sm')}<button class="hlink" data-a="user" data-id="${u}">${esc(uname(u))}</button><span class="rpo"><label class="opt"><input type="radio" name="rt_${u}" value="show" ${v==='show'?'checked':''}>Came</label><label class="opt"><input type="radio" name="rt_${u}" value="noshow" ${v==='noshow'?'checked':''}>No-show</label></span></div>`}).join('')}
       <p class="small mute">Show-up rates appear on profiles so everyone can see who is reliable. Tap a name to report someone.</p>
@@ -1281,7 +1276,7 @@ function modalHtml(){
   if(m.type==='host'){
     const a=actOf(m.id);if(!a)return '';
     const reqs=S.reqs.filter(r=>r.act===a.id),pend=reqs.filter(r=>r.status==='pending'),wl=waitlist(a.id),done=reqs.filter(r=>r.status!=='pending'&&r.status!=='waitlist'),past=isPast(a);
-    const person=r=>{const p=profileOf(r.user);return `<div class="panel" style="background:var(--bg);box-shadow:none"><div class="hn">${av(r.user)}<div><button class="hlink" data-a="user" data-id="${r.user}"><strong>${esc(p.name)}</strong></button> ${vf(r.user)}<div class="mute small">${esc(p.gender)}, ${p.age}${p.job?' · '+esc(p.job):''}</div><div class="small" style="margin-top:2px">${rateTxt(r.user)} <span class="mute">· ${trustTxt(r.user)}</span></div></div></div>${signals(r.user)}<p class="small mute" style="margin:8px 0 4px">${esc(p.bio)}</p>${r.note?`<div class="dn">Note: ${esc(r.note)}</div>`:'<p class="small mute">No note attached</p>'}`;};
+    const person=r=>{const p=profileOf(r.user);return `<div class="panel" style="background:var(--bg);box-shadow:none"><div class="hn">${av(r.user)}<div><button class="hlink" data-a="user" data-id="${r.user}"><strong>${esc(p.name)}</strong></button> ${vf(r.user)}<div class="mute small">${esc(p.gender)}, ${p.age}${p.job?' · '+esc(p.job):''}</div><div class="small" style="margin-top:2px">${trustTxt(r.user)}</div></div></div>${signals(r.user)}<p class="small mute" style="margin:8px 0 4px">${esc(p.bio)}</p>${r.note?`<div class="dn">Note: ${esc(r.note)}</div>`:'<p class="small mute">No note attached</p>'}`;};
     return sheet('Manage activity',`<div class="sb"><div class="sum"><div class="thumb" style="background:${CATS[a.cat].g}">${I(CATS[a.cat].icon,26)}</div><div style="min-width:0"><div class="t">${esc(a.desc)}</div><div class="meta2" style="margin-bottom:6px"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)}</span></div>${actChip(a.status)} <span class="chip">${a.members.length}/${a.cap} accepted</span></div></div>
       <div style="height:12px"></div>
       ${a.members.length?`<button class="btn sec" data-a="chat" data-id="${a.id}">${I('message-circle',16)} Open group chat</button>`:'<p class="small mute">Chat opens when you accept the first member.</p>'}
@@ -1684,13 +1679,13 @@ const A={
   rate:d=>{ui.modal={type:'rate',id:d.id,back:ui.modal};render()},
   dorate:d=>{
     const a=actOf(d.id);if(!a)return;
-    const st=document.querySelector('input[name=rt_star]:checked');if(!st)return toast('Tap the stars to rate the meetup');
+    const st=document.querySelector('input[name=rt_star]:checked');if(!st)return toast('Tap the stars to say how much you enjoyed it');
     const ok=document.querySelector('input[name=rt_ok]:checked')?.value||'yes',people={};
     [a.host,...a.members].filter(x=>x!=='me').forEach(u=>{people[u]=document.querySelector(`input[name="rt_${u}"]:checked`)?.value||'show'});
     S.ratings[a.id]={at:now(),ok,stars:+st.value,people};
     if(ok==='no')S.reports.push({act:a.id,reason:'Check-in: something went wrong',at:now()});
     track('rating_submitted',{stars:+st.value,ok});askMicro('rating');
-    save();ui.modal=null;toast(ok==='no'?'Thanks for telling us. Our safety team will follow up with you.':'Thanks! Your rating helps keep meetups reliable.');render();
+    save();ui.modal=null;toast(ok==='no'?'Thanks for telling us. Our safety team will follow up with you.':'Thanks! Your feedback helps keep meetups good and reliable.');render();
   },
   report:d=>{ui.modal={type:'report',id:d.id,back:ui.modal};render()},
   dorep:d=>{
