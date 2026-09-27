@@ -280,8 +280,15 @@ const PLACE_LL=[
   [/kala bhawan/,[30.74676,76.77752]],
   [/piccadily/,[30.72352,76.76759]],
   [/indian coffee house/,[30.74022,76.7806]]];
+/* Areas of Chandigarh outside the numbered sectors (also looked up on OpenStreetMap). */
+const LOCALITY_LL={'Manimajra':[30.71275,76.83294],'Industrial Area Phase 1':[30.7054,76.80096],'Industrial Area Phase 2':[30.69813,76.78801],'IT Park':[30.72732,76.84352],'Daria':[30.69838,76.81428],'Dhanas':[30.769,76.75515],'Hallomajra':[30.6923,76.79997],'Kaimbwala':[30.75847,76.82606],'Khuda Lahora':[30.77582,76.77184],'Kishangarh':[30.73443,76.82821],'Maloya':[30.75315,76.71713],'Mauli Jagran':[30.69703,76.82901],'Sarangpur':[30.78087,76.7576]};
 const hoodLL=h=>SECTOR_LL[(/\d+/.exec(h||'')||[17])[0]]||SECTOR_LL[17];
-const spotOf=t=>{t=(t||'').toLowerCase();const p=PLACE_LL.find(([re])=>re.test(t));if(p)return p[1];const s=/sector[\s-]*(\d{1,2})\b/.exec(t);return s&&SECTOR_LL[+s[1]]};
+/* A venue's spot: a landmark it names, else the sector it names, else the area it names. */
+const spotOf=t=>{t=(t||'').toLowerCase();const p=PLACE_LL.find(([re])=>re.test(t));if(p)return p[1];
+  const s=/sector[\s-]*(\d{1,2})\b/.exec(t);if(s&&SECTOR_LL[+s[1]])return SECTOR_LL[+s[1]];
+  const l=Object.keys(LOCALITY_LL).find(n=>t.includes(n.toLowerCase()));return l&&LOCALITY_LL[l]};
+/* ", Sector 26" or ", Manimajra" at the end of a venue: what picking an area adds (and replaces when you pick another). */
+const AREA_TAIL=new RegExp(',\\s*(sector\\s*\\d{1,2}|'+Object.keys(LOCALITY_LL).join('|')+')\\s*$','i');
 function geo(a){
   const exact=PLACE_AT[(a.venue||'').trim().toLowerCase()],base=exact||spotOf(a.venue)||spotOf(a.desc)||hoodLL(a.hood);
   /* plans at the same spot are spread out a little (up to about 270 m, or 45 m at a known place) so their pins don't hide each other */
@@ -318,9 +325,20 @@ function venueList(show){
   const inp=document.getElementById('f_venue'),box=document.getElementById('f_vlist');if(!inp||!box)return;
   const q=inp.value.trim(),list=show&&q.length>=2?findPlaces(q):[];
   if(show&&q.length>=2&&!PLACES)loadPlaces().then(()=>{if(document.activeElement===inp)venueList(true)});
-  vPick=-1;box.hidden=!list.length;inp.setAttribute('aria-expanded',String(!!list.length));inp.removeAttribute('aria-activedescendant');
-  box.innerHTML=list.map((p,i)=>`<button type="button" class="vopt" role="option" id="f_vo${i}" aria-selected="false" data-a="pickvenue" data-v="${esc(p.label)}"><b>${esc(p.label)}</b><span>${esc(p.kind)} · ${kmBetween(hoodLL(S.me.hood),p.ll).toFixed(1)} km from ${esc(S.me.hood)}</span></button>`).join('');
+  /* last option: the venue as typed. If it already names a place or area the map knows, it's used as it is; if not, you pick its area. */
+  const n=list.length,exact=list.some(p=>p.label.toLowerCase()===q.toLowerCase()),known=PLACE_AT[q.toLowerCase()]||spotOf(q);
+  const other=!show||q.length<2||exact?'':known
+    ?`<button type="button" class="vopt vother" role="option" id="f_vo${n}" aria-selected="false" data-a="pickvenue" data-v="${esc(q)}"><b>Use “${esc(q)}”</b><span>As typed. It shows on the map in that area.</span></button>`
+    :`<button type="button" class="vopt vother" role="option" id="f_vo${n}" aria-selected="false" data-a="venueother"><b>Not listed? Use “${esc(q)}”</b><span>Then pick its area, so it shows on the map</span></button>`;
+  vPick=-1;box.hidden=!n&&!other;inp.setAttribute('aria-expanded',String(!box.hidden));inp.removeAttribute('aria-activedescendant');
+  box.innerHTML=list.map((p,i)=>`<button type="button" class="vopt" role="option" id="f_vo${i}" aria-selected="false" data-a="pickvenue" data-v="${esc(p.label)}"><b>${esc(p.label)}</b><span>${esc(p.kind)} · ${kmBetween(hoodLL(S.me.hood),p.ll).toFixed(1)} km from ${esc(S.me.hood)}</span></button>`).join('')+other;
 }
+/* The area picker, shown after "Not listed?" (or when a venue can't be placed on the map). */
+const areaPicker=()=>`<div class="varea"><label for="f_area">Which area is it in?</label><select id="f_area"><option value="">Pick an area…</option>
+  <optgroup label="Sectors">${Object.keys(SECTOR_LL).map(n=>`<option>Sector ${n}</option>`).join('')}</optgroup>
+  <optgroup label="Other areas">${Object.keys(LOCALITY_LL).map(n=>`<option>${esc(n)}</option>`).join('')}</optgroup></select>
+  <p class="small mute" style="margin-top:6px">The pin goes in the middle of that area, so people can see roughly where it is.</p></div>`;
+function askArea(){if(ui.modal?.type!=='post')return;ui.modal.other=true;venueList(false);redraw();document.getElementById('f_area')?.focus()}
 /* Arrow keys move through the suggestions, Enter picks one, Escape closes them (and not the whole form). */
 function venueKey(e){
   const box=document.getElementById('f_vlist'),opts=box&&!box.hidden?[...box.children]:[];
@@ -702,7 +720,7 @@ let mapList=[],mapView=null,liveMap=null,leafletP=null;
 function mapHtml(list){
   mapList=list;
   return `<div id="lmap" class="map" role="region" aria-label="Map of plans near you"></div>
-  <p class="small mute" style="margin-top:8px">The blue dot is the centre of ${esc(S.me.hood)}, Chandigarh. A pin is at the place when the host picked it from the list, otherwise in the area of the sector the venue names.</p>`;
+  <p class="small mute" style="margin-top:8px">The blue dot is the centre of ${esc(S.me.hood)}, Chandigarh. A pin is at the place when the host picked it from the list, otherwise in the middle of the area the venue is in.</p>`;
 }
 function loadLeaflet(){
   if(window.L)return Promise.resolve();
@@ -832,7 +850,8 @@ function modalHtml(){
       <label class="chk"><input type="checkbox" id="f_all" ${aud==='everyone'?'checked':''}> Everyone</label>
       ${GENDERS.map(g=>`<label class="chk"><input type="checkbox" class="f_g" value="${g}" ${aud!=='everyone'&&aud.includes(g)?'checked':''}> ${g}</label>`).join('')}
       <label for="f_venue">Venue</label><div class="vbox"><input id="f_venue" maxlength="120" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="f_vlist" placeholder="Search a place, e.g. Indian Coffee House" value="${src?esc(src.venue):''}"><div id="f_vlist" class="vlist" role="listbox" aria-label="Places in Chandigarh" hidden></div></div>
-      <p class="small mute" style="margin-top:6px">Pick a Chandigarh place from the list, or type any venue with its sector, e.g. "Café Nirvana, Sector 26".</p>
+      <p class="small mute" style="margin-top:6px">Pick a Chandigarh place from the list. Not listed? Type its name, choose “Not listed”, then pick its area.</p>
+      ${m.other?areaPicker():''}
       <label>How will costs work? (informational only)</label><select id="f_cost">${Object.entries(COST).map(([k,v])=>`<option value="${k}" ${src&&src.cost===k?'selected':''}>${v}</option>`).join('')}</select>
       <label for="f_total">Estimated total cost <span class="mute" style="font-weight:400">(₹, optional)</span></label><input id="f_total" type="number" min="0" max="1000000" step="50" inputmode="numeric" placeholder="e.g. 1200" value="${src?.total||''}">
       <p class="small mute" style="margin-top:6px">We show each person's rough share. Payments stay between you.</p>
@@ -1431,6 +1450,7 @@ const A={
     const a=actOf(d.id);if(!a)return toast('That activity is no longer available');
     ui.modal={type:a.host==='me'?'host':'detail',id:a.id};render();
   },
+  venueother:()=>askArea(),
   pickvenue:d=>{const i=document.getElementById('f_venue');if(i){i.value=d.v;i.focus()}venueList(false);track('venue_picked')},
   /* hosting */
   newpost:()=>gate(()=>{ui.modal={type:'post'};render()}),
@@ -1440,6 +1460,7 @@ const A={
     const all=document.getElementById('f_all').checked,gs=[...document.querySelectorAll('.f_g:checked')].map(x=>x.value);
     const ed=ui.modal?.id&&actOf(ui.modal.id),cap=+val('f_cap'),rep=val('f_rep');
     if(!desc||!venue)return toast('Add a description and a venue');
+    if(!PLACE_AT[venue.toLowerCase()]&&!spotOf(venue)){askArea();return toast('Pick which area the venue is in, so it shows on the map')}
     if(!(when>now()))return toast('Pick a future date and time');
     if(!all&&!gs.length)return toast('Choose Everyone or at least one identity');
     const tot=Math.max(0,Math.min(1e6,Math.round(+val('f_total')||0)));
@@ -1626,6 +1647,7 @@ document.addEventListener('change',e=>{
     render();
   }
   if(e.target.id==='p_photo'){const f=e.target.files[0];e.target.value='';openCropper(f)}
+  if(e.target.id==='f_area'&&e.target.value){const i=document.getElementById('f_venue');if(i){const nm=i.value.replace(AREA_TAIL,'').trim();i.value=((nm?nm+', ':'')+e.target.value).slice(0,120)}}
 });
 document.addEventListener('keydown',e=>{
   if(e.target.id==='f_venue'&&venueKey(e))return;
