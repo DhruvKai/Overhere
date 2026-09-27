@@ -354,9 +354,12 @@ function notify(text,o={}){
 /* visible: listed in Discover (full ones too, for the waitlist). eligible: can be requested right now. */
 function visible(a){return (a.status==='open'||a.status==='full')&&a.host!=='me'&&a.hood===S.me.hood&&audOK(a)&&!isBlocked(a.host)&&a.when>now()}
 function eligible(a){return visible(a)&&a.status==='open'&&spots(a)>0&&!S.dismissed.includes(a.id)}
-const deck=()=>S.acts.filter(a=>eligible(a)&&!myReq(a.id)&&a.when<=now()+SWIPE_WINDOW).sort((a,b)=>a.when-b.when);
-/* Plans that declined you drop out of Discover; they stay in Requests (where you can still share them). */
-const feed=()=>S.acts.filter(a=>visible(a)&&a.when>now()+SWIPE_WINDOW&&!myReq(a.id)).sort((a,b)=>a.when-b.when);
+/* Real people's plans come before the sample hosts' ones, so a new post isn't buried behind them. */
+const isSample=id=>!!USERS[id]?.sample;
+const deck=()=>S.acts.filter(a=>eligible(a)&&!myReq(a.id)&&a.when<=now()+SWIPE_WINDOW).sort((a,b)=>isSample(a.host)-isSample(b.host)||a.when-b.when);
+/* Discover lists every upcoming plan, including the next 36 hours that Swipe shows.
+   Plans that declined you drop out of Discover; they stay in Requests (where you can still share them). */
+const feed=()=>S.acts.filter(a=>visible(a)&&!myReq(a.id)).sort((a,b)=>a.when-b.when);
 
 /* ---------- talking to the database ---------- */
 async function call(fn,args={},quiet){
@@ -590,7 +593,7 @@ function tabDiscover(){
   if(f.sort==='for')list.sort((a,b)=>score(b)-score(a)||a.when-b.when);
   else if(f.sort==='near')list.sort((a,b)=>geo(a).d-geo(b).d||a.when-b.when);
   const alertable=act.some(([k])=>k!=='date'),saved=S.alerts.some(x=>x.label===alertLabel(f));
-  return `<div class="hd"><div><h1 class="pt">Plan ahead</h1><p class="sub">Activities more than 36 hours away · ${all.length} upcoming in ${esc(S.me.hood)}</p></div><button class="btn sm mobonly" data-a="newpost">${I('plus',15)} Post</button></div>
+  return `<div class="hd"><div><h1 class="pt">All upcoming plans</h1><p class="sub">${all.length} upcoming in ${esc(S.me.hood)}, from tonight onwards</p></div><button class="btn sm mobonly" data-a="newpost">${I('plus',15)} Post</button></div>
   ${lockedNote()}${S.alerts.length?`<div class="alerts"><span class="small mute" style="display:inline-flex;align-items:center;gap:4px">${I('bell',13)} Your alerts</span>${S.alerts.map(al=>`<span class="alchip">${esc(al.label)}<button data-a="rmalert" data-id="${al.id}" aria-label="Remove alert ${esc(al.label)}">${I('x',12)}</button></span>`).join('')}</div>`:''}
   <div class="dtools"><button class="fbtn ${act.length?'on':''}" data-a="filters" aria-haspopup="dialog">${I('filter',14)} Filters${act.length?`<b aria-label="${act.length} active">${act.length}</b>`:''}</button>
   <button class="fbtn" data-a="sortmenu" aria-haspopup="dialog" aria-label="Sort by ${SORTS[f.sort][1]}">${I('arrow-up-down',14)} Sort: ${SORTS[f.sort][1]}</button>
