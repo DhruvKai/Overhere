@@ -1243,7 +1243,7 @@ function render(){
   const T=(k,ic,l)=>`<button class="${ui.tab===k?'on':''}" data-a="tab" data-t="${k}">${I(ic,20)}${l}</button>`;
   scr.innerHTML=`<header><div class="hb"><div class="logo"><span class="dots"><i></i><i></i></span>Overhere</div>
   <div class="tnav">${TT('swipe','Swipe')}${TT('discover','Discover')}<button class="btn sm" data-a="newpost">${I('plus',15)} Create Activity</button>${TT('acts','Activities'+(pend?` (${pend})`:''))}${TT('reqs','Requests')}</div>
-  <div class="hr"><button class="ib${ui.tab==='notes'?' on':''}" data-a="bell" title="Notifications" aria-label="Notifications" aria-pressed="${ui.tab==='notes'}">${I('bell',19)}${unread?'<span class="dot"></span>':''}</button>${window.parent!==window?`<button class="ib" data-a="fb" title="Leave feedback">${I('message-circle',19)}</button>`:''}<button class="ib${ui.tab==='profile'?' on':''}" data-a="tab" data-t="profile" title="Your profile" aria-label="Your profile">${av('me')}</button></div></div></header>
+  <div class="hr"><button class="ib${ui.tab==='notes'?' on':''}" data-a="bell" title="Notifications" aria-label="Notifications" aria-pressed="${ui.tab==='notes'}">${I('bell',19)}${unread?'<span class="dot"></span>':''}</button><button class="ib" data-a="fb" title="Leave feedback" aria-label="Leave feedback">${I('message-circle',19)}</button><button class="ib${ui.tab==='profile'?' on':''}" data-a="tab" data-t="profile" title="Your profile" aria-label="Your profile">${av('me')}</button></div></div></header>
   <main><div class="${ui.tab==='discover'?'wrap':'narrow'}">${view}</div></main>
   <nav>${T('swipe','flame','Swipe')}${T('discover','compass','Discover')}${T('acts','calendar-check','Activities'+(pend?` (${pend})`:''))}${T('reqs','mail','Requests')}</nav>${microHtml()}${modalHtml()}`;
   restore();afterRender();
@@ -1301,7 +1301,8 @@ const A={
     if(un.length){un.forEach(n=>n.read=true);call('read_notifications',{p_ids:null},true).catch(()=>{})}
     ui.tab='notes';ui.modal=null;render();
   },
-  fb:()=>{try{window.parent.postMessage('overhere-feedback',location.origin)}catch(e){}},
+  /* Inside the landing page, it switches that page to its feedback form; in full screen, it opens the form (which links back here). */
+  fb:()=>{if(window.parent!==window){try{window.parent.postMessage('overhere-feedback',location.origin)}catch(e){}}else location.href='index.html#feedback'},
   scan:()=>scan(),
   retry:()=>{ui.err='';render();refresh()},
   /* sign in */

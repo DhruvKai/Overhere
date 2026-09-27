@@ -31,6 +31,7 @@ const localBanner=()=>REMOTE?'':'<div class="note">Backend not connected yet: su
 
 /* ---------- views ---------- */
 let view='home';
+const fromApp=location.hash==='#feedback';   // opened from the full-screen app's feedback button
 function nav(v){
   view=v;
   $('#t_try').classList.toggle('on',v==='try');$('#t_fb').classList.toggle('on',v==='feedback');
@@ -60,7 +61,7 @@ function tryView(){
   <p style="text-align:center;margin-top:16px"><button class="btn" data-go="feedback">I have tried it, leave feedback</button></p>`;
 }
 function feedback(){
-  return localBanner()+`<div class="panel"><h2>Tell us what you think</h2><p class="mute small">Honest is best. Nothing here is required except the consent box.</p>
+  return localBanner()+`${fromApp?'<p class="small"><a href="demo.html" style="color:var(--acch);font-weight:600">← Back to the app</a></p>':''}<div class="panel"><h2>Tell us what you think</h2><p class="mute small">Honest is best. Nothing here is required except the consent box.</p>
   <form id="f">
   <label>Overall, how was it?</label><div class="stars" id="stars">${[1,2,3,4,5].map(n=>`<button type="button" data-n="${n}" aria-label="${n} stars">★</button>`).join('')}</div>
   <label for="liked">What did you like?</label><textarea id="liked" maxlength="1000"></textarea>
@@ -76,7 +77,7 @@ function feedback(){
 }
 function thanks(){
   return `<div class="panel" style="text-align:center"><div style="font-size:48px">🙏</div><h2>Thank you!</h2><p class="mute">Your response has been saved. You can keep trying the platform any time.</p>
-  <button class="btn" data-go="try">Back to the platform</button></div>`;
+  ${fromApp?'<a class="btn" href="demo.html" style="display:inline-block;text-decoration:none">Back to the app</a>':'<button class="btn" data-go="try">Back to the platform</button>'}</div>`;
 }
 
 /* ---------- behavior ---------- */
@@ -104,5 +105,5 @@ window.addEventListener('message',e=>{if(e.origin===location.origin&&e.data==='o
 $('#logo').onclick=()=>nav('home');
 $('#t_try').onclick=()=>nav('try');
 $('#t_fb').onclick=()=>nav('feedback');
-nav(location.hash==='#admin'?'admin':'home');   // demo accounts: no tab, opened from /addmin
+nav(location.hash==='#admin'?'admin':fromApp?'feedback':'home');   // demo accounts: no tab, opened from /addmin
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
