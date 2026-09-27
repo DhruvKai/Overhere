@@ -1,5 +1,8 @@
 # Face scan and ID check (KYC) in India: plan
 
+**Status:** the checks run in **simulated** mode (anyone passes). The code for the real face scan (AWS Face
+Liveness) is written and tested to build; it is switched on by following "Connecting the face scan" below.
+
 Researched September 2026. Prices change often, so re-check them before signing up. US$ amounts are converted
 at about ₹88. Indian KYC vendors don't publish rate cards, so their figures below are **estimates to confirm with
 a quote**.
@@ -90,44 +93,78 @@ Per user who completes both tiers (options A + A):
 At 1,000 new users a month, with every one scanning and ~40% reaching KYC: about ₹1,700 + ₹2,000 ≈ **₹3,700/month**,
 plus any vendor minimum commitment.
 
-## How to build it
+## What is built already
 
-### 1. Accounts and contracts (you)
-- Register the business if not done, and draft the privacy policy + consent text (have a lawyer review it).
-- Create an AWS account; create an IAM user limited to Rekognition; pick the region.
-- Get quotes from 2–3 DigiLocker vendors (Setu, Cashfree, Surepass). Ask about: startup pricing, minimum
-  commitment, gender in the response, data retention, and whether they need you to be an OVSE.
+| Piece | Status | Where |
+|---|---|---|
+| `verifications` table: one row per attempt, only the outcome (no images, no ID numbers) | Built | `schema-app.sql` |
+| Only the server can mark a check as passed; the browser can't | Built | `schema-app.sql` (`_verify_record`) |
+| 5 failures in a row → human review; reviewer approves or asks to retry | Built | `schema-app.sql`, `/addmin` "Needs human review" |
+| Face check before browsing; ID check before posting or requesting (checked by the database too) | Built | `schema-app.sql`, `app.js` |
+| Women-only (and other audience-limited) plans only shown after the ID check; gender and date of birth locked after it | Built | `schema-app.sql` (`_eligible`, `save_profile`) |
+| Consent recorded with every attempt | Built | `verifications.detail` |
+| **Simulated** checks while no provider is connected | Built, on now | `app_config`: `face_check`, `id_check` = `simulated` |
+| **Real face scan (AWS Face Liveness)**: Edge Functions and camera widget | Built, switched off | `supabase/functions/face-start`, `face-result`, `face-widget/` |
+| Real ID check (DigiLocker via a vendor) | Not built: depends on the vendor you choose | |
 
-### 2. Database (Claude)
-A `verifications` table: one row per attempt.
-- Columns: `user_id`, `tier` (`face`/`kyc`), `status` (`passed`/`failed`/`review`), `provider`, `score`, `created_at`.
-- For KYC only: `id_gender`, `dob_verified`, `masked_id`.
-- **No images, no full ID numbers.** Selfies stay in the provider or in a private Supabase storage bucket that is
-  deleted automatically after KYC or 30 days, whichever is sooner.
-- `participants` gets `face_verified_at`, `kyc_verified_at` and `needs_review`.
-- Policies: users can read their own rows. **Only Edge Functions (service role) can write them**, so a user can't mark
-  themself verified from the browser.
-- After the 5th failure in a tier, set `needs_review` and list the account on the `/addmin` page.
+## Connecting the face scan (the code is ready)
 
-### 3. Edge Functions (Claude)
-- `face-start`: creates an AWS liveness session; `face-result`: reads the result, saves it, keeps the reference image.
-- `kyc-start`: opens the vendor's DigiLocker flow; `kyc-callback`: receives the vendor's result, then:
-  - checks age 18+;
-  - compares the ID photo with the reference selfie (CompareFaces);
-  - compares the ID gender with the profile gender (mismatch → human review, never auto-reject);
-  - stores only the result.
-- API keys live in Supabase secrets.
+How it works once switched on:
 
-### 4. Page (Claude)
-- Face scan screen after OTP: short explanation, consent checkbox, camera permission, the liveness widget, a retry
-  count, and a "we'll review it" message after 5 failures.
-- The existing demo "Verify ID" step (`openVerify('kyc', …)`) becomes the real DigiLocker flow.
-- Browsing requires `face_verified_at`. Posting and requesting require `kyc_verified_at`. Enforce both in database
-  policies too, not just in the page.
+1. The app calls the Edge Function **face-start**. It checks the person's attempt limits first, creates an AWS
+   liveness session, records that this person started it, and hands the browser **15-minute AWS credentials that
+   can only stream video to a liveness session**.
+2. The camera widget (`face-widget.js`) films a few seconds. The video goes **straight to AWS**, never to Overhere.
+3. The app calls **face-result**. It asks AWS for the verdict and records pass or fail. The session must belong to
+   that person, be under 30 minutes old and not used before.
 
-### 5. Human review (Claude builds it, you do it)
-A queue in `/addmin`: account, which tier failed, attempt count, reason (e.g. gender mismatch), and
-Approve / Reject buttons.
+### Steps (you, about an hour)
+
+1. **AWS account** at aws.amazon.com. Pick a region where Face Liveness is available (check AWS's list; Mumbai,
+   `ap-south-1`, if it is there, otherwise the closest). Use the same region everywhere below.
+2. **IAM → Policies → Create policy** (JSON), name it `OverhereLivenessServer`:
+   ```json
+   {"Version":"2012-10-17","Statement":[
+     {"Effect":"Allow","Action":["rekognition:CreateFaceLivenessSession","rekognition:GetFaceLivenessSessionResults"],"Resource":"*"},
+     {"Effect":"Allow","Action":"sts:AssumeRole","Resource":"arn:aws:iam::<your account id>:role/OverhereLivenessBrowser"}]}
+   ```
+3. **IAM → Users → Create user** `overhere-server`, attach that policy, then **Security credentials → Create access key**
+   ("Application running outside AWS"). Copy the key id and secret.
+4. **IAM → Roles → Create role** `OverhereLivenessBrowser`, "Custom trust policy":
+   ```json
+   {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::<your account id>:user/overhere-server"},"Action":"sts:AssumeRole"}]}
+   ```
+   Permissions: an inline policy allowing only `rekognition:StartFaceLivenessSession` on `*`.
+5. **Deploy the Edge Functions** from this folder, on a computer with Node.js:
+   ```
+   npx supabase login
+   npx supabase link --project-ref ctkfyxwtssmmeelslrig
+   npx supabase secrets set AWS_REGION=ap-south-1 AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... \
+       AWS_LIVENESS_ROLE_ARN=arn:aws:iam::<account id>:role/OverhereLivenessBrowser \
+       ALLOWED_ORIGINS=https://dhruvkai.github.io FACE_MIN_CONFIDENCE=80
+   npx supabase functions deploy face-start
+   npx supabase functions deploy face-result
+   ```
+   `ALLOWED_ORIGINS` is your site's address without a path (add `,http://localhost:8000` for local testing).
+   Supabase provides `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` itself. If your project
+   only has the newer `sb_secret_…` keys, also set `SUPABASE_SERVICE_ROLE_KEY` to that secret key.
+6. **Build the camera widget** (see [face-widget/README.md](face-widget/README.md)) and publish `face-widget.js` and
+   `face-widget.css` with the site.
+7. **Switch it on** in the SQL Editor:
+   ```sql
+   update app_config set v = 'live' where k = 'face_check';
+   ```
+   Try it with your own face, then a photo of a face on a phone screen (should fail). To switch back:
+   `update app_config set v = 'simulated' where k = 'face_check';`
+
+Never put the AWS secret or the Supabase service-role key in the website files: they live only in Supabase secrets.
+
+## Still to build: the real ID check
+
+Same pattern as the face check, once you have picked a DigiLocker vendor: a `kyc-start` Edge Function that opens
+the vendor's flow, and a `kyc-callback` that receives the vendor's result, checks age 18+, compares the ID photo
+with the face scan, compares the ID gender with the profile (a mismatch goes to human review, never an automatic
+rejection), and records the outcome through `verify_finish_service`. Then set `id_check` to `live`.
 
 ## Testing
 - AWS and most vendors have sandbox or test modes. Use them until the consent text is final.
@@ -140,8 +177,10 @@ Approve / Reject buttons.
 | Step | Who |
 |---|---|
 | Business registration, privacy policy, lawyer review | You |
-| AWS account, vendor quotes and contract | You |
-| Database, Edge Functions, page screens, review queue | Claude |
+| AWS account and IAM setup, deploying the Edge Functions, building the widget (steps above) | You |
+| Database, face-check Edge Functions, widget, page screens, review queue | Done |
+| DigiLocker vendor quotes and contract | You |
+| Real ID check code, once the vendor is chosen | Claude |
 | Human review of flagged accounts | You |
 
 ## Sources

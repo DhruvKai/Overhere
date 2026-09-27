@@ -1,33 +1,39 @@
 # Overhere beta site
 
-Static site: sign-up -> try the sample app -> feedback. No build step, no OTP, no face scan.
+Static site on GitHub Pages, with all data in Supabase. No build step.
 
-## Run locally
-Open `index.html` in a browser. Until Supabase is connected, submissions are saved in that
-browser only (the page shows a banner with a "Download saved data" link).
+- `index.html` + `site.js`: the front page (what Overhere is, try the app, leave feedback).
+- `demo.html` + `app.js`: the app itself. People make an account, a profile, pass the face check, then post plans,
+  ask to join other people's, chat, and rate meetups. Everyone shares the same plans.
+- `addmin/`: the beta dashboard (totals, charts, quotes, and the human-review queue), behind a password checked by
+  the database.
+- `head.js`: runs first on every page (frame guard, theme). `sw.js`: offline support and installing as an app.
+- `schema.sql`: sign-ups, feedback, usage events, dashboard. `schema-app.sql`: accounts, plans, requests, chats,
+  notifications, checks.
+- `supabase/functions/` and `face-widget/`: the real face scan (AWS Face Liveness), switched off until connected.
 
-## Connect Supabase (free tier)
-1. Create a project at supabase.com.
-2. SQL Editor -> paste `schema.sql` -> Run. (Visitors can insert only; nobody can read via the public API.)
-3. Project Settings -> API: copy the Project URL and the `anon` public key into `config.js`,
-   and set `CONTACT_EMAIL` (shown in the consent text for deletion requests).
-4. View and export responses in Table Editor -> `participants` and `feedback`.
+## Set up
 
-## Usage events and the beta dashboard
-The sample app records which features testers use (taps like "sent a request", never message text) in an
-`events` table, and `addmin/index.html` (the `/addmin` URL) shows totals, charts and consented quotes.
-1. Supabase -> SQL Editor -> paste the part of `schema.sql` under "Added later" -> Run.
-2. Set the dashboard password (10+ characters): `insert into admin_secret (pass) values ('your-long-password');`
-3. Open `/addmin` on your site (not linked from the public pages) and enter that password. It is checked by the
-   database, not stored in the page.
-Until step 1 is done the app still works; it just can't save events.
+1. Supabase: follow [GO-LIVE-GUIDE.md](GO-LIVE-GUIDE.md) for `schema.sql` and `config.js`, then
+   [SETUP-APP.md](SETUP-APP.md) for `schema-app.sql`, sign-in settings and the demo accounts.
+2. Dashboard password (10+ characters, 16+ recommended): `insert into admin_secret (pass) values ('your-long-password');`
+3. Publish all the files together on GitHub Pages (or any static host).
 
-## Publish
-Follow GO-LIVE-GUIDE.md (step by step, written for beginners). Short version: upload to any static host (GitHub Pages, Netlify, Cloudflare Pages). Keep
-all the files together (`index.html`, `demo.html`, the `addmin` folder, `config.js`, `sw.js`, `manifest.webmanifest` and the icons).
+The app needs the published https site: opened as a file, it only shows a note. For local testing, run
+`python -m http.server 8000` in this folder and add `http://localhost:8000/**` to Supabase's Redirect URLs.
+
+## Plans and guides
+
+- [SETUP-APP.md](SETUP-APP.md): switching the app to Supabase, day-to-day use
+- [SECURITY.md](SECURITY.md): how data is protected, the security review, known limits
+- [auth.md](auth.md): Google sign-in
+- [otp.md](otp.md): phone OTP in India
+- [face-scan.md](face-scan.md): face scan and ID check in India, and connecting the real face scan
 
 ## Consent
-- Sign-up: one required box (store details, contact about the beta, 18+, deletion on request).
+
+- Profile (in the app): one required box (store details, contact about the beta, 18+, deletion on request),
+  saved with its version and time.
+- Face and ID checks: their own box, saved with each attempt.
 - Feedback: required "store feedback", optional "quote anonymously", optional "contact me".
-- Each row stores which consent text version was accepted (`consent_version`).
-- Have someone review the consent wording against local privacy law before real users see it.
+- Have someone review the consent wording against Indian privacy law (DPDP) before real users see it.

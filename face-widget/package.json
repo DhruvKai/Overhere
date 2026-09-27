@@ -1,0 +1,18 @@
+{
+  "name": "overhere-face-widget",
+  "private": true,
+  "description": "Camera widget for the live face check. Builds ../face-widget.js and ../face-widget.css.",
+  "scripts": {
+    "build": "esbuild src/index.jsx --bundle --minify --format=iife --target=es2020 --loader:.js=jsx --jsx=automatic --define:process.env.NODE_ENV=\\\"production\\\" --define:global=window --outfile=../face-widget.js"
+  },
+  "dependencies": {
+    "@aws-amplify/ui-react": "^6",
+    "@aws-amplify/ui-react-liveness": "^3",
+    "aws-amplify": "^6",
+    "react": "^18",
+    "react-dom": "^18"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24"
+  }
+}

@@ -5,4 +5,5 @@ window.APP_CONFIG = {
   SUPABASE_URL: "https://ctkfyxwtssmmeelslrig.supabase.co/rest/v1/",
   SUPABASE_ANON_KEY: "sb_publishable_1XecJ_qlquD514OVKF_GNQ_QGYaPX-8",
   CONTACT_EMAIL: "kaithdhruv@gmail.com", // where people email to request deletion, shown in the consent text
+  PHONE_LOGIN: false, // true shows "Continue with phone" on the sign-in screen. Only after SMS is set up (SETUP-APP.md)
 };

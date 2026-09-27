@@ -14,6 +14,7 @@
 | **GitHub Pages** | A free GitHub feature that turns those files into a public website | Gives you the link to share |
 
 You will do three things: (A) set up Supabase, (B) connect it to the site, (C) publish the site.
+Then follow [SETUP-APP.md](SETUP-APP.md) to switch on accounts and shared plans in the app.
 
 ---
 
@@ -97,11 +98,13 @@ The files are at **https://github.com/DhruvKai/Overhere**. You should see `index
 
 ## Part D. Test it yourself (important, do not skip)
 
+Do [SETUP-APP.md](SETUP-APP.md) first: the app needs it.
+
 1. Open your live link. Click **Join the beta**.
-2. Fill the form with **your own real details**, tick consent, and submit.
-3. The sample app should appear. Click around, then click **I have tried it, leave feedback** and send a rating with consent ticked.
-4. Go to Supabase, **Table Editor**, and click **participants**. Your row should be there. Then click **feedback**. Your rating should be there.
-5. Delete your test rows: click the row's checkbox, then **Delete**.
+2. In the app, create an account with **your own email**, confirm it, and fill in your profile.
+3. Click around, then click **I have tried it, leave feedback** and send a rating with consent ticked.
+4. Go to Supabase, **Table Editor**, and click **profiles**. Your row should be there. Then click **feedback**. Your rating should be there.
+5. Delete your test account: **Authentication → Users**, your email, **Delete user**. Delete your feedback row in **feedback**.
 
 If the yellow banner "Backend not connected yet" still shows on the sign-up page, `config.js` was not saved correctly. Re-check Part B and hard-refresh the page (Ctrl+Shift+R).
 
@@ -134,4 +137,4 @@ If the yellow banner "Backend not connected yet" still shows on the sign-up page
 | "Could not save (401)" or "(403)" | Wrong key, or `schema.sql` was not run. Redo A3 and A4. |
 | "Could not save (404)" | Project URL is wrong. Copy it again in A4. It must start with `https://` and end with `.supabase.co`. |
 | Site shows old content after an edit | Wait 1 to 2 minutes, then hard-refresh with Ctrl+Shift+R. |
-| Sample app is blank inside the page | `demo.html` is missing from the repository. It must be next to `index.html`. |
+| Sample app is blank inside the page | `demo.html` or `app.js` is missing from the repository. They must be next to `index.html`. |
