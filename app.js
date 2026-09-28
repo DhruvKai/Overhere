@@ -505,6 +505,7 @@ async function edge(name,body){
 function friendly(e){
   const m=String(e?.message||e||'');
   if(/Failed to fetch|NetworkError|Load failed/i.test(m))return "Can't reach Overhere. Check your connection and try again.";
+  if(/captcha/i.test(m))return "The security check didn't go through. Please try again in a minute.";
   if(/JWT|sign in again|not signed|refresh token/i.test(m))return 'Please sign in again.';
   if(/phone (signups|provider|logins?) .*disabled|unsupported phone provider/i.test(m))return "Phone sign-in isn't switched on yet. Please use Google or email for now.";
   /* sending errors first: Supabase's "Error sending confirmation OTP to provider: Invalid ..." would otherwise read as a wrong code */
