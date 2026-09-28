@@ -73,8 +73,9 @@ const CATS={
   concerts:{label:'Concerts',icon:'music',fg:'#DB2777',bg:'#FCE7F3',g:'radial-gradient(70% 55% at 30% 25%,rgba(244,114,182,.6),transparent 60%),radial-gradient(60% 50% at 80% 80%,rgba(250,204,21,.35),transparent 60%),linear-gradient(160deg,#4a0d2e,#1a0a1f)'}
 };
 const COST={split:'Split equally',own:'Everyone pays their own way',host:'Host is covering everyone'};
-const COST_S={split:'Equal Split',own:'Everyone Pays',host:'Host Pays'};
-const SWIPE_WINDOW=36*3600e3;
+const COST_S={split:'Equal Split',own:'Go Dutch',host:'Host Pays'};
+/* Swipe shows today and tomorrow; Discover starts the day after, so the two never show the same plan. */
+const swipeEnd=()=>{const d=new Date(now());d.setHours(0,0,0,0);d.setDate(d.getDate()+2);return d.getTime()};
 
 /* ---------- plan photos ---------- */
 /* Real, freely licensed photos from Wikimedia Commons, stored in img/plans (credits.html names each one).
@@ -111,7 +112,7 @@ const CAT_INT={movies:'Movies',cafe:'Cafe / Food',concerts:'Concerts'};
 const CHAT_REASONS=['Harassment or threats','Sexual or unwanted messages','Spam or scam','Hate speech','Something else'];
 const MICRO={swipe:'Was swiping an easy way to find plans?',request:'How easy was it to ask to join?',post:'How easy was posting your plan?',rating:'Was rating the meetup quick enough?'};
 const REPORT_REASONS=['Made me feel unsafe','Inappropriate messages or behaviour','Fake profile or scam',"Didn't show up",'Something else'];
-const REPEAT={weekly:'Every week',biweekly:'Every 2 weeks'};
+const REPEAT={weekly:'Every week',biweekly:'Every 2 weeks',monthly:'Every month'};
 const NK={req:{ic:'user-check',bg:'#E7F0E1',fg:'#336842'},update:{ic:'layers',bg:'#DBEAFE',fg:'#1D4ED8'},remind:{ic:'calendar',bg:'#FEF3C7',fg:'#A16207'}};
 
 /* ---------- state ---------- */
@@ -122,14 +123,14 @@ const SB_URL=(CFG.SUPABASE_URL||'').replace(/\/+$/,'').replace(/\/rest\/v1$/,'')
 const ONLINE=!!(SB_URL&&CFG.SUPABASE_ANON_KEY&&/^https?:$/.test(location.protocol)&&window.supabase);
 const SB=ONLINE?window.supabase.createClient(SB_URL,CFG.SUPABASE_ANON_KEY):null;
 const EVERYONE='00000000-0000-0000-0000-000000000000';
-let ME=null,MODE={face:'simulated',kyc:'simulated'},VER={face:{fails:0,attempts:0,max:5,review:false},kyc:{fails:0,attempts:0,max:5,review:false}},skew=0,loaded=false,DRAFT=null,LOCKED=0;
+let ME=null,MYPHONE='',MODE={face:'simulated',kyc:'simulated'},VER={face:{fails:0,attempts:0,max:5,review:false},kyc:{fails:0,attempts:0,max:5,review:false}},skew=0,loaded=false,DRAFT=null,LOCKED=0;
 const isUuid=x=>typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(x);
 /* Your private settings, saved to your account. ACT_FLAGS remember which reminders an activity already gave you. */
 const PRIV=['dismissed','following','alerts','muted','tips','asked','actf','seenPost'];
 const ACT_FLAGS=['arrive','arriveAt','arriveNag','reminded','remind24','checkin'];
 const blank=()=>({me:null,acts:[],reqs:[],chats:{},notes:[],ratings:{},blocked:[],reported:{},dismissed:[],following:[],alerts:[],muted:{},tips:{},asked:{},actf:{},seenPost:0});
 let S=blank();
-const freshF=()=>({cat:'all',dfrom:'',dto:'',tod:'any',ver:false,amin:18,amax:99,dist:0,sort:'for',view:'list'});
+const freshF=()=>({cat:'all',dfrom:'',dto:'',tod:'any',dist:0,sort:'for',view:'list'});
 const SORTS={for:['sparkles','My interests','Plans that match what you like come first'],soon:['clock','Time','Soonest first'],near:['map-pin','Distance','Closest to you first']};
 const DISTS=[2,5,10];
 const freshUi=()=>({tab:'swipe',modal:null,f:freshF(),auth:{mode:'in'}});
@@ -226,6 +227,8 @@ const spotTxt=a=>spots(a)<=0?'Full':spots(a)+' spot'+(spots(a)===1?'':'s')+' ope
 const tags=a=>[COST_S[a.cost],...(a.aud==='everyone'?[]:[a.aud.join(' / ')+' only']),...(a.repeat?[REPEAT[a.repeat]]:[])];
 const actOf=id=>S.acts.find(a=>a.id===id);
 const myReq=id=>S.reqs.find(r=>r.act===id&&r.user==='me');
+/* the trusted contact has to be someone else, not the number this account signed in with */
+const ownPhone=p=>!!MYPHONE&&p.replace(/\D/g,'').slice(-10)===MYPHONE;
 const audOK=a=>a.aud==='everyone'||a.aud.includes(S.me.gender);
 const isBlocked=id=>S.blocked.includes(id);
 const isVer=id=>id==='me'?!!S.me.kyc:!!USERS[id]?.verified;
@@ -369,8 +372,8 @@ function signals(u){
   if(t.met>=3&&t.rate<90)chips.push(`<span class="chip warn">${I('alert-triangle',11)} Missed ${t.met-t.shows} of ${t.met} meetups</span>`);
   return `<div class="sig">${chips.length?chips.join(''):'<span class="small mute">Nothing in common yet</span>'}</div>`;
 }
-function matchF(a,f){const age=profileOf(a.host).age;return (f.cat==='all'||a.cat===f.cat)&&(!f.dfrom||dayKey(a.when)>=f.dfrom)&&(!f.dto||dayKey(a.when)<=f.dto)&&(f.tod==='any'||tod(a.when)===f.tod)&&(!f.ver||isVer(a.host))&&age>=f.amin&&age<=f.amax&&(!f.dist||kmAway(a)<=f.dist)}
-function alertLabel(f){const p=[f.cat==='all'?'Any plan':CATS[f.cat].label];if(f.tod!=='any')p.push(f.tod[0].toUpperCase()+f.tod.slice(1));if(f.ver)p.push('Verified hosts');if(f.amin!==18||f.amax!==99)p.push(`Host ${f.amin}${f.amax===99?'+':'–'+f.amax}`);if(f.dist)p.push(`Within ${f.dist} km`);return p.join(' · ')}
+function matchF(a,f){return (f.cat==='all'||a.cat===f.cat)&&(!f.dfrom||dayKey(a.when)>=f.dfrom)&&(!f.dto||dayKey(a.when)<=f.dto)&&(f.tod==='any'||tod(a.when)===f.tod)&&(!f.dist||kmAway(a)<=f.dist)}
+function alertLabel(f){const p=[f.cat==='all'?'Any plan':CATS[f.cat].label];if(f.tod!=='any')p.push(f.tod[0].toUpperCase()+f.tod.slice(1));if(f.dist)p.push(`Within ${f.dist} km`);return p.join(' · ')}
 /* ---- usage events: sent to Supabase from the published site, kept in this browser when running from a file ---- */
 const uuid4=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)});
 const SESSION=uuid4();
@@ -471,10 +474,10 @@ function visible(a){return (a.status==='open'||a.status==='full')&&a.host!=='me'
 function eligible(a){return visible(a)&&a.status==='open'&&spots(a)>0&&!S.dismissed.includes(a.id)}
 /* Real people's plans come before the sample hosts' ones, so a new post isn't buried behind them. */
 const isSample=id=>!!USERS[id]?.sample;
-const deck=()=>S.acts.filter(a=>eligible(a)&&!myReq(a.id)&&a.when<=now()+SWIPE_WINDOW).sort((a,b)=>isSample(a.host)-isSample(b.host)||a.when-b.when);
-/* Discover lists every upcoming plan, including the next 36 hours that Swipe shows.
+const deck=()=>S.acts.filter(a=>eligible(a)&&!myReq(a.id)&&a.when<swipeEnd()).sort((a,b)=>isSample(a.host)-isSample(b.host)||a.when-b.when);
+/* Discover lists plans from the day after tomorrow on; today and tomorrow are Swipe's.
    Plans that declined you drop out of Discover; they stay in Requests (where you can still share them). */
-const feed=()=>S.acts.filter(a=>visible(a)&&!myReq(a.id)).sort((a,b)=>a.when-b.when);
+const feed=()=>S.acts.filter(a=>visible(a)&&!myReq(a.id)&&a.when>=swipeEnd()).sort((a,b)=>a.when-b.when);
 
 /* ---------- talking to the database ---------- */
 async function call(fn,args={},quiet){
@@ -678,7 +681,7 @@ const lockedNote=()=>LOCKED&&!S.me.kyc?`<div class="dn" style="margin:0 0 14px;t
 function tabSwipe(){
   const d=deck();
   if(!d.length)return lockedNote()+empty('compass','Nothing new right now','You have gone through all plans happening soon in '+esc(S.me.hood)+'. Check Discover for plans further out.','<button class="btn" data-a="tab" data-t="discover">Go to Discover</button>');
-  return `<div class="deck"><h1 class="pt">What's happening tonight?</h1><p class="sub">Activities in the next 36 hours · Tap a card for details</p>${lockedNote()}
+  return `<div class="deck"><h1 class="pt">What's happening tonight?</h1><p class="sub">Activities today and tomorrow · Tap a card for details</p>${lockedNote()}
   <div class="stack">${d[1]?cardHtml(d[1],'back'):''}${cardHtml(d[0],'top')}</div>
   <div class="acts"><button class="rb" data-a="swipe" data-d="left" title="Skip">${I('x',24)}</button>
   <div class="cnt">1 of ${d.length}<br>← dismiss · request →</div>
@@ -689,9 +692,10 @@ function tabSwipe(){
 const dLbl=k=>new Date(k+'T12:00:00').toLocaleDateString([], {weekday:'short',day:'numeric',month:'short'});
 const rangeLbl=f=>f.dfrom&&f.dto?(f.dfrom===f.dto?dLbl(f.dfrom):dLbl(f.dfrom)+' – '+dLbl(f.dto)):f.dfrom?'From '+dLbl(f.dfrom):'Until '+dLbl(f.dto);
 function datePresets(){
-  const t=new Date(now()),k=d=>dayKey(d.getTime()),plus=n=>{const d=new Date(t);d.setDate(d.getDate()+n);return d};
+  /* today and tomorrow are in Swipe, so every preset starts the day after */
+  const t=new Date(swipeEnd()),k=d=>dayKey(d.getTime()),plus=n=>{const d=new Date(t);d.setDate(d.getDate()+n);return d};
   const dow=t.getDay(),sat=dow===0?-1:6-dow;
-  return {weekend:['This weekend',k(plus(Math.max(sat,0))),k(plus(dow===0?0:sat+1))],week:['Next 7 days',k(t),k(plus(6))],month:['Next 30 days',k(t),k(plus(29))]};
+  return {weekend:['This weekend',k(plus(Math.max(sat,0))),k(plus(sat+1))],week:['Next 7 days',k(t),k(plus(6))],month:['Next 30 days',k(t),k(plus(29))]};
 }
 /* Active filters, as removable chips: [key, label] */
 function activeFilters(f){
@@ -699,8 +703,6 @@ function activeFilters(f){
   if(f.cat!=='all')a.push(['cat',CATS[f.cat].label]);
   if(f.dfrom||f.dto)a.push(['date',rangeLbl(f)]);
   if(f.tod!=='any')a.push(['tod',f.tod[0].toUpperCase()+f.tod.slice(1)]);
-  if(f.ver)a.push(['ver','Verified hosts']);
-  if(f.amin!==18||f.amax!==99)a.push(['age',`Host ${f.amin}${f.amax===99?'+':'–'+f.amax}`]);
   if(f.dist)a.push(['dist',`Within ${f.dist} km`]);
   return a;
 }
@@ -710,7 +712,7 @@ function tabDiscover(){
   if(f.sort==='for')list.sort((a,b)=>score(b)-score(a)||a.when-b.when);
   else if(f.sort==='near')list.sort((a,b)=>kmAway(a)-kmAway(b)||a.when-b.when);
   const alertable=act.some(([k])=>k!=='date'),saved=S.alerts.some(x=>x.label===alertLabel(f));
-  return `<div class="hd"><div><h1 class="pt">All upcoming plans</h1><p class="sub">${all.length} upcoming in ${esc(S.me.hood)}, from tonight onwards</p></div><button class="btn sm mobonly" data-a="newpost">${I('plus',15)} Post</button></div>
+  return `<div class="hd"><div><h1 class="pt">All upcoming plans</h1><p class="sub">${all.length} upcoming in ${esc(S.me.hood)}, from ${dLbl(dayKey(swipeEnd()))} onwards</p></div><button class="btn sm mobonly" data-a="newpost">${I('plus',15)} Post</button></div>
   ${lockedNote()}${S.alerts.length?`<div class="alerts"><span class="small mute" style="display:inline-flex;align-items:center;gap:4px">${I('bell',13)} Your alerts</span>${S.alerts.map(al=>`<span class="alchip">${esc(al.label)}<button data-a="rmalert" data-id="${al.id}" aria-label="Remove alert ${esc(al.label)}">${I('x',12)}</button></span>`).join('')}</div>`:''}
   <div class="dtools"><button class="fbtn ${act.length?'on':''}" data-a="filters" aria-haspopup="dialog">${I('filter',14)} Filters${act.length?`<b aria-label="${act.length} active">${act.length}</b>`:''}</button>
   <button class="fbtn" data-a="sortmenu" aria-haspopup="dialog" aria-label="Sort by ${SORTS[f.sort][1]}">${I('arrow-up-down',14)} Sort: ${SORTS[f.sort][1]}</button>
@@ -876,8 +878,7 @@ function modalHtml(){
       <div class="meta2" style="margin-top:3px"><span>${I('users',13)}${a.members.length} going · ${spotTxt(a)}${wl?` · ${wl} on waitlist`:''}</span></div>
       <div class="meta2" style="margin-top:3px"><span>${I('wallet',13)}${costLine(a)}</span></div>
       <div class="tg" style="margin-top:8px"><span>${COST_S[a.cost]}</span><span>${a.aud==='everyone'?'Open to everyone':esc(a.aud.join(' / '))+' only'}</span>${a.repeat?`<span>${REPEAT[a.repeat]}</span>`:''}</div></div></div>
-      <div class="hostline">Hosted by ${a.host==='me'?`${av('me','sm')}<b style="color:var(--ink);font-weight:600">You</b>`:`<button class="hlink" data-a="user" data-id="${a.host}" title="View ${esc(h.name)}'s profile">${av(a.host,'sm')}<span><b style="color:var(--ink);font-weight:600">${esc(h.name)}</b>, ${h.age}</span></button> ${vf(a.host,true)}`}</div>
-      ${a.host==='me'?'':`<div class="small" style="margin:2px 0 0 32px">${trustTxt(a.host)}</div>`}`;
+      <div class="hostline">Hosted by ${a.host==='me'?`${av('me','sm')}<b style="color:var(--ink);font-weight:600">You</b>`:`<button class="hlink" data-a="user" data-id="${a.host}" title="View ${esc(h.name)}'s profile">${av(a.host,'sm')}<span><b style="color:var(--ink);font-weight:600">${esc(h.name)}</b>, ${h.age}</span></button> ${vf(a.host,true)}`}</div>`;
     if(m.type==='confirm'&&(can||canWait))return sheet(can?'Request to Join':'Join the waitlist',`<div class="sb">${top}
       ${canWait?`<div class="warnbox" style="background:var(--infobg);border-color:#BFDBFE;color:var(--info)">${I('users',16)}<span>This activity is full. Join the waitlist and your request goes to ${esc(h.name)} automatically if a spot opens${wl?` (${wl} ahead of you)`:''}.</span></div>`:''}
       <label for="r_note" style="font-size:14px;margin-top:18px">Add a note <span class="mute" style="font-weight:400">(optional)</span></label>
@@ -996,16 +997,13 @@ function modalHtml(){
     const f=ui.f,n=feed().filter(a=>matchF(a,f)).length,any=activeFilters(f).length;
     const C=(k,l)=>`<button class="fc ${f.cat===k?'on':''}" data-a="fcat" data-k="${k}" aria-pressed="${f.cat===k}">${l}</button>`;
     const T=(k,l)=>`<button class="fc ${f.tod===k?'on':''}" data-a="ftod" data-k="${k}" aria-pressed="${f.tod===k}">${l}</button>`;
-    const ageOpt=(list,sel)=>list.map(v=>`<option value="${v}" ${v===sel?'selected':''}>${v===99?'any age':v}</option>`).join('');
     return `<div class="ov" data-a="closebg"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="fl_t"><div class="sh"><h2 id="fl_t">Filters</h2><button class="ib" data-a="close" title="Close">${I('x',18)}</button></div>
       <div class="sb fsec">
       <h3>Category</h3><div class="fchips">${C('all','All')}${Object.entries(CATS).map(([k,c])=>C(k,c.label)).join('')}</div>
       <h3>Date</h3><div class="fchips"><button class="fc ${!f.dfrom&&!f.dto?'on':''}" data-a="fdate" aria-pressed="${!f.dfrom&&!f.dto}">${I('calendar',13)} Any date</button>${Object.entries(datePresets()).map(([k,[l,a,b]])=>{const on=f.dfrom===a&&f.dto===b;return `<button class="fc ${on?'on':''}" data-a="fdate" data-k="${k}" aria-pressed="${on}">${l}</button>`}).join('')}</div>
-      <div class="row drange"><div><label for="d_from">From</label><input type="date" id="d_from" value="${esc(f.dfrom)}" ${f.dto?`max="${f.dto}"`:''}></div><div><label for="d_to">To</label><input type="date" id="d_to" value="${esc(f.dto)}" ${f.dfrom?`min="${f.dfrom}"`:''}></div></div>
+      <div class="row drange"><div><label for="d_from">From</label><input type="date" id="d_from" value="${esc(f.dfrom)}" min="${dayKey(swipeEnd())}" ${f.dto?`max="${f.dto}"`:''}></div><div><label for="d_to">To</label><input type="date" id="d_to" value="${esc(f.dto)}" min="${f.dfrom||dayKey(swipeEnd())}"></div></div>
       <h3>Time of day</h3><div class="fchips">${T('any',I('clock',13)+' Any time')}${T('morning','Morning')}${T('afternoon','Afternoon')}${T('evening','Evening')}${T('night','Night')}</div>
       <h3>Distance</h3><div class="fchips"><button class="fc ${!f.dist?'on':''}" data-a="fdist" data-k="0" aria-pressed="${!f.dist}">${I('map-pin',13)} Any distance</button>${DISTS.map(k=>`<button class="fc ${f.dist===k?'on':''}" data-a="fdist" data-k="${k}" aria-pressed="${f.dist===k}">Within ${k} km</button>`).join('')}</div>
-      <h3>Host</h3><div class="fchips"><button class="fc ${f.ver?'on':''}" data-a="fver" aria-pressed="${f.ver}">${I('badge-check',13)} Verified only</button>
-      <span class="agesel">Age <select id="f_amin" aria-label="Youngest host age">${ageOpt([18,21,25,30,35,40],f.amin)}</select> to <select id="f_amax" aria-label="Oldest host age">${ageOpt([25,30,35,40,50,99],f.amax)}</select></span></div>
       </div>
       <div class="sfoot">${any?'<button class="btn ghost" data-a="freset">Reset</button>':''}<button class="btn" data-a="close">Show ${n} ${n===1?'activity':'activities'}</button></div></div></div>`;
   }
@@ -1621,13 +1619,12 @@ const A={
   fdate:d=>{const p=d.k&&datePresets()[d.k];ui.f.dfrom=p?p[1]:'';ui.f.dto=p?p[2]:'';if(p)track('filter',{type:'date',preset:d.k});render()},
   freset:()=>{ui.f={...freshF(),sort:ui.f.sort,view:ui.f.view};render()},
   filters:()=>{track('filters_opened');ui.modal={type:'filters'};render()},
-  fclear:d=>{const f=ui.f,base=freshF();if(d.k==='age'){f.amin=base.amin;f.amax=base.amax}else if(d.k==='date'){f.dfrom=f.dto=''}else f[d.k]=base[d.k];render()},
-  fver:()=>{ui.f.ver=!ui.f.ver;track('filter',{type:'verified'});render()},
+  fclear:d=>{const f=ui.f,base=freshF();if(d.k==='date'){f.dfrom=f.dto=''}else f[d.k]=base[d.k];render()},
   sortmenu:()=>{ui.modal={type:'sort'};render()},
   fsort:d=>{ui.f.sort=d.k;ui.modal=null;track('sort',{by:d.k});render()},
   fdist:d=>{ui.f.dist=+d.k;track('filter',{type:'distance'});render()},
   fview:d=>{ui.f.view=d.k;if(d.k==='map')track('map_view');render()},
-  saveal:()=>{const f=ui.f,al={id:'al'+Date.now().toString(36),cat:f.cat,tod:f.tod,ver:f.ver,amin:f.amin,amax:f.amax,dist:f.dist,label:alertLabel(f)};S.alerts.push(al);save();track('alert_saved');toast(`Alert saved: we'll tell you about new "${al.label}" plans.`);render()},
+  saveal:()=>{const f=ui.f,al={id:'al'+Date.now().toString(36),cat:f.cat,tod:f.tod,dist:f.dist,label:alertLabel(f)};S.alerts.push(al);save();track('alert_saved');toast(`Alert saved: we'll tell you about new "${al.label}" plans.`);render()},
   rmalert:d=>{S.alerts=S.alerts.filter(x=>x.id!==d.id);save();toast('Alert removed');render()},
   readall:()=>{S.notes.forEach(n=>n.read=true);render();call('read_notifications',{p_ids:null},true).catch(()=>{})},
   opennote:d=>{
@@ -1648,7 +1645,7 @@ const A={
   unlock:()=>gate(()=>{toast('ID verified. Plans for your group now show too.');render()}),
   submitpost:async(d,e)=>{
     const desc=val('f_desc'),venue=val('f_venue'),when=new Date(document.getElementById('f_when').value).getTime();
-    const all=document.getElementById('f_all').checked,gs=[...document.querySelectorAll('.f_g:checked')].map(x=>x.value);
+    const gs=[...document.querySelectorAll('.f_g:checked')].map(x=>x.value),all=document.getElementById('f_all').checked||gs.length===GENDERS.length;
     const ed=ui.modal?.id&&actOf(ui.modal.id),cap=+val('f_cap'),rep=val('f_rep');
     if(!desc||!venue)return toast('Add a description and a venue');
     if(!PLACE_AT[venue.toLowerCase()]&&!spotOf(venue)){askArea();return toast('Pick which area the venue is in, so it shows on the map')}
@@ -1753,6 +1750,7 @@ const A={
   savetrusted:()=>{
     const name=val('t_name'),phone=val('t_phone');
     if(!name||phone.replace(/\D/g,'').length<7)return toast('Add a name and a valid phone number');
+    if(ownPhone(phone))return toast("That's the number you signed in with. Add someone else's number");
     S.me.trusted={name:name.slice(0,40),phone:phone.slice(0,20)};save();toast('Trusted contact saved');
     if(ui.modal?.type==='share')ui.modal.edit=false;
     render();
@@ -1769,6 +1767,7 @@ const A={
     if(!name)return toast('Add your name');
     if(!dob||!(ageOf(dob)>=18))return toast('Check your date of birth: you must be 18 or over');
     if((tn||tp)&&(!tn||tp.replace(/\D/g,'').length<7))return toast('Add a name and a valid phone for your trusted contact, or leave both empty');
+    if(tp&&ownPhone(tp))return toast("Your trusted contact can't be the number you signed in with");
     const p={name,dob,gender:val('p_gender'),hood:val('p_hood'),job:val('p_job'),bio:document.getElementById('p_bio').value.trim(),ints:many('p_int'),avail:many('p_avail')};
     if(ui.modal?.emo)p.emo=ui.modal.emo;
     S.me.trusted=tn?{name:tn.slice(0,40),phone:tp.slice(0,20)}:null;save();
@@ -1812,7 +1811,12 @@ document.addEventListener('click',e=>{
   if(!e.target.closest('.vbox'))venueList(false);
   if(e.target.matches('input[type=checkbox]')&&e.target.id!=='d_fail'){
     if(e.target.id==='f_all'&&e.target.checked)document.querySelectorAll('.f_g').forEach(x=>x.checked=false);
-    else if(e.target.classList.contains('f_g')&&e.target.checked)document.getElementById('f_all').checked=false;
+    else if(e.target.classList.contains('f_g')&&e.target.checked){
+      /* every identity ticked is the same as Everyone */
+      const gs=document.querySelectorAll('.f_g'),on=[...gs].every(x=>x.checked);
+      if(on)gs.forEach(x=>x.checked=false);
+      document.getElementById('f_all').checked=on;
+    }
   }
   const el=e.target.closest('[data-a]');if(!el)return;
   if(el.dataset.a==='closebg'){A.closebg(el.dataset,e);return}
@@ -1855,11 +1859,6 @@ document.addEventListener('change',e=>{
     if(f.dfrom&&f.dto&&f.dfrom>f.dto)[f.dfrom,f.dto]=[f.dto,f.dfrom];
     track('filter',{type:'date'});render()}
   if(e.target.id==='f_tpl'&&ui.modal?.type==='post'){ui.modal.tpl=e.target.value||null;render()}
-  if(e.target.id==='f_amin'||e.target.id==='f_amax'){
-    ui.f[e.target.id==='f_amin'?'amin':'amax']=+e.target.value;
-    if(ui.f.amin>ui.f.amax)[ui.f.amin,ui.f.amax]=[ui.f.amax,ui.f.amin];
-    render();
-  }
   if(e.target.id==='p_photo'){const f=e.target.files[0];e.target.value='';openCropper(f)}
   if(e.target.id==='f_area'&&e.target.value){const i=document.getElementById('f_venue');if(i){const nm=i.value.replace(AREA_TAIL,'').trim();i.value=((nm?nm+', ':'')+e.target.value).slice(0,120)}}
 });
@@ -1883,7 +1882,7 @@ async function start(){
   starting=(async()=>{
     const {data}=await SB.auth.getUser();
     if(!data?.user){ME=null;starting=null;render();return}
-    ME=data.user.id;loaded=false;render();
+    ME=data.user.id;MYPHONE=(data.user.phone||'').replace(/\D/g,'').slice(-10);loaded=false;render();
     await refresh();
     loadPlaces();
     listen();
@@ -1909,7 +1908,7 @@ else{
     /* don't call Supabase from inside this callback: do it just after */
     setTimeout(()=>{
       if(ev==='PASSWORD_RECOVERY'){ui.auth={mode:'newpw'};ME=null;render();return}
-      if(ev==='SIGNED_OUT'){ME=null;S=blank();USERS={};loaded=false;ui=freshUi();render();return}
+      if(ev==='SIGNED_OUT'){ME=null;MYPHONE='';S=blank();USERS={};loaded=false;ui=freshUi();render();return}
       if(session&&session.user.id!==ME&&ui.auth.mode!=='newpw')start();
       else if(!session&&ev==='INITIAL_SESSION')render();
     },0);

@@ -49,7 +49,7 @@ create table if not exists activities (
   cost          text not null check (cost in ('split','own','host')),
   total         int check (total between 0 and 1000000),
   hood          text not null check (hood in ('Sector 17','Sector 7','Sector 22')),
-  repeat        text check (repeat in ('weekly','biweekly')),
+  repeat        text check (repeat in ('weekly','biweekly','monthly')),
   status        text not null default 'open' check (status in ('open','full')),
   next_id       uuid,                                        -- the next occurrence, once posted
   sample_period interval,                                    -- sample plans move forward by this once they pass
@@ -69,6 +69,9 @@ create table if not exists requests (
   unique (act, user_id)
 );
 create index if not exists requests_user_idx on requests (user_id);
+-- 'monthly' repeats came later: widen the check on databases made before it.
+alter table activities drop constraint if exists activities_repeat_check;
+alter table activities add constraint activities_repeat_check check (repeat in ('weekly','biweekly','monthly'));
 -- 'removed' (taken out of the group by the host) came later: widen the check on databases made before it.
 alter table requests drop constraint if exists requests_status_check;
 alter table requests add constraint requests_status_check check (status in ('pending','accepted','rejected','waitlist','left','removed'));
@@ -360,20 +363,22 @@ create or replace function _t_at(d int, hr int, mi int default 0) returns timest
 --  * sample plans move forward so the app never runs empty; if real people joined one, it stays in
 --    their history and a fresh copy is posted instead
 create or replace function _housekeeping() returns void language plpgsql as $$
-declare a activities; nid uuid; nxt timestamptz; step interval;
+declare a activities; nid uuid; nxt timestamptz; step interval; k int;
 begin
   if not pg_try_advisory_xact_lock(4242) then return; end if;
   if exists (select 1 from app_meta where k = 'housekeeping' and v > now() - interval '2 minutes') then return; end if;
   insert into app_meta (k, v) values ('housekeeping', now()) on conflict (k) do update set v = excluded.v;
 
   for a in select * from activities where repeat is not null and next_id is null and sample_period is null and starts_at <= now() loop
-    step := case a.repeat when 'biweekly' then interval '14 days' else interval '7 days' end;
-    nxt := a.starts_at + step * (floor(extract(epoch from now() - a.starts_at) / extract(epoch from step)) + 1);
+    step := case a.repeat when 'monthly' then interval '1 month' when 'biweekly' then interval '14 days' else interval '7 days' end;
+    -- months differ in length, so step from the first date (the 31st stays the 31st or the month's last day)
+    k := greatest(1, floor(extract(epoch from now() - a.starts_at) / extract(epoch from step))::int - 1);
+    loop nxt := a.starts_at + step * k; exit when nxt > now(); k := k + 1; end loop;
     insert into activities (host, cat, description, cap, starts_at, audience, venue, cost, total, hood, repeat)
     values (a.host, a.cat, a.description, a.cap, nxt, a.audience, a.venue, a.cost, a.total, a.hood, a.repeat)
     returning id into nid;
     update activities set next_id = nid where id = a.id;
-    perform _note(a.host, 'update', 'Repeat posted', case a.repeat when 'biweekly' then 'Every 2 weeks' else 'Every week' end, 'info', nid,
+    perform _note(a.host, 'update', 'Repeat posted', case a.repeat when 'monthly' then 'Every month' when 'biweekly' then 'Every 2 weeks' else 'Every week' end, 'info', nid,
       format('The next "%s" is posted for %s.', _short(a.description), _when(nxt)));
   end loop;
 
@@ -1091,20 +1096,20 @@ begin
   perform _seed_act(6,'cafe','Board games and coffee, beginners welcome',5,_t_next(15),null,'Board game café, Sector 8','own',S17,'{2,7,1}',D);
   perform _seed_act(3,'concerts','Indie band live set, got spare spots',2,_t_next(21),null,'Live music bar, Sector 26','own',S17,null,D);
   perform _seed_act(7,'concerts','Karaoke night, no talent required',6,_t_next(21,30),null,'Karaoke bar, Sector 26','split',S17,'{1,4,6,8,3}',D,2400);
-  perform _seed_act(1,'movies','Re-release of a 90s classic, popcorn on me',4,_t_next(19),null,'Piccadily Square, Sector 34','host',S17,null,D,1200);
+  perform _seed_act(1,'movies','Re-release of a 90s classic, popcorn on me',4,_t_next(19),null,'Piccadily Square, Sector 34','own',S17,null,D,1200);
   perform _seed_act(8,'cafe','Momos crawl through the Sector 15 market',4,_t_next(18),null,'Sector 15 market','split',S17,'{5}',D,1000);
   perform _seed_act(2,'concerts','Sufi night on the Kala Bhawan lawns',3,_t_next(19,30),null,'Punjab Kala Bhawan, Sector 16','own',S17,null,D);
   perform _seed_act(12,'cafe','Morning chai and a walk in Leisure Valley',3,_t_next(7,30),null,'Leisure Valley, Sector 10','own',S17,null,D);
   perform _seed_act(4,'cafe','Book swap over cold coffee',5,_t_next(17),null,'Café, Sector 9 market','own',S17,'{6}',D);
-  perform _seed_act(3,'concerts','Vinyl listening evening, bring a record',4,_t_next(20,30),null,'Record store café, Sector 26','own',S17,'{1}',D);
-  perform _seed_act(11,'movies','Anime movie night, subtitles on',5,_t_next(18,30),null,'Government Museum auditorium, Sector 10','own',S17,null,D);
   perform _seed_act(10,'cafe','Midnight Maggi and chai at the dhaba',4,_t_next(0,30),null,'Dhaba, Sector 22','split',S17,'{8}',D,600);
-  perform _seed_act(7,'concerts','Retro Bollywood karaoke',6,_t_next(21),null,'Karaoke bar, Sector 26','split',S17,'{9,2}',D,3000);
-  perform _seed_act(6,'cafe','Pictionary and pizza, beginners welcome',6,_t_next(14),null,'Board game café, Sector 8','split',S17,'{12}',D,1800);
-  perform _seed_act(5,'concerts','Rock night, local bands',4,_t_next(19),null,'Music café, Sector 7','own','Sector 7',null,D);
-  perform _seed_act(6,'cafe','Tea tasting flight',3,_t_next(17),null,'Tea room, Sector 22 market','split','Sector 22',null,D,900);
 
   -- Plan ahead (3 to 13 days out): these move forward two weeks once they pass.
+  perform _seed_act(5,'concerts','Rock night, local bands',4,_t_at(7,19),null,'Music café, Sector 7','own','Sector 7',null,W);
+  perform _seed_act(6,'cafe','Tea tasting flight',3,_t_at(6,17),null,'Tea room, Sector 22 market','split','Sector 22',null,W,900);
+  perform _seed_act(11,'movies','Anime movie night, subtitles on',5,_t_at(7,18,30),null,'Government Museum auditorium, Sector 10','own',S17,null,W);
+  perform _seed_act(3,'concerts','Vinyl listening evening, bring a record',4,_t_at(8,20,30),null,'Record store café, Sector 26','own',S17,'{1}',W);
+  perform _seed_act(7,'concerts','Retro Bollywood karaoke',6,_t_at(7,21),null,'Karaoke bar, Sector 26','split',S17,'{9,2}',W,3000);
+  perform _seed_act(6,'cafe','Pictionary and pizza, beginners welcome',6,_t_at(8,14),null,'Board game café, Sector 8','split',S17,'{12}',W,1800);
   perform _seed_act(12,'cafe','Sunrise walk around Sukhna Lake, then breakfast',4,_t_at(3,6,30),null,'Sukhna Lake, main gate','own',S17,'{6}',W);
   perform _seed_act(8,'cafe','Trying the new ramen place (only 1 spot left)',3,_t_at(3,13),null,'Ramen bar, Sector 9','split',S17,'{5,3}',W,2400);
   perform _seed_act(7,'concerts','Open-mic night, come cheer for friends',6,_t_at(3,20),null,'Open-mic café, Sector 15','own',S17,null,W);
@@ -1131,3 +1136,12 @@ begin
   perform _seed_act(9,'cafe','Picnic at Sukhna Lake, bring one snack',6,_t_at(5,12),null,'Sukhna Lake lawns','own','Sector 7','{2}',W);
   perform _seed_act(3,'concerts','Le Corbusier heritage walk and a sitar recital',4,_t_at(6,17),null,'Capitol Complex, Sector 1','own','Sector 22',null,W);
 end $$;
+-- Only the popcorn is on the host, so everyone pays for their own ticket (fixes databases seeded before).
+update activities set cost = 'own' where host = _sid(1) and description = 'Re-release of a 90s classic, popcorn on me' and cost = 'host';
+-- A few sample plans moved from "happening soon" to about a week out, so Discover has more (fixes databases seeded before).
+update activities set starts_at = _t_at(7,19,0), sample_period = interval '14 days' where host = _sid(5) and description = 'Rock night, local bands' and sample_period = interval '1 day';
+update activities set starts_at = _t_at(6,17,0), sample_period = interval '14 days' where host = _sid(6) and description = 'Tea tasting flight' and sample_period = interval '1 day';
+update activities set starts_at = _t_at(7,18,30), sample_period = interval '14 days' where host = _sid(11) and description = 'Anime movie night, subtitles on' and sample_period = interval '1 day';
+update activities set starts_at = _t_at(8,20,30), sample_period = interval '14 days' where host = _sid(3) and description = 'Vinyl listening evening, bring a record' and sample_period = interval '1 day';
+update activities set starts_at = _t_at(7,21,0), sample_period = interval '14 days' where host = _sid(7) and description = 'Retro Bollywood karaoke' and sample_period = interval '1 day';
+update activities set starts_at = _t_at(8,14,0), sample_period = interval '14 days' where host = _sid(6) and description = 'Pictionary and pizza, beginners welcome' and sample_period = interval '1 day';
