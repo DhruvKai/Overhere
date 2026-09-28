@@ -1133,16 +1133,24 @@ function authHtml(){
     <form id="a_form" data-submit="setpw" novalidate>${pwField('a_pw','New password','new-password')}${pwMeter()}${pwField('a_pw2','Confirm new password','new-password')}
     <div style="height:16px"></div>${ERRBOX}${goBtn('Save password')}</form></div>`;
   /* Phone: one flow for new and returning people. The code signs you in, and makes the account the first time. */
-  if(md==='phone')return `<div class="ob">${LOGO}<h1 class="pt">Continue with phone</h1><p class="sub">We'll text you a 6-digit code. New here? This creates your account.</p>
-    <label for="a_phone">Mobile number</label><div style="display:flex;gap:8px;align-items:center"><span class="chip" style="flex:0 0 auto;padding:10px 12px">+91</span><input id="a_phone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="14" placeholder="98765 43210" value="${esc(ui.auth.phone?ui.auth.phone.slice(3):'')}"></div>
-    <p class="small mute" style="margin-top:6px">Indian mobile numbers only.</p>
-    <div style="height:16px"></div><button class="btn" data-a="sendcode">Send code</button><div style="height:8px"></div><button class="btn ghost" data-a="authmode" data-k="in">Back</button></div>`;
+  if(md==='phone'){
+    const up=ui.auth.was==='up';
+    return `<div class="ob">${LOGO}<div class="mailic">${I('phone',28)}</div><h1 class="pt">${up?'Sign up with phone':'Continue with phone'}</h1><p class="sub">We'll text you a 6-digit code to confirm it's you. ${up?'No password needed.':'New here? This creates your account.'}</p>
+    <form id="a_form" data-submit="sendcode" novalidate><label for="a_phone">Mobile number</label>
+    <div class="fi tel"><span class="cc">${I('phone',16)}+91</span><input id="a_phone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="16" placeholder="98765 43210" value="${esc(ui.auth.phone?fmtPhone(ui.auth.phone.slice(3)):'')}" aria-describedby="a_phone_err a_phone_note"></div>
+    <p class="ferr" id="a_phone_err" aria-live="polite"></p><p class="fhint" id="a_phone_note">Indian mobile numbers only.</p>
+    <div style="height:18px"></div>${ERRBOX}${goBtn('Send code')}</form>
+    <div style="height:8px"></div><button class="btn ghost" data-a="authmode" data-k="${up?'up':'in'}">Back</button>
+    <p class="small mute" style="text-align:center;margin-top:12px">By continuing you agree to our <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a>. Standard SMS rates may apply.</p></div>`;
+  }
   if(md==='code'){
-    const left=Math.ceil((ui.auth.sent+RESEND_MS-Date.now())/1000),n=ui.auth.phone.slice(3);
-    return `<div class="ob">${LOGO}<h1 class="pt">Enter the code</h1><p class="sub">We sent a 6-digit code to <b>+91 ${esc(n.slice(0,5)+' '+n.slice(5))}</b>.</p>
-    <label for="a_code">Code</label><input id="a_code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" style="letter-spacing:.4em;font-size:20px;text-align:center">
-    <div style="height:16px"></div><button class="btn" data-a="checkcode">Verify</button>
-    <p class="small" style="text-align:center;margin-top:14px"><button class="lnk" id="a_resend" data-a="sendcode" data-k="again"${left>0?' disabled':''}>${left>0?`Resend code in ${left}s`:'Resend code'}</button> · <button class="lnk" data-a="authmode" data-k="phone">Change number</button></p></div>`;
+    const left=Math.ceil((ui.auth.sent+RESEND_MS-Date.now())/1000);
+    return `<div class="ob">${LOGO}<div class="mailic">${I('message-circle',28)}</div><h1 class="pt">Enter the code</h1><p class="sub">We sent a 6-digit code to <b>+91 ${esc(fmtPhone(ui.auth.phone.slice(3)))}</b>. <button class="lnk" style="padding:0" data-a="authmode" data-k="phone">Edit</button></p>
+    <form id="a_form" data-submit="checkcode" novalidate><label for="a_code">Verification code</label>
+    <div class="otp"><input id="a_code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" spellcheck="false" aria-describedby="a_code_err"><div class="otpc" aria-hidden="true">${'<span></span>'.repeat(6)}</div></div>
+    <p class="ferr" id="a_code_err" aria-live="polite"></p>
+    <div style="height:18px"></div>${ERRBOX}${goBtn('Verify')}</form>
+    <p class="small" style="text-align:center;margin-top:14px">Didn't get it? <button class="lnk" id="a_resend" data-a="sendcode" data-k="again"${left>0?' disabled':''}>${left>0?`Resend code in ${left}s`:'Resend code'}</button> · <button class="lnk" data-a="authmode" data-k="phone">Change number</button></p></div>`;
   }
   const up=md==='up';
   return `<div class="ob">${LOGO}<p class="mute">Do things in your city with company. Post a plan you are already making, pick who joins. Not a dating app.</p>
@@ -1463,6 +1471,44 @@ function authBlur(e){
   if(el.classList.contains('pwi'))document.getElementById(el.id+'_caps')?.setAttribute('hidden','');
 }
 function capsWarn(e){const w=document.getElementById(e.target.id+'_caps');if(w&&e.getModifierState)w.hidden=!e.getModifierState('CapsLock')}
+/* Phone numbers: 10 digits after +91, shown as "98765 43210". A pasted "+91 98765 43210" or "098765 43210" loses its prefix. */
+const phoneDigits=s=>{const d=s.replace(/\D/g,'');return (d.length>10?d.replace(/^(91|0)(?=\d{10}$)/,''):d).slice(0,10)};
+const fmtPhone=d=>d.length>5?d.slice(0,5)+' '+d.slice(5):d;
+function phoneProblem(n){return !n?'Enter your mobile number':n.length<10?'Enter all 10 digits':!/^[6-9]/.test(n)?'Indian mobile numbers start with 6, 7, 8 or 9':''}
+async function sendCode(again){
+  const n=again?ui.auth.phone.slice(3):phoneDigits(val('a_phone'));
+  if(!again){const m=phoneProblem(n);fieldMsg('a_phone',m);if(m){document.getElementById('a_phone')?.focus();return}}
+  const wait=again?Math.ceil((ui.auth.sent+RESEND_MS-Date.now())/1000):0;
+  if(wait>0)return toast(`Please wait ${wait}s before asking for a new code`);
+  const {error}=await SB.auth.signInWithOtp({phone:'+91'+n});
+  if(error)return again?toast(friendly(error)):formErr(friendly(error));
+  track('phone_code_sent',{again,signup:ui.auth.was==='up'});
+  ui.auth={mode:'code',phone:'+91'+n,sent:Date.now(),was:ui.auth.was};render();resendTimer();
+  if(again)toast('New code sent');
+  document.getElementById('a_code')?.focus();webOtp();
+  return true;
+}
+/* The code field is one real input (so paste and the phone's autofill work) drawn as six boxes. */
+function otpDraw(){
+  const i=document.getElementById('a_code'),cs=document.querySelectorAll('.otpc span');if(!i)return;
+  cs.forEach((c,k)=>{c.textContent=i.value[k]||'';c.classList.toggle('on',k===Math.min(i.value.length,5))});
+}
+function codeWrong(msg){
+  const i=document.getElementById('a_code'),box=i?.closest('.otp');if(!i)return;
+  fieldMsg('a_code',msg);i.value='';otpDraw();i.focus();
+  box.classList.remove('shake');void box.offsetWidth;box.classList.add('shake');
+}
+/* Android Chrome reads the code straight from the SMS when the message ends with "@overhere.social #123456"
+   (needs that SMS template: twilio.md). Elsewhere, and with other templates, this does nothing. */
+let otpAbort=null;
+function webOtp(){
+  otpAbort?.abort();otpAbort=null;if(!('OTPCredential' in window))return;
+  const ac=otpAbort=new AbortController();
+  navigator.credentials.get({otp:{transport:['sms']},signal:ac.signal}).then(o=>{
+    const i=document.getElementById('a_code');
+    if(o?.code&&i&&ui.auth.mode==='code'){i.value=o.code.replace(/\D/g,'').slice(0,6);otpDraw();A.checkcode()}
+  }).catch(()=>{});
+}
 /* The form's main button spins while its request is out, so it can't be sent twice. The action returns true when it
    worked and the screen is about to change, so the spinner stays until then. */
 async function working(fn){
@@ -1496,7 +1542,12 @@ const A={
   retry:()=>{ui.err='';render();refresh()},
   /* sign in */
   /* the email you typed carries over between sign in, create account and reset */
-  authmode:d=>{ui.auth={mode:d.k,phone:ui.auth.phone,email:val('a_email')||ui.auth.email};render()},
+  /* was: the tab you came from (Sign in or Create account), so the phone screens can word things and go back to it */
+  authmode:d=>{
+    otpAbort?.abort();
+    ui.auth={mode:d.k,phone:ui.auth.phone,email:val('a_email')||ui.auth.email,was:['in','up'].includes(ui.auth.mode)?ui.auth.mode:ui.auth.was};render();
+    if(d.k==='phone')document.getElementById('a_phone')?.focus();
+  },
   pwshow:d=>{
     const i=document.getElementById(d.id),b=i?.parentNode.querySelector('.pwt');if(!i)return;
     const show=i.type==='password';i.type=show?'text':'password';
@@ -1529,26 +1580,16 @@ const A={
     track('email_resent',{kind:kind||'signup'});
     ui.auth.sent=Date.now();render();resendTimer();toast('Sent again. Check your inbox.');
   },
-  sendcode:async d=>{
-    const again=d.k==='again',n=again?ui.auth.phone.slice(3):val('a_phone').replace(/\D/g,'').replace(/^(91|0)(?=\d{10}$)/,'');
-    if(!/^[6-9]\d{9}$/.test(n))return toast('Enter a 10-digit Indian mobile number');
-    const wait=again?Math.ceil((ui.auth.sent+RESEND_MS-Date.now())/1000):0;
-    if(wait>0)return toast(`Please wait ${wait}s before asking for a new code`);
-    const {error}=await SB.auth.signInWithOtp({phone:'+91'+n});
-    if(error)return toast(friendly(error));
-    track('phone_code_sent',{again});
-    ui.auth={mode:'code',phone:'+91'+n,sent:Date.now()};render();resendTimer();
-    if(again)toast('New code sent');
-    document.getElementById('a_code')?.focus();
-  },
-  checkcode:async()=>{
-    const token=val('a_code').replace(/\D/g,'');if(token.length!==6)return toast('Enter the 6-digit code');
-    if(ui.auth.checking)return;ui.auth.checking=true;
+  /* The first code comes from the form (its button spins); "Resend code" sends another to the same number. */
+  sendcode:d=>d.k==='again'?sendCode(true):working(()=>sendCode(false)),
+  checkcode:()=>working(async()=>{
+    const i=document.getElementById('a_code'),token=(i?.value||'').replace(/\D/g,'');
+    if(token.length!==6){fieldMsg('a_code',token?'Enter all 6 digits':'Enter the code from the SMS');i?.focus();return}
     const {error}=await SB.auth.verifyOtp({phone:ui.auth.phone,token,type:'sms'});
-    ui.auth.checking=false;
-    if(error)return toast(friendly(error));
-    track('phone_signed_in');  // signed in: onAuthStateChange takes it from here
-  },
+    if(error)return codeWrong(friendly(error));
+    otpAbort?.abort();track('phone_signed_in');
+    return true;   // signed in: onAuthStateChange takes it from here
+  }),
   google:async()=>{
     const {data,error}=await SB.auth.signInWithOAuth({provider:'google',options:{redirectTo:here(),skipBrowserRedirect:true}});
     if(error)return toast(friendly(error));
@@ -1773,7 +1814,16 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('input',e=>{
   if(e.target.id==='r_note'){const c=document.getElementById('r_cnt');if(c)c.textContent=e.target.value.length}
-  if(e.target.id==='a_code'&&e.target.value.replace(/\D/g,'').length===6)A.checkcode();  // phones fill the code in from the SMS
+  if(e.target.id==='a_code'){
+    const i=e.target,v=i.value.replace(/\D/g,'').slice(0,6);if(i.value!==v)i.value=v;
+    if(v&&i.getAttribute('aria-invalid'))fieldMsg('a_code','');
+    otpDraw();if(v.length===6)A.checkcode();  // typed, pasted, or filled in from the SMS
+  }
+  if(e.target.id==='a_phone'){
+    const i=e.target,atEnd=i.selectionStart===i.value.length,n=phoneDigits(i.value);
+    if(atEnd)i.value=fmtPhone(n);   // reformat only when typing at the end, so the cursor doesn't jump
+    if(i.getAttribute('aria-invalid')&&!phoneProblem(n))fieldMsg('a_phone','');
+  }
   if(e.target.id==='f_venue')venueList(true);
   if(e.target.id==='a_email'){
     document.getElementById('a_email_hint')?.setAttribute('hidden','');
@@ -1783,7 +1833,12 @@ document.addEventListener('input',e=>{
 });
 /* Sign-in forms: Enter, or the main button, runs the form's action. */
 document.addEventListener('submit',e=>{const f=e.target.closest?.('form[data-submit]');if(!f)return;e.preventDefault();A[f.dataset.submit]?.(f.dataset,e)});
-document.addEventListener('focusout',e=>{if(/^a_(email|pw2?)$/.test(e.target.id))authBlur(e)});
+document.addEventListener('focusout',e=>{
+  if(/^a_(email|pw2?)$/.test(e.target.id))authBlur(e);
+  if(e.target.id==='a_phone'&&e.target.value.trim())fieldMsg('a_phone',phoneProblem(phoneDigits(e.target.value)));
+});
+/* the six code boxes: typing always goes on the end */
+document.addEventListener('focusin',e=>{if(e.target.id==='a_code'){const i=e.target;setTimeout(()=>i.setSelectionRange(i.value.length,i.value.length),0)}});
 document.addEventListener('keyup',e=>{if(e.target.classList?.contains('pwi'))capsWarn(e)});
 /* Suggestions stay open while focus is in the venue box or its list; clicking one keeps the focus in the box. */
 document.addEventListener('mousedown',e=>{if(e.target.closest('.vopt'))e.preventDefault()});
@@ -1808,7 +1863,6 @@ document.addEventListener('keydown',e=>{
   const pm=document.getElementById('p_menu');
   if(e.key==='Escape'&&pm&&!pm.hidden){photoMenu(false);document.getElementById('p_pe')?.focus();return}
   if(e.key==='Enter'&&e.target.matches('[role=button][data-a]')){e.target.click();return}
-  if(e.key==='Enter'&&(e.target.id==='a_phone'||e.target.id==='a_code')){A[e.target.id==='a_phone'?'sendcode':'checkcode']({});return}
   if(e.key==='Enter'&&e.target.id==='c_in'){const b=document.querySelector('[data-a=send]');if(b)b.click();return}
   if(e.key==='Escape'&&ui.modal&&ui.modal.type!=='verify'){ui.modal=ui.modal.back||null;render();return}
   if(ui.modal||ui.tab!=='swipe'||!S.me?.obDone||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
