@@ -820,7 +820,7 @@ function tabNotes(){
   const N=S.notes,unread=N.filter(n=>!n.read).length;
   const sec=(title,list,none)=>`<h3 class="nsh">${title}${list.some(n=>!n.read)?` <b>${list.filter(n=>!n.read).length}</b>`:''}</h3>
   ${list.length?`<div class="nl">${list.map(noteHtml).join('')}</div>`:`<p class="small mute nnone">${none}</p>`}`;
-  return `<div class="nh"><h1 class="pt" style="font-size:22px;flex:1;margin:0">Notifications</h1>${unread?`<button class="lnk" data-a="readall">Mark all read</button>`:''}</div>
+  return `<div class="nh"><h1 class="pt" style="font-size:22px;flex:1;margin:0">Notifications</h1>${unread?`<button class="btn sm sec" data-a="readall">${I('circle-check',14)} Mark all as read</button>`:''}</div>
   ${sec('Notifications',N.filter(n=>n.kind!=='req'),'Updates and reminders about your activities will show up here.')}
   ${sec('Requests',N.filter(n=>n.kind==='req'),'Join requests, and replies to yours, will show up here.')}`;
 }
@@ -1216,7 +1216,7 @@ function authHtml(){
   return `<div class="ob">${LOGO}<p class="mute">Do things in your city with company. Post a plan you are already making, pick who joins. Not a dating app.</p>
     <div class="seg atab"><button type="button" class="${up?'':'on'}" aria-pressed="${!up}" data-a="authmode" data-k="in">Sign in</button><button type="button" class="${up?'on':''}" aria-pressed="${up}" data-a="authmode" data-k="up">Create account</button></div>
     <h1 class="pt">${up?'Create your account':'Welcome back'}</h1><p class="sub">${up?'Free, and it takes under a minute.':'Sign in to see plans near you.'}</p>
-    ${up?AGEBOX.replace('margin-top:14px','margin:0 0 14px'):''}<button class="btn out" data-a="google">${GOOGLE_G} Continue with Google</button>
+    ${up?AGEBOX.replace('margin-top:14px','margin:0 0 14px'):''}<button class="btn out" disabled aria-disabled="true" title="Coming soon" style="cursor:not-allowed">${GOOGLE_G} Continue with Google <span class="small mute" style="font-weight:500">· Coming soon</span></button>
     ${CFG.PHONE_LOGIN?`<div style="height:8px"></div><button class="btn out" data-a="authmode" data-k="phone">${I('phone',16)} Continue with phone</button>`:''}
     <div class="or">or with email</div>
     <form id="a_form" data-submit="${up?'signup':'signin'}" novalidate>${emailField()}
@@ -1632,12 +1632,11 @@ const A={
   close:()=>{ui.modal=ui.modal?.back||null;render()},
   closebg:(d,e)=>{if(e.target.classList.contains('ov')&&ui.modal?.type!=='verify'&&ui.modal?.type!=='chat'&&ui.modal?.type!=='terms'){ui.modal=ui.modal?.back||null;render()}},
   user:d=>{ui.modal={type:'user',id:d.id,back:ui.modal};render()},
-  /* The bell toggles the notifications tab. Opening it marks everything read (the dot goes), but what was new stays highlighted until you leave. */
+  /* The bell opens the notifications, and tapping it again closes them. Opening doesn't mark anything read:
+     a notification is read when you open it, or with "Mark all as read". */
   bell:()=>{
     if(ui.tab==='notes'&&!ui.modal){ui.tab=ui.prevTab||'swipe';ui.seen=null;render();return}
     if(ui.tab!=='notes')ui.prevTab=ui.tab;
-    const un=S.notes.filter(n=>!n.read);ui.seen=new Set([...(ui.seen||[]),...un.map(n=>n.id)]);
-    if(un.length){un.forEach(n=>n.read=true);call('read_notifications',{p_ids:null},true).catch(()=>{})}
     ui.tab='notes';ui.modal=null;render();
   },
   /* Inside the landing page, it switches that page to its feedback form; in full screen, it opens the form (which links back here). */
@@ -1699,6 +1698,7 @@ const A={
     return true;   // signed in: onAuthStateChange takes it from here
   }),
   google:async()=>{
+    return;   // Google sign-in is switched off for now (the button is greyed out); remove this line to bring it back
     if(!ageOk(false))return;   // on Create account; Google sign-ups are also checked at the date of birth step
     const {data,error}=await SB.auth.signInWithOAuth({provider:'google',options:{redirectTo:here(),skipBrowserRedirect:true}});
     if(error)return toast(friendly(error));
@@ -1731,7 +1731,7 @@ const A={
   fview:d=>{ui.f.view=d.k;if(d.k==='map')track('map_view');render()},
   saveal:()=>{const f=ui.f,al={id:'al'+Date.now().toString(36),cat:f.cat,tod:f.tod,dist:f.dist,label:alertLabel(f)};S.alerts.push(al);save();track('alert_saved');toast(`Alert saved: we'll tell you about new "${al.label}" plans.`);render()},
   rmalert:d=>{S.alerts=S.alerts.filter(x=>x.id!==d.id);save();toast('Alert removed');render()},
-  readall:()=>{S.notes.forEach(n=>n.read=true);render();call('read_notifications',{p_ids:null},true).catch(()=>{})},
+  readall:()=>{S.notes.forEach(n=>n.read=true);ui.seen=null;toast('All notifications marked as read');render();call('read_notifications',{p_ids:null},true).catch(()=>{})},
   opennote:d=>{
     const n=S.notes.find(x=>x.id===d.id);if(!n)return;
     if(!n.read){n.read=true;if(!n.id.startsWith('tmp'))call('read_notifications',{p_ids:[n.id]},true).catch(()=>{})}
