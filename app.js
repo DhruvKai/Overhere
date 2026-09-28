@@ -568,7 +568,8 @@ function tick(){
 function loadScript(src){
   return new Promise((ok,no)=>{
     if(document.querySelector(`script[src="${src}"]`))return ok();
-    const css=document.createElement('link');css.rel='stylesheet';css.href=src.replace(/\.js$/,'.css');document.head.appendChild(css);
+    /* before the page's own styles, so the widget's global body/html rules don't override the app's */
+    const css=document.createElement('link');css.rel='stylesheet';css.href=src.replace(/\.js$/,'.css');document.head.insertBefore(css,document.head.querySelector('style'));
     const el=document.createElement('script');el.src=src;el.onload=()=>ok();el.onerror=()=>no(new Error('The face check could not load. Please try again.'));document.head.appendChild(el);
   });
 }
@@ -830,7 +831,7 @@ function modalHtml(){
     else inner=`<div class="scan">${I(ic,56)}</div>
       <p style="text-align:center" class="mute">${face?'A few seconds of video selfie confirm you are a real person. This unlocks browsing.':'Government ID check. Needed once, the first time you post or request. It unlocks both.'}</p>
       ${m.state==='fail'?`<p style="text-align:center;color:var(--bad)"><strong>${esc(m.err||'Verification failed.')}</strong> Please try again (${v.fails}/5).</p>`:''}
-      <label class="chk top"><input type="checkbox" id="v_ok"> <span>${face?'I agree to a face scan. The video goes only to our verification provider to check that I am a real person, and is not kept. Overhere stores only whether it passed.':'I agree to an ID check. Overhere stores only whether it passed, never my ID number or ID photo.'}</span></label>
+      <label class="chk top"><input type="checkbox" id="v_ok"> <span>${face?'I agree to a face scan. The video goes only to our verification provider to check that I am a real person, and is not kept. Overhere stores only whether it passed and the provider\'s confidence score.':'I agree to an ID check. Overhere stores only whether it passed, never my ID number or ID photo.'}</span></label>
       ${live?'':'<div class="dn">Demo: this check is simulated. No camera or ID is used.</div>'}
       <button class="btn" data-a="scan">${m.state==='fail'?'Try again':(face?'Start face check':'Start ID check')}</button>`;
     return sheet(face?'Face verification':'Identity verification',`<div class="sb">${inner}</div>`);

@@ -9,6 +9,17 @@ const env = (k: string, fallback?: string) => {
 };
 export { env };
 
+// Supabase injects the new API keys as JSON ({"default": "sb_..."}) and the legacy ones as plain strings.
+// Prefer the new keys, which keep working after legacy keys are turned off; names starting with SUPABASE_ are
+// reserved, so these can't be set by hand.
+const apiKey = (json: string, legacy: string) => {
+  try {
+    const k = JSON.parse(Deno.env.get(json) ?? '{}')?.default;
+    if (typeof k === 'string' && k) return k;
+  } catch { /* not set or not JSON: use the legacy key */ }
+  return env(legacy);
+};
+
 // Only your own site may call these functions from a browser. ALLOWED_ORIGINS is a comma-separated list,
 // e.g. "https://dhruvkai.github.io,http://localhost:8000". Nothing else is allowed.
 const allowed = () => (Deno.env.get('ALLOWED_ORIGINS') ?? '').split(',').map((s) => s.trim()).filter(Boolean);
@@ -45,14 +56,16 @@ export function guard(req: Request): Response | null {
 export async function caller(req: Request): Promise<User | null> {
   const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
   if (!token) return null;
-  const sb = createClient(env('SUPABASE_URL'), env('SUPABASE_ANON_KEY'), { auth: { persistSession: false } });
+  const sb = createClient(env('SUPABASE_URL'), apiKey('SUPABASE_PUBLISHABLE_KEYS', 'SUPABASE_ANON_KEY'),
+    { auth: { persistSession: false } });
   const { data, error } = await sb.auth.getUser(token);
   return error ? null : data.user;
 }
 
 /** Server-side database client. The service-role key never leaves the Edge Function. */
 export function admin(): SupabaseClient {
-  return createClient(env('SUPABASE_URL'), env('SUPABASE_SERVICE_ROLE_KEY'), { auth: { persistSession: false } });
+  return createClient(env('SUPABASE_URL'), apiKey('SUPABASE_SECRET_KEYS', 'SUPABASE_SERVICE_ROLE_KEY'),
+    { auth: { persistSession: false } });
 }
 
 export function awsCreds() {
