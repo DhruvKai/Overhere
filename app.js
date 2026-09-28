@@ -496,8 +496,9 @@ function friendly(e){
   if(/Failed to fetch|NetworkError|Load failed/i.test(m))return "Can't reach Overhere. Check your connection and try again.";
   if(/JWT|sign in again|not signed|refresh token/i.test(m))return 'Please sign in again.';
   if(/phone (signups|provider|logins?) .*disabled|unsupported phone provider/i.test(m))return "Phone sign-in isn't switched on yet. Please use Google or email for now.";
-  if(/token has expired|otp.*(expired|invalid)|invalid.*(otp|token)/i.test(m))return 'That code is wrong or has expired. Check it, or tap Resend code.';
+  /* sending errors first: Supabase's "Error sending confirmation OTP to provider: Invalid ..." would otherwise read as a wrong code */
   if(/(error|fail).*send.*(sms|otp)|sms.*(fail|error)|invalid phone/i.test(m))return "We couldn't send the SMS. Check the number, or try again in a minute.";
+  if(/token has expired|otp.*(expired|invalid)|invalid.*(otp|token)/i.test(m))return 'That code is wrong or has expired. Check it, or tap Resend code.';
   if(/violates|invalid input|syntax|permission denied|does not exist|schema cache/i.test(m))return 'Something there was not accepted. Please check it and try again.';
   return m&&m.length<160?m:'Something went wrong. Please try again.';
 }
