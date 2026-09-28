@@ -264,10 +264,10 @@ create or replace function _blocked(x uuid, y uuid) returns boolean language sql
   select exists (select 1 from blocks where (blocker = x and blocked = y) or (blocker = y and blocked = x)) $$;
 
 -- Is this activity open to this person? Audience (gender) and blocks in either direction.
--- Plans limited to some genders (e.g. women-only) are shown only to people whose ID check has passed,
--- because until then the gender on a profile is only what the person typed in.
+-- Plans limited to some genders (e.g. women-only) are shown only to people whose face check has passed.
+-- The ID check is switched off for now, so the gender is what the person typed in; the host still approves every request.
 create or replace function _eligible(a activities, viewer uuid) returns boolean language sql stable as $$
-  select (a.audience is null or exists (select 1 from profiles p where p.id = viewer and p.kyc and p.gender = any (a.audience)))
+  select (a.audience is null or exists (select 1 from profiles p where p.id = viewer and p.face and p.gender = any (a.audience)))
      and not _blocked(viewer, a.host) $$;
 
 -- A notification for one person. Sample people never get any. With a key, the same one is not sent twice.
@@ -581,14 +581,7 @@ begin
     end if;
   end if;
 
-  -- Browsing unlocks only after the face check.
-  if not prof.face then
-    return jsonb_build_object('me', u, 'email', em, 'now', _ms(now()), 'verify', _verify_state(u),
-      'mode', _modes(),
-      'profile', to_jsonb(prof) - 'email' - 'trust_met' - 'trust_shows' - 'hist',
-      'people', '[]'::jsonb, 'acts', '[]'::jsonb, 'reqs', '[]'::jsonb, 'msgs', '[]'::jsonb, 'notes', '[]'::jsonb,
-      'ratings', '[]'::jsonb, 'reported', '[]'::jsonb, 'blocked', '[]'::jsonb);
-  end if;
+  -- Anyone can browse; posting and asking to join need the face check (post_activity, request_join).
 
   -- Upcoming plans open to this person, plus anything they host or asked to join (up to 90 days back).
   select coalesce(array_agg(a.id), '{}') into act_ids from activities a
@@ -634,7 +627,7 @@ begin
 
   select coalesce(jsonb_agg(jsonb_build_object(
       'id', p.id, 'name', p.name, 'gender', p.gender, 'age', date_part('year', age(p.dob))::int, 'job', p.job, 'bio', p.bio,
-      'emo', p.emo, 'kyc', p.kyc, 'sample', p.is_sample, 'ints', p.ints, 'avail', p.avail, 'hist', p.hist,
+      'emo', p.emo, 'kyc', p.kyc, 'face', p.face, 'sample', p.is_sample, 'ints', p.ints, 'avail', p.avail, 'hist', p.hist,
       'met', p.trust_met + coalesce(t.met, 0), 'shows', p.trust_shows + coalesce(t.shows, 0))), '[]')
   into j_people from profiles p
   left join lateral (
@@ -651,9 +644,9 @@ begin
 
   select coalesce(jsonb_agg(jsonb_build_object('act', act, 'ok', ok, 'stars', stars, 'people', people, 'at', _ms(created_at))), '[]')
   into j_rat from ratings where rater = u;
-  -- how many audience-limited plans unlock after the ID check (the app says so, without showing them)
+  -- how many audience-limited plans unlock after the face check (the app says so, without showing them)
   select count(*) into n_locked from activities a
-  where not prof.kyc and a.audience is not null and prof.gender = any (a.audience) and a.starts_at > now()
+  where not prof.face and a.audience is not null and prof.gender = any (a.audience) and a.starts_at > now()
     and a.hood = prof.hood and not _blocked(u, a.host);
   select coalesce(jsonb_agg(msg), '[]') into j_rep from reports where reporter = u and msg is not null;
   select coalesce(jsonb_agg(blocked), '[]') into j_blk from blocks where blocker = u;
@@ -685,8 +678,8 @@ begin
       ints   = case when p ? 'ints'  then array(select jsonb_array_elements_text(p->'ints'))  else ints end,
       avail  = case when p ? 'avail' then array(select jsonb_array_elements_text(p->'avail')) else avail end,
       emo    = coalesce(p->>'emo', emo),
-      -- finishing onboarding needs a passed face check; face and kyc themselves are never set here
-      onboarded = onboarded or (coalesce((p->>'onboarded')::boolean, false) and face)
+      -- the face check is optional at sign-up; face and kyc themselves are never set here
+      onboarded = onboarded or coalesce((p->>'onboarded')::boolean, false)
     where id = u;
   else
     if coalesce(p->>'consent', '') <> 'true' then raise exception 'Please tick the consent box to continue'; end if;
@@ -712,7 +705,7 @@ declare u uuid := _uid(); me profiles; st timestamptz; nid uuid;
 begin
   select * into me from profiles where id = u;
   if not found then raise exception 'Finish your profile first'; end if;
-  if not me.kyc then raise exception 'Verify your ID before posting'; end if;
+  if not me.face then raise exception 'Do the face check before posting'; end if;
   if (select count(*) from activities where host = u and created_at > now() - interval '1 day') >= 10 then
     raise exception 'You can post up to 10 plans a day';
   end if;
@@ -781,7 +774,7 @@ declare u uuid := _uid(); me profiles; a activities; st text; rid uuid;
 begin
   select * into me from profiles where id = u;
   if not found then raise exception 'Finish your profile first'; end if;
-  if not me.kyc then raise exception 'Verify your ID before requesting'; end if;
+  if not me.face then raise exception 'Do the face check before asking to join'; end if;
   if (select count(*) from requests where user_id = u and created_at > now() - interval '1 day') >= 50 then
     raise exception 'You have sent a lot of requests today. Please try again tomorrow.';
   end if;

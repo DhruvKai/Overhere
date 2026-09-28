@@ -147,7 +147,7 @@ function applyState(st){
   const priv=p.state||{};
   USERS={};let mine={};
   (st.people||[]).forEach(x=>{
-    const u={name:x.name,gender:x.gender,age:x.age,job:x.job||'',bio:x.bio||'',emo:x.emo||defEmo(x.gender),verified:!!x.kyc,trust:[x.met||0,x.shows||0],hist:x.hist||[],ints:x.ints||[],avail:x.avail||[],sample:!!x.sample};
+    const u={name:x.name,gender:x.gender,age:x.age,job:x.job||'',bio:x.bio||'',emo:x.emo||defEmo(x.gender),verified:!!x.face,trust:[x.met||0,x.shows||0],hist:x.hist||[],ints:x.ints||[],avail:x.avail||[],sample:!!x.sample};
     if(x.id===ME)mine=u;else USERS[x.id]=u;
   });
   S=blank();
@@ -231,7 +231,7 @@ const myReq=id=>S.reqs.find(r=>r.act===id&&r.user==='me');
 const ownPhone=p=>!!MYPHONE&&p.replace(/\D/g,'').slice(-10)===MYPHONE;
 const audOK=a=>a.aud==='everyone'||a.aud.includes(S.me.gender);
 const isBlocked=id=>S.blocked.includes(id);
-const isVer=id=>id==='me'?!!S.me.kyc:!!USERS[id]?.verified;
+const isVer=id=>id==='me'?!!S.me.face:!!USERS[id]?.verified;
 const vf=(id,long)=>isVer(id)?`<span class="vf">${long?I('badge-check',14)+' Verified':'✓'}</span>`:'';
 /* Hosts see the whole waitlist; everyone else only its length and their own place in it. */
 const waitlist=id=>{const a=actOf(id);if(a&&a.host!=='me')return Array.from({length:a.wl||0},(_,i)=>({user:i+1===a.mypos?'me':'?'}));return S.reqs.filter(r=>r.act===id&&r.status==='waitlist')};
@@ -609,7 +609,8 @@ async function scan(){
   await refresh();
   if(ui.modal===m){if(VER[m.kind]?.review)m.state='flagged';render()}
 }
-const gate=fn=>{if(S.me.kyc)fn();else openVerify('kyc',fn)};
+/* Browsing is open to everyone; posting and asking to join need the face check. The ID check is off for now. */
+const gate=fn=>{if(S.me.face)fn();else openVerify('face',fn)};
 
 /* ---------- swipe ---------- */
 function swipe(dir){
@@ -677,7 +678,7 @@ const empty=(ic,t,sub,btn)=>`<div class="empty"><div class="big">${I(ic,30)}</di
 
 /* ---------- render: tabs ---------- */
 /* Audience-limited plans (e.g. women-only) are only sent to people whose ID check passed. */
-const lockedNote=()=>LOCKED&&!S.me.kyc?`<div class="dn" style="margin:0 0 14px;text-align:left">${I('shield-check',14)} ${LOCKED} ${LOCKED===1?'plan near you is':'plans near you are'} only open to certain groups, like women-only plans. <button class="lnk" data-a="unlock">Verify your ID to see ${LOCKED===1?'it':'them'}</button></div>`:'';
+const lockedNote=()=>LOCKED&&!S.me.face?`<div class="dn" style="margin:0 0 14px;text-align:left">${I('shield-check',14)} ${LOCKED} ${LOCKED===1?'plan near you is':'plans near you are'} only open to certain groups, like women-only plans. <button class="lnk" data-a="unlock">Do the face check to see ${LOCKED===1?'it':'them'}</button></div>`:'';
 function tabSwipe(){
   const d=deck();
   if(!d.length)return lockedNote()+empty('compass','Nothing new right now','You have gone through all plans happening soon in '+esc(S.me.hood)+'. Check Discover for plans further out.','<button class="btn" data-a="tab" data-t="discover">Go to Discover</button>');
@@ -794,12 +795,16 @@ function tabNotes(){
 }
 function tabProfile(){
   const m=S.me,th=themePref(),ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
-  const V=[['mail','Email Verified',true],['scan-face','Face Verified',!!m.face],['id-card','Identity Verified',!!m.kyc],['user','Profile Complete',!!(m.job&&m.bio&&(m.ints||[]).length&&(m.avail||[]).length)]];
+  const V=[['mail','Email Verified',true],['scan-face','Face Verified',!!m.face],['id-card','Government ID',false,'soon'],['user','Profile Complete',!!(m.job&&m.bio&&(m.ints||[]).length&&(m.avail||[]).length)]];
   const done=V.filter(v=>v[2]).length;
+  /* face check can be done from here; the ID check is greyed out until it's switched on */
+  const vi=([ic,l,y,k])=>k==='soon'?`<div class="vi off" aria-disabled="true">${I(ic,14)}${l}<span class="e small">Coming soon</span></div>`
+    :!y&&ic==='scan-face'?`<button class="vi act" data-a="doface">${I(ic,14)}Face check<span class="e small">Start</span></button>`
+    :`<div class="vi ${y?'y':''}">${I(ic,14)}${l}${y?`<span class="e">${I('circle-check',14)}</span>`:''}</div>`;
   const soft=(arr,none)=>arr&&arr.length?`<div class="soft">${arr.map(x=>`<span>${esc(x)}</span>`).join('')}</div>`:`<p class="small mute">${none}</p>`;
   return `<div class="panel"><div class="ph">${I('user',15)} Your profile<button class="btn sm sec" data-a="editprofile">${I('pencil',14)} Edit profile</button></div>
   <div class="pt2"><div class="phw" data-a="photo">${av('me','lg')}<button class="pe" id="p_pe" title="Change profile picture" aria-label="Change profile picture" aria-haspopup="menu" aria-expanded="false">${I('camera',14)}</button>
-  <div class="pmenu" id="p_menu" role="menu" hidden></div></div><div><div class="pn">${esc(m.name)} ${m.kyc?`<span class="vf">${I('badge-check',14)} Verified</span>`:''}</div><div class="small mute">${esc(m.hood)}, Chandigarh</div><div class="small" style="margin-top:4px">${trustTxt('me')}</div></div></div>
+  <div class="pmenu" id="p_menu" role="menu" hidden></div></div><div><div class="pn">${esc(m.name)} ${m.face?`<span class="vf">${I('badge-check',14)} Verified</span>`:''}</div><div class="small mute">${esc(m.hood)}, Chandigarh</div><div class="small" style="margin-top:4px">${trustTxt('me')}</div></div></div>
   <input type="file" id="p_photo" accept="image/jpeg,image/png,image/webp,image/*" hidden>
   <div class="facts"><span>${ageOf(m.dob)} yrs</span><span>${esc(m.gender)}</span>${m.job?`<span>${I('briefcase',14)}${esc(m.job)}</span>`:''}</div>
   <p>${m.bio?esc(m.bio):'<span class="mute">Add a short bio so hosts know who you are. Tap Edit profile.</span>'}</p></div>
@@ -808,7 +813,7 @@ function tabProfile(){
   <div class="panel"><div class="ph">${I('calendar-check',15)} Past activities</div>${pastHtml(pastList('me'),'Activities you host or join show up here.')}</div>
   <div class="panel"><div class="ph">${I('shield-check',15)} Verifications <span class="r">${done}/${V.length} complete</span></div>
   <div class="bar"><i style="width:${done/V.length*100}%"></i></div>
-  <div class="vg">${V.map(([ic,l,y])=>`<div class="vi ${y?'y':''}">${I(ic,14)}${l}${y?`<span class="e">${I('circle-check',14)}</span>`:''}</div>`).join('')}</div></div>
+  <div class="vg">${V.map(vi).join('')}</div></div>
   <div class="panel"><div class="ph">${I('user-plus',15)} Following</div>${S.following.length?S.following.map(u=>`<div class="blk">${av(u,'sm')}<button class="hlink" data-a="user" data-id="${u}">${esc(uname(u))}</button><button class="lnk" data-a="follow" data-id="${u}">Unfollow</button></div>`).join(''):'<p class="small mute" style="margin:0">Follow hosts from their profile to hear when they post a new plan.</p>'}</div>
   <div class="panel"><div class="ph">${I('sun',15)} App</div>
   <label style="margin-top:0">Appearance</label><span class="seg" role="radiogroup" aria-label="Appearance">${[['system','System'],['light','Light'],['dark','Dark']].map(([k,l])=>`<button role="radio" aria-checked="${th===k}" class="${th===k?'on':''}" data-a="theme" data-k="${k}">${l}</button>`).join('')}</span>
@@ -835,7 +840,7 @@ function modalHtml(){
     else if(!left)inner=`<div class="scan">${I('shield-check',56)}</div><p style="text-align:center"><strong>No tries left</strong></p><p class="mute" style="text-align:center">You have used all ${v.max||5} tries. A person on our team will check it by hand and send you a notification.</p>
       <button class="btn" data-a="scan">Send for review</button>`;
     else inner=`<div class="scan">${I(ic,56)}</div>
-      <p style="text-align:center" class="mute">${face?'A few seconds of video selfie confirm you are a real person. This unlocks browsing.':'Government ID check. Needed once, the first time you post or request. It unlocks both.'}</p>
+      <p style="text-align:center" class="mute">${face?'A few seconds of video selfie confirm you are a real person. You need it to post a plan or ask to join one.':'Government ID check. Needed once, the first time you post or request. It unlocks both.'}</p>
       ${m.state==='fail'?`<p style="text-align:center;color:var(--bad)"><strong>${esc(m.err||'Verification failed.')}</strong> Please try again.</p>`:''}
       ${v.attempts?`<p style="text-align:center" class="small mute">${left} of ${v.max||5} tries left. After that, a person on our team checks it by hand.</p>`:''}
       <label class="chk top"><input type="checkbox" id="v_ok"> <span>${face?'I agree to a face scan. The video goes only to our verification provider to check that I am a real person, and is not kept. Overhere stores only whether it passed and the provider\'s confidence score.':'I agree to an ID check. Overhere stores only whether it passed, never my ID number or ID photo.'}</span></label>
@@ -884,8 +889,8 @@ function modalHtml(){
       <label for="r_note" style="font-size:14px;margin-top:18px">Add a note <span class="mute" style="font-weight:400">(optional)</span></label>
       <p class="small mute">Introduce yourself or mention why you want to join.</p>
       <textarea id="r_note" maxlength="100" placeholder="Hey! I'd love to join, happy to be on time and split costs."></textarea><div class="cc"><span id="r_cnt">0</span>/100</div>
-      ${S.me.kyc?'<div style="height:14px"></div>':`<div class="warnbox">${I('alert-triangle',16)}<span>You'll need to complete a quick identity verification before your request is sent. It only takes 2 minutes.</span></div>`}
-      <button class="btn" data-a="request" data-id="${a.id}">${I('send',16)} ${canWait?(S.me.kyc?'Join waitlist':'Verify &amp; join waitlist'):(S.me.kyc?'Send Request':'Verify &amp; Send Request')}</button>
+      ${S.me.face?'<div style="height:14px"></div>':`<div class="warnbox">${I('alert-triangle',16)}<span>You'll need to do a quick face check before your request is sent. It takes about a minute.</span></div>`}
+      <button class="btn" data-a="request" data-id="${a.id}">${I('send',16)} ${canWait?(S.me.face?'Join waitlist':'Verify &amp; join waitlist'):(S.me.face?'Send Request':'Verify &amp; Send Request')}</button>
       <div style="height:8px"></div><button class="btn ghost" data-a="close">Not now</button></div>`);
     const acc=rq?.status==='accepted',pos=rq?.status==='waitlist'?waitlist(a.id).findIndex(r=>r.user==='me')+1:0;
     return sheet(backB(m)+'Activity',`<div class="sb">${top}
@@ -1188,7 +1193,8 @@ function onboardHtml(){
     <label class="chk top" style="margin-top:18px"><input type="checkbox" id="o_ok"> <span>I agree that Overhere may store these details to run the beta and contact me about it. I am 18 or older. I can ask for my data to be deleted at any time by emailing ${esc(CFG.CONTACT_EMAIL||'the beta team')}. <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a></span></label>
     <div style="height:18px"></div><button class="btn" data-a="ob2">Continue</button>
     <p class="small" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p>`;
-  }else if(!S.me.face)body=`<h1 class="pt">Quick face check</h1><p class="sub">Confirms your account belongs to a real person. Passing unlocks browsing.</p><div class="scan">${I('scan-face',56)}</div><button class="btn" data-a="obface">Start face check</button>
+  }else if(!S.me.face&&!ui.faceSkip)body=`<h1 class="pt">Quick face check</h1><p class="sub">Confirms your account belongs to a real person. You can browse without it, but you need it to post a plan or ask to join one.</p><div class="scan">${I('scan-face',56)}</div><button class="btn" data-a="obface">Start face check</button>
+    <div style="height:8px"></div><button class="btn sec" data-a="obfaceskip">Skip for now</button>
     <p class="small" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p>`;
   else body=`<h1 class="pt">Tell us more (optional)</h1><p class="sub">You can skip this and add it later.</p>
     <label for="o_job">Profession</label><input id="o_job" maxlength="40"><label for="o_bio">Bio</label><textarea id="o_bio" maxlength="300"></textarea>
@@ -1337,7 +1343,7 @@ function keepScroll(){
 function render(){
   const scr=document.getElementById('screen'),restore=keepScroll();
   if(!ONLINE||!ME||!loaded){scr.innerHTML=authHtml();restore();return}
-  if(!S.me||!S.me.face||!S.me.obDone){scr.innerHTML=onboardHtml()+modalHtml();restore();afterRender();return}
+  if(!S.me||!S.me.obDone){scr.innerHTML=onboardHtml()+modalHtml();restore();afterRender();return}
   const unread=S.notes.filter(n=>!n.read).length;
   const view={swipe:tabSwipe,discover:tabDiscover,acts:tabActs,reqs:tabReqs,profile:tabProfile,notes:tabNotes}[ui.tab]();
   const pend=S.reqs.filter(r=>r.status==='pending'&&actOf(r.act)?.host==='me').length;
@@ -1358,7 +1364,7 @@ function redraw(){
   const box=document.getElementById('screen'),a=document.activeElement,vals=new Map();
   box.querySelectorAll('input,textarea,select').forEach(el=>{if(el.type==='file'||el.disabled)return;vals.set(key(el),el.type==='checkbox'||el.type==='radio'?el.checked:el.value)});
   const foc=a&&box.contains(a)&&a.id?{id:a.id,s:a.selectionStart,e:a.selectionEnd}:null;
-  const scene=()=>[ui.tab,ui.auth?.mode,!!ME,loaded,!!S.me,S.me?.face,S.me?.obDone,ui.modal?[ui.modal.type,ui.modal.id,ui.modal.tpl,ui.modal.k,ui.modal.state,ui.modal.edit,ui.modal.m].join(':'):''].join('|');
+  const scene=()=>[ui.tab,ui.auth?.mode,!!ME,loaded,!!S.me,S.me?.face,S.me?.obDone,ui.faceSkip,ui.modal?[ui.modal.type,ui.modal.id,ui.modal.tpl,ui.modal.k,ui.modal.state,ui.modal.edit,ui.modal.m].join(':'):''].join('|');
   const before=scene();
   render();
   if(scene()!==before)return;
@@ -1642,7 +1648,7 @@ const A={
   pickvenue:d=>{const i=document.getElementById('f_venue');if(i){i.value=d.v;i.focus()}venueList(false);track('venue_picked')},
   /* hosting */
   newpost:()=>gate(()=>{ui.modal={type:'post'};render()}),
-  unlock:()=>gate(()=>{toast('ID verified. Plans for your group now show too.');render()}),
+  unlock:()=>gate(()=>{toast('Face check passed. Plans for your group now show too.');render()}),
   submitpost:async(d,e)=>{
     const desc=val('f_desc'),venue=val('f_venue'),when=new Date(document.getElementById('f_when').value).getTime();
     const gs=[...document.querySelectorAll('.f_g:checked')].map(x=>x.value),all=document.getElementById('f_all').checked||gs.length===GENDERS.length;
@@ -1800,6 +1806,8 @@ const A={
     track('profile_created');
   },
   obface:()=>openVerify('face',()=>render()),
+  obfaceskip:()=>{ui.faceSkip=true;track('face_skipped');render()},
+  doface:()=>openVerify('face',()=>render()),
   obdone:async d=>{
     const p={onboarded:true,...(d.save?{job:val('o_job'),bio:val('o_bio')}:{})};
     if(await run('save_profile',{p})===undefined)return;
