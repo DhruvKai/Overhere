@@ -1,0 +1,3 @@
+# Files checked by an integrity hash (demo.html) must stay byte-for-byte identical
+vendor/supabase/supabase.js -text
+*.woff2 binary
