@@ -363,7 +363,7 @@ create or replace function _t_at(d int, hr int, mi int default 0) returns timest
 --  * sample plans move forward so the app never runs empty; if real people joined one, it stays in
 --    their history and a fresh copy is posted instead
 create or replace function _housekeeping() returns void language plpgsql as $$
-declare a activities; nid uuid; nxt timestamptz; step interval; k int;
+declare a activities; nid uuid; nxt timestamptz; step interval; n_step int;
 begin
   if not pg_try_advisory_xact_lock(4242) then return; end if;
   if exists (select 1 from app_meta where k = 'housekeeping' and v > now() - interval '2 minutes') then return; end if;
@@ -372,8 +372,8 @@ begin
   for a in select * from activities where repeat is not null and next_id is null and sample_period is null and starts_at <= now() loop
     step := case a.repeat when 'monthly' then interval '1 month' when 'biweekly' then interval '14 days' else interval '7 days' end;
     -- months differ in length, so step from the first date (the 31st stays the 31st or the month's last day)
-    k := greatest(1, floor(extract(epoch from now() - a.starts_at) / extract(epoch from step))::int - 1);
-    loop nxt := a.starts_at + step * k; exit when nxt > now(); k := k + 1; end loop;
+    n_step := greatest(1, floor(extract(epoch from now() - a.starts_at) / extract(epoch from step))::int - 1);
+    loop nxt := a.starts_at + step * n_step; exit when nxt > now(); n_step := n_step + 1; end loop;
     insert into activities (host, cat, description, cap, starts_at, audience, venue, cost, total, hood, repeat)
     values (a.host, a.cat, a.description, a.cap, nxt, a.audience, a.venue, a.cost, a.total, a.hood, a.repeat)
     returning id into nid;
