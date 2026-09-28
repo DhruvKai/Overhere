@@ -422,32 +422,49 @@ create or replace function _may_prefill() returns boolean language sql stable as
       or (coalesce((select v from app_config where k = 'prefill_email_signups'), 'off') = 'on'
           and exists (select 1 from auth.users where id = auth.uid() and email_confirmed_at is not null)) $$;
 
--- Per check: failed attempts since the last pass / reviewer decision, and whether it waits for a person to review.
+-- Tries allowed per check before a person on the team has to review it. Every try counts: a live check counts when
+-- it starts (so cancelled, abandoned or broken scans count too), a simulated one when it fails.
+create or replace function _verify_max() returns int language sql immutable as $$ select 5 $$;
+
+-- Per check, since the last pass / reviewer decision: failed attempts, all attempts, and whether it waits for review.
 create or replace function _verify_state(p_user uuid) returns jsonb language sql volatile as $$
   select jsonb_object_agg(k, jsonb_build_object(
     'fails', (select count(*) from verifications v where v.user_id = p_user and v.kind = k and v.status = 'failed'
               and v.seq > coalesce((select max(w.seq) from verifications w
                                     where w.user_id = p_user and w.kind = k and w.status in ('passed','approved','rejected')), 0)),
+    'attempts', (select count(*) from verifications v where v.user_id = p_user and v.kind = k
+                 and (v.status = 'started' or (v.status = 'failed' and v.provider = 'simulated'))
+                 and v.seq > coalesce((select max(w.seq) from verifications w
+                                       where w.user_id = p_user and w.kind = k and w.status in ('passed','approved','rejected')), 0)),
+    'max', _verify_max(),
     'review', coalesce((select v.status = 'review' from verifications v where v.user_id = p_user and v.kind = k and v.status <> 'started'
                         order by v.seq desc limit 1), false)))
   from unnest(array['face','kyc']) k $$;
 
--- Record one attempt. A pass sets the profile flag; the 5th failure in a row sends it to human review.
+-- Block further tries and put the person in the /addmin review queue (once), telling them what happens next.
+create or replace function _verify_to_review(p_user uuid, p_kind text, p_provider text) returns void language plpgsql as $$
+begin
+  if (_verify_state(p_user) -> p_kind ->> 'review')::boolean then return; end if;
+  insert into verifications (user_id, kind, status, provider) values (p_user, p_kind, 'review', left(p_provider, 30));
+  perform _note(p_user, 'update', 'Sent for review', case when p_kind = 'face' then 'Face check' else 'ID check' end, 'warn', null,
+    format('That was %s tries, so a person on our team will now check it by hand. We will send you a notification when it is done.', _verify_max()));
+  perform _ping(array[p_user]);
+end $$;
+
+-- Record one attempt. A pass sets the profile flag; a failure on the last allowed try sends it to human review.
 create or replace function _verify_record(p_user uuid, p_kind text, p_passed boolean, p_provider text, p_session text,
                                           p_score numeric, p_detail jsonb) returns text language plpgsql as $$
-declare st text; vs jsonb; fails int;
+declare st text;
 begin
-  vs := _verify_state(p_user);
-  if (vs -> p_kind ->> 'review')::boolean then return 'review'; end if;
+  if (_verify_state(p_user) -> p_kind ->> 'review')::boolean then return 'review'; end if;
   st := case when p_passed then 'passed' else 'failed' end;
   insert into verifications (user_id, kind, status, provider, session_id, score, detail)
   values (p_user, p_kind, st, p_provider, p_session, p_score, coalesce(p_detail, '{}'));
-  fails := (vs -> p_kind ->> 'fails')::int + case when p_passed then 0 else 1 end;
   if p_passed then
     if p_kind = 'face' then update profiles set face = true where id = p_user;
     else update profiles set kyc = true where id = p_user; end if;
-  elsif fails >= 5 then
-    insert into verifications (user_id, kind, status, provider) values (p_user, p_kind, 'review', p_provider);
+  elsif (_verify_state(p_user) -> p_kind ->> 'attempts')::int >= _verify_max() then
+    perform _verify_to_review(p_user, p_kind, p_provider);
     st := 'review';
   end if;
   perform _ping(array[p_user]);
@@ -475,22 +492,37 @@ end $$;
 
 -- Called only by the Edge Functions (service role), never by the browser. See supabase/functions.
 -- verify_precheck_service runs before anything is asked of the provider, so refused attempts cost nothing.
-create or replace function verify_precheck_service(p_user uuid, p_kind text) returns void
+-- Returns {status: 'ok'} to go ahead, or {status: 'review', verify} once the tries are used up: the person is then
+-- blocked and put in the review queue (recorded here, so it is not an error that would undo it).
+drop function if exists verify_precheck_service(uuid, text);
+create or replace function verify_precheck_service(p_user uuid, p_kind text) returns jsonb
 language plpgsql security definer set search_path = public as $$
+declare vs jsonb;
 begin
   if p_kind not in ('face', 'kyc') then raise exception 'Unknown check'; end if;
   if _simulated(p_kind) then raise exception 'This check is set to simulated in app_config'; end if;
   if not exists (select 1 from profiles where id = p_user) then raise exception 'Finish your profile first'; end if;
-  if (_verify_state(p_user) -> p_kind ->> 'review')::boolean then raise exception 'Waiting for review'; end if;
+  vs := _verify_state(p_user);
+  if not (vs -> p_kind ->> 'review')::boolean and (vs -> p_kind ->> 'attempts')::int >= _verify_max() then
+    perform _verify_to_review(p_user, p_kind, 'limit');
+    vs := _verify_state(p_user);
+  end if;
+  if (vs -> p_kind ->> 'review')::boolean then return jsonb_build_object('status', 'review', 'verify', vs); end if;
   if (select count(*) from verifications where user_id = p_user and status = 'started' and created_at > now() - interval '1 hour') >= 10 then
     raise exception 'Too many attempts. Please try again in an hour.';
   end if;
+  return jsonb_build_object('status', 'ok');
 end $$;
 
 create or replace function verify_start_service(p_user uuid, p_kind text, p_provider text, p_session text) returns void
 language plpgsql security definer set search_path = public as $$
 begin
-  perform verify_precheck_service(p_user, p_kind);
+  -- one start at a time per person, so two tabs can't both take the last try
+  perform pg_advisory_xact_lock(hashtext('verify:' || p_user::text));
+  if (verify_precheck_service(p_user, p_kind) ->> 'status') <> 'ok'
+     or (_verify_state(p_user) -> p_kind ->> 'attempts')::int >= _verify_max() then
+    raise exception 'Waiting for review';
+  end if;
   insert into verifications (user_id, kind, status, provider, session_id, detail)
   values (p_user, p_kind, 'started', left(p_provider, 30), left(p_session, 200), jsonb_build_object('consent', true));
 end $$;
@@ -932,12 +964,18 @@ end $$;
 create or replace function admin_reviews(pass text) returns jsonb language plpgsql security definer set search_path = public as $$
 begin
   perform _admin_ok(pass);
-  return (select coalesce(jsonb_agg(jsonb_build_object('user', p.id, 'name', p.name, 'kind', k.kind, 'since', _ms(v.created_at))
+  -- tries, failures and the best provider score (0-100) since the last decision, to help judge "real person, bad light"
+  return (select coalesce(jsonb_agg(jsonb_build_object('user', p.id, 'name', p.name, 'kind', k.kind, 'since', _ms(v.created_at),
+                                      'attempts', (s -> k.kind ->> 'attempts')::int, 'fails', (s -> k.kind ->> 'fails')::int,
+                                      'best', (select max(w.score) from verifications w where w.user_id = p.id and w.kind = k.kind
+                                               and w.score is not null and w.seq > coalesce((select max(x.seq) from verifications x
+                                                 where x.user_id = p.id and x.kind = k.kind and x.status in ('passed','approved','rejected')), 0)))
                                     order by v.created_at), '[]')
           from profiles p cross join unnest(array['face','kyc']) k(kind)
+          cross join lateral (select _verify_state(p.id) s) st
           join lateral (select created_at from verifications w where w.user_id = p.id and w.kind = k.kind and w.status = 'review'
                         order by w.seq desc limit 1) v on true
-          where not p.is_sample and (_verify_state(p.id) -> k.kind ->> 'review')::boolean);
+          where not p.is_sample and (s -> k.kind ->> 'review')::boolean);
 end $$;
 
 create or replace function admin_decide_review(pass text, p_user uuid, p_kind text, p_approve boolean) returns void

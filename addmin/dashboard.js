@@ -30,7 +30,7 @@ async function fetchStats(){
   if(r.status===404||/admin_stats|could not find/i.test(t))throw new Error('The dashboard is not set up in Supabase yet. Run the "Added later" part of schema.sql in the SQL editor, then set your password (see the comments in that file).');
   throw new Error('Could not load ('+r.status+'). Try again.');
 }
-/* Human review: people whose face or ID check failed 5 times. Returns null if schema-app.sql has not been run yet. */
+/* Human review: people who used all 5 tries at a face or ID check. Returns null if schema-app.sql has not been run yet. */
 const BASE=(CFG.SUPABASE_URL||'').replace(/\/+$/,'').replace(/\/rest\/v1$/,'');
 async function rpc(fn,body){
   const h={apikey:CFG.SUPABASE_ANON_KEY,'Content-Type':'application/json'};
@@ -44,8 +44,8 @@ async function fetchReviews(){if(!REMOTE)return null;try{return await rpc('admin
 function reviewPanel(rv){
   if(!rv)return '';
   const KIND={face:'Face check',kyc:'ID check'};
-  return panel('Needs human review',rv.length?rv.length+' waiting':'nobody waiting',rv.length?`<p class="small mute">These people failed a check 5 times in a row. Approve if you are sure it is a real person (for example after a video call), or ask them to try again.</p>`
-    +rv.map(x=>`<div class="rv"><span class="who"><b>${esc(x.name)}</b> · ${esc(KIND[x.kind]||x.kind)} · since ${esc(new Date(x.since).toLocaleString([], {day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}))}</span>
+  return panel('Needs human review',rv.length?rv.length+' waiting':'nobody waiting',rv.length?`<p class="small mute">These people used all 5 tries at a check, so they can't try again until you decide. Tries include cancelled or broken scans; the best score is the provider's confidence (0–100, 80 passes) that it was a live person. Approve if you are sure it is a real person (for example after a video call), or ask them to try again.</p>`
+    +rv.map(x=>`<div class="rv"><span class="who"><b>${esc(x.name)}</b> · ${esc(KIND[x.kind]||x.kind)} · since ${esc(new Date(x.since).toLocaleString([], {day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}))}${x.attempts!=null?` · ${+x.attempts} tries, ${+x.fails} failed${x.best!=null?`, best score ${Math.round(x.best)}`:''}`:''}</span>
       <button class="btn sec" data-rv="${esc(x.user)}" data-k="${esc(x.kind)}" data-ok="0">Ask to try again</button><button class="btn" data-rv="${esc(x.user)}" data-k="${esc(x.kind)}" data-ok="1">Approve</button></div>`).join('')
     :'<p class="empty">No one is waiting for review.</p>')+'<div style="height:16px"></div>';
 }

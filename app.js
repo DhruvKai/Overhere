@@ -122,7 +122,7 @@ const SB_URL=(CFG.SUPABASE_URL||'').replace(/\/+$/,'').replace(/\/rest\/v1$/,'')
 const ONLINE=!!(SB_URL&&CFG.SUPABASE_ANON_KEY&&/^https?:$/.test(location.protocol)&&window.supabase);
 const SB=ONLINE?window.supabase.createClient(SB_URL,CFG.SUPABASE_ANON_KEY):null;
 const EVERYONE='00000000-0000-0000-0000-000000000000';
-let ME=null,MODE={face:'simulated',kyc:'simulated'},VER={face:{fails:0,review:false},kyc:{fails:0,review:false}},skew=0,loaded=false,DRAFT=null,LOCKED=0;
+let ME=null,MODE={face:'simulated',kyc:'simulated'},VER={face:{fails:0,attempts:0,max:5,review:false},kyc:{fails:0,attempts:0,max:5,review:false}},skew=0,loaded=false,DRAFT=null,LOCKED=0;
 const isUuid=x=>typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(x);
 /* Your private settings, saved to your account. ACT_FLAGS remember which reminders an activity already gave you. */
 const PRIV=['dismissed','following','alerts','muted','tips','asked','actf','seenPost'];
@@ -577,9 +577,10 @@ const CHECKS={
   async simulated(kind){await new Promise(r=>setTimeout(r,1300));return call('verify_simulated',{p_kind:kind,p_pass:true,p_consent:true},true)},
   async live(kind){
     if(kind!=='face')throw new Error('The ID check is not connected yet. Please try again later.');
+    const ses=await edge('face-start',{consent:true});
+    if(ses?.status==='review')return ses;   // out of tries: blocked until a person reviews it, no camera
     await loadScript('face-widget.js');
     if(!window.OverhereFaceWidget)throw new Error('The face check is not available yet. Please try again later.');
-    const ses=await edge('face-start',{consent:true});
     await window.OverhereFaceWidget.run(document.getElementById('face_box'),ses);   // resolves once the video is analysed
     return edge('face-result',{sessionId:ses.sessionId});
   }
@@ -589,7 +590,8 @@ function openVerify(kind,next){
 }
 async function scan(){
   const m=ui.modal;if(!m||m.state==='scanning')return;
-  if(!document.getElementById('v_ok')?.checked)return toast('Please tick the box to agree first');
+  const v=VER[m.kind]||{},out=(v.attempts||0)>=(v.max||5);   // out of tries: the call only files the review, no scan
+  if(!out&&!document.getElementById('v_ok')?.checked)return toast('Please tick the box to agree first');
   m.state='scanning';m.err='';render();
   try{
     const r=await (MODE[m.kind]==='live'?CHECKS.live(m.kind):CHECKS.simulated(m.kind));
@@ -824,13 +826,16 @@ function modalHtml(){
   const m=ui.modal;if(!m)return '';
   const sheet=(title,body,cls='')=>`<div class="ov" data-a="closebg"><div class="sheet ${cls}" data-stop="1"><div class="sh"><h2>${title}</h2><button class="ib" data-a="close" title="Close">${I('x',18)}</button></div>${body}</div></div>`;
   if(m.type==='verify'){
-    const face=m.kind==='face',v=VER[m.kind]||{fails:0},ic=face?'scan-face':'id-card',live=MODE[m.kind]==='live';
+    const face=m.kind==='face',v=VER[m.kind]||{fails:0,attempts:0,max:5},left=Math.max(0,(v.max||5)-(v.attempts||0)),ic=face?'scan-face':'id-card',live=MODE[m.kind]==='live';
     let inner;
-    if(m.state==='flagged'||v.review)inner=`<div class="scan">${I('shield-check',56)}</div><p style="text-align:center"><strong>Sent for human review</strong></p><p class="mute" style="text-align:center">After 5 failed attempts a person on our team checks it and you get a notification. You are not locked out permanently.</p>`;
+    if(m.state==='flagged'||v.review)inner=`<div class="scan">${I('shield-check',56)}</div><p style="text-align:center"><strong>Sent for human review</strong></p><p class="mute" style="text-align:center">You have used all ${v.max||5} tries, so the check is paused. A person on our team will check it by hand and you will get a notification. You are not locked out permanently.</p>`;
     else if(m.state==='scanning')inner=(live&&face?'<div id="face_box" class="facebox"></div>':`<div class="scan go">${I(ic,56)}</div>`)+`<p style="text-align:center" class="mute">${face?'Checking liveness…':'Reading your ID…'}</p>`;
+    else if(!left)inner=`<div class="scan">${I('shield-check',56)}</div><p style="text-align:center"><strong>No tries left</strong></p><p class="mute" style="text-align:center">You have used all ${v.max||5} tries. A person on our team will check it by hand and send you a notification.</p>
+      <button class="btn" data-a="scan">Send for review</button>`;
     else inner=`<div class="scan">${I(ic,56)}</div>
       <p style="text-align:center" class="mute">${face?'A few seconds of video selfie confirm you are a real person. This unlocks browsing.':'Government ID check. Needed once, the first time you post or request. It unlocks both.'}</p>
-      ${m.state==='fail'?`<p style="text-align:center;color:var(--bad)"><strong>${esc(m.err||'Verification failed.')}</strong> Please try again (${v.fails}/5).</p>`:''}
+      ${m.state==='fail'?`<p style="text-align:center;color:var(--bad)"><strong>${esc(m.err||'Verification failed.')}</strong> Please try again.</p>`:''}
+      ${v.attempts?`<p style="text-align:center" class="small mute">${left} of ${v.max||5} tries left. After that, a person on our team checks it by hand.</p>`:''}
       <label class="chk top"><input type="checkbox" id="v_ok"> <span>${face?'I agree to a face scan. The video goes only to our verification provider to check that I am a real person, and is not kept. Overhere stores only whether it passed and the provider\'s confidence score.':'I agree to an ID check. Overhere stores only whether it passed, never my ID number or ID photo.'}</span></label>
       ${live?'':'<div class="dn">Demo: this check is simulated. No camera or ID is used.</div>'}
       <button class="btn" data-a="scan">${m.state==='fail'?'Try again':(face?'Start face check':'Start ID check')}</button>`;

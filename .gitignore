@@ -1,3 +1,6 @@
 # Guides and notes stay on your computer only. This repository is public and GitHub Pages
 # serves every file in it, so a .md file here would be readable at overhere.social/<name>.md.
 *.md
+
+# Supabase CLI working files (project link, versions)
+supabase/.temp/

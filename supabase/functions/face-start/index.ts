@@ -20,6 +20,8 @@ Deno.serve(async (req) => {
     // Limits and review status are checked before AWS is asked for anything, so refused attempts cost nothing.
     const pre = await admin().rpc('verify_precheck_service', { p_user: user.id, p_kind: 'face' });
     if (pre.error) return json({ error: pre.error.message }, 400, h);
+    // Out of tries (or already waiting): blocked until a person reviews it. No AWS session is created.
+    if (pre.data?.status === 'review') return json({ status: 'review', verify: pre.data.verify }, 200, h);
 
     const region = env('AWS_REGION');
     const created = await rekognition().send(new CreateFaceLivenessSessionCommand({
@@ -29,7 +31,8 @@ Deno.serve(async (req) => {
     const sessionId = created.SessionId;
     if (!sessionId) throw new Error('No session from AWS');
 
-    // Records that this person started this session (checks the limits again, in the same step).
+    // Records that this person started this session (checks the limits again, in the same step). This is what
+    // counts as a try, whether or not the scan is finished.
     const { error } = await admin().rpc('verify_start_service', {
       p_user: user.id, p_kind: 'face', p_provider: 'aws', p_session: sessionId,
     });
