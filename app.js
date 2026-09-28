@@ -50,6 +50,9 @@ const IC={
   layers:'<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>',
   filter:'<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>',
   eye:'<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+  'eye-off':'<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="m2 2 20 20"/>',
+  lock:'<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  circle:'<circle cx="12" cy="12" r="9"/>',
   trash:'<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
   search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
   camera:'<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
@@ -1096,17 +1099,39 @@ function modalHtml(){
 
 /* ---------- render: sign-in and onboarding ---------- */
 const LOGO='<div class="logo" style="font-size:22px;margin-bottom:14px"><span class="dots"><i></i><i></i></span>Overhere</div>';
+const GOOGLE_G='<svg class="i" width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
+/* Sign-in fields: an icon in front and a message line under each. Password boxes also get a show/hide button and a Caps Lock warning. */
+const emailField=()=>`<label for="a_email">Email</label><div class="fi">${I('mail',18)}<input id="a_email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" maxlength="120" placeholder="you@example.com" value="${esc(ui.auth.email||'')}" aria-describedby="a_email_err a_email_hint"></div>
+  <p class="ferr" id="a_email_err" aria-live="polite"></p><p class="fhint" id="a_email_hint" aria-live="polite" hidden></p>`;
+const pwField=(id,label,ac,side='')=>`<div class="lrow"><label for="${id}">${label}</label>${side}</div><div class="fi">${I('lock',18)}<input id="${id}" class="pwi" type="password" autocomplete="${ac}" maxlength="72" autocapitalize="off" spellcheck="false" aria-describedby="${id}_err ${id}_caps"><button type="button" class="pwt" data-a="pwshow" data-id="${id}" aria-label="Show password" aria-pressed="false">${I('eye',18)}</button></div>
+  <p class="caps" id="${id}_caps" hidden>${I('alert-triangle',14)} Caps Lock is on</p><p class="ferr" id="${id}_err" aria-live="polite"></p>`;
+const pwMeter=()=>`<div class="pws" id="a_pws" data-s="0"><div class="pwbar"><i></i><i></i><i></i><i></i></div>
+  <p class="pwl"><span>Password strength</span><b id="a_pwl" aria-live="polite"></b></p>
+  <ul class="pwr">${PW_RULES.map(([t])=>`<li>${I('circle',13)}${I('check',13)}${t}</li>`).join('')}</ul></div>`;
+const ERRBOX='<p class="fbad" id="a_formerr" role="alert" hidden></p>';
+const goBtn=t=>`<button class="btn" id="a_go" type="submit"><span class="spin" aria-hidden="true"></span>${t}</button>`;
+/* "Open Gmail" and the like on the check-your-email screen, for the big providers. */
+const INBOX=[[/^(gmail|googlemail)\.com$/,'Gmail','https://mail.google.com/'],[/^(outlook|hotmail|live|msn)\.[a-z.]+$/,'Outlook','https://outlook.live.com/mail/'],
+  [/^(yahoo|ymail)\.[a-z.]+$/,'Yahoo Mail','https://mail.yahoo.com/'],[/^(icloud|me|mac)\.com$/,'iCloud Mail','https://www.icloud.com/mail'],
+  [/^rediffmail\.com$/,'Rediffmail','https://mail.rediff.com/'],[/^(proton\.me|protonmail\.com)$/,'Proton Mail','https://mail.proton.me/']];
+const inboxOf=email=>{const d=(email.split('@')[1]||'').toLowerCase(),m=INBOX.find(([re])=>re.test(d));return m?[m[1],m[2]]:null};
 function authHtml(){
   if(!ONLINE)return `<div class="ob">${LOGO}<h1 class="pt">Open the live site</h1><p class="sub">Overhere keeps plans, requests and chats in its online database, so it only works from the published site (an https:// address), not from a file on your computer.</p></div>`;
   if(ME&&!loaded)return `<div class="ob">${LOGO}<p class="mute">${ui.err?esc(ui.err)+' <button class="lnk" data-a="retry">Try again</button> · <button class="lnk" data-a="signout">Sign out</button>':'Loading…'}</p></div>`;
   const md=ui.auth.mode;
-  if(md==='check')return `<div class="ob">${LOGO}<h1 class="pt">Check your email</h1><p class="sub">We sent a link to <b>${esc(ui.auth.email||'')}</b>. Open it on this device to confirm your account, then sign in.</p><button class="btn sec" data-a="authmode" data-k="in">Back to sign in</button></div>`;
+  if(md==='check'){
+    const email=ui.auth.email||'',reset=ui.auth.kind==='reset',left=Math.ceil(((ui.auth.sent||0)+RESEND_MS-Date.now())/1000),box=inboxOf(email);
+    return `<div class="ob">${LOGO}<div class="mailic">${I('mail',30)}</div><h1 class="pt">Check your email</h1><p class="sub">We sent a link to <b>${esc(email)}</b>. Open it on this device to ${reset?'choose a new password':'confirm your account, then sign in'}. It can take a minute, and sometimes lands in spam.</p>
+    ${box?`<a class="btn" href="${box[1]}" target="_blank" rel="noopener">${I('mail',16)} Open ${box[0]}</a><div style="height:8px"></div>`:''}
+    <button class="btn ${box?'ghost':'sec'}" data-a="authmode" data-k="in">Back to sign in</button>
+    <p class="small" style="text-align:center;margin-top:14px">Didn't get it? <button class="lnk" id="a_resend" data-a="resendmail"${left>0?' disabled':''}>${left>0?`Resend email in ${left}s`:'Resend email'}</button>${reset?'':' · <button class="lnk" data-a="authmode" data-k="up">Use a different email</button>'}</p></div>`;
+  }
   if(md==='reset')return `<div class="ob">${LOGO}<h1 class="pt">Reset your password</h1><p class="sub">We'll email you a link to choose a new one.</p>
-    <label for="a_email">Email</label><input id="a_email" type="email" autocomplete="email" maxlength="120">
-    <div style="height:16px"></div><button class="btn" data-a="forgot">Send reset link</button><div style="height:8px"></div><button class="btn ghost" data-a="authmode" data-k="in">Back</button></div>`;
-  if(md==='newpw')return `<div class="ob">${LOGO}<h1 class="pt">Choose a new password</h1>
-    <label for="a_pw">New password</label><input id="a_pw" type="password" autocomplete="new-password" minlength="8" maxlength="72">
-    <p class="small mute" style="margin-top:6px">At least 8 characters.</p><div style="height:16px"></div><button class="btn" data-a="setpw">Save password</button></div>`;
+    <form id="a_form" data-submit="forgot" novalidate>${emailField()}<div style="height:16px"></div>${ERRBOX}${goBtn('Send reset link')}</form>
+    <div style="height:8px"></div><button class="btn ghost" data-a="authmode" data-k="in">Back</button></div>`;
+  if(md==='newpw')return `<div class="ob">${LOGO}<h1 class="pt">Choose a new password</h1><p class="sub">Pick one you don't use anywhere else.</p>
+    <form id="a_form" data-submit="setpw" novalidate>${pwField('a_pw','New password','new-password')}${pwMeter()}${pwField('a_pw2','Confirm new password','new-password')}
+    <div style="height:16px"></div>${ERRBOX}${goBtn('Save password')}</form></div>`;
   /* Phone: one flow for new and returning people. The code signs you in, and makes the account the first time. */
   if(md==='phone')return `<div class="ob">${LOGO}<h1 class="pt">Continue with phone</h1><p class="sub">We'll text you a 6-digit code. New here? This creates your account.</p>
     <label for="a_phone">Mobile number</label><div style="display:flex;gap:8px;align-items:center"><span class="chip" style="flex:0 0 auto;padding:10px 12px">+91</span><input id="a_phone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="14" placeholder="98765 43210" value="${esc(ui.auth.phone?ui.auth.phone.slice(3):'')}"></div>
@@ -1121,16 +1146,18 @@ function authHtml(){
   }
   const up=md==='up';
   return `<div class="ob">${LOGO}<p class="mute">Do things in your city with company. Post a plan you are already making, pick who joins. Not a dating app.</p>
-    <h1 class="pt" style="margin-top:18px">${up?'Create your account':'Sign in'}</h1>
-    <button class="btn sec" data-a="google">Continue with Google</button>
-    ${CFG.PHONE_LOGIN?`<div style="height:8px"></div><button class="btn sec" data-a="authmode" data-k="phone">${I('phone',16)} Continue with phone</button>`:''}
+    <div class="seg atab"><button type="button" class="${up?'':'on'}" aria-pressed="${!up}" data-a="authmode" data-k="in">Sign in</button><button type="button" class="${up?'on':''}" aria-pressed="${up}" data-a="authmode" data-k="up">Create account</button></div>
+    <h1 class="pt">${up?'Create your account':'Welcome back'}</h1><p class="sub">${up?'Free, and it takes under a minute.':'Sign in to see plans near you.'}</p>
+    <button class="btn out" data-a="google">${GOOGLE_G} Continue with Google</button>
+    ${CFG.PHONE_LOGIN?`<div style="height:8px"></div><button class="btn out" data-a="authmode" data-k="phone">${I('phone',16)} Continue with phone</button>`:''}
     <div class="or">or with email</div>
-    <label for="a_email">Email</label><input id="a_email" type="email" autocomplete="email" maxlength="120">
-    <label for="a_pw">Password</label><input id="a_pw" type="password" autocomplete="${up?'new-password':'current-password'}" minlength="8" maxlength="72">
-    ${up?'<p class="small mute" style="margin-top:6px">At least 8 characters.</p>':''}
-    <div style="height:16px"></div><button class="btn" data-a="${up?'signup':'signin'}">${up?'Create account':'Sign in'}</button>
+    <form id="a_form" data-submit="${up?'signup':'signin'}" novalidate>${emailField()}
+    ${pwField('a_pw','Password',up?'new-password':'current-password',up?'':'<button type="button" class="lnk" data-a="authmode" data-k="reset">Forgot password?</button>')}
+    ${up?pwMeter()+pwField('a_pw2','Confirm password','new-password'):''}
+    <div style="height:18px"></div>${ERRBOX}${goBtn(up?'Create account':'Sign in')}</form>
+    ${up?'<p class="small mute" style="text-align:center;margin-top:12px">By creating an account you agree to our <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a>.</p>':''}
     <p class="small" style="text-align:center;margin-top:14px">${up?'Already have an account? <button class="lnk" data-a="authmode" data-k="in">Sign in</button>'
-      :'New here? <button class="lnk" data-a="authmode" data-k="up">Create an account</button> · <button class="lnk" data-a="authmode" data-k="reset">Forgot password?</button>'}</p>
+      :'New here? <button class="lnk" data-a="authmode" data-k="up">Create an account</button>'}</p>
     <p class="small mute" style="text-align:center;margin-top:10px"><a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a> · <a href="credits.html" target="_blank" rel="noopener" style="color:inherit">Credits</a></p></div>`;
 }
 function onboardHtml(){
@@ -1336,16 +1363,114 @@ function afterRender(){
 const val=id=>document.getElementById(id)?.value?.trim()||'';
 const pw=()=>document.getElementById('a_pw')?.value||'';
 const here=()=>location.origin+location.pathname;
-/* Supabase lets a number ask for a new code once a minute; the button counts down to match. */
+/* Supabase lets a number or an email address ask for a new code or link once a minute; the button counts down to match. */
 const RESEND_MS=60000;let resendT=0;
 function resendTimer(){
   clearInterval(resendT);
   resendT=setInterval(()=>{
-    const b=document.getElementById('a_resend'),left=Math.ceil((ui.auth.sent+RESEND_MS-Date.now())/1000);
-    if(!b||ui.auth.mode!=='code'){clearInterval(resendT);return}
-    b.disabled=left>0;b.textContent=left>0?`Resend code in ${left}s`:'Resend code';
+    const b=document.getElementById('a_resend'),left=Math.ceil((ui.auth.sent+RESEND_MS-Date.now())/1000),what=ui.auth.mode==='code'?'code':'email';
+    if(!b||!['code','check'].includes(ui.auth.mode)){clearInterval(resendT);return}
+    b.disabled=left>0;b.textContent=left>0?`Resend ${what} in ${left}s`:`Resend ${what}`;
     if(left<=0)clearInterval(resendT);
   },1000);
+}
+
+/* ---------- sign-in form checks ---------- */
+const EMAIL_RE=/^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+const PW_RULES=[['8+ characters',p=>p.length>=8],['Upper and lowercase',p=>/[a-z]/.test(p)&&/[A-Z]/.test(p)],['A number',p=>/\d/.test(p)],['A symbol',p=>/[^A-Za-z0-9]/.test(p)]];
+const COMMON_PW=new Set(['password','password1','password12','password123','passw0rd','12345678','123456789','1234567890','87654321','11111111','00000000',
+  'qwerty12','qwerty123','qwertyuiop','asdfghjkl','1q2w3e4r','zaq12wsx','abc12345','abcd1234','iloveyou','letmein1','welcome1','welcome123','admin123',
+  'sunshine','princess','football','baseball','superman','monkey123','india123','india@123','overhere','overhere1']);
+/* 0 to 4. Length counts most; mixing kinds of characters helps. Common passwords score 0, and one built from your email stays weak. */
+function pwScore(p,email){
+  const lo=p.toLowerCase(),user=(email.split('@')[0]||'').toLowerCase();
+  if(COMMON_PW.has(lo)||/^(.)\1+$/.test(p))return 0;
+  const kinds=PW_RULES.slice(1).filter(([,ok])=>ok(p)).length+(/[a-z]/i.test(p)?1:0);
+  let s=(p.length>=8)+(p.length>=12)+(p.length>=16)+(kinds>=2)+(kinds>=3);
+  if(user.length>=3&&lo.includes(user))s=Math.min(s,1);
+  return Math.min(s,4);
+}
+function pwProblem(p,email){
+  if(p.length<8)return 'Use at least 8 characters';
+  const s=pwScore(p,email),user=(email.split('@')[0]||'').toLowerCase();
+  if(s===0)return 'That password is too common. Pick something harder to guess';
+  if(user.length>=3&&p.toLowerCase().includes(user))return "Don't use your email in your password";
+  if(s<2)return 'Too weak. Mix letters with numbers or symbols, or make it longer';
+  return '';
+}
+/* Typos in the big email providers ("gmial.com") get a "Did you mean" under the field. Short domains only match one letter off. */
+const MAIL_DOMAINS=['gmail.com','googlemail.com','yahoo.com','yahoo.co.in','ymail.com','rediffmail.com','outlook.com','outlook.in','hotmail.com','live.com','msn.com','icloud.com','me.com','mail.com','aol.com','proton.me','protonmail.com','zoho.com'];
+function editDist(a,b){
+  const r=Array.from({length:b.length+1},(_,j)=>j);
+  for(let i=1;i<=a.length;i++){let d=r[0];r[0]=i;for(let j=1;j<=b.length;j++){const t=r[j];r[j]=Math.min(r[j]+1,r[j-1]+1,d+(a[i-1]===b[j-1]?0:1));d=t}}
+  return r[b.length];
+}
+function mailFix(email){
+  const m=email.toLowerCase().match(/^([^@\s]+)@([^@\s]+)$/);if(!m||MAIL_DOMAINS.includes(m[2]))return '';
+  let best='',bd=9;for(const d of MAIL_DOMAINS){const k=editDist(m[2],d);if(k<bd&&k<=(d.length>=9?2:1)){bd=k;best=d}}
+  if(!best&&/\.(con|cmo|ocm|vom|xom|comm)$/.test(m[2]))best=m[2].replace(/\.[a-z]+$/,'.com');
+  return best?m[1]+'@'+best:'';
+}
+function mailHint(){
+  const h=document.getElementById('a_email_hint');if(!h)return;
+  const fix=mailFix(val('a_email'));
+  h.hidden=!fix;h.innerHTML=fix?`Did you mean <button type="button" class="lnk" data-a="emailfix" data-v="${esc(fix)}">${esc(fix)}</button>?`:'';
+}
+/* The line under a field: an error (red, and the field is marked invalid), a good sign (green), or nothing. */
+function fieldMsg(id,msg,ok){
+  const i=document.getElementById(id),m=document.getElementById(id+'_err');if(!i||!m)return;
+  if(msg&&!ok)i.setAttribute('aria-invalid','true');else i.removeAttribute('aria-invalid');
+  m.className='ferr'+(ok?' ok':'');m.innerHTML=msg?I(ok?'circle-check':'alert-triangle',14)+esc(msg):'';
+}
+/* A problem with the whole form (wrong password, account already exists...), shown above its button. */
+function formErr(msg,more=''){
+  const b=document.getElementById('a_formerr');if(!b){if(msg)toast(msg);return}
+  b.hidden=!msg;b.innerHTML=msg?I('alert-triangle',16)+`<span>${esc(msg)}${more}</span>`:'';
+}
+/* Check every field on submit, mark what's wrong, and put the cursor in the first one. up: a new password, so it must be strong enough. */
+function authCheck(up){
+  const email=val('a_email'),p=pw(),p2=document.getElementById('a_pw2')?.value||'';
+  const errs=[['a_email',!email?'Enter your email':!EMAIL_RE.test(email)?'Enter a valid email, like name@example.com':''],
+    ['a_pw',!p?(up?'Choose a password':'Enter your password'):up?pwProblem(p,email):''],
+    ['a_pw2',!p2?'Type your password again':p2!==p?"Passwords don't match":'']].filter(([id])=>document.getElementById(id));
+  errs.forEach(([id,m])=>id==='a_pw2'&&!m?fieldMsg(id,'Passwords match',true):fieldMsg(id,m));
+  const bad=errs.find(([,m])=>m);
+  if(bad)document.getElementById(bad[0]).focus();
+  return !bad;
+}
+/* As you type: the strength meter, and whether the two passwords match. Errors only clear here; they appear when you leave a field or submit. */
+function pwLive(){
+  const p=pw(),email=val('a_email'),box=document.getElementById('a_pws'),up=ui.auth.mode!=='in';
+  if(box){
+    const s=pwScore(p,email);
+    box.dataset.s=!p?0:p.length<8?1:Math.max(s,1);
+    document.getElementById('a_pwl').textContent=!p?'':p.length<8?'Too short':s===0?'Too common':['','Weak','Fair','Good','Strong'][s];
+    box.querySelectorAll('li').forEach((li,k)=>li.classList.toggle('y',PW_RULES[k][1](p)));
+  }
+  if(p&&document.getElementById('a_pw')?.getAttribute('aria-invalid')&&!(up&&pwProblem(p,email)))fieldMsg('a_pw','');
+  const c=document.getElementById('a_pw2');if(!c)return;
+  const v=c.value;
+  if(v&&v===p)fieldMsg('a_pw2','Passwords match',true);
+  else if(v&&(c.dataset.left||v.length>=p.length))fieldMsg('a_pw2',"Passwords don't match");
+  else if(v||document.getElementById('a_pw2_err')?.classList.contains('ok'))fieldMsg('a_pw2','');
+}
+/* Leaving a field checks it, except when you only went to its show/hide button. */
+function authBlur(e){
+  const el=e.target;if(e.relatedTarget?.classList?.contains('pwt'))return;
+  if(el.id==='a_email'&&el.value.trim()){fieldMsg('a_email',EMAIL_RE.test(el.value.trim())?'':'Enter a valid email, like name@example.com');mailHint()}
+  if(el.id==='a_pw'&&el.value&&ui.auth.mode!=='in')fieldMsg('a_pw',pwProblem(el.value,val('a_email')));
+  if(el.id==='a_pw2'&&el.value){el.dataset.left=1;pwLive()}
+  if(el.classList.contains('pwi'))document.getElementById(el.id+'_caps')?.setAttribute('hidden','');
+}
+function capsWarn(e){const w=document.getElementById(e.target.id+'_caps');if(w&&e.getModifierState)w.hidden=!e.getModifierState('CapsLock')}
+/* The form's main button spins while its request is out, so it can't be sent twice. The action returns true when it
+   worked and the screen is about to change, so the spinner stays until then. */
+async function working(fn){
+  const b=document.getElementById('a_go');if(b?.disabled)return;
+  formErr('');if(b){b.disabled=true;b.classList.add('busy');b.setAttribute('aria-busy','true')}
+  let done=false;
+  try{done=await fn()===true}catch(e){formErr(friendly(e))}
+  finally{if(b&&!done){b.disabled=false;b.classList.remove('busy');b.removeAttribute('aria-busy')}}
 }
 const A={
   tab:d=>{if(ui.tab!==d.t)track('tab_view',{tab:d.t});ui.tab=d.t;ui.seen=null;ui.modal=null;render()},
@@ -1370,20 +1495,39 @@ const A={
   scan:()=>scan(),
   retry:()=>{ui.err='';render();refresh()},
   /* sign in */
-  authmode:d=>{ui.auth={mode:d.k,phone:ui.auth.phone};render()},
-  signin:async()=>{
-    const email=val('a_email'),p=pw();if(!email||!p)return toast('Enter your email and password');
-    const {error}=await SB.auth.signInWithPassword({email,password:p});
-    if(error)return toast(/confirm/i.test(error.message)?'Please confirm your email first: open the link we sent you.':/invalid/i.test(error.message)?'Wrong email or password.':friendly(error));
+  /* the email you typed carries over between sign in, create account and reset */
+  authmode:d=>{ui.auth={mode:d.k,phone:ui.auth.phone,email:val('a_email')||ui.auth.email};render()},
+  pwshow:d=>{
+    const i=document.getElementById(d.id),b=i?.parentNode.querySelector('.pwt');if(!i)return;
+    const show=i.type==='password';i.type=show?'text':'password';
+    b.setAttribute('aria-pressed',show);b.setAttribute('aria-label',show?'Hide password':'Show password');b.innerHTML=I(show?'eye-off':'eye',18);
   },
-  signup:async()=>{
-    const email=val('a_email'),p=pw();
-    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))return toast('Enter a valid email');
-    if(p.length<8)return toast('Use a password of at least 8 characters');
-    const {data,error}=await SB.auth.signUp({email,password:p,options:{emailRedirectTo:here()}});
-    if(error)return toast(friendly(error));
+  emailfix:d=>{const i=document.getElementById('a_email');i.value=d.v;fieldMsg('a_email','');mailHint();pwLive();document.getElementById('a_pw')?.focus()},
+  signin:()=>working(async()=>{
+    if(!authCheck(false))return;
+    const {error}=await SB.auth.signInWithPassword({email:val('a_email'),password:pw()});
+    if(error)return formErr(/confirm/i.test(error.message)?'Please confirm your email first: open the link we sent you.':/invalid/i.test(error.message)?'Wrong email or password.':friendly(error));
+    return true;   // signed in: onAuthStateChange takes it from here
+  }),
+  signup:()=>working(async()=>{
+    if(!authCheck(true))return;
+    const email=val('a_email'),{data,error}=await SB.auth.signUp({email,password:pw(),options:{emailRedirectTo:here()}});
+    const exists=['You already have an account with this email.',' <button type="button" class="lnk" data-a="authmode" data-k="in">Sign in instead</button>'];
+    if(error)return /already (registered|exists)/i.test(error.message)?formErr(...exists):formErr(friendly(error));
+    /* With email confirmation on, Supabase answers an address that already has an account with a user that has no identities, not an error. */
+    if(data.user&&!data.user.identities?.length)return formErr(...exists);
     track('account_created');
-    if(!data.session){ui.auth={mode:'check',email};render()}
+    if(data.session)return true;
+    ui.auth={mode:'check',email,kind:'signup',sent:Date.now()};render();resendTimer();return true;
+  }),
+  resendmail:async()=>{
+    const {email,kind,sent}=ui.auth,wait=Math.ceil(((sent||0)+RESEND_MS-Date.now())/1000);
+    if(!email)return;if(wait>0)return toast(`Please wait ${wait}s before asking again`);
+    const {error}=kind==='reset'?await SB.auth.resetPasswordForEmail(email,{redirectTo:here()})
+      :await SB.auth.resend({type:'signup',email,options:{emailRedirectTo:here()}});
+    if(error)return toast(friendly(error));
+    track('email_resent',{kind:kind||'signup'});
+    ui.auth.sent=Date.now();render();resendTimer();toast('Sent again. Check your inbox.');
   },
   sendcode:async d=>{
     const again=d.k==='again',n=again?ui.auth.phone.slice(3):val('a_phone').replace(/\D/g,'').replace(/^(91|0)(?=\d{10}$)/,'');
@@ -1411,18 +1555,18 @@ const A={
     /* Google can't be shown inside the beta page's frame, so the whole tab goes there */
     try{(window.top||window).location.href=data.url}catch(e){window.open(data.url,'_blank','noopener')}
   },
-  forgot:async()=>{
-    const email=val('a_email');if(!email)return toast('Enter your email');
-    const {error}=await SB.auth.resetPasswordForEmail(email,{redirectTo:here()});
-    if(error)return toast(friendly(error));
-    ui.auth={mode:'check',email};render();
-  },
-  setpw:async()=>{
-    const p=pw();if(p.length<8)return toast('Use a password of at least 8 characters');
-    const {error}=await SB.auth.updateUser({password:p});
-    if(error)return toast(friendly(error));
-    toast('Password saved');ui.auth={mode:'in'};history.replaceState(null,'',here());start();
-  },
+  forgot:()=>working(async()=>{
+    if(!authCheck(false))return;
+    const email=val('a_email'),{error}=await SB.auth.resetPasswordForEmail(email,{redirectTo:here()});
+    if(error)return formErr(friendly(error));
+    ui.auth={mode:'check',email,kind:'reset',sent:Date.now()};render();resendTimer();return true;
+  }),
+  setpw:()=>working(async()=>{
+    if(!authCheck(true))return;
+    const {error}=await SB.auth.updateUser({password:pw()});
+    if(error)return formErr(/different from the old/i.test(error.message)?'Choose a password different from your old one.':friendly(error));
+    toast('Password saved');ui.auth={mode:'in'};history.replaceState(null,'',here());start();return true;
+  }),
   signout:async()=>{track('signed_out');try{await SB.auth.signOut()}catch(e){}location.reload()},
   /* browsing */
   fcat:d=>{ui.f.cat=d.k;track('filter',{type:'category'});render()},
@@ -1631,7 +1775,16 @@ document.addEventListener('input',e=>{
   if(e.target.id==='r_note'){const c=document.getElementById('r_cnt');if(c)c.textContent=e.target.value.length}
   if(e.target.id==='a_code'&&e.target.value.replace(/\D/g,'').length===6)A.checkcode();  // phones fill the code in from the SMS
   if(e.target.id==='f_venue')venueList(true);
+  if(e.target.id==='a_email'){
+    document.getElementById('a_email_hint')?.setAttribute('hidden','');
+    if(e.target.getAttribute('aria-invalid')&&EMAIL_RE.test(e.target.value.trim()))fieldMsg('a_email','');
+  }
+  if(/^a_(email|pw2?)$/.test(e.target.id))pwLive();
 });
+/* Sign-in forms: Enter, or the main button, runs the form's action. */
+document.addEventListener('submit',e=>{const f=e.target.closest?.('form[data-submit]');if(!f)return;e.preventDefault();A[f.dataset.submit]?.(f.dataset,e)});
+document.addEventListener('focusout',e=>{if(/^a_(email|pw2?)$/.test(e.target.id))authBlur(e)});
+document.addEventListener('keyup',e=>{if(e.target.classList?.contains('pwi'))capsWarn(e)});
 /* Suggestions stay open while focus is in the venue box or its list; clicking one keeps the focus in the box. */
 document.addEventListener('mousedown',e=>{if(e.target.closest('.vopt'))e.preventDefault()});
 document.addEventListener('focusout',e=>{if(e.target.closest?.('.vbox'))setTimeout(()=>{if(!document.activeElement?.closest?.('.vbox'))venueList(false)},200)});
@@ -1650,6 +1803,7 @@ document.addEventListener('change',e=>{
   if(e.target.id==='f_area'&&e.target.value){const i=document.getElementById('f_venue');if(i){const nm=i.value.replace(AREA_TAIL,'').trim();i.value=((nm?nm+', ':'')+e.target.value).slice(0,120)}}
 });
 document.addEventListener('keydown',e=>{
+  if(e.target.classList?.contains('pwi'))capsWarn(e);
   if(e.target.id==='f_venue'&&venueKey(e))return;
   const pm=document.getElementById('p_menu');
   if(e.key==='Escape'&&pm&&!pm.hidden){photoMenu(false);document.getElementById('p_pe')?.focus();return}
