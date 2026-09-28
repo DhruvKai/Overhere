@@ -128,7 +128,10 @@ const EVERYONE='00000000-0000-0000-0000-000000000000';
 let ME=null,MYPHONE='',AUTHU={},MODE={face:'simulated',kyc:'simulated'},VER={face:{fails:0,attempts:0,max:5,review:false},kyc:{fails:0,attempts:0,max:5,review:false}},skew=0,loaded=false,DRAFT=null,LOCKED=0;
 const isUuid=x=>typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(x);
 /* Your private settings, saved to your account. ACT_FLAGS remember which reminders an activity already gave you. */
-const PRIV=['dismissed','following','alerts','muted','tips','asked','actf','seenPost'];
+const PRIV=['dismissed','following','alerts','muted','tips','asked','actf','seenPost','savedF'];
+/* The consent version that includes the Terms and community guidelines (terms.html). The database says which one is
+   current (app_state's terms_v), so the app only asks once the database can record the answer. */
+let TERMS_V=null;
 const ACT_FLAGS=['arrive','arriveAt','arriveNag','reminded','remind24','checkin'];
 const blank=()=>({me:null,acts:[],reqs:[],chats:{},notes:[],ratings:{},blocked:[],reported:{},dismissed:[],following:[],alerts:[],muted:{},tips:{},asked:{},actf:{},seenPost:0});
 let S=blank();
@@ -141,7 +144,7 @@ const sid=id=>id==='me'?ME:id;   // back to a database id
 
 /* Turn the database's answer into the shapes the screens use. */
 function applyState(st){
-  ME=st.me;MODE=st.mode||MODE;VER=st.verify||VER;skew=(st.now||Date.now())-Date.now();DRAFT=st.draft||null;LOCKED=st.locked||0;
+  ME=st.me;MODE=st.mode||MODE;VER=st.verify||VER;skew=(st.now||Date.now())-Date.now();DRAFT=st.draft||null;LOCKED=st.locked||0;TERMS_V=st.terms_v||null;
   const mid=id=>id===ME?'me':id,p=st.profile,first=!loaded,known=new Set(S.notes.map(n=>n.id));
   const keepLocal=dirty?Object.fromEntries(PRIV.map(k=>[k,S[k]])):null,keepTrusted=dirty?S.me?.trusted:undefined;
   loaded=true;
@@ -157,9 +160,10 @@ function applyState(st){
   if(keepLocal)Object.assign(S,keepLocal);   // settings you changed a moment ago and are still being saved
   S.following=(Array.isArray(S.following)?S.following:[]).filter(isUuid);S.dismissed=(Array.isArray(S.dismissed)?S.dismissed:[]).filter(isUuid);
   ['muted','tips','asked','actf'].forEach(k=>{if(!S[k]||typeof S[k]!=='object'||Array.isArray(S[k]))S[k]={}});if(typeof S.seenPost!=='number')S.seenPost=0;
+  S.savedF=(Array.isArray(S.savedF)?S.savedF:[]).filter(x=>x&&/^sf[0-9a-z]+$/.test(x.id)&&typeof x.label==='string'&&x.f&&typeof x.f==='object').slice(0,10);
   S.alerts=(Array.isArray(S.alerts)?S.alerts:[]).filter(x=>x&&/^al[0-9a-z]+$/.test(x.id)&&typeof x.label==='string');
   S.me={name:p.name,dob:p.dob,gender:p.gender,hood:p.hood,job:p.job||'',bio:p.bio||'',ints:p.ints||[],avail:p.avail||[],emo:p.emo||defEmo(p.gender),
-    face:!!p.face,kyc:!!p.kyc,obDone:!!p.onboarded,trusted:keepTrusted!==undefined?keepTrusted:(priv.trusted||null),trustv:mine.trust||[0,0],hist:mine.hist||[],photo:loadPhoto()};
+    face:!!p.face,kyc:!!p.kyc,obDone:!!p.onboarded,terms:!TERMS_V||p.consent_version===TERMS_V,trusted:keepTrusted!==undefined?keepTrusted:(priv.trusted||null),trustv:mine.trust||[0,0],hist:mine.hist||[],photo:loadPhoto()};
   const t=now();
   S.acts=(st.acts||[]).map(a=>{
     const mem=(a.members||[]).map(mid);
@@ -615,6 +619,7 @@ async function scan(){
 }
 /* Browsing is open to everyone; posting and asking to join need the face check. The ID check is off for now. */
 const gate=fn=>{if(S.me.face)fn();else openVerify('face',fn)};
+const safetyOnce=fn=>{if(S.tips.safety1)fn();else{ui.modal={type:'safety1',next:fn};render()}};
 
 /* ---------- swipe ---------- */
 function swipe(dir){
@@ -718,13 +723,13 @@ function tabDiscover(){
   else if(f.sort==='near')list.sort((a,b)=>kmAway(a)-kmAway(b)||a.when-b.when);
   const alertable=act.some(([k])=>k!=='date'),saved=S.alerts.some(x=>x.label===alertLabel(f));
   return `<div class="hd"><div><h1 class="pt">All upcoming plans</h1><p class="sub">${all.length} upcoming in ${esc(S.me.hood)}, from ${dLbl(dayKey(swipeEnd()))} onwards</p></div><button class="btn sm mobonly" data-a="newpost">${I('plus',15)} Post</button></div>
-  ${lockedNote()}${S.alerts.length?`<div class="alerts"><span class="small mute" style="display:inline-flex;align-items:center;gap:4px">${I('bell',13)} Your alerts</span>${S.alerts.map(al=>`<span class="alchip">${esc(al.label)}<button data-a="rmalert" data-id="${al.id}" aria-label="Remove alert ${esc(al.label)}">${I('x',12)}</button></span>`).join('')}</div>`:''}
+  ${lockedNote()}${(()=>{const n=deck().length;return `<div class="alerts"><button class="alchip tn" data-a="tab" data-t="swipe">${I('flame',13)} Tonight &amp; tomorrow${n?` · ${n}`:''}</button>${S.savedF.map(sf=>`<span class="alchip sf"><button class="lnk" data-a="applyf" data-id="${sf.id}">${I('filter',12)} ${esc(sf.label)}</button><button data-a="rmf" data-id="${sf.id}" aria-label="Remove saved filters ${esc(sf.label)}">${I('x',12)}</button></span>`).join('')}</div>`})()}${S.alerts.length?`<div class="alerts"><span class="small mute" style="display:inline-flex;align-items:center;gap:4px">${I('bell',13)} Your alerts</span>${S.alerts.map(al=>`<span class="alchip">${esc(al.label)}<button data-a="rmalert" data-id="${al.id}" aria-label="Remove alert ${esc(al.label)}">${I('x',12)}</button></span>`).join('')}</div>`:''}
   <div class="dtools"><button class="fbtn ${act.length?'on':''}" data-a="filters" aria-haspopup="dialog">${I('filter',14)} Filters${act.length?`<b aria-label="${act.length} active">${act.length}</b>`:''}</button>
   <button class="fbtn" data-a="sortmenu" aria-haspopup="dialog" aria-label="Sort by ${SORTS[f.sort][1]}">${I('arrow-up-down',14)} Sort: ${SORTS[f.sort][1]}</button>
   ${SEG('fview',f.view,[['list',I('list',13)+'<span class="tl">List</span>','List view'],['map',I('map',13)+'<span class="tl">Map</span>','Map view']])}</div>
   <div class="small mute fact"><span>Showing <b>${list.length}</b> ${list.length===1?'activity':'activities'}</span>
   ${act.map(([k,l])=>`<span class="alchip">${esc(l)}<button data-a="fclear" data-k="${k}" aria-label="Remove filter ${esc(l)}">${I('x',12)}</button></span>`).join('')}
-  ${act.length?`<button class="lnk" data-a="freset">Reset</button>`:''}${alertable&&!saved?`<button class="lnk" data-a="saveal">${I('bell',13)} Alert me about new matches</button>`:''}</div>
+  ${act.length?`<button class="lnk" data-a="freset">Reset</button>`:''}${act.length&&!S.savedF.some(x=>x.label===activeFilters(f).map(y=>y[1]).join(' · ').slice(0,60))?`<button class="lnk" data-a="savef">${I('filter',13)} Save these filters</button>`:''}${alertable&&!saved?`<button class="lnk" data-a="saveal">${I('bell',13)} Alert me about new matches</button>`:''}</div>
   ${!list.length?empty('calendar',all.length?'No matches':'No plans yet',all.length?'Try different filters.':'Be the first to post one in your neighborhood.',act.length&&all.length?'<button class="btn sec" data-a="freset">Reset filters</button>':'')
    :f.view==='map'?mapHtml(list):`<div class="grid">${list.map(a=>acCard(a)).join('')}</div>`}`;
 }
@@ -845,7 +850,7 @@ function tabProfile(){
   ${m.trusted?`<div class="blk">${I('phone',15)}<span><b>${esc(m.trusted.name)}</b> · ${esc(m.trusted.phone)}</span><button class="lnk" data-a="editprofile" data-k="safety">Change</button></div>`:`<button class="btn sm sec" data-a="editprofile" data-k="safety">${I('user-plus',14)} Add a trusted contact</button>`}
   <label>Blocked people</label>${S.blocked.length?S.blocked.map(u=>`<div class="blk">${av(u,'sm')}${esc(uname(u))}<button class="lnk" data-a="unblock" data-id="${u}">Unblock</button></div>`).join(''):'<p class="small mute" style="margin:0">You have not blocked anyone.</p>'}</div>
   <div class="panel"><div class="ph">${I('user',15)} Account</div>
-  <p class="small mute" style="margin-top:0"><a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a> · <a href="credits.html" target="_blank" rel="noopener" style="color:inherit">Credits</a></p>
+  <p class="small mute" style="margin-top:0"><a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> · <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a> · <a href="credits.html" target="_blank" rel="noopener" style="color:inherit">Credits</a></p>
   <div class="row" style="gap:8px"><button class="btn sm ghost" data-a="signout">${I('log-out',14)} Sign out</button><button class="btn sm ghost" style="color:var(--bad)" data-a="delacct">${I('trash',14)} Delete my account</button></div></div>
 `;
 }
@@ -927,6 +932,15 @@ function modalHtml(){
       <div class="dlinks">${!past&&(a.status==='open'||a.status==='full')?`<button class="lnk" data-a="share" data-k="invite" data-id="${a.id}">${I('send',13)} Invite a friend</button>`:''}${rq&&(rq.status==='pending'||rq.status==='waitlist')?`<button class="lnk m" data-a="withdraw" data-id="${a.id}">${I('x',13)} Withdraw request</button>`:''}${acc&&!past?`<button class="lnk m" data-a="leave" data-id="${a.id}">Leave activity</button>`:''}</div>
       </div>`);
   }
+  if(m.type==='terms')return `<div class="ov"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="tm_t"><div class="sh"><h2 id="tm_t">Our terms and community guidelines</h2></div><div class="sb">
+      <p style="margin-top:0">To keep using Overhere, please read and agree to our <a href="terms.html" target="_blank" rel="noopener" style="color:var(--acch)">Terms and community guidelines</a>. In short:</p>
+      <ul class="small" style="padding-left:20px;margin:0 0 12px"><li>You're 18 or over, and you are who you say you are.</li><li>Be respectful, show up, and cancel early if you can't.</li><li>Not a dating app: no sexual messages, pressure, selling or spam.</li><li>Overhere introduces people but doesn't check everyone or run the meetups. Meet in public and look after yourself.</li></ul>
+      <button class="btn" data-a="acceptterms">I agree</button><div style="height:8px"></div><button class="btn ghost" data-a="signout">Sign out</button></div></div></div>`;
+  if(m.type==='safety1')return sheet('Before your first meetup',`<div class="sb">
+      <p style="margin-top:0">You'll be meeting people you don't know yet. A few things that keep meetups good:</p>
+      <ul style="padding-left:20px;margin:0 0 12px"><li>Meet in a busy public place, and make your own way there and back.</li><li>Tell someone you trust where you'll be. You can send them your plan in one tap.</li><li>Keep your home address and workplace to yourself until you know people.</li><li>Never send money to someone you met here.</li><li>Leave whenever you like. In an emergency call 112, or tap SOS in the group chat.</li></ul>
+      <p class="small mute">The face check confirms a real person made each account. It doesn't tell you what they're like. More in the <a href="terms.html#safety" target="_blank" rel="noopener" style="color:inherit">Terms</a>.</p>
+      <button class="btn" data-a="safetyok">I understand, continue</button></div>`);
   if(m.type==='delacct')return sheet('Delete your account',`<div class="sb">
       <p style="margin-top:0">This permanently deletes your account, profile, plans, requests, notifications and ratings. Plans you host are cancelled and their members are told. Your chat messages stay in those groups without your name. This can't be undone.</p>
       <label for="del_ok">Type DELETE to confirm</label><input id="del_ok" autocomplete="off" autocapitalize="characters">
@@ -1178,7 +1192,7 @@ function authHtml(){
     <p class="ferr" id="a_phone_err" aria-live="polite"></p><p class="fhint" id="a_phone_note">Indian mobile numbers only.</p>
     <div style="height:18px"></div>${ERRBOX}${goBtn('Send code')}</form>
     <div style="height:8px"></div><button class="btn ghost" data-a="authmode" data-k="${up?'up':'in'}">Back</button>
-    <p class="small mute" style="text-align:center;margin-top:12px">By continuing you agree to our <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a>. Standard SMS rates may apply.</p></div>`;
+    <p class="small mute" style="text-align:center;margin-top:12px">By continuing you agree to our <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a>. Standard SMS rates may apply.</p></div>`;
   }
   if(md==='code'){
     const left=Math.ceil((ui.auth.sent+RESEND_MS-Date.now())/1000);
@@ -1200,10 +1214,10 @@ function authHtml(){
     ${pwField('a_pw','Password',up?'new-password':'current-password',up?'':'<button type="button" class="lnk" data-a="authmode" data-k="reset">Forgot password?</button>')}
     ${up?pwMeter()+pwField('a_pw2','Confirm password','new-password'):''}
     <div style="height:18px"></div>${ERRBOX}${goBtn(up?'Create account':'Sign in')}</form>
-    ${up?'<p class="small mute" style="text-align:center;margin-top:12px">By creating an account you agree to our <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a>.</p>':''}
+    ${up?'<p class="small mute" style="text-align:center;margin-top:12px">By creating an account you agree to our <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a>.</p>':''}
     <p class="small" style="text-align:center;margin-top:14px">${up?'Already have an account? <button class="lnk" data-a="authmode" data-k="in">Sign in</button>'
       :'New here? <button class="lnk" data-a="authmode" data-k="up">Create an account</button>'}</p>
-    <p class="small mute" style="text-align:center;margin-top:10px"><a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a> · <a href="credits.html" target="_blank" rel="noopener" style="color:inherit">Credits</a></p></div>`;
+    <p class="small mute" style="text-align:center;margin-top:10px"><a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> · <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a> · <a href="credits.html" target="_blank" rel="noopener" style="color:inherit">Credits</a></p></div>`;
 }
 function onboardHtml(){
   let body;
@@ -1218,7 +1232,7 @@ function onboardHtml(){
     <label for="o_hood">Neighborhood (launch areas)</label><select id="o_hood">${HOODS.map(g=>`<option ${g===d.hood?'selected':''}>${g}</option>`).join('')}</select>
     <label>What would you want to do with company?</label>${opts('o_int',INTERESTS,d.ints)}
     <label>When are you usually free?</label>${opts('o_avail',TIMES,d.avail)}
-    <label class="chk top" style="margin-top:18px"><input type="checkbox" id="o_ok"> <span>I agree that Overhere may store these details to run the beta and contact me about it. I am 18 or older. I can ask for my data to be deleted at any time by emailing ${esc(CFG.CONTACT_EMAIL||'the beta team')}. <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a></span></label>
+    <label class="chk top" style="margin-top:18px"><input type="checkbox" id="o_ok"> <span>I agree to the <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms and community guidelines</a>, and that Overhere may store these details to run the beta and contact me about it. I am 18 or older. I can ask for my data to be deleted at any time by emailing ${esc(CFG.CONTACT_EMAIL||'the beta team')}. <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a></span></label>
     <div style="height:18px"></div><button class="btn" data-a="ob2">Continue</button>
     <p class="small" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p>`;
   }else if(!S.me.face&&!ui.faceSkip)body=`<h1 class="pt">Quick face check</h1><p class="sub">Confirms your account belongs to a real person. You can browse without it, but you need it to post a plan or ask to join one.</p><div class="scan">${I('scan-face',56)}</div><button class="btn" data-a="obface">Start face check</button>
@@ -1372,6 +1386,7 @@ function render(){
   const scr=document.getElementById('screen'),restore=keepScroll();
   if(!ONLINE||!ME||!loaded){scr.innerHTML=authHtml();restore();return}
   if(!S.me||!S.me.obDone){scr.innerHTML=onboardHtml()+modalHtml();restore();afterRender();return}
+  if(!S.me.terms&&ui.modal?.type!=='terms')ui.modal={type:'terms'};   // accounts made before the terms: agree once
   const unread=S.notes.filter(n=>!n.read).length;
   const view={swipe:tabSwipe,discover:tabDiscover,acts:tabActs,reqs:tabReqs,profile:tabProfile,notes:tabNotes,chats:tabChats}[ui.tab]();
   const pend=S.reqs.filter(r=>r.status==='pending'&&actOf(r.act)?.host==='me').length;
@@ -1597,7 +1612,7 @@ const A={
   /* The chats button toggles the chats tab, like the bell. */
   chats:()=>{if(ui.tab==='chats'&&!ui.modal){ui.tab=ui.prevTab||'swipe';render();return}if(ui.tab!=='chats'&&ui.tab!=='notes')ui.prevTab=ui.tab;ui.tab='chats';ui.modal=null;track('chats_opened');render()},
   close:()=>{ui.modal=ui.modal?.back||null;render()},
-  closebg:(d,e)=>{if(e.target.classList.contains('ov')&&ui.modal?.type!=='verify'&&ui.modal?.type!=='chat'){ui.modal=ui.modal?.back||null;render()}},
+  closebg:(d,e)=>{if(e.target.classList.contains('ov')&&ui.modal?.type!=='verify'&&ui.modal?.type!=='chat'&&ui.modal?.type!=='terms'){ui.modal=ui.modal?.back||null;render()}},
   user:d=>{ui.modal={type:'user',id:d.id,back:ui.modal};render()},
   /* The bell toggles the notifications tab. Opening it marks everything read (the dot goes), but what was new stays highlighted until you leave. */
   bell:()=>{
@@ -1708,7 +1723,7 @@ const A={
   venueother:()=>askArea(),
   pickvenue:d=>{const i=document.getElementById('f_venue');if(i){i.value=d.v;i.focus()}venueList(false);track('venue_picked')},
   /* hosting */
-  newpost:()=>gate(()=>{ui.modal={type:'post'};render()}),
+  newpost:()=>safetyOnce(()=>gate(()=>{ui.modal={type:'post'};render()})),
   unlock:()=>gate(()=>{toast('Face check passed. Plans for your group now show too.');render()}),
   submitpost:async(d,e)=>{
     const desc=val('f_desc'),venue=val('f_venue'),when=new Date(document.getElementById('f_when').value).getTime();
@@ -1739,7 +1754,7 @@ const A={
   /* joining */
   request:d=>{
     const note=val('r_note');
-    gate(async()=>{
+    safetyOnce(()=>gate(async()=>{
       const a=actOf(d.id);
       const st=await run('request_join',{p_act:d.id,p_note:note});
       if(st===undefined)return;
@@ -1748,7 +1763,7 @@ const A={
       ui.modal=null;
       if(ui.tab==='swipe'&&!deck().length){ui.tab='discover';toast("Request sent. You've seen everything nearby, here's Discover.")}
       render();
-    });
+    }));
   },
   askreq:d=>{ui.modal={type:'confirm',id:d.id};render()},
   withdraw:async d=>{if(await run('withdraw_request',{p_act:d.id})!==undefined){track('request_withdrawn');toast('Request withdrawn')}},
@@ -1781,6 +1796,17 @@ const A={
   unblock:async d=>{if(await run('unblock_user',{p_user:d.id})!==undefined)toast(`Unblocked ${uname(d.id)}`)},
   share:d=>{track('share_opened',{kind:d.k});ui.modal={type:'share',id:d.id,k:d.k,back:ui.modal};render()},
   follow:d=>{const on=S.following.includes(d.id);S.following=on?S.following.filter(x=>x!==d.id):[...S.following,d.id];save();track(on?'unfollow':'follow');toast(on?`Unfollowed ${uname(d.id)}`:`Following ${uname(d.id)}. You'll hear when they post.`);render()},
+  acceptterms:async(d,e)=>{e.target.closest('button').disabled=true;if(await run('accept_terms')===undefined){e.target.closest('button').disabled=false;return}track('terms_accepted');ui.modal=null;render()},
+  safetyok:()=>{const nx=ui.modal?.next;S.tips.safety1=true;save();track('safety_seen');ui.modal=null;if(nx)nx();else render()},
+  /* saved filters: the current Discover filters under a name, one tap to apply again */
+  savef:()=>{
+    const f=ui.f,dk=Object.entries(datePresets()).find(([k,[l,a,b]])=>f.dfrom===a&&f.dto===b)?.[0]||'';
+    const sf={id:'sf'+Date.now().toString(36),label:activeFilters(f).map(x=>x[1]).join(' · ').slice(0,60)||'All plans',f:{cat:f.cat,tod:f.tod,dist:f.dist,sort:f.sort,datep:dk}};
+    if(S.savedF.some(x=>x.label===sf.label))return toast('Already saved');
+    S.savedF.unshift(sf);S.savedF=S.savedF.slice(0,10);save();track('filters_saved');toast('Filters saved. Tap them above to use them again.');render()},
+  applyf:d=>{const sf=S.savedF.find(x=>x.id===d.id);if(!sf)return;const base=freshF(),p=sf.f.datep&&datePresets()[sf.f.datep];
+    ui.f={...base,view:ui.f.view,cat:sf.f.cat||'all',tod:sf.f.tod||'any',dist:+sf.f.dist||0,sort:sf.f.sort||base.sort,dfrom:p?p[1]:'',dto:p?p[2]:''};track('filters_applied');render()},
+  rmf:d=>{S.savedF=S.savedF.filter(x=>x.id!==d.id);save();render()},
   delacct:()=>{ui.modal={type:'delacct'};render()},
   dodelacct:async(d,e)=>{
     if(val('del_ok').toUpperCase()!=='DELETE')return toast('Type DELETE to confirm');
@@ -1871,7 +1897,7 @@ const A={
     if(!p.name||!p.dob||!p.gender)return toast('Name, date of birth and gender identity are required');
     if(!(ageOf(p.dob)>=18))return toast('You must be 18 or over');
     if(!document.getElementById('o_ok')?.checked)return toast('Please tick the consent box to continue');
-    p.emo=defEmo(p.gender);p.consent=true;
+    p.emo=defEmo(p.gender);p.consent=true;p.terms=true;
     e.target.closest('button').disabled=true;
     if(await run('save_profile',{p})===undefined){e.target.closest('button').disabled=false;return}
     track('profile_created');

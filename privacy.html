@@ -54,7 +54,7 @@ td:first-child{font-weight:600;min-width:110px}
 </div></header>
 <main>
   <h1>Privacy policy</h1>
-  <p class="mute">Last updated 27 September 2026</p>
+  <p class="mute">Last updated 28 September 2026</p>
   <p>Overhere is a beta app for doing things in your city with other people: you post a plan you're already making,
     and choose who joins. This page explains what we collect, who can see it, who helps us run the app, and how to
     have your data deleted.</p>
@@ -65,9 +65,11 @@ td:first-child{font-weight:600;min-width:110px}
       <li>We collect what the app needs: your account, your profile, the plans you post or join, and your group chats.</li>
       <li>Other people see your name, age and profile. They never see your email, phone number, date of birth or trusted contact.</li>
       <li>Your profile photo and your location never leave your phone.</li>
+      <li>The face check is optional. If you take it, the video goes to Amazon to confirm you're a real person; we keep only
+        the result, never the video or images.</li>
       <li>We don't sell your data, show ads, or use advertising trackers.</li>
       <li>Delete your account and data at any time: <i>Profile</i> &rarr; <i>Delete my account</i> in the app, or email
-        <a href="mailto:overhere.temp@gmail.com">overhere.temp@gmail.com</a>.</li>
+        <a href="mailto:admin@overhere.social">admin@overhere.social</a>.</li>
     </ul>
   </section>
 
@@ -91,7 +93,7 @@ td:first-child{font-weight:600;min-width:110px}
     <h2>1. Who we are</h2>
     <p>Overhere is run by a small beta team. We decide what data the app collects and why. For questions about your
       data, to correct or delete it, or to make a complaint, email us at
-      <a href="mailto:overhere.temp@gmail.com">overhere.temp@gmail.com</a>.</p>
+      <a href="mailto:admin@overhere.social">admin@overhere.social</a>.</p>
   </section>
 
   <section class="panel" id="collect">
@@ -99,15 +101,15 @@ td:first-child{font-weight:600;min-width:110px}
     <div class="tw"><table>
       <thead><tr><th scope="col">What</th><th scope="col">Details</th><th scope="col">Why</th></tr></thead>
       <tbody>
-        <tr><td>Your account</td><td>Your email address and password, or your phone number, or your name and email from Google if you choose <i>Continue with Google</i>. Passwords are stored scrambled (hashed), so nobody can read them, including us.</td><td>To sign you in and keep your account yours.</td></tr>
+        <tr><td>Your account</td><td>Your email address and password, or your phone number, or your name and email from Google if you choose <i>Continue with Google</i>. Passwords are stored scrambled (hashed), so nobody can read them, including us.</td><td>To sign you in and keep your account yours. If you sign in with your phone, we also use your number to stop it being saved as your own trusted contact.</td></tr>
         <tr><td>Your profile</td><td>Name, date of birth, gender, neighbourhood, job, a short bio, interests, when you're usually free, and the emoji you pick.</td><td>So hosts and members know who they're meeting, and to show you plans that fit you. Gender is used for plans limited to some groups, such as women-only plans.</td></tr>
-        <tr><td>Plans and chats</td><td>Plans you post, join requests and the notes you add, who is in which plan, group chat messages and polls, and your notifications.</td><td>To run the app.</td></tr>
+        <tr><td>Plans and chats</td><td>Plans you post, join requests and the notes you add, who is in which plan, group chat messages and polls, poll votes, and your notifications.</td><td>To run the app, including the Chats list of every group you're in.</td></tr>
         <tr><td>After a meetup</td><td>Your rating of the meetup and who showed up.</td><td>To show how many meetups people have been to and turned up for, which helps everyone decide who to meet.</td></tr>
         <tr><td>Safety</td><td>Reports you make (including the reported message and your reason), people you block, your answers to "Arrived safely?" check-ins, and your trusted contact's name and phone number.</td><td>To keep people safe and act on reports.</td></tr>
         <tr><td>Settings</td><td>People you follow, alerts for new plans, muted chats, and similar choices.</td><td>So the app remembers your choices on every device.</td></tr>
-        <tr><td>Face and ID checks</td><td>See <a href="#checks">section 4</a>.</td><td>To confirm people are real and are who they say.</td></tr>
-        <tr><td>Usage</td><td>Which features are used, for example "opened the app" or "sent a join request", with your account ID and a random ID for each visit. Never the content of your messages.</td><td>To learn what works in the beta and what to fix.</td></tr>
-        <tr><td>Feedback and beta sign-up</td><td>Anything you send through the feedback form, and, if you filled in our earlier beta sign-up form, what you entered there (name, email, date of birth, gender, neighbourhood, interests, availability).</td><td>To improve the app. If you later sign in with Google using the same email, your earlier details fill in your profile so you don't type them twice.</td></tr>
+        <tr><td>Face check</td><td>If you take it: passed or failed, a confidence score and the time. See <a href="#checks">section 4</a>.</td><td>To confirm people are real before they post plans or ask to join.</td></tr>
+        <tr><td>Usage</td><td>Which features are used, for example "opened the app" or "sent a join request", with your account ID (when you're signed in) and a random ID for each visit. Never the content of your messages.</td><td>To learn what works in the beta and what to fix.</td></tr>
+        <tr><td>Feedback and beta sign-up</td><td>Anything you send through the feedback form (linked to your account if you're signed in to the app in the same browser), and, if you filled in our earlier beta sign-up form, what you entered there (name, email, date of birth, gender, neighbourhood, interests, availability).</td><td>To improve the app. If you later sign in with Google using the same email, your earlier details fill in your profile so you don't type them twice.</td></tr>
       </tbody>
     </table></div>
     <h3>What we don't collect</h3>
@@ -123,7 +125,7 @@ td:first-child{font-weight:600;min-width:110px}
     <div class="tw"><table>
       <thead><tr><th scope="col">Who</th><th scope="col">What they see</th></tr></thead>
       <tbody>
-        <tr><td>People a plan is open to</td><td>Your name, age (not your date of birth), gender, job, bio, interests, emoji, verified badges, how many meetups you've been to and turned up for, and the plans you host.</td></tr>
+        <tr><td>People a plan is open to</td><td>Your name, age (not your date of birth), gender, job, bio, interests, emoji, a "Verified" badge if you passed the face check, how many meetups you've been to and turned up for, and the plans you host.</td></tr>
         <tr><td>A host you ask to join</td><td>All of the above, plus the note you add to your request.</td></tr>
         <tr><td>Members of a plan you're in</td><td>Who else is going, and the group chat. Everyone in a group sees its full history, including messages sent before they joined.</td></tr>
         <tr><td>Only you</td><td>Your email, phone number, date of birth, trusted contact, settings, and the details of your checks.</td></tr>
@@ -131,25 +133,29 @@ td:first-child{font-weight:600;min-width:110px}
       </tbody>
     </table></div>
     <p>If you block someone, you stop seeing each other's plans.</p>
+    <p>Some hosts and plans are <b>samples</b>, made up so the app never looks empty. They are labelled "Sample"
+      everywhere. Nobody real is behind them, and nobody will be at those plans.</p>
   </section>
 
   <section class="panel" id="checks">
-    <h2>4. Face and ID checks</h2>
-    <p><b>During the beta, both checks are simulated.</b> No camera image, video or ID document is taken or sent
-      anywhere. The check simply passes.</p>
-    <p>When we switch on the real face check, we will ask for your consent separately, at the moment you take the check.
-      It works like this:</p>
+    <h2>4. Face check (and a later ID check)</h2>
+    <p><b>The face check is optional.</b> You can skip it at sign-up and still browse plans. You need it to post a plan,
+      ask to join one, or see plans limited to some groups. We ask for your consent separately, at the moment you take
+      the check. It works like this:</p>
     <ul>
-      <li>Your camera video goes straight from your browser to Amazon Web Services (Amazon Rekognition Face Liveness),
-        which confirms a real person is in front of the camera. It doesn't pass through our servers.</li>
-      <li>We keep only the outcome: passed or failed, a confidence score, and the time. We don't keep any images.</li>
-      <li>After 5 failed attempts, a person on our team reviews the outcome and you get a notification.</li>
+      <li>A few seconds of camera video go straight from your browser to Amazon Web Services (Amazon Rekognition Face
+        Liveness), which confirms a real, live person is in front of the camera. The video doesn't pass through our
+        servers, and we don't receive or keep any images.</li>
+      <li>We keep only the outcome: passed or failed, a confidence score, and the time.</li>
+      <li>After 5 attempts without passing, a person on our team reviews the outcomes and you get a notification.</li>
     </ul>
-    <p>A real ID check will come later, with its own notice and consent. We will never store your full Aadhaar number,
-      and Aadhaar will never be the only way to verify.</p>
-    <p>Other people see only a "verified" badge, never your check details. Plans limited to some groups (for example
-      women-only) are shown only to people whose ID check has passed. After the ID check, your gender and date of birth
-      can no longer be changed in the app.</p>
+    <p>Other people see only a "Verified" badge, never your check details.</p>
+    <p><b>Plans limited to some groups</b> (for example women-only) are shown to people who have passed the face check
+      and whose profile gender is in that group. The face check doesn't confirm gender: it is what you enter in your
+      profile. Hosts see who asks to join and decide who comes.</p>
+    <p><b>An ID check is not available yet</b> (it shows as "Coming soon" in the app). When it comes, it will have its
+      own notice and consent. We will never store your full Aadhaar number, and Aadhaar will never be the only way to
+      verify.</p>
   </section>
 
   <section class="panel" id="providers">
@@ -161,11 +167,13 @@ td:first-child{font-weight:600;min-width:110px}
         <tr><td>Supabase</td><td>Stores the app's data and handles sign-in.</td></tr>
         <tr><td>GitHub Pages</td><td>Hosts the website. Like any web host, it receives your IP address when you load a page.</td></tr>
         <tr><td>Google Fonts</td><td>Supplies the font the pages use. Your browser fetches it from Google.</td></tr>
+        <tr><td>jsDelivr</td><td>Supplies the sign-in library the app uses. Your browser fetches it from jsDelivr's servers, which see your IP address.</td></tr>
         <tr><td>OpenStreetMap</td><td>Only when you open the map in Discover: supplies the map images. Your browser fetches them from OpenStreetMap's servers, which see your IP address.</td></tr>
         <tr><td>Google</td><td>Only if you choose <i>Continue with Google</i>: confirms your account and shares your name and email with us.</td></tr>
         <tr><td>Our email provider</td><td>Sends sign-up confirmation and password emails.</td></tr>
-        <tr><td>Our SMS provider</td><td>Only if you sign in with your phone number: sends your one-time code.</td></tr>
-        <tr><td>Amazon Web Services</td><td>Only once the real face check is switched on: runs the check (see <a href="#checks">section 4</a>).</td></tr>
+        <tr><td>Twilio</td><td>Only if you sign in with your phone number: sends your one-time code by SMS, and checks the code you type. It receives your phone number.</td></tr>
+        <tr><td>Amazon Web Services</td><td>Only if you take the face check: runs it (see <a href="#checks">section 4</a>).</td></tr>
+        <tr><td>Cloudflare Turnstile</td><td>If we switch on this security check: confirms that sign-ins and code requests come from a person, not a bot. It runs in your browser and sees your IP address and basic browser details. We don't use it for anything else.</td></tr>
       </tbody>
     </table></div>
     <p>We don't sell your data or share it with advertisers. We share it with authorities only when the law requires it,
@@ -175,27 +183,30 @@ td:first-child{font-weight:600;min-width:110px}
   <section class="panel" id="device">
     <h2>6. What stays on your device</h2>
     <p>The app keeps a few things in your browser's storage: your sign-in session, your light or dark theme choice, your
-      profile photo, and a copy of the app so it opens quickly and works offline. We don't use advertising cookies.
+      profile photo, a few display choices (such as tips you've closed), and a copy of the app so it opens quickly and
+      works offline. We don't use advertising cookies.
       Clearing this site's data in your browser removes all of it and signs you out.</p>
   </section>
 
   <section class="panel" id="keep">
     <h2>7. How long we keep it</h2>
-    <p>We keep your data while you have an account. When your account is deleted:</p>
+    <p>We keep your data while you have an account. When your account is deleted (from <i>Profile</i> &rarr;
+      <i>Delete my account</i>, or by us when you email):</p>
     <ul>
-      <li>Your profile, plans, join requests, notifications, ratings and check results are deleted.</li>
+      <li>Upcoming plans you host are cancelled and their members are told; you leave the groups you're in and their hosts are told.</li>
+      <li>Your account, profile, plans, join requests, notifications, ratings, face check results and usage records are deleted.</li>
       <li>Messages you sent in group chats stay, so the conversation still makes sense for the others, but they no longer show your name.</li>
-      <li>On request, we also delete your earlier beta sign-up and your feedback.</li>
+      <li>Feedback you sent is kept without any link to you. On request, we also delete it and your earlier beta sign-up.</li>
     </ul>
   </section>
 
   <section class="panel" id="rights">
     <h2>8. Your choices and rights</h2>
     <ul>
-      <li><b>See and correct your data:</b> most of it is in <i>Profile</i> in the app. Once your ID check has passed,
-        email us to change your gender or date of birth.</li>
+      <li><b>See and correct your data:</b> most of it is in <i>Profile</i> in the app, where you can change it. For anything
+        else, email us.</li>
       <li><b>Delete your account and data:</b> in the app, <i>Profile</i> &rarr; <i>Delete my account</i>. It happens straight
-        away. You can also email <a href="mailto:overhere.temp@gmail.com">overhere.temp@gmail.com</a> from the address or phone
+        away. You can also email <a href="mailto:admin@overhere.social">admin@overhere.social</a> from the address or phone
         number on your account.</li>
       <li><b>Withdraw your consent:</b> delete your account as above. The app can't work without your profile.</li>
       <li><b>Control who you deal with:</b> mute chats, leave plans, block people and report messages from inside the app.</li>
@@ -221,9 +232,9 @@ td:first-child{font-weight:600;min-width:110px}
     <h2>11. Changes and contact</h2>
     <p>When we change this policy we update the date at the top. If a change affects how your data is used, we'll tell
       you in the app first.</p>
-    <p>Questions, requests or complaints: <a href="mailto:overhere.temp@gmail.com">overhere.temp@gmail.com</a>.</p>
+    <p>Questions, requests or complaints: <a href="mailto:admin@overhere.social">admin@overhere.social</a>.</p>
   </section>
-  <p class="mute" style="text-align:center;font-size:13.5px"><a href="credits.html">Photo, icon and font credits</a></p>
+  <p class="mute" style="text-align:center;font-size:13.5px"><a href="terms.html">Terms and community guidelines</a> · <a href="credits.html">Photo, icon and font credits</a></p>
 </main>
 </body>
 </html>

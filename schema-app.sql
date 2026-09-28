@@ -680,7 +680,8 @@ begin
     'verify', _verify_state(u), 'mode', _modes(),
     'profile', to_jsonb(prof) - 'email' - 'trust_met' - 'trust_shows' - 'hist',
     'people', j_people, 'acts', j_acts, 'reqs', j_reqs, 'msgs', j_msgs, 'notes', j_notes,
-    'ratings', j_rat, 'reported', j_rep, 'blocked', j_blk, 'locked', n_locked);
+    'ratings', j_rat, 'reported', j_rep, 'blocked', j_blk, 'locked', n_locked,
+    'terms_v', 'app-v2');   -- the Terms version the app asks people to agree to (see accept_terms)
 end $$;
 
 -- Create or update your own profile. Only the fields sent are changed.
@@ -711,11 +712,17 @@ begin
     insert into profiles (id, email, name, dob, gender, hood, job, bio, ints, avail, emo, consent_version, consent_at)
     values (u, em, p->>'name', (p->>'dob')::date, p->>'gender', p->>'hood', coalesce(p->>'job', ''), coalesce(p->>'bio', ''),
             array(select jsonb_array_elements_text(coalesce(p->'ints', '[]'))), array(select jsonb_array_elements_text(coalesce(p->'avail', '[]'))),
-            coalesce(p->>'emo', ''), 'app-v1', now());
+            coalesce(p->>'emo', ''), 'app-v2', now());   -- app-v2: data consent + Terms and community guidelines
     if _may_prefill() then
       update participants set user_id = u where lower(email) = em and user_id is null and em <> '';
     end if;
   end if;
+end $$;
+
+-- Accounts made before the Terms existed agree to them once (the app asks). Bump the version with any change to terms.html.
+create or replace function accept_terms() returns void language plpgsql security definer set search_path = public as $$
+begin
+  update profiles set consent_version = 'app-v2', consent_at = now() where id = _uid();
 end $$;
 
 -- Private settings: alerts, who you follow, muted chats, trusted contact, dismissed cards...
@@ -1094,6 +1101,9 @@ begin
   for a in select r.act from requests r join activities x on x.id = r.act where r.user_id = u and r.status = 'accepted' and x.starts_at > now() loop
     perform leave_activity(a.act);
   end loop;
+  -- usage records go too, and feedback is kept without the link to this account
+  delete from events where participant_id = u;
+  update feedback set participant_id = null where participant_id = u;
   delete from auth.users where id = u;
 end $$;
 
@@ -1104,7 +1114,7 @@ do $$ declare f record; begin
              'edit_activity','cancel_activity','request_join','withdraw_request','decide_request','leave_activity','remove_member','send_message','vote',
              'rate_activity','report','block_user','unblock_user','add_notification','read_notifications','verify_simulated',
              'verify_precheck_service','verify_start_service','verify_finish_service','admin_reviews','admin_decide_review',
-             'admin_stats','log_event','send_feedback','delete_my_account'))
+             'admin_stats','log_event','send_feedback','delete_my_account','accept_terms'))
   loop
     execute format('revoke all on function %s from public, anon, authenticated', f.sig);
     execute format('alter function %s set search_path = public', f.sig);
@@ -1121,11 +1131,14 @@ do $$ declare f record; begin
 end $$;
 
 -- Deleting someone in Authentication -> Users also deletes their profile, plans, requests, notifications,
--- ratings and checks (their chat messages stay, shown without a name), and unlinks their old beta sign-up.
+-- ratings, checks and usage records (their chat messages stay, shown without a name), and unlinks their old beta
+-- sign-up and their feedback.
 create or replace function _on_auth_user_deleted() returns trigger language plpgsql security definer set search_path = public as $$
 begin
   delete from profiles where id = old.id and not is_sample;
   update participants set user_id = null where user_id = old.id;
+  delete from events where participant_id = old.id;
+  update feedback set participant_id = null where participant_id = old.id;
   return old;
 end $$;
 revoke all on function _on_auth_user_deleted() from public, anon, authenticated;
