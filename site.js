@@ -23,6 +23,19 @@ async function store(table,row){
   const all=JSON.parse(localStorage.getItem(LKEY)||'{"participants":[],"feedback":[]}');
   all[table].push(row);localStorage.setItem(LKEY,JSON.stringify(all));return 'ok';
 }
+/* Feedback goes through a database function that limits how much can arrive; if you're signed in to the app in
+   this browser, your login goes with it so the feedback is linked to your account (by the server, not this page). */
+function sessionToken(){
+  try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^sb-.+-auth-token$/.test(k)){const v=JSON.parse(localStorage.getItem(k));if(v?.access_token&&(!v.expires_at||v.expires_at*1000>Date.now()))return v.access_token}}}catch(e){}
+  return null;
+}
+async function sendFeedback(row){
+  const headers={apikey:CFG.SUPABASE_ANON_KEY,'Content-Type':'application/json'};
+  const tok=sessionToken()||(CFG.SUPABASE_ANON_KEY.startsWith('eyJ')?CFG.SUPABASE_ANON_KEY:null);
+  if(tok)headers.Authorization='Bearer '+tok;
+  const r=await fetch(CFG.SUPABASE_URL.replace(/\/+$/,'').replace(/\/rest\/v1$/,'')+'/rest/v1/rpc/send_feedback',{method:'POST',headers,body:JSON.stringify({p:row})});
+  if(!r.ok){const t=await r.text();throw new Error(/"message":"([^"]+)"/.exec(t)?.[1]||'Could not save ('+r.status+'). Please try again.')}
+}
 function download(){
   const blob=new Blob([localStorage.getItem(LKEY)||'{}'],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='overhere-local-data.json';a.click();
@@ -53,7 +66,7 @@ function home(){
 /* Demo accounts are real accounts now: made once in Supabase (see SETUP-APP.md), signed in to inside the app. */
 function admin(){
   return `<div class="panel" style="max-width:460px;margin:0 auto"><h2>Demo accounts</h2><p class="mute small">Sign in inside the app with one of these, using the password you gave it in Supabase (Authentication, Users).</p>
-  <p class="small"><b>kajal@overhere.test</b> · woman, ID verified<br><b>arjun@overhere.test</b> · man, ID verified<br><b>neha@overhere.test</b> · woman, new, ID not verified yet</p>
+  <p class="small">Their email addresses are in SETUP-APP.md on your computer (not listed here, so nobody can target them).</p>
   <p style="margin-top:16px"><button class="btn" data-go="try" style="width:100%">Open the app</button></p>
   <p class="small mute" style="margin:18px 0 0;text-align:center">Looking for results? <a href="addmin/" style="color:var(--acch);font-weight:600">Open the beta dashboard</a></p></div>`;
 }
@@ -96,7 +109,7 @@ async function submitFeedback(e,getRating){
   const p=getP();
   const row={id:uuid(),participant_id:/^[0-9a-f-]{36}$/i.test(p?.id||'')?p.id:null,rating,liked:$('#liked').value.trim()||null,improve:$('#improve').value.trim()||null,would_use:use?use.value:null,consent_store:true,consent_quote:$('#c_quote').checked,consent_contact:$('#c_contact').checked,consent_version:CONSENT_VERSION};
   $('#go').disabled=true;
-  try{await store('feedback',row);nav('thanks')}catch(err){showErr(err.message);$('#go').disabled=false}
+  try{if(REMOTE)await sendFeedback(row);else await store('feedback',row);nav('thanks')}catch(err){showErr(err.message);$('#go').disabled=false}
 }
 $('#logo').onclick=()=>nav('home');
 $('#t_try').onclick=()=>nav('try');

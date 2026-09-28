@@ -24,7 +24,7 @@ async function fetchStats(){
   let r;
   try{r=await fetch(CFG.SUPABASE_URL.replace(/\/+$/,'').replace(/\/rest\/v1$/,'')+'/rest/v1/rpc/admin_stats',{method:'POST',headers:h,body:JSON.stringify({pass:PASS})})}
   catch(e){throw new Error("Couldn't reach Supabase. Check your internet connection and try again.")}
-  if(r.ok)return r.json();
+  if(r.ok){const j=await r.json();if(j&&j.error)throw new Error(/wrong password/i.test(j.error)?'Wrong password.':j.error);return j}
   const t=await r.text();
   if(/wrong password/i.test(t))throw new Error('Wrong password.');
   if(r.status===404||/admin_stats|could not find/i.test(t))throw new Error('The dashboard is not set up in Supabase yet. Run the "Added later" part of schema.sql in the SQL editor, then set your password (see the comments in that file).');
@@ -38,7 +38,9 @@ async function rpc(fn,body){
   const r=await fetch(BASE+'/rest/v1/rpc/'+fn,{method:'POST',headers:h,body:JSON.stringify(body)});
   const t=await r.text();
   if(!r.ok)throw new Error(/"message":"([^"]+)"/.exec(t)?.[1]||'Could not load ('+r.status+')');
-  return t?JSON.parse(t):null;
+  const j=t?JSON.parse(t):null;
+  if(j&&j.error)throw new Error(j.error);   // wrong password or locked: the database answers {error}
+  return j;
 }
 async function fetchReviews(){if(!REMOTE)return null;try{return await rpc('admin_reviews',{pass:PASS})}catch(e){return null}}
 function reviewPanel(rv){

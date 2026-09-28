@@ -219,10 +219,33 @@ create policy "see your own pings" on pings for select to authenticated
   using (user_id = auth.uid() or user_id = '00000000-0000-0000-0000-000000000000');
 do $$ begin alter publication supabase_realtime add table pings; exception when others then null; end $$;
 
--- Signed-in people can also log usage events (the anon policy in schema.sql covers signed-out visitors).
-do $$ begin
-  create policy "signed-in people can log events" on events for insert to authenticated with check (true);
-exception when others then null; end $$;
+-- The old beta tables accept no direct writes from the browser any more: the sign-up form is gone, and usage
+-- events and feedback go through log_event() and send_feedback() below, which set who sent them and limit how many.
+drop policy if exists "anyone can sign up" on participants;
+drop policy if exists "anyone can send feedback" on feedback;
+drop policy if exists "anyone can log events" on events;
+drop policy if exists "signed-in people can log events" on events;
+revoke insert, update, delete on table participants, feedback, events from anon, authenticated;
+create index if not exists events_session_idx on events (session_id, created_at);
+create index if not exists events_participant_idx on events (participant_id, created_at);
+
+-- Dashboard password: stored as a bcrypt hash (a plain one set with insert/update is hashed on save), and after
+-- 20 wrong tries in 15 minutes the dashboard refuses every password until the 15 minutes pass.
+create extension if not exists pgcrypto with schema extensions;
+create table if not exists admin_fails (at timestamptz not null default now());
+alter table admin_fails enable row level security;
+revoke all on table admin_fails from anon, authenticated;
+create or replace function _admin_hash() returns trigger language plpgsql as $$
+begin
+  if new.pass !~ '^\$2[abxy]\$[0-9]{2}\$' then
+    if char_length(new.pass) < 10 then raise exception 'Use a dashboard password of 10 or more characters'; end if;
+    new.pass := extensions.crypt(new.pass, extensions.gen_salt('bf', 10));
+  end if;
+  return new;
+end $$;
+drop trigger if exists admin_secret_hash on admin_secret;
+create trigger admin_secret_hash before insert or update on admin_secret for each row execute function _admin_hash();
+update admin_secret set pass = pass where pass !~ '^\$2[abxy]\$[0-9]{2}\$';   -- hashes a password saved before this
 
 -- ---------- internal helpers (not callable from the browser) ----------
 
@@ -407,9 +430,9 @@ begin
   other := coalesce((_members(p_act))[1], a.host);
   insert into messages (act, sender, sys, body, created_at) values
     (p_act, null,    true,  'Chat created',                                now() - interval '2 hours'),
-    (p_act, a.host,  false, 'Hey all! Excited for this one.',              now() - interval '1 hour'),
-    (p_act, other,   false, 'Me too, what time should we meet?',           now() - interval '50 minutes'),
-    (p_act, a.host,  false, 'Let us meet 15 min before at the entrance.',  now() - interval '40 minutes');
+    (p_act, null,    true,  'Sample plan: these messages are examples, and nobody will actually be there.', now() - interval '2 hours'),
+    (p_act, a.host,  false, 'Hi! This is how a group chat looks.',         now() - interval '1 hour'),
+    (p_act, other,   false, 'You can make polls and share plans here.',    now() - interval '50 minutes');
 end $$;
 
 -- ---------- verification (face scan and ID check) ----------
@@ -622,6 +645,8 @@ begin
       union all select blocked from blocks where blocker = u
       union all select (f.v)::uuid from jsonb_array_elements_text(coalesce(prof.state -> 'following', '[]')) f(v)
         where f.v ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+          -- only people who host a plan this person could see, so a made-up follow can't reveal someone's profile
+          and exists (select 1 from activities a where a.host = (f.v)::uuid and _eligible(a, u))
       union all select u) s where x is not null)
   into pids;
 
@@ -950,18 +975,53 @@ begin
 end $$;
 
 -- Human review, from the /addmin page. The dashboard password (schema.sql, admin_secret) is checked by the database.
-create or replace function _admin_ok(p_pass text) returns void language plpgsql as $$
+-- Returns null when the password is right, otherwise what to tell the dashboard. It doesn't raise an error,
+-- because that would also undo the record of the wrong try.
+drop function if exists _admin_ok(text);
+create or replace function _admin_err(p_pass text) returns text language plpgsql as $$
 begin
-  if p_pass is null or not exists (select 1 from admin_secret s where s.pass = p_pass) then
-    perform pg_sleep(1);                     -- slows down password guessing
-    raise exception 'wrong password';
+  if (select count(*) from admin_fails where at > now() - interval '15 minutes') >= 20 then
+    return 'Too many wrong passwords. The dashboard is locked for 15 minutes.';
   end if;
+  if p_pass is not null and exists (select 1 from admin_secret s where s.pass = extensions.crypt(p_pass, s.pass)) then return null; end if;
+  insert into admin_fails default values;
+  delete from admin_fails where at < now() - interval '1 day';
+  perform pg_sleep(0.5);                     -- slows down password guessing
+  return 'wrong password';
+end $$;
+
+-- The dashboard's totals (first made in schema.sql). Totals only, never names or emails; feedback text only where
+-- the person agreed to be quoted.
+create or replace function admin_stats(pass text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare e text := _admin_err(pass);
+begin
+  if e is not null then return jsonb_build_object('error', e); end if;
+  return jsonb_build_object(
+    'participants',   (select count(*) from participants),
+    'by_gender',      (select coalesce(jsonb_object_agg(gender, n), '{}') from (select gender, count(*) n from participants group by gender) x),
+    'by_hood',        (select coalesce(jsonb_object_agg(neighborhood, n), '{}') from (select neighborhood, count(*) n from participants group by neighborhood) x),
+    'by_interest',    (select coalesce(jsonb_object_agg(i, n), '{}') from (select unnest(interests) i, count(*) n from participants group by 1) x),
+    'signups_by_day', (select coalesce(jsonb_object_agg(d, n), '{}') from (select to_char(created_at at time zone 'Asia/Kolkata', 'YYYY-MM-DD') d, count(*) n from participants where created_at > now() - interval '30 days' group by 1) x),
+    'feedback',       (select count(*) from feedback),
+    'avg_rating',     (select round(avg(rating)::numeric, 2) from feedback),
+    'rating_dist',    (select coalesce(jsonb_object_agg(rating, n), '{}') from (select rating, count(*) n from feedback group by rating) x),
+    'would_use',      (select coalesce(jsonb_object_agg(coalesce(would_use, 'No answer'), n), '{}') from (select would_use, count(*) n from feedback group by would_use) x),
+    'quotes',         (select coalesce(jsonb_agg(jsonb_build_object('rating', rating, 'liked', liked, 'improve', improve, 'at', created_at) order by created_at desc), '[]')
+                         from (select * from feedback where consent_quote and (liked is not null or improve is not null) order by created_at desc limit 30) x),
+    'events',         (select coalesce(jsonb_object_agg(name, n), '{}') from (select name, count(*) n from events group by name) x),
+    'micro',          (select coalesce(jsonb_object_agg(m, jsonb_build_object('avg', a, 'n', n)), '{}')
+                         from (select props->>'moment' m, round(avg((props->>'score')::int), 2) a, count(*) n from events
+                               where name = 'micro_feedback' and props->>'score' ~ '^[1-4]$' and props->>'moment' ~ '^[a-z_]{1,20}$' group by 1) x),
+    'tried',          (select count(distinct participant_id) from events where participant_id is not null),
+    'sessions_30d',   (select count(distinct session_id) from events where created_at > now() - interval '30 days')
+  );
 end $$;
 
 -- Everyone waiting for a person to look at their face or ID check.
 create or replace function admin_reviews(pass text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare e text := _admin_err(pass);
 begin
-  perform _admin_ok(pass);
+  if e is not null then return jsonb_build_object('error', e); end if;
   -- tries, failures and the best provider score (0-100) since the last decision, to help judge "real person, bad light"
   return (select coalesce(jsonb_agg(jsonb_build_object('user', p.id, 'name', p.name, 'kind', k.kind, 'since', _ms(v.created_at),
                                       'attempts', (s -> k.kind ->> 'attempts')::int, 'fails', (s -> k.kind ->> 'fails')::int,
@@ -976,10 +1036,12 @@ begin
           where not p.is_sample and (s -> k.kind ->> 'review')::boolean);
 end $$;
 
-create or replace function admin_decide_review(pass text, p_user uuid, p_kind text, p_approve boolean) returns void
+drop function if exists admin_decide_review(text, uuid, text, boolean);
+create or replace function admin_decide_review(pass text, p_user uuid, p_kind text, p_approve boolean) returns jsonb
 language plpgsql security definer set search_path = public as $$
+declare e text := _admin_err(pass);
 begin
-  perform _admin_ok(pass);
+  if e is not null then return jsonb_build_object('error', e); end if;
   if p_kind not in ('face', 'kyc') or not coalesce((_verify_state(p_user) -> p_kind ->> 'review')::boolean, false) then
     raise exception 'Nothing to review';
   end if;
@@ -993,6 +1055,46 @@ begin
     case when p_kind = 'face' then 'Face check' else 'ID check' end, case when p_approve then 'ok' else 'warn' end, null,
     case when p_approve then 'A person on our team reviewed your check and approved it.'
          else 'A person on our team reviewed your check. Please try it again, in good light.' end);
+  return jsonb_build_object('ok', true);
+end $$;
+
+-- Usage events (button taps, never content). Who sent it comes from the login, not the browser, and one session,
+-- one person, and signed-out visitors together can only send so many, so nobody can flood the table.
+create or replace function log_event(p_session uuid, p_name text, p_props jsonb default '{}') returns void
+language plpgsql security definer set search_path = public as $$
+declare u uuid := auth.uid();
+begin
+  if p_session is null or coalesce(p_name, '') !~ '^[a-z_]{2,40}$' or pg_column_size(coalesce(p_props, '{}')) > 2000 then return; end if;
+  if (select count(*) from events where session_id = p_session and created_at > now() - interval '10 minutes') >= 120 then return; end if;
+  if u is null and (select count(*) from events where participant_id is null and created_at > now() - interval '1 hour') >= 1000 then return; end if;
+  if u is not null and (select count(*) from events where participant_id = u and created_at > now() - interval '1 hour') >= 600 then return; end if;
+  insert into events (id, participant_id, session_id, name, props) values (gen_random_uuid(), u, p_session, p_name, coalesce(p_props, '{}'));
+end $$;
+
+-- Feedback from the landing page's form. Linked to the login when there is one; at most 60 an hour from everyone.
+create or replace function send_feedback(p jsonb) returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not coalesce((p->>'consent_store')::boolean, false) then raise exception 'Please tick the required consent box to send feedback.'; end if;
+  if (select count(*) from feedback where created_at > now() - interval '1 hour') >= 60 then
+    raise exception 'A lot of feedback is arriving right now. Please try again in an hour.';
+  end if;
+  insert into feedback (id, participant_id, rating, liked, improve, would_use, consent_store, consent_quote, consent_contact, consent_version)
+  values (gen_random_uuid(), auth.uid(), (p->>'rating')::int, nullif(left(trim(p->>'liked'), 1000), ''), nullif(left(trim(p->>'improve'), 1000), ''),
+          p->>'would_use', true, coalesce((p->>'consent_quote')::boolean, false), coalesce((p->>'consent_contact')::boolean, false),
+          left(coalesce(p->>'consent_version', 'v1'), 20));
+end $$;
+
+-- "Delete my account" in the app. Plans this person hosts are cancelled (members are told), they leave the groups
+-- they're in (hosts are told, spots reopen), then the login is deleted, which removes the rest (see the trigger below).
+create or replace function delete_my_account() returns void language plpgsql security definer set search_path = public as $$
+declare u uuid := _uid(); a record;
+begin
+  if _is_sample(u) then raise exception 'Sample accounts can''t be deleted here'; end if;
+  for a in select id from activities where host = u and starts_at > now() loop perform cancel_activity(a.id); end loop;
+  for a in select r.act from requests r join activities x on x.id = r.act where r.user_id = u and r.status = 'accepted' and x.starts_at > now() loop
+    perform leave_activity(a.act);
+  end loop;
+  delete from auth.users where id = u;
 end $$;
 
 -- Who may call what. Supabase gives new functions to everyone by default, so this takes that away first.
@@ -1001,14 +1103,17 @@ do $$ declare f record; begin
            where n.nspname = 'public' and (p.proname like '\_%' or p.proname in ('app_state','save_profile','save_state','post_activity',
              'edit_activity','cancel_activity','request_join','withdraw_request','decide_request','leave_activity','remove_member','send_message','vote',
              'rate_activity','report','block_user','unblock_user','add_notification','read_notifications','verify_simulated',
-             'verify_precheck_service','verify_start_service','verify_finish_service','admin_reviews','admin_decide_review'))
+             'verify_precheck_service','verify_start_service','verify_finish_service','admin_reviews','admin_decide_review',
+             'admin_stats','log_event','send_feedback','delete_my_account'))
   loop
     execute format('revoke all on function %s from public, anon, authenticated', f.sig);
     execute format('alter function %s set search_path = public', f.sig);
     if f.proname in ('verify_precheck_service', 'verify_start_service', 'verify_finish_service') then
       execute format('grant execute on function %s to service_role', f.sig);       -- Edge Functions only
-    elsif f.proname in ('admin_reviews', 'admin_decide_review') then
+    elsif f.proname in ('admin_reviews', 'admin_decide_review', 'admin_stats') then
       execute format('grant execute on function %s to anon, authenticated', f.sig); -- password checked inside
+    elsif f.proname in ('log_event', 'send_feedback') then
+      execute format('grant execute on function %s to anon, authenticated', f.sig); -- limited inside
     elsif f.proname not like '\_%' then
       execute format('grant execute on function %s to authenticated', f.sig);       -- signed-in people
     end if;
@@ -1104,7 +1209,7 @@ begin
   perform _seed_act(7,'concerts','Retro Bollywood karaoke',6,_t_at(7,21),null,'Karaoke bar, Sector 26','split',S17,'{9,2}',W,3000);
   perform _seed_act(6,'cafe','Pictionary and pizza, beginners welcome',6,_t_at(8,14),null,'Board game café, Sector 8','split',S17,'{12}',W,1800);
   perform _seed_act(12,'cafe','Sunrise walk around Sukhna Lake, then breakfast',4,_t_at(3,6,30),null,'Sukhna Lake, main gate','own',S17,'{6}',W);
-  perform _seed_act(8,'cafe','Trying the new ramen place (only 1 spot left)',3,_t_at(3,13),null,'Ramen bar, Sector 9','split',S17,'{5,3}',W,2400);
+  perform _seed_act(8,'cafe','Trying the new ramen place',3,_t_at(3,13),null,'Ramen bar, Sector 9','split',S17,'{5,3}',W,2400);
   perform _seed_act(7,'concerts','Open-mic night, come cheer for friends',6,_t_at(3,20),null,'Open-mic café, Sector 15','own',S17,null,W);
   perform _seed_act(1,'movies','Classic film re-run matinee',4,_t_at(4,11),null,'Government Museum auditorium, Sector 10','split',S17,null,W,1000);
   perform _seed_act(9,'concerts','Jazz night on the lawn, table for 4',4,_t_at(4,21),wo,'Leisure Valley lawns','host',S17,'{2}',W,3200);
@@ -1131,6 +1236,10 @@ begin
 end $$;
 -- Only the popcorn is on the host, so everyone pays for their own ticket (fixes databases seeded before).
 update activities set cost = 'own' where host = _sid(1) and description = 'Re-release of a 90s classic, popcorn on me' and cost = 'host';
+-- Sample plans: no false urgency, and no scripted meeting point in their chats (fixes databases seeded before).
+update activities set description = 'Trying the new ramen place' where description = 'Trying the new ramen place (only 1 spot left)';
+update messages set body = 'Sample plan: these messages are examples, and nobody will actually be there.', sender = null, sys = true
+where body = 'Let us meet 15 min before at the entrance.' and act in (select a.id from activities a join profiles p on p.id = a.host where p.is_sample);
 -- A few sample plans moved from "happening soon" to about a week out, so Discover has more (fixes databases seeded before).
 update activities set starts_at = _t_at(7,19,0), sample_period = interval '14 days' where host = _sid(5) and description = 'Rock night, local bands' and sample_period = interval '1 day';
 update activities set starts_at = _t_at(6,17,0), sample_period = interval '14 days' where host = _sid(6) and description = 'Tea tasting flight' and sample_period = interval '1 day';

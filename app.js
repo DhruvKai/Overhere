@@ -16,6 +16,8 @@ const IC={
   'bell-off':'<path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="m2 2 20 20"/>',
   'settings-2':'<path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/>',
   'message-circle':'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+  'messages-square':'<path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/>',
+  megaphone:'<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
   send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
   clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
   flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
@@ -123,7 +125,7 @@ const SB_URL=(CFG.SUPABASE_URL||'').replace(/\/+$/,'').replace(/\/rest\/v1$/,'')
 const ONLINE=!!(SB_URL&&CFG.SUPABASE_ANON_KEY&&/^https?:$/.test(location.protocol)&&window.supabase);
 const SB=ONLINE?window.supabase.createClient(SB_URL,CFG.SUPABASE_ANON_KEY):null;
 const EVERYONE='00000000-0000-0000-0000-000000000000';
-let ME=null,MYPHONE='',MODE={face:'simulated',kyc:'simulated'},VER={face:{fails:0,attempts:0,max:5,review:false},kyc:{fails:0,attempts:0,max:5,review:false}},skew=0,loaded=false,DRAFT=null,LOCKED=0;
+let ME=null,MYPHONE='',AUTHU={},MODE={face:'simulated',kyc:'simulated'},VER={face:{fails:0,attempts:0,max:5,review:false},kyc:{fails:0,attempts:0,max:5,review:false}},skew=0,loaded=false,DRAFT=null,LOCKED=0;
 const isUuid=x=>typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(x);
 /* Your private settings, saved to your account. ACT_FLAGS remember which reminders an activity already gave you. */
 const PRIV=['dismissed','following','alerts','muted','tips','asked','actf','seenPost'];
@@ -171,7 +173,7 @@ function applyState(st){
   (st.reported||[]).forEach(m=>{S.reported[m]=true});
   (st.msgs||[]).forEach(m=>{(S.chats[m.act]=S.chats[m.act]||[]).push({id:m.id,from:m.sys?'sys':m.from?mid(m.from):'?',text:m.text,at:m.at,reported:!!S.reported[m.id],
     ...(m.poll?{poll:{q:m.poll.q,opts:m.poll.opts.map((o,j)=>({t:o,v:(m.votes||[]).filter(v=>v.o===j).map(v=>mid(v.u))}))}}:{})})});
-  S.notes=(st.notes||[]).map(n=>({id:n.id,at:n.at,kind:n.kind,title:n.title,tag:n.tag,tone:n.tone,act:n.act,text:n.text,read:n.read,
+  S.notes=(st.notes||[]).map(n=>({id:n.id,at:n.at,kind:n.kind,title:n.title,tag:n.tag,tone:n.tone,act:n.act,text:n.text,read:n.read,key:n.key||'',
     check:n.flags.includes('check'),safe:n.flags.includes('safe'),chat:n.flags.includes('chat')}));
   (st.ratings||[]).forEach(r=>{S.ratings[r.act]={at:r.at,ok:r.ok,stars:r.stars,people:Object.fromEntries(Object.entries(r.people||{}).map(([k,v])=>[mid(k),v]))}});
   S.blocked=(st.blocked||[]).map(mid);
@@ -231,7 +233,10 @@ const myReq=id=>S.reqs.find(r=>r.act===id&&r.user==='me');
 const ownPhone=p=>!!MYPHONE&&p.replace(/\D/g,'').slice(-10)===MYPHONE;
 const audOK=a=>a.aud==='everyone'||a.aud.includes(S.me.gender);
 const isBlocked=id=>S.blocked.includes(id);
-const isVer=id=>id==='me'?!!S.me.face:!!USERS[id]?.verified;
+/* Badges tell other people something, so they only show once the face check is real (not simulated). */
+const isVer=id=>MODE.face==='live'&&(id==='me'?!!S.me.face:!!USERS[id]?.verified);
+/* Sample hosts keep the app from looking empty; they are always labelled so nobody mistakes them for real people. */
+const sampleTag=id=>USERS[id]?.sample?'<span class="smp" title="A sample host that shows how Overhere works. Nobody will actually be there.">Sample</span>':'';
 const vf=(id,long)=>isVer(id)?`<span class="vf">${long?I('badge-check',14)+' Verified':'✓'}</span>`:'';
 /* Hosts see the whole waitlist; everyone else only its length and their own place in it. */
 const waitlist=id=>{const a=actOf(id);if(a&&a.host!=='me')return Array.from({length:a.wl||0},(_,i)=>({user:i+1===a.mypos?'me':'?'}));return S.reqs.filter(r=>r.act===id&&r.status==='waitlist')};
@@ -380,11 +385,9 @@ const SESSION=uuid4();
 function track(name,props={}){
   try{
     const row={id:uuid4(),participant_id:ME,session_id:SESSION,name,props};
-    const C=window.APP_CONFIG||{};
-    if(C.SUPABASE_URL&&C.SUPABASE_ANON_KEY&&location.protocol.startsWith('http')){
-      const h={apikey:C.SUPABASE_ANON_KEY,'Content-Type':'application/json',Prefer:'return=minimal'};
-      if(C.SUPABASE_ANON_KEY.startsWith('eyJ'))h.Authorization='Bearer '+C.SUPABASE_ANON_KEY;
-      fetch(C.SUPABASE_URL.replace(/\/+$/,'').replace(/\/rest\/v1$/,'')+'/rest/v1/events',{method:'POST',headers:h,body:JSON.stringify(row),keepalive:true}).catch(()=>{});
+    if(SB&&location.protocol.startsWith('http')){
+      /* log_event takes who you are from your login and limits how many events one session can send */
+      SB.rpc('log_event',{p_session:SESSION,p_name:name,p_props:props}).then(()=>{},()=>{});
     }else{
       const k='overhere_local_data',all=JSON.parse(localStorage.getItem(k)||'{"participants":[],"feedback":[]}');
       (all.events=all.events||[]).push({...row,created_at:new Date().toISOString()});
@@ -650,7 +653,7 @@ function cardHtml(a,cls){
   const h=profileOf(a.host);
   return `<div class="card ${cls}" style="background:${planBg(a)}"${cls==='top'?` data-a="detail" data-id="${a.id}" role="button" tabindex="0" aria-label="${esc(a.desc)}: view details"`:''}><div class="shade"></div><div class="stamp"></div>
   <div class="cp">${catPill(a.cat)}</div>
-  <div class="body"><div class="who">${a.host==='me'?`${av('me','sm')}You`:`<button class="hlink" data-a="user" data-id="${a.host}" title="View ${esc(h.name)}'s profile">${av(a.host,'sm')}<span><span class="hname">${esc(h.name)}</span>, ${h.age}</span></button>`} ${vf(a.host)}</div>
+  <div class="body"><div class="who">${a.host==='me'?`${av('me','sm')}You`:`<button class="hlink" data-a="user" data-id="${a.host}" title="View ${esc(h.name)}'s profile">${av(a.host,'sm')}<span><span class="hname">${esc(h.name)}</span>, ${h.age}</span></button>`} ${vf(a.host)}${sampleTag(a.host)}</div>
   <h2>${esc(a.desc)}</h2>
   <div class="meta"><span>${I('calendar',14)}${whenStr(a.when)}</span><span>${I('map-pin',14)}${esc(a.venue)}</span><span>${I('users',14)}${spotTxt(a)}</span></div>
   <div class="tags">${tags(a).map(t=>`<span>${esc(t)}</span>`).join('')}</div></div></div>`;
@@ -659,7 +662,7 @@ const REQ_LBL={pending:'Requested',accepted:'Accepted',rejected:'Declined',waitl
 const REQ_TONE={pending:'acc',accepted:'ok',rejected:'bad',waitlist:'info'};
 function acCard(a){
   const rq=myReq(a.id),full=spots(a)<=0;
-  return `<div class="ac" data-a="detail" data-id="${a.id}"><div class="media" style="background:${planBg(a)}">${catPill(a.cat)}</div>
+  return `<div class="ac" data-a="detail" data-id="${a.id}"><div class="media" style="background:${planBg(a)}">${catPill(a.cat)}${sampleTag(a.host)}</div>
   <div class="bd">${ui.f.sort==='for'&&reasons(a)[0]?`<div class="why">${I('sparkles',12)} ${esc(reasons(a)[0][0])}</div>`:''}<h4>${esc(a.desc)}</h4>
   <div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)} · ${distKm(a)} km</span></div>
   <div class="tg"><span>${I('users',12)}${spotTxt(a)}</span>${tags(a).map(t=>`<span>${esc(t)}</span>`).join('')}</div>
@@ -786,6 +789,24 @@ function noteHtml(n){
   <div class="nm"><div class="nt">${esc(n.title||'Update')}</div><div class="nx">${esc(n.text)}</div><div class="tm">${ago(n.at)}</div></div>
   ${fresh?'<span class="udot" aria-label="New"></span>':''}</div>`;
 }
+/* ---------- chats: every group chat you're in (hosting, or accepted), newest message first ---------- */
+const chatNote=id=>S.notes.find(n=>n.key==='chat:'+id&&!n.read);
+function myChats(){
+  return S.acts.filter(a=>(a.host==='me'||myReq(a.id)?.status==='accepted')&&(S.chats[a.id]||[]).length)
+    .map(a=>{const ms=S.chats[a.id];return {a,last:ms[ms.length-1]}}).sort((x,y)=>(y.last.at||0)-(x.last.at||0));
+}
+const chatUnread=()=>myChats().filter(({a})=>chatNote(a.id)).length;
+function tabChats(){
+  const list=myChats();
+  const who=x=>x.from==='sys'?'':(x.from==='me'?'You':uname(x.from))+': ';
+  return `<div class="nh"><h1 class="pt" style="font-size:22px;flex:1;margin:0">Chats</h1></div>
+  ${list.length?`<div class="chl">${list.map(({a,last})=>{const un=!!chatNote(a.id);return `<button class="chi${un?' un':''}" data-a="chat" data-id="${a.id}">${planThumb(a)}
+    <span class="chb"><span class="cht"><b>${esc(short(a.desc))}</b><span class="tm">${ago(last.at)}</span></span>
+    <span class="chm">${esc(who(last)+(last.poll?'Poll: '+last.poll.q:last.text))}</span>
+    <span class="small mute">${isPast(a)?'Ended':whenStr(a.when)} · ${a.members.length+1} in the group${S.muted[a.id]?' · muted':''}${isSample(a.host)?' · sample plan':''}</span></span>
+    ${un?'<span class="udot" aria-label="Unread"></span>':''}</button>`}).join('')}</div>`
+  :empty('messages-square','No chats yet','When you host a plan and accept someone, or a host accepts your request, the group chat shows up here.','<button class="btn" data-a="tab" data-t="discover">Find a plan</button>')}`;
+}
 function tabNotes(){
   const N=S.notes,unread=N.filter(n=>!n.read).length;
   const sec=(title,list,none)=>`<h3 class="nsh">${title}${list.some(n=>!n.read)?` <b>${list.filter(n=>!n.read).length}</b>`:''}</h3>
@@ -796,7 +817,7 @@ function tabNotes(){
 }
 function tabProfile(){
   const m=S.me,th=themePref(),ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
-  const V=[['mail','Email Verified',true],['scan-face','Face Verified',!!m.face],['id-card','Government ID',false,'soon'],['user','Profile Complete',!!(m.job&&m.bio&&(m.ints||[]).length&&(m.avail||[]).length)]];
+  const V=[AUTHU.phone?['phone','Phone Verified',true]:['mail','Email Verified',!!AUTHU.email],['scan-face','Face Verified',!!m.face],['id-card','Government ID',false,'soon'],['user','Profile Complete',!!(m.job&&m.bio&&(m.ints||[]).length&&(m.avail||[]).length)]];
   const done=V.filter(v=>v[2]).length;
   /* face check can be done from here; the ID check is greyed out until it's switched on */
   const vi=([ic,l,y,k])=>k==='soon'?`<div class="vi off" aria-disabled="true">${I(ic,14)}${l}<span class="e small">Coming soon</span></div>`
@@ -805,7 +826,7 @@ function tabProfile(){
   const soft=(arr,none)=>arr&&arr.length?`<div class="soft">${arr.map(x=>`<span>${esc(x)}</span>`).join('')}</div>`:`<p class="small mute">${none}</p>`;
   return `<div class="panel"><div class="ph">${I('user',15)} Your profile<button class="btn sm sec" data-a="editprofile">${I('pencil',14)} Edit profile</button></div>
   <div class="pt2"><div class="phw" data-a="photo">${av('me','lg')}<button class="pe" id="p_pe" title="Change profile picture" aria-label="Change profile picture" aria-haspopup="menu" aria-expanded="false">${I('camera',14)}</button>
-  <div class="pmenu" id="p_menu" role="menu" hidden></div></div><div><div class="pn">${esc(m.name)} ${m.face?`<span class="vf">${I('badge-check',14)} Verified</span>`:''}</div><div class="small mute">${esc(m.hood)}, Chandigarh</div><div class="small" style="margin-top:4px">${trustTxt('me')}</div></div></div>
+  <div class="pmenu" id="p_menu" role="menu" hidden></div></div><div><div class="pn">${esc(m.name)} ${isVer('me')?`<span class="vf">${I('badge-check',14)} Verified</span>`:''}</div><div class="small mute">${esc(m.hood)}, Chandigarh</div><div class="small" style="margin-top:4px">${trustTxt('me')}</div></div></div>
   <input type="file" id="p_photo" accept="image/jpeg,image/png,image/webp,image/*" hidden>
   <div class="facts"><span>${ageOf(m.dob)} yrs</span><span>${esc(m.gender)}</span>${m.job?`<span>${I('briefcase',14)}${esc(m.job)}</span>`:''}</div>
   <p>${m.bio?esc(m.bio):'<span class="mute">Add a short bio so hosts know who you are. Tap Edit profile.</span>'}</p></div>
@@ -824,8 +845,8 @@ function tabProfile(){
   ${m.trusted?`<div class="blk">${I('phone',15)}<span><b>${esc(m.trusted.name)}</b> · ${esc(m.trusted.phone)}</span><button class="lnk" data-a="editprofile" data-k="safety">Change</button></div>`:`<button class="btn sm sec" data-a="editprofile" data-k="safety">${I('user-plus',14)} Add a trusted contact</button>`}
   <label>Blocked people</label>${S.blocked.length?S.blocked.map(u=>`<div class="blk">${av(u,'sm')}${esc(uname(u))}<button class="lnk" data-a="unblock" data-id="${u}">Unblock</button></div>`).join(''):'<p class="small mute" style="margin:0">You have not blocked anyone.</p>'}</div>
   <div class="panel"><div class="ph">${I('user',15)} Account</div>
-  <p class="small mute" style="margin-top:0">To delete your account and data, email ${esc(CFG.CONTACT_EMAIL||'the beta team')}. <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a> · <a href="credits.html" target="_blank" rel="noopener" style="color:inherit">Credits</a></p>
-  <button class="btn sm ghost" data-a="signout">${I('log-out',14)} Sign out</button></div>
+  <p class="small mute" style="margin-top:0"><a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a> · <a href="credits.html" target="_blank" rel="noopener" style="color:inherit">Credits</a></p>
+  <div class="row" style="gap:8px"><button class="btn sm ghost" data-a="signout">${I('log-out',14)} Sign out</button><button class="btn sm ghost" style="color:var(--bad)" data-a="delacct">${I('trash',14)} Delete my account</button></div></div>
 `;
 }
 
@@ -884,12 +905,13 @@ function modalHtml(){
       <div class="meta2" style="margin-top:3px"><span>${I('users',13)}${a.members.length} going · ${spotTxt(a)}${wl?` · ${wl} on waitlist`:''}</span></div>
       <div class="meta2" style="margin-top:3px"><span>${I('wallet',13)}${costLine(a)}</span></div>
       <div class="tg" style="margin-top:8px"><span>${COST_S[a.cost]}</span><span>${a.aud==='everyone'?'Open to everyone':esc(a.aud.join(' / '))+' only'}</span>${a.repeat?`<span>${REPEAT[a.repeat]}</span>`:''}</div></div></div>
-      <div class="hostline">Hosted by ${a.host==='me'?`${av('me','sm')}<b style="color:var(--ink);font-weight:600">You</b>`:`<button class="hlink" data-a="user" data-id="${a.host}" title="View ${esc(h.name)}'s profile">${av(a.host,'sm')}<span><b style="color:var(--ink);font-weight:600">${esc(h.name)}</b>, ${h.age}</span></button> ${vf(a.host,true)}`}</div>`;
+      <div class="hostline">Hosted by ${a.host==='me'?`${av('me','sm')}<b style="color:var(--ink);font-weight:600">You</b>`:`<button class="hlink" data-a="user" data-id="${a.host}" title="View ${esc(h.name)}'s profile">${av(a.host,'sm')}<span><b style="color:var(--ink);font-weight:600">${esc(h.name)}</b>, ${h.age}</span></button> ${vf(a.host,true)}${sampleTag(a.host)}`}</div>`;
     if(m.type==='confirm'&&(can||canWait))return sheet(can?'Request to Join':'Join the waitlist',`<div class="sb">${top}
       ${canWait?`<div class="warnbox" style="background:var(--infobg);border-color:#BFDBFE;color:var(--info)">${I('users',16)}<span>This activity is full. Join the waitlist and your request goes to ${esc(h.name)} automatically if a spot opens${wl?` (${wl} ahead of you)`:''}.</span></div>`:''}
       <label for="r_note" style="font-size:14px;margin-top:18px">Add a note <span class="mute" style="font-weight:400">(optional)</span></label>
       <p class="small mute">Introduce yourself or mention why you want to join.</p>
       <textarea id="r_note" maxlength="100" placeholder="Hey! I'd love to join, happy to be on time and split costs."></textarea><div class="cc"><span id="r_cnt">0</span>/100</div>
+      ${isSample(a.host)?`<div class="warnbox">${I('alert-triangle',16)}<span><b>Sample plan.</b> It shows how Overhere works: the host says yes straight away, but nobody will actually be there. Don't go to meet anyone.</span></div>`:''}
       ${S.me.face?'<div style="height:14px"></div>':`<div class="warnbox">${I('alert-triangle',16)}<span>You'll need to do a quick face check before your request is sent. It takes about a minute.</span></div>`}
       <button class="btn" data-a="request" data-id="${a.id}">${I('send',16)} ${canWait?(S.me.face?'Join waitlist':'Verify &amp; join waitlist'):(S.me.face?'Send Request':'Verify &amp; Send Request')}</button>
       <div style="height:8px"></div><button class="btn ghost" data-a="close">Not now</button></div>`);
@@ -905,11 +927,16 @@ function modalHtml(){
       <div class="dlinks">${!past&&(a.status==='open'||a.status==='full')?`<button class="lnk" data-a="share" data-k="invite" data-id="${a.id}">${I('send',13)} Invite a friend</button>`:''}${rq&&(rq.status==='pending'||rq.status==='waitlist')?`<button class="lnk m" data-a="withdraw" data-id="${a.id}">${I('x',13)} Withdraw request</button>`:''}${acc&&!past?`<button class="lnk m" data-a="leave" data-id="${a.id}">Leave activity</button>`:''}</div>
       </div>`);
   }
+  if(m.type==='delacct')return sheet('Delete your account',`<div class="sb">
+      <p style="margin-top:0">This permanently deletes your account, profile, plans, requests, notifications and ratings. Plans you host are cancelled and their members are told. Your chat messages stay in those groups without your name. This can't be undone.</p>
+      <label for="del_ok">Type DELETE to confirm</label><input id="del_ok" autocomplete="off" autocapitalize="characters">
+      <div style="height:14px"></div><button class="btn bad" data-a="dodelacct">${I('trash',16)} Delete my account</button>
+      <div style="height:8px"></div><button class="btn ghost" data-a="close">Keep my account</button></div>`);
   if(m.type==='user'){
     const p=USERS[m.id];if(!p)return '';
     const ups=S.acts.filter(a=>a.host===m.id&&visible(a)).sort((a,b)=>a.when-b.when),bl=isBlocked(m.id),t=trust(m.id);
     return sheet(backB(m)+'Profile',`<div class="sb">
-      <div class="pt2">${av(m.id,'lg')}<div><div class="pn">${esc(p.name)} ${vf(m.id,true)}</div><div class="small mute">${esc(p.gender)}, ${p.age}${p.job?' · '+esc(p.job):''}</div></div></div>
+      <div class="pt2">${av(m.id,'lg')}<div><div class="pn">${esc(p.name)} ${vf(m.id,true)}${sampleTag(m.id)}</div><div class="small mute">${esc(p.gender)}, ${p.age}${p.job?' · '+esc(p.job):''}</div></div></div>
       ${p.bio?`<p style="margin:16px 0 0">${esc(p.bio)}</p>`:''}
       <div class="tstats"><div><b>${t.met}</b><span>meetups</span></div><div><b>${t.shows}</b><span>showed up</span></div><div><b>${t.met-t.shows}</b><span>no-shows</span></div></div>
       ${signals(m.id)}
@@ -1051,7 +1078,7 @@ function modalHtml(){
       <button class="ib" data-a="mute" data-id="${a.id}" title="${muted?'Unmute':'Mute'} chat notifications" aria-label="${muted?'Unmute':'Mute'} chat notifications" aria-pressed="${muted}">${I(muted?'bell-off':'bell',17)}</button>
       <button class="sosb" data-a="sos" data-id="${a.id}" aria-label="SOS: get help now">SOS</button>
       <button class="ib" data-a="close" title="Close">${I('x',18)}</button></div>
-      <p class="small mute" style="padding:8px 18px;margin:0">Members: ${esc([a.host,...a.members].map(uname).join(', '))} · full history visible to everyone${muted?' · notifications muted':''}</p>
+      <p class="small mute" style="padding:8px 18px;margin:0">Members: ${esc([a.host,...a.members].map(uname).join(', '))} · full history visible to everyone${muted?' · notifications muted':''}${isSample(a.host)?' · <b>Sample plan: the host\'s messages are pre-written and nobody will be there</b>':''}</p>
       <div class="msgs" id="msgs">${tips}${msgs}</div><div class="cin"><button class="ib" data-a="newpoll" data-id="${a.id}" title="Create a poll" aria-label="Create a poll">${I('bar-chart',18)}</button><input id="c_in" placeholder="Message the group" autocomplete="off" aria-label="Message the group"><button class="btn sm" data-a="send" data-id="${a.id}" aria-label="Send">${I('send',15)}</button></div></div></div>`;
   }
   if(m.type==='members'){
@@ -1346,13 +1373,13 @@ function render(){
   if(!ONLINE||!ME||!loaded){scr.innerHTML=authHtml();restore();return}
   if(!S.me||!S.me.obDone){scr.innerHTML=onboardHtml()+modalHtml();restore();afterRender();return}
   const unread=S.notes.filter(n=>!n.read).length;
-  const view={swipe:tabSwipe,discover:tabDiscover,acts:tabActs,reqs:tabReqs,profile:tabProfile,notes:tabNotes}[ui.tab]();
+  const view={swipe:tabSwipe,discover:tabDiscover,acts:tabActs,reqs:tabReqs,profile:tabProfile,notes:tabNotes,chats:tabChats}[ui.tab]();
   const pend=S.reqs.filter(r=>r.status==='pending'&&actOf(r.act)?.host==='me').length;
   const TT=(k,l)=>`<button class="tt ${ui.tab===k?'on':''}" data-a="tab" data-t="${k}">${l}</button>`;
   const T=(k,ic,l)=>`<button class="${ui.tab===k?'on':''}" data-a="tab" data-t="${k}">${I(ic,20)}${l}</button>`;
   scr.innerHTML=`<header><div class="hb"><div class="logo"><span class="dots"><i></i><i></i></span>Overhere</div>
   <div class="tnav">${TT('swipe','Swipe')}${TT('discover','Discover')}<button class="btn sm" data-a="newpost">${I('plus',15)} Create Activity</button>${TT('acts','Activities'+(pend?` (${pend})`:''))}${TT('reqs','Requests')}</div>
-  <div class="hr"><button class="ib${ui.tab==='notes'?' on':''}" data-a="bell" title="Notifications" aria-label="Notifications" aria-pressed="${ui.tab==='notes'}">${I('bell',19)}${unread?'<span class="dot"></span>':''}</button><button class="ib" data-a="fb" title="Leave feedback" aria-label="Leave feedback">${I('message-circle',19)}</button><button class="ib${ui.tab==='profile'?' on':''}" data-a="tab" data-t="profile" title="Your profile" aria-label="Your profile">${av('me')}</button></div></div></header>
+  <div class="hr"><button class="ib${ui.tab==='chats'?' on':''}" data-a="chats" title="Chats" aria-label="Chats" aria-pressed="${ui.tab==='chats'}">${I('messages-square',19)}${chatUnread()?'<span class="dot"></span>':''}</button><button class="ib${ui.tab==='notes'?' on':''}" data-a="bell" title="Notifications" aria-label="Notifications" aria-pressed="${ui.tab==='notes'}">${I('bell',19)}${unread?'<span class="dot"></span>':''}</button><button class="ib" data-a="fb" title="Leave feedback" aria-label="Leave feedback">${I('megaphone',19)}</button><button class="ib${ui.tab==='profile'?' on':''}" data-a="tab" data-t="profile" title="Your profile" aria-label="Your profile">${av('me')}</button></div></div></header>
   <main><div class="${ui.tab==='discover'?'wrap':'narrow'}">${view}</div></main>
   <nav>${T('swipe','flame','Swipe')}${T('discover','compass','Discover')}${T('acts','calendar-check','Activities'+(pend?` (${pend})`:''))}${T('reqs','mail','Requests')}</nav>${microHtml()}${modalHtml()}`;
   restore();afterRender();
@@ -1483,6 +1510,35 @@ function authBlur(e){
 }
 function capsWarn(e){const w=document.getElementById(e.target.id+'_caps');if(w&&e.getModifierState)w.hidden=!e.getModifierState('CapsLock')}
 /* Phone numbers: 10 digits after +91, shown as "98765 43210". A pasted "+91 98765 43210" or "098765 43210" loses its prefix. */
+/* ---------- CAPTCHA (Cloudflare Turnstile) ----------
+   Off until config.js has TURNSTILE_SITE_KEY. Switch it on in Supabase (Authentication -> Attack Protection) at the same
+   time, because then Supabase refuses sign-ins that don't carry a token. Each token works once, so every send asks again.
+   It stays invisible unless Cloudflare wants a tap. */
+let tsP=null,tsId=null;
+function tsLoad(){
+  if(window.turnstile)return Promise.resolve();
+  return tsP||(tsP=new Promise((ok,bad)=>{const s=document.createElement('script');s.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';s.async=true;
+    s.onload=()=>ok();s.onerror=()=>{tsP=null;bad(new Error("The security check couldn't load. Check your connection and try again."))};document.head.appendChild(s)}));
+}
+async function captcha(){
+  if(!CFG.TURNSTILE_SITE_KEY)return undefined;
+  await tsLoad();
+  let box=document.getElementById('cf_box');
+  if(!box){box=document.createElement('div');box.id='cf_box';document.body.appendChild(box)}
+  return new Promise((ok,bad)=>{
+    if(tsId!==null){try{window.turnstile.remove(tsId)}catch(e){}}
+    const done=()=>box.classList.remove('show');
+    tsId=window.turnstile.render(box,{sitekey:CFG.TURNSTILE_SITE_KEY,appearance:'interaction-only',
+      'before-interactive-callback':()=>box.classList.add('show'),
+      callback:t=>{done();ok(t)},'error-callback':()=>{done();bad(new Error('The security check failed. Please try again.'))},
+      'timeout-callback':()=>{done();bad(new Error('The security check timed out. Please try again.'))}});
+  });
+}
+/* runs an auth call with a fresh token; a failed check comes back as an error instead of throwing */
+async function withCaptcha(fn){
+  let t;try{t=await captcha()}catch(e){return {error:e}}
+  return fn(t);
+}
 const phoneDigits=s=>{const d=s.replace(/\D/g,'');return (d.length>10?d.replace(/^(91|0)(?=\d{10}$)/,''):d).slice(0,10)};
 const fmtPhone=d=>d.length>5?d.slice(0,5)+' '+d.slice(5):d;
 function phoneProblem(n){return !n?'Enter your mobile number':n.length<10?'Enter all 10 digits':!/^[6-9]/.test(n)?'Indian mobile numbers start with 6, 7, 8 or 9':''}
@@ -1491,7 +1547,7 @@ async function sendCode(again){
   if(!again){const m=phoneProblem(n);fieldMsg('a_phone',m);if(m){document.getElementById('a_phone')?.focus();return}}
   const wait=again?Math.ceil((ui.auth.sent+RESEND_MS-Date.now())/1000):0;
   if(wait>0)return toast(`Please wait ${wait}s before asking for a new code`);
-  const {error}=await SB.auth.signInWithOtp({phone:'+91'+n});
+  const {error}=await withCaptcha(t=>SB.auth.signInWithOtp({phone:'+91'+n,options:{captchaToken:t}}));
   if(error)return again?toast(friendly(error)):formErr(friendly(error));
   track('phone_code_sent',{again,signup:ui.auth.was==='up'});
   ui.auth={mode:'code',phone:'+91'+n,sent:Date.now(),was:ui.auth.was};render();resendTimer();
@@ -1535,7 +1591,11 @@ const A={
   detail:d=>{ui.modal={type:'detail',id:d.id};render()},
   detailback:d=>{ui.modal={type:'detail',id:d.id,back:ui.modal};render()},   // from a profile: closing goes back to it
   hostview:d=>{ui.modal={type:'host',id:d.id};render()},
-  chat:d=>{ui.modal={type:'chat',id:d.id};render()},
+  chat:d=>{
+    const n=chatNote(d.id);if(n){n.read=true;if(!n.id.startsWith('tmp'))call('read_notifications',{p_ids:[n.id]},true).catch(()=>{})}
+    ui.modal={type:'chat',id:d.id};render()},
+  /* The chats button toggles the chats tab, like the bell. */
+  chats:()=>{if(ui.tab==='chats'&&!ui.modal){ui.tab=ui.prevTab||'swipe';render();return}if(ui.tab!=='chats'&&ui.tab!=='notes')ui.prevTab=ui.tab;ui.tab='chats';ui.modal=null;track('chats_opened');render()},
   close:()=>{ui.modal=ui.modal?.back||null;render()},
   closebg:(d,e)=>{if(e.target.classList.contains('ov')&&ui.modal?.type!=='verify'&&ui.modal?.type!=='chat'){ui.modal=ui.modal?.back||null;render()}},
   user:d=>{ui.modal={type:'user',id:d.id,back:ui.modal};render()},
@@ -1567,13 +1627,13 @@ const A={
   emailfix:d=>{const i=document.getElementById('a_email');i.value=d.v;fieldMsg('a_email','');mailHint();pwLive();document.getElementById('a_pw')?.focus()},
   signin:()=>working(async()=>{
     if(!authCheck(false))return;
-    const {error}=await SB.auth.signInWithPassword({email:val('a_email'),password:pw()});
+    const {error}=await withCaptcha(t=>SB.auth.signInWithPassword({email:val('a_email'),password:pw(),options:{captchaToken:t}}));
     if(error)return formErr(/confirm/i.test(error.message)?'Please confirm your email first: open the link we sent you.':/invalid/i.test(error.message)?'Wrong email or password.':friendly(error));
     return true;   // signed in: onAuthStateChange takes it from here
   }),
   signup:()=>working(async()=>{
     if(!authCheck(true))return;
-    const email=val('a_email'),{data,error}=await SB.auth.signUp({email,password:pw(),options:{emailRedirectTo:here()}});
+    const email=val('a_email'),{data,error}=await withCaptcha(t=>SB.auth.signUp({email,password:pw(),options:{emailRedirectTo:here(),captchaToken:t}}));
     const exists=['You already have an account with this email.',' <button type="button" class="lnk" data-a="authmode" data-k="in">Sign in instead</button>'];
     if(error)return /already (registered|exists)/i.test(error.message)?formErr(...exists):formErr(friendly(error));
     /* With email confirmation on, Supabase answers an address that already has an account with a user that has no identities, not an error. */
@@ -1585,8 +1645,8 @@ const A={
   resendmail:async()=>{
     const {email,kind,sent}=ui.auth,wait=Math.ceil(((sent||0)+RESEND_MS-Date.now())/1000);
     if(!email)return;if(wait>0)return toast(`Please wait ${wait}s before asking again`);
-    const {error}=kind==='reset'?await SB.auth.resetPasswordForEmail(email,{redirectTo:here()})
-      :await SB.auth.resend({type:'signup',email,options:{emailRedirectTo:here()}});
+    const {error}=await withCaptcha(t=>kind==='reset'?SB.auth.resetPasswordForEmail(email,{redirectTo:here(),captchaToken:t})
+      :SB.auth.resend({type:'signup',email,options:{emailRedirectTo:here(),captchaToken:t}}));
     if(error)return toast(friendly(error));
     track('email_resent',{kind:kind||'signup'});
     ui.auth.sent=Date.now();render();resendTimer();toast('Sent again. Check your inbox.');
@@ -1609,7 +1669,7 @@ const A={
   },
   forgot:()=>working(async()=>{
     if(!authCheck(false))return;
-    const email=val('a_email'),{error}=await SB.auth.resetPasswordForEmail(email,{redirectTo:here()});
+    const email=val('a_email'),{error}=await withCaptcha(t=>SB.auth.resetPasswordForEmail(email,{redirectTo:here(),captchaToken:t}));
     if(error)return formErr(friendly(error));
     ui.auth={mode:'check',email,kind:'reset',sent:Date.now()};render();resendTimer();return true;
   }),
@@ -1721,6 +1781,16 @@ const A={
   unblock:async d=>{if(await run('unblock_user',{p_user:d.id})!==undefined)toast(`Unblocked ${uname(d.id)}`)},
   share:d=>{track('share_opened',{kind:d.k});ui.modal={type:'share',id:d.id,k:d.k,back:ui.modal};render()},
   follow:d=>{const on=S.following.includes(d.id);S.following=on?S.following.filter(x=>x!==d.id):[...S.following,d.id];save();track(on?'unfollow':'follow');toast(on?`Unfollowed ${uname(d.id)}`:`Following ${uname(d.id)}. You'll hear when they post.`);render()},
+  delacct:()=>{ui.modal={type:'delacct'};render()},
+  dodelacct:async(d,e)=>{
+    if(val('del_ok').toUpperCase()!=='DELETE')return toast('Type DELETE to confirm');
+    e.target.closest('button').disabled=true;
+    try{await call('delete_my_account')}catch(err){e.target.closest('button').disabled=false;return}
+    track('account_deleted');
+    /* the login no longer exists, so only clear this device */
+    try{await SB.auth.signOut({scope:'local'})}catch(err){}
+    ME=null;S=blank();USERS={};loaded=false;ui=freshUi();toast('Your account has been deleted.');render();
+  },
   mute:d=>{S.muted[d.id]=!S.muted[d.id];save();track('chat_mute',{on:S.muted[d.id]});toast(S.muted[d.id]?'Chat muted. You can still open it any time.':'Chat notifications on');render()},
   tipsok:d=>{S.tips[d.id]=true;save();render()},
   /* chat */
@@ -1891,7 +1961,8 @@ async function start(){
   starting=(async()=>{
     const {data}=await SB.auth.getUser();
     if(!data?.user){ME=null;starting=null;render();return}
-    ME=data.user.id;MYPHONE=(data.user.phone||'').replace(/\D/g,'').slice(-10);loaded=false;render();
+    ME=data.user.id;MYPHONE=(data.user.phone||'').replace(/\D/g,'').slice(-10);
+    AUTHU={phone:!!(data.user.phone&&data.user.phone_confirmed_at),email:!!data.user.email_confirmed_at};loaded=false;render();
     await refresh();
     loadPlaces();
     listen();
@@ -1917,7 +1988,7 @@ else{
     /* don't call Supabase from inside this callback: do it just after */
     setTimeout(()=>{
       if(ev==='PASSWORD_RECOVERY'){ui.auth={mode:'newpw'};ME=null;render();return}
-      if(ev==='SIGNED_OUT'){ME=null;MYPHONE='';S=blank();USERS={};loaded=false;ui=freshUi();render();return}
+      if(ev==='SIGNED_OUT'){ME=null;MYPHONE='';AUTHU={};S=blank();USERS={};loaded=false;ui=freshUi();render();return}
       if(session&&session.user.id!==ME&&ui.auth.mode!=='newpw')start();
       else if(!session&&ev==='INITIAL_SESSION')render();
     },0);

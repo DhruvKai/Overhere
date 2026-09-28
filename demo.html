@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://tile.openstreetmap.org; media-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.amazonaws.com wss://*.amazonaws.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js https://challenges.cloudflare.com 'wasm-unsafe-eval'; frame-src 'self' https://challenges.cloudflare.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://tile.openstreetmap.org; media-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://*.amazonaws.com wss://*.amazonaws.com; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Overhere</title>
@@ -176,6 +176,23 @@ input[aria-invalid=true],input[aria-invalid=true]:focus{border-color:var(--bad)}
 .chip.ok{background:var(--okbg);color:var(--ok)}.chip.bad{background:var(--badbg);color:var(--bad)}.chip.warn{background:var(--warnbg);color:var(--warn)}.chip.acc{background:var(--acc2);color:var(--accink)}.chip.info{background:var(--infobg);color:var(--info)}
 .cat{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:99px;background:#fff}
 .vf{color:var(--acc);font-weight:600;font-size:12px;display:inline-flex;align-items:center;gap:3px}
+/* sample hosts: always labelled */
+.smp{display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;padding:2px 7px;border-radius:99px;background:var(--warnbg);color:var(--warn);margin-left:4px;vertical-align:middle}
+/* chats list */
+.chl{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+.chi{min-width:0;box-sizing:border-box;display:flex;align-items:center;gap:12px;width:100%;text-align:left;font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px 14px;cursor:pointer}
+.chi:hover{border-color:var(--acc)}
+.chi .thumb{flex:0 0 auto}
+.chb{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.cht{display:flex;align-items:baseline;gap:8px}.cht b{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cht .tm{font-size:12px;color:var(--mute);flex:0 0 auto}
+.chm{font-size:13.5px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chi.un .chm{color:var(--ink);font-weight:600}
+.media .smp{position:absolute;top:10px;right:10px;margin:0;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.udot{width:10px;height:10px;border-radius:50%;background:var(--acc);flex:0 0 auto}
+/* CAPTCHA: invisible unless Cloudflare asks for a tap */
+#cf_box{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:9999;pointer-events:none}
+#cf_box.show{pointer-events:auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px;box-shadow:0 12px 32px rgba(0,0,0,.25)}
 .fchips{display:flex;flex-wrap:wrap;gap:8px}
 .fc{border:1px solid var(--line);background:var(--chip);padding:7px 16px;border-radius:99px;cursor:pointer;font-size:13px;color:var(--ink);display:inline-flex;align-items:center;gap:6px;transition:.15s}
 .fc:hover{border-color:var(--lineh)}
