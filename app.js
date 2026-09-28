@@ -111,9 +111,9 @@ const EMOJIS=['👩🏻','👩🏽','👩🏿','👨🏻','👨🏽','👨🏿',
 /* Other people, filled in from the database: name, gender, age, job, bio, emoji, verified, show-up record, past plans, likes. */
 let USERS={};
 const CAT_INT={movies:'Movies',cafe:'Cafe / Food',concerts:'Concerts'};
-const CHAT_REASONS=['Harassment or threats','Sexual or unwanted messages','Spam or scam','Hate speech','Something else'];
+const CHAT_REASONS=['Harassment or threats','Sexual or unwanted messages','Spam or scam','Hate speech','Copyright infringement','Something else'];
 const MICRO={swipe:'Was swiping an easy way to find plans?',request:'How easy was it to ask to join?',post:'How easy was posting your plan?',rating:'Was rating the meetup quick enough?'};
-const REPORT_REASONS=['Made me feel unsafe','Inappropriate messages or behaviour','Fake profile or scam',"Didn't show up",'Something else'];
+const REPORT_REASONS=['Made me feel unsafe','Inappropriate messages or behaviour','Fake profile or scam',"Didn't show up",'Copyright infringement','Something else'];
 const REPEAT={weekly:'Every week',biweekly:'Every 2 weeks',monthly:'Every month'};
 const NK={req:{ic:'user-check',bg:'#E7F0E1',fg:'#336842'},update:{ic:'layers',bg:'#DBEAFE',fg:'#1D4ED8'},remind:{ic:'calendar',bg:'#FEF3C7',fg:'#A16207'}};
 
@@ -131,7 +131,7 @@ const isUuid=x=>typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a
 const PRIV=['dismissed','following','alerts','muted','tips','asked','actf','seenPost','savedF'];
 /* The consent version that includes the Terms and community guidelines (terms.html). The database says which one is
    current (app_state's terms_v), so the app only asks once the database can record the answer. */
-let TERMS_V=null;
+let TERMS_V=null,GONE18=false;
 const ACT_FLAGS=['arrive','arriveAt','arriveNag','reminded','remind24','checkin'];
 const blank=()=>({me:null,acts:[],reqs:[],chats:{},notes:[],ratings:{},blocked:[],reported:{},dismissed:[],following:[],alerts:[],muted:{},tips:{},asked:{},actf:{},seenPost:0});
 let S=blank();
@@ -144,7 +144,8 @@ const sid=id=>id==='me'?ME:id;   // back to a database id
 
 /* Turn the database's answer into the shapes the screens use. */
 function applyState(st){
-  ME=st.me;MODE=st.mode||MODE;VER=st.verify||VER;skew=(st.now||Date.now())-Date.now();DRAFT=st.draft||null;LOCKED=st.locked||0;TERMS_V=st.terms_v||null;
+  ME=st.me;MODE=st.mode||MODE;VER=st.verify||VER;skew=(st.now||Date.now())-Date.now();DRAFT=null;   // the profile form starts empty: nothing pre-filled, not even from the old beta sign-up
+  LOCKED=st.locked||0;TERMS_V=st.terms_v||null;
   const mid=id=>id===ME?'me':id,p=st.profile,first=!loaded,known=new Set(S.notes.map(n=>n.id));
   const keepLocal=dirty?Object.fromEntries(PRIV.map(k=>[k,S[k]])):null,keepTrusted=dirty?S.me?.trusted:undefined;
   loaded=true;
@@ -163,7 +164,7 @@ function applyState(st){
   S.savedF=(Array.isArray(S.savedF)?S.savedF:[]).filter(x=>x&&/^sf[0-9a-z]+$/.test(x.id)&&typeof x.label==='string'&&x.f&&typeof x.f==='object').slice(0,10);
   S.alerts=(Array.isArray(S.alerts)?S.alerts:[]).filter(x=>x&&/^al[0-9a-z]+$/.test(x.id)&&typeof x.label==='string');
   S.me={name:p.name,dob:p.dob,gender:p.gender,hood:p.hood,job:p.job||'',bio:p.bio||'',ints:p.ints||[],avail:p.avail||[],emo:p.emo||defEmo(p.gender),
-    face:!!p.face,kyc:!!p.kyc,obDone:!!p.onboarded,terms:!TERMS_V||p.consent_version===TERMS_V,trusted:keepTrusted!==undefined?keepTrusted:(priv.trusted||null),trustv:mine.trust||[0,0],hist:mine.hist||[],photo:loadPhoto()};
+    usageOk:!!p.usage_ok,face:!!p.face,kyc:!!p.kyc,obDone:!!p.onboarded,terms:!TERMS_V||p.consent_version===TERMS_V,trusted:keepTrusted!==undefined?keepTrusted:(priv.trusted||null),trustv:mine.trust||[0,0],hist:mine.hist||[],photo:loadPhoto()};
   const t=now();
   S.acts=(st.acts||[]).map(a=>{
     const mem=(a.members||[]).map(mid);
@@ -388,6 +389,8 @@ const uuid4=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-x
 const SESSION=uuid4();
 function track(name,props={}){
   try{
+    /* opt-in only: nothing is sent before sign-in, or unless "Share usage statistics" is on (log_event checks it too) */
+    if(SB&&!S.me?.usageOk)return;
     const row={id:uuid4(),participant_id:ME,session_id:SESSION,name,props};
     if(SB&&location.protocol.startsWith('http')){
       /* log_event takes who you are from your login and limits how many events one session can send */
@@ -477,7 +480,8 @@ function notify(text,o={}){
 
 /* ---------- domain logic ---------- */
 /* visible: listed in Discover (full ones too, for the waitlist). eligible: can be requested right now. */
-function visible(a){return (a.status==='open'||a.status==='full')&&a.host!=='me'&&a.hood===S.me.hood&&audOK(a)&&!isBlocked(a.host)&&a.when>now()}
+/* all of Chandigarh: the launch sectors are a few km apart, and Distance filters by how far from your neighbourhood */
+function visible(a){return (a.status==='open'||a.status==='full')&&a.host!=='me'&&audOK(a)&&!isBlocked(a.host)&&a.when>now()}
 function eligible(a){return visible(a)&&a.status==='open'&&spots(a)>0&&!S.dismissed.includes(a.id)}
 /* Real people's plans come before the sample hosts' ones, so a new post isn't buried behind them. */
 const isSample=id=>!!USERS[id]?.sample;
@@ -690,7 +694,7 @@ const empty=(ic,t,sub,btn)=>`<div class="empty"><div class="big">${I(ic,30)}</di
 const lockedNote=()=>LOCKED&&!S.me.face?`<div class="dn" style="margin:0 0 14px;text-align:left">${I('shield-check',14)} ${LOCKED} ${LOCKED===1?'plan near you is':'plans near you are'} only open to certain groups, like women-only plans. <button class="lnk" data-a="unlock">Do the face check to see ${LOCKED===1?'it':'them'}</button></div>`:'';
 function tabSwipe(){
   const d=deck();
-  if(!d.length)return lockedNote()+empty('compass','Nothing new right now','You have gone through all plans happening soon in '+esc(S.me.hood)+'. Check Discover for plans further out.','<button class="btn" data-a="tab" data-t="discover">Go to Discover</button>');
+  if(!d.length)return lockedNote()+empty('compass','Nothing new right now','You have gone through all plans happening soon in Chandigarh. Check Discover for plans further out.','<button class="btn" data-a="tab" data-t="discover">Go to Discover</button>');
   return `<div class="deck"><h1 class="pt">What's happening tonight?</h1><p class="sub">Activities today and tomorrow · Tap a card for details</p>${lockedNote()}
   <div class="stack">${d[1]?cardHtml(d[1],'back'):''}${cardHtml(d[0],'top')}</div>
   <div class="acts"><button class="rb" data-a="swipe" data-d="left" title="Skip">${I('x',24)}</button>
@@ -722,7 +726,7 @@ function tabDiscover(){
   if(f.sort==='for')list.sort((a,b)=>score(b)-score(a)||a.when-b.when);
   else if(f.sort==='near')list.sort((a,b)=>kmAway(a)-kmAway(b)||a.when-b.when);
   const alertable=act.some(([k])=>k!=='date'),saved=S.alerts.some(x=>x.label===alertLabel(f));
-  return `<div class="hd"><div><h1 class="pt">All upcoming plans</h1><p class="sub">${all.length} upcoming in ${esc(S.me.hood)}, from ${dLbl(dayKey(swipeEnd()))} onwards</p></div><button class="btn sm mobonly" data-a="newpost">${I('plus',15)} Post</button></div>
+  return `<div class="hd"><div><h1 class="pt">All upcoming plans</h1><p class="sub">${all.length} upcoming in Chandigarh, from ${dLbl(dayKey(swipeEnd()))} onwards</p></div><button class="btn sm mobonly" data-a="newpost">${I('plus',15)} Post</button></div>
   ${lockedNote()}${(()=>{const n=deck().length;return `<div class="alerts"><button class="alchip tn" data-a="tab" data-t="swipe">${I('flame',13)} Tonight &amp; tomorrow${n?` · ${n}`:''}</button>${S.savedF.map(sf=>`<span class="alchip sf"><button class="lnk" data-a="applyf" data-id="${sf.id}">${I('filter',12)} ${esc(sf.label)}</button><button data-a="rmf" data-id="${sf.id}" aria-label="Remove saved filters ${esc(sf.label)}">${I('x',12)}</button></span>`).join('')}</div>`})()}${S.alerts.length?`<div class="alerts"><span class="small mute" style="display:inline-flex;align-items:center;gap:4px">${I('bell',13)} Your alerts</span>${S.alerts.map(al=>`<span class="alchip">${esc(al.label)}<button data-a="rmalert" data-id="${al.id}" aria-label="Remove alert ${esc(al.label)}">${I('x',12)}</button></span>`).join('')}</div>`:''}
   <div class="dtools"><button class="fbtn ${act.length?'on':''}" data-a="filters" aria-haspopup="dialog">${I('filter',14)} Filters${act.length?`<b aria-label="${act.length} active">${act.length}</b>`:''}</button>
   <button class="fbtn" data-a="sortmenu" aria-haspopup="dialog" aria-label="Sort by ${SORTS[f.sort][1]}">${I('arrow-up-down',14)} Sort: ${SORTS[f.sort][1]}</button>
@@ -730,7 +734,7 @@ function tabDiscover(){
   <div class="small mute fact"><span>Showing <b>${list.length}</b> ${list.length===1?'activity':'activities'}</span>
   ${act.map(([k,l])=>`<span class="alchip">${esc(l)}<button data-a="fclear" data-k="${k}" aria-label="Remove filter ${esc(l)}">${I('x',12)}</button></span>`).join('')}
   ${act.length?`<button class="lnk" data-a="freset">Reset</button>`:''}${act.length&&!S.savedF.some(x=>x.label===activeFilters(f).map(y=>y[1]).join(' · ').slice(0,60))?`<button class="lnk" data-a="savef">${I('filter',13)} Save these filters</button>`:''}${alertable&&!saved?`<button class="lnk" data-a="saveal">${I('bell',13)} Alert me about new matches</button>`:''}</div>
-  ${!list.length?empty('calendar',all.length?'No matches':'No plans yet',all.length?'Try different filters.':'Be the first to post one in your neighborhood.',act.length&&all.length?'<button class="btn sec" data-a="freset">Reset filters</button>':'')
+  ${!list.length?empty('calendar',all.length?'No matches':'No plans yet',all.length?'Try different filters.':'Be the first to post one.',act.length&&all.length?'<button class="btn sec" data-a="freset">Reset filters</button>':'')
    :f.view==='map'?mapHtml(list):`<div class="grid">${list.map(a=>acCard(a)).join('')}</div>`}`;
 }
 /* Discover's map: OpenStreetMap under Leaflet (both loaded only when the map is first opened). */
@@ -844,13 +848,14 @@ function tabProfile(){
   <div class="panel"><div class="ph">${I('user-plus',15)} Following</div>${S.following.length?S.following.map(u=>`<div class="blk">${av(u,'sm')}<button class="hlink" data-a="user" data-id="${u}">${esc(uname(u))}</button><button class="lnk" data-a="follow" data-id="${u}">Unfollow</button></div>`).join(''):'<p class="small mute" style="margin:0">Follow hosts from their profile to hear when they post a new plan.</p>'}</div>
   <div class="panel"><div class="ph">${I('sun',15)} App</div>
   <label style="margin-top:0">Appearance</label><span class="seg" role="radiogroup" aria-label="Appearance">${[['system','System'],['light','Light'],['dark','Dark']].map(([k,l])=>`<button role="radio" aria-checked="${th===k}" class="${th===k?'on':''}" data-a="theme" data-k="${k}">${l}</button>`).join('')}</span>
-  <label>Install</label>${isStandalone()?'<p class="small mute" style="margin:0">Overhere is installed on this device.</p>':installEvt?`<button class="btn sm sec" data-a="install">${I('download',14)} Install Overhere</button>`:ios?'<p class="small mute" style="margin:0">On iPhone: tap Share, then “Add to Home Screen”.</p>':'<p class="small mute" style="margin:0">Open the published site in Chrome or Edge and use “Install app” in the address bar. Installing is not available from a file or inside the beta page.</p>'}</div>
+  <label>Install</label>${isStandalone()?'<p class="small mute" style="margin:0">Overhere is installed on this device.</p>':installEvt?`<button class="btn sm sec" data-a="install">${I('download',14)} Install Overhere</button>`:ios?'<p class="small mute" style="margin:0">On iPhone: tap Share, then “Add to Home Screen”.</p>':'<p class="small mute" style="margin:0">Open the published site in Chrome or Edge and use “Install app” in the address bar. Installing is not available from a file or inside the beta page.</p>'}
+  <label>Usage statistics</label><label class="chk top" style="margin-top:0"><input type="checkbox" id="p_usage" ${m.usageOk?'checked':''}> <span>Share which features I use (never my messages) to help improve the beta. Turning this off also deletes what was collected.</span></label></div>
   <div class="panel"><div class="ph">${I('shield-check',15)} Safety</div>
   <label style="margin-top:0">Trusted contact</label><p class="small mute" style="margin-top:0">Someone you can send your plans to, or alert with SOS, in one tap. Only you see this.</p>
   ${m.trusted?`<div class="blk">${I('phone',15)}<span><b>${esc(m.trusted.name)}</b> · ${esc(m.trusted.phone)}</span><button class="lnk" data-a="editprofile" data-k="safety">Change</button></div>`:`<button class="btn sm sec" data-a="editprofile" data-k="safety">${I('user-plus',14)} Add a trusted contact</button>`}
   <label>Blocked people</label>${S.blocked.length?S.blocked.map(u=>`<div class="blk">${av(u,'sm')}${esc(uname(u))}<button class="lnk" data-a="unblock" data-id="${u}">Unblock</button></div>`).join(''):'<p class="small mute" style="margin:0">You have not blocked anyone.</p>'}</div>
   <div class="panel"><div class="ph">${I('user',15)} Account</div>
-  <p class="small mute" style="margin-top:0"><a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> · <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a> · <a href="credits.html" target="_blank" rel="noopener" style="color:inherit">Credits</a></p>
+  <p class="small mute" style="margin-top:0"><a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> · <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a> · <a href="copyright.html" target="_blank" rel="noopener" style="color:inherit">Copyright</a> · <a href="credits.html" target="_blank" rel="noopener" style="color:inherit">Credits</a></p>
   <div class="row" style="gap:8px"><button class="btn sm ghost" data-a="signout">${I('log-out',14)} Sign out</button><button class="btn sm ghost" style="color:var(--bad)" data-a="delacct">${I('trash',14)} Delete my account</button></div></div>
 `;
 }
@@ -929,7 +934,7 @@ function modalHtml(){
       ${acc&&!past?`<div style="height:8px"></div><button class="btn sec" data-a="chat" data-id="${a.id}">${I('message-circle',16)} Open group chat</button>
         <div style="height:8px"></div><button class="btn ghost" data-a="share" data-k="trust" data-id="${a.id}">${I('shield-check',16)} Share plan with trusted contact</button>`:''}
       ${attended(a)&&past&&a.members.length?(S.ratings[a.id]?`<p class="small mute" style="margin-top:14px">${I('circle-check',14)} You rated this meetup. Thanks!</p>`:`<div style="height:12px"></div><button class="btn" data-a="rate" data-id="${a.id}">${I('star',16)} Rate the meetup</button>`):''}
-      <div class="dlinks">${!past&&(a.status==='open'||a.status==='full')?`<button class="lnk" data-a="share" data-k="invite" data-id="${a.id}">${I('send',13)} Invite a friend</button>`:''}${rq&&(rq.status==='pending'||rq.status==='waitlist')?`<button class="lnk m" data-a="withdraw" data-id="${a.id}">${I('x',13)} Withdraw request</button>`:''}${acc&&!past?`<button class="lnk m" data-a="leave" data-id="${a.id}">Leave activity</button>`:''}</div>
+      <div class="dlinks">${!past&&(a.status==='open'||a.status==='full')?`<button class="lnk" data-a="share" data-k="invite" data-id="${a.id}">${I('send',13)} Invite a friend</button>`:''}${rq&&(rq.status==='pending'||rq.status==='waitlist')?`<button class="lnk m" data-a="withdraw" data-id="${a.id}">${I('x',13)} Withdraw request</button>`:''}${acc&&!past?`<button class="lnk m" data-a="leave" data-id="${a.id}">Leave activity</button>`:''}${a.host!=='me'?`<a class="lnk m" href="copyright.html#notice" target="_blank" rel="noopener">Report copyright infringement</a>`:''}</div>
       </div>`);
   }
   if(m.type==='terms')return `<div class="ov"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="tm_t"><div class="sh"><h2 id="tm_t">Our terms and community guidelines</h2></div><div class="sb">
@@ -941,6 +946,10 @@ function modalHtml(){
       <ul style="padding-left:20px;margin:0 0 12px"><li>Meet in a busy public place, and make your own way there and back.</li><li>Tell someone you trust where you'll be. You can send them your plan in one tap.</li><li>Keep your home address and workplace to yourself until you know people.</li><li>Never send money to someone you met here.</li><li>Leave whenever you like. In an emergency call 112, or tap SOS in the group chat.</li></ul>
       <p class="small mute">The face check confirms a real person made each account. It doesn't tell you what they're like. More in the <a href="terms.html#safety" target="_blank" rel="noopener" style="color:inherit">Terms</a>.</p>
       <button class="btn" data-a="safetyok">I understand, continue</button></div>`);
+  if(m.type==='under18')return sheet('Overhere is for adults',`<div class="sb">
+      <p style="margin-top:0">The date of birth you entered means you're under 18. Overhere is only for people aged 18 and over.</p>
+      <p class="small mute">If that's right, we won't create your account, and we'll delete the sign-in details you've given us straight away. If you made a mistake, go back and fix it.</p>
+      <button class="btn" data-a="close">Fix my date of birth</button><div style="height:8px"></div><button class="btn ghost" data-a="under18">That's right, delete my details</button></div>`);
   if(m.type==='delacct')return sheet('Delete your account',`<div class="sb">
       <p style="margin-top:0">This permanently deletes your account, profile, plans, requests, notifications and ratings. Plans you host are cancelled and their members are told. Your chat messages stay in those groups without your name. This can't be undone.</p>
       <label for="del_ok">Type DELETE to confirm</label><input id="del_ok" autocomplete="off" autocapitalize="characters">
@@ -1190,7 +1199,7 @@ function authHtml(){
     <form id="a_form" data-submit="sendcode" novalidate><label for="a_phone">Mobile number</label>
     <div class="fi tel"><span class="cc">${I('phone',16)}+91</span><input id="a_phone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="16" placeholder="98765 43210" value="${esc(ui.auth.phone?fmtPhone(ui.auth.phone.slice(3)):'')}" aria-describedby="a_phone_err a_phone_note"></div>
     <p class="ferr" id="a_phone_err" aria-live="polite"></p><p class="fhint" id="a_phone_note">Indian mobile numbers only.</p>
-    <div style="height:18px"></div>${ERRBOX}${goBtn('Send code')}</form>
+    ${AGEBOX}<div style="height:18px"></div>${ERRBOX}${goBtn('Send code')}</form>
     <div style="height:8px"></div><button class="btn ghost" data-a="authmode" data-k="${up?'up':'in'}">Back</button>
     <p class="small mute" style="text-align:center;margin-top:12px">By continuing you agree to our <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a>. Standard SMS rates may apply.</p></div>`;
   }
@@ -1207,7 +1216,7 @@ function authHtml(){
   return `<div class="ob">${LOGO}<p class="mute">Do things in your city with company. Post a plan you are already making, pick who joins. Not a dating app.</p>
     <div class="seg atab"><button type="button" class="${up?'':'on'}" aria-pressed="${!up}" data-a="authmode" data-k="in">Sign in</button><button type="button" class="${up?'on':''}" aria-pressed="${up}" data-a="authmode" data-k="up">Create account</button></div>
     <h1 class="pt">${up?'Create your account':'Welcome back'}</h1><p class="sub">${up?'Free, and it takes under a minute.':'Sign in to see plans near you.'}</p>
-    <button class="btn out" data-a="google">${GOOGLE_G} Continue with Google</button>
+    ${up?AGEBOX.replace('margin-top:14px','margin:0 0 14px'):''}<button class="btn out" data-a="google">${GOOGLE_G} Continue with Google</button>
     ${CFG.PHONE_LOGIN?`<div style="height:8px"></div><button class="btn out" data-a="authmode" data-k="phone">${I('phone',16)} Continue with phone</button>`:''}
     <div class="or">or with email</div>
     <form id="a_form" data-submit="${up?'signup':'signin'}" novalidate>${emailField()}
@@ -1217,22 +1226,23 @@ function authHtml(){
     ${up?'<p class="small mute" style="text-align:center;margin-top:12px">By creating an account you agree to our <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a>.</p>':''}
     <p class="small" style="text-align:center;margin-top:14px">${up?'Already have an account? <button class="lnk" data-a="authmode" data-k="in">Sign in</button>'
       :'New here? <button class="lnk" data-a="authmode" data-k="up">Create an account</button>'}</p>
-    <p class="small mute" style="text-align:center;margin-top:10px"><a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> · <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a> · <a href="credits.html" target="_blank" rel="noopener" style="color:inherit">Credits</a></p></div>`;
+    <p class="small mute" style="text-align:center;margin-top:10px"><a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> · <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a> · <a href="copyright.html" target="_blank" rel="noopener" style="color:inherit">Copyright</a> · <a href="credits.html" target="_blank" rel="noopener" style="color:inherit">Credits</a></p></div>`;
 }
 function onboardHtml(){
   let body;
   if(!S.me){
     const d=DRAFT||{};
-    body=`<div class="logo" style="margin-bottom:18px"><span class="dots"><i></i><i></i></span>Overhere</div><h1 class="pt">Create your profile</h1><p class="sub">${DRAFT?'We filled this in from your beta sign-up. Check it and continue.':'A few details so hosts know who is asking to join.'}</p>
+    body=`<div class="logo" style="margin-bottom:18px"><span class="dots"><i></i><i></i></span>Overhere</div><h1 class="pt">Create your profile</h1><p class="sub">${DRAFT&&!DRAFT.typed?'We filled this in from your beta sign-up. Check it and continue.':'A few details so hosts know who is asking to join.'}</p>
     <label for="o_name">Name</label><input id="o_name" maxlength="40" autocomplete="given-name" value="${esc(d.name||'')}">
     <label for="o_dob">Date of birth</label><input id="o_dob" type="date" value="${esc(d.dob||'')}">
     <label for="o_gender">Gender identity (required)</label><select id="o_gender"><option value="">Select…</option>${GENDERS.map(g=>`<option ${g===d.gender?'selected':''}>${g}</option>`).join('')}</select>
     <p class="small mute" style="margin-top:6px">Used only for the safety-oriented audience filter on posts.</p>
-    <label>City</label><input value="Chandigarh" disabled>
-    <label for="o_hood">Neighborhood (launch areas)</label><select id="o_hood">${HOODS.map(g=>`<option ${g===d.hood?'selected':''}>${g}</option>`).join('')}</select>
+    <label for="o_hood">Neighborhood in Chandigarh</label><select id="o_hood"><option value="">Select…</option>${HOODS.map(g=>`<option ${g===d.hood?'selected':''}>${g}</option>`).join('')}</select>
+    <p class="small mute" style="margin-top:6px">Overhere is starting in these three Chandigarh sectors. Distances to plans are measured from here.</p>
     <label>What would you want to do with company?</label>${opts('o_int',INTERESTS,d.ints)}
     <label>When are you usually free?</label>${opts('o_avail',TIMES,d.avail)}
-    <label class="chk top" style="margin-top:18px"><input type="checkbox" id="o_ok"> <span>I agree to the <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms and community guidelines</a>, and that Overhere may store these details to run the beta and contact me about it. I am 18 or older. I can ask for my data to be deleted at any time by emailing ${esc(CFG.CONTACT_EMAIL||'the beta team')}. <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a></span></label>
+    <label class="chk top" style="margin-top:18px"><input type="checkbox" id="o_ok"> <span>I agree to the <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms and community guidelines</a>, and that Overhere may store these details to run the beta. I am 18 or older. I can ask for my data to be deleted at any time by emailing ${esc(CFG.CONTACT_EMAIL||'the beta team')}. <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a></span></label>
+    <label class="chk top" style="margin-top:10px"><input type="checkbox" id="o_usage"> <span><b>Optional:</b> share usage statistics (which features I use, never my messages) to help improve the beta. You can turn this off any time in <i>Profile</i>.</span></label>
     <div style="height:18px"></div><button class="btn" data-a="ob2">Continue</button>
     <p class="small" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p>`;
   }else if(!S.me.face&&!ui.faceSkip)body=`<h1 class="pt">Quick face check</h1><p class="sub">Confirms your account belongs to a real person. You can browse without it, but you need it to post a plan or ask to join one.</p><div class="scan">${I('scan-face',56)}</div><button class="btn" data-a="obface">Start face check</button>
@@ -1244,6 +1254,8 @@ function onboardHtml(){
   return `<div class="ob">${body}</div>`;
 }
 
+/* Under 18: the server has deleted the login (save_profile). Clear this device too and say what happened. */
+async function gone18(){GONE18=true;ui.modal=null;try{localStorage.removeItem(photoKey())}catch(e){}try{await SB.auth.signOut({scope:'local'})}catch(e){}render()}
 /* ---------- profile photo: pick -> crop -> resize + compress -> stored on this device only ---------- */
 const PHOTO_OUT=400,PHOTO_MAX_BYTES=60*1024,PHOTO_MAX_FILE=20*1024*1024,PHOTO_MIN_SIDE=200,PHOTO_MAX_ZOOM=4,PHOTO_WORK=3000;
 const PHOTO_RE=/^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/;
@@ -1384,6 +1396,7 @@ function keepScroll(){
 }
 function render(){
   const scr=document.getElementById('screen'),restore=keepScroll();
+  if(GONE18){scr.innerHTML=`<div class="ob">${LOGO}<h1 class="pt">Sorry, Overhere is for adults</h1><p class="sub">Overhere is only for people aged 18 and over, so we didn't create your account. We've deleted the sign-in details you gave us and kept nothing.</p><p class="small mute">If you entered your date of birth by mistake, you can sign up again.</p><button class="btn sec" data-a="gone18">Back to the start</button></div>`;return}
   if(!ONLINE||!ME||!loaded){scr.innerHTML=authHtml();restore();return}
   if(!S.me||!S.me.obDone){scr.innerHTML=onboardHtml()+modalHtml();restore();afterRender();return}
   if(!S.me.terms&&ui.modal?.type!=='terms')ui.modal={type:'terms'};   // accounts made before the terms: agree once
@@ -1484,6 +1497,11 @@ function fieldMsg(id,msg,ok){
   m.className='ferr'+(ok?' ok':'');m.innerHTML=msg?I(ok?'circle-check':'alert-triangle',14)+esc(msg):'';
 }
 /* A problem with the whole form (wrong password, account already exists...), shown above its button. */
+const AGEBOX='<label class="chk top" style="margin-top:14px"><input type="checkbox" id="a_age"> <span>I\'m 18 or older. Overhere is for adults only.</span></label>';
+function ageOk(inForm){
+  const c=document.getElementById('a_age');if(!c||c.checked)return true;
+  const m="Please confirm you're 18 or older to continue.";if(inForm)formErr(m);else toast(m);c.focus();return false;
+}
 function formErr(msg,more=''){
   const b=document.getElementById('a_formerr');if(!b){if(msg)toast(msg);return}
   b.hidden=!msg;b.innerHTML=msg?I('alert-triangle',16)+`<span>${esc(msg)}${more}</span>`:'';
@@ -1559,10 +1577,10 @@ const fmtPhone=d=>d.length>5?d.slice(0,5)+' '+d.slice(5):d;
 function phoneProblem(n){return !n?'Enter your mobile number':n.length<10?'Enter all 10 digits':!/^[6-9]/.test(n)?'Indian mobile numbers start with 6, 7, 8 or 9':''}
 async function sendCode(again){
   const n=again?ui.auth.phone.slice(3):phoneDigits(val('a_phone'));
-  if(!again){const m=phoneProblem(n);fieldMsg('a_phone',m);if(m){document.getElementById('a_phone')?.focus();return}}
+  if(!again){const m=phoneProblem(n);fieldMsg('a_phone',m);if(m){document.getElementById('a_phone')?.focus();return}if(!ageOk(true))return}
   const wait=again?Math.ceil((ui.auth.sent+RESEND_MS-Date.now())/1000):0;
   if(wait>0)return toast(`Please wait ${wait}s before asking for a new code`);
-  const {error}=await withCaptcha(t=>SB.auth.signInWithOtp({phone:'+91'+n,options:{captchaToken:t}}));
+  const {error}=await withCaptcha(t=>SB.auth.signInWithOtp({phone:'+91'+n,options:{captchaToken:t,data:{age_18:true}}}));
   if(error)return again?toast(friendly(error)):formErr(friendly(error));
   track('phone_code_sent',{again,signup:ui.auth.was==='up'});
   ui.auth={mode:'code',phone:'+91'+n,sent:Date.now(),was:ui.auth.was};render();resendTimer();
@@ -1640,6 +1658,10 @@ const A={
     b.setAttribute('aria-pressed',show);b.setAttribute('aria-label',show?'Hide password':'Show password');b.innerHTML=I(show?'eye-off':'eye',18);
   },
   emailfix:d=>{const i=document.getElementById('a_email');i.value=d.v;fieldMsg('a_email','');mailHint();pwLive();document.getElementById('a_pw')?.focus()},
+  /* EMAIL: every email Overhere sends is TRANSACTIONAL: sign-up confirmation, password reset and their resends,
+     sent by Supabase Auth (templates in Supabase -> Authentication -> Emails). Keep them that way: no launch news,
+     promotions or newsletters in these templates. Marketing email needs unsubscribe links, a postal address and a
+     suppression list, and none of that exists here. */
   signin:()=>working(async()=>{
     if(!authCheck(false))return;
     const {error}=await withCaptcha(t=>SB.auth.signInWithPassword({email:val('a_email'),password:pw(),options:{captchaToken:t}}));
@@ -1647,8 +1669,8 @@ const A={
     return true;   // signed in: onAuthStateChange takes it from here
   }),
   signup:()=>working(async()=>{
-    if(!authCheck(true))return;
-    const email=val('a_email'),{data,error}=await withCaptcha(t=>SB.auth.signUp({email,password:pw(),options:{emailRedirectTo:here(),captchaToken:t}}));
+    if(!authCheck(true)||!ageOk(true))return;
+    const email=val('a_email'),{data,error}=await withCaptcha(t=>SB.auth.signUp({email,password:pw(),options:{emailRedirectTo:here(),captchaToken:t,data:{age_18:true}}}));
     const exists=['You already have an account with this email.',' <button type="button" class="lnk" data-a="authmode" data-k="in">Sign in instead</button>'];
     if(error)return /already (registered|exists)/i.test(error.message)?formErr(...exists):formErr(friendly(error));
     /* With email confirmation on, Supabase answers an address that already has an account with a user that has no identities, not an error. */
@@ -1677,6 +1699,7 @@ const A={
     return true;   // signed in: onAuthStateChange takes it from here
   }),
   google:async()=>{
+    if(!ageOk(false))return;   // on Create account; Google sign-ups are also checked at the date of birth step
     const {data,error}=await SB.auth.signInWithOAuth({provider:'google',options:{redirectTo:here(),skipBrowserRedirect:true}});
     if(error)return toast(friendly(error));
     /* Google can't be shown inside the beta page's frame, so the whole tab goes there */
@@ -1894,14 +1917,22 @@ const A={
   /* onboarding */
   ob2:async(d,e)=>{
     const p={name:val('o_name'),dob:val('o_dob'),gender:val('o_gender'),hood:val('o_hood'),ints:many('o_int'),avail:many('o_avail')};
-    if(!p.name||!p.dob||!p.gender)return toast('Name, date of birth and gender identity are required');
-    if(!(ageOf(p.dob)>=18))return toast('You must be 18 or over');
+    if(!p.name||!p.dob||!p.gender||!p.hood)return toast('Name, date of birth, gender identity and neighbourhood are required');
+    if(!(ageOf(p.dob)>=18)){DRAFT={...(DRAFT||{}),...p,typed:true};ui.modal={type:'under18',dob:p.dob};render();return}   // DRAFT keeps what they typed
     if(!document.getElementById('o_ok')?.checked)return toast('Please tick the consent box to continue');
-    p.emo=defEmo(p.gender);p.consent=true;p.terms=true;
+    p.emo=defEmo(p.gender);p.consent=true;p.terms=true;p.usage_ok=!!document.getElementById('o_usage')?.checked;
     e.target.closest('button').disabled=true;
-    if(await run('save_profile',{p})===undefined){e.target.closest('button').disabled=false;return}
+    let r;try{r=await call('save_profile',{p})}catch(err){e.target.closest('button').disabled=false;return}
+    if(r?.error==='under18')return gone18();
+    await refresh();
     track('profile_created');
   },
+  under18:async(d,e)=>{
+    e.target.closest('button').disabled=true;
+    try{await call('save_profile',{p:{dob:ui.modal.dob}})}catch(err){e.target.closest('button').disabled=false;return}
+    gone18();
+  },
+  gone18:()=>{GONE18=false;render()},
   obface:()=>openVerify('face',()=>render()),
   obfaceskip:()=>{ui.faceSkip=true;track('face_skipped');render()},
   doface:()=>openVerify('face',()=>render()),
@@ -1963,6 +1994,7 @@ document.addEventListener('change',e=>{
     const f=ui.f;f[e.target.id==='d_from'?'dfrom':'dto']=e.target.value;
     if(f.dfrom&&f.dto&&f.dfrom>f.dto)[f.dfrom,f.dto]=[f.dto,f.dfrom];
     track('filter',{type:'date'});render()}
+  if(e.target.id==='p_usage'){const on=e.target.checked;run('save_profile',{p:{usage_ok:on}}).then(r=>{if(r===undefined){e.target.checked=!on;return}toast(on?'Thanks! Usage statistics are on.':'Usage statistics are off, and what was collected is deleted.')})}
   if(e.target.id==='f_tpl'&&ui.modal?.type==='post'){ui.modal.tpl=e.target.value||null;render()}
   if(e.target.id==='p_photo'){const f=e.target.files[0];e.target.value='';openCropper(f)}
   if(e.target.id==='f_area'&&e.target.value){const i=document.getElementById('f_venue');if(i){const nm=i.value.replace(AREA_TAIL,'').trim();i.value=((nm?nm+', ':'')+e.target.value).slice(0,120)}}

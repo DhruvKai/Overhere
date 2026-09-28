@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Overhere privacy policy</title>
@@ -11,9 +11,7 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
 <script src="head.js" data-manifest="manifest.webmanifest"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fonts/fonts.css">
 <style>
 :root{--bg:#F5F0E6;--card:#FFFDF8;--ink:#1A1A1A;--mute:#6B6B6B;--line:#E7DFCF;--acc:#3F7D4E;--acch:#336842;--acc2:#E7F0E1;--accink:#2E6139;--shadow:0 2px 14px rgba(26,26,26,.06);color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15130F;--card:#201D18;--ink:#F2EDE4;--mute:#A39C8E;--line:#34302A;--acc:#4A8F5B;--acch:#5AA06B;--acc2:#1F3325;--accink:#9FD3AA;--shadow:0 2px 14px rgba(0,0,0,.35);color-scheme:dark}}
@@ -54,7 +52,7 @@ td:first-child{font-weight:600;min-width:110px}
 </div></header>
 <main>
   <h1>Privacy policy</h1>
-  <p class="mute">Last updated 28 September 2026</p>
+  <p class="mute">Last updated 28 September 2026 (second update)</p>
   <p>Overhere is a beta app for doing things in your city with other people: you post a plan you're already making,
     and choose who joins. This page explains what we collect, who can see it, who helps us run the app, and how to
     have your data deleted.</p>
@@ -108,7 +106,7 @@ td:first-child{font-weight:600;min-width:110px}
         <tr><td>Safety</td><td>Reports you make (including the reported message and your reason), people you block, your answers to "Arrived safely?" check-ins, and your trusted contact's name and phone number.</td><td>To keep people safe and act on reports.</td></tr>
         <tr><td>Settings</td><td>People you follow, alerts for new plans, muted chats, and similar choices.</td><td>So the app remembers your choices on every device.</td></tr>
         <tr><td>Face check</td><td>If you take it: passed or failed, a confidence score and the time. See <a href="#checks">section 4</a>.</td><td>To confirm people are real before they post plans or ask to join.</td></tr>
-        <tr><td>Usage</td><td>Which features are used, for example "opened the app" or "sent a join request", with your account ID (when you're signed in) and a random ID for each visit. Never the content of your messages.</td><td>To learn what works in the beta and what to fix.</td></tr>
+        <tr><td>Usage statistics</td><td><b>Only if you turn on <i>Share usage statistics</i></b> (at sign-up or in <i>Profile</i>; it's off unless you choose it): which features you use, for example "opened the app" or "sent a join request", with your account ID and a random ID for each visit. Never the content of your messages, what you type, or recordings of your screen. Turning it off deletes what was collected.</td><td>To learn what works in the beta and what to fix, with your consent.</td></tr>
         <tr><td>Feedback and beta sign-up</td><td>Anything you send through the feedback form (linked to your account if you're signed in to the app in the same browser), and, if you filled in our earlier beta sign-up form, what you entered there (name, email, date of birth, gender, neighbourhood, interests, availability).</td><td>To improve the app. If you later sign in with Google using the same email, your earlier details fill in your profile so you don't type them twice.</td></tr>
       </tbody>
     </table></div>
@@ -166,14 +164,13 @@ td:first-child{font-weight:600;min-width:110px}
       <tbody>
         <tr><td>Supabase</td><td>Stores the app's data and handles sign-in.</td></tr>
         <tr><td>GitHub Pages</td><td>Hosts the website. Like any web host, it receives your IP address when you load a page.</td></tr>
-        <tr><td>Google Fonts</td><td>Supplies the font the pages use. Your browser fetches it from Google.</td></tr>
-        <tr><td>jsDelivr</td><td>Supplies the sign-in library the app uses. Your browser fetches it from jsDelivr's servers, which see your IP address.</td></tr>
         <tr><td>OpenStreetMap</td><td>Only when you open the map in Discover: supplies the map images. Your browser fetches them from OpenStreetMap's servers, which see your IP address.</td></tr>
         <tr><td>Google</td><td>Only if you choose <i>Continue with Google</i>: confirms your account and shares your name and email with us.</td></tr>
-        <tr><td>Our email provider</td><td>Sends sign-up confirmation and password emails.</td></tr>
+        <tr><td>Our email provider</td><td>Sends sign-up confirmation and password emails (these are the only emails we send; we don't send marketing email).</td></tr>
+        <tr><td>Name.com</td><td>Our domain provider. Emails you send to admin@overhere.social pass through its forwarding service to our inbox.</td></tr>
         <tr><td>Twilio</td><td>Only if you sign in with your phone number: sends your one-time code by SMS, and checks the code you type. It receives your phone number.</td></tr>
         <tr><td>Amazon Web Services</td><td>Only if you take the face check: runs it (see <a href="#checks">section 4</a>).</td></tr>
-        <tr><td>Cloudflare Turnstile</td><td>If we switch on this security check: confirms that sign-ins and code requests come from a person, not a bot. It runs in your browser and sees your IP address and basic browser details. We don't use it for anything else.</td></tr>
+        <tr><td>Cloudflare Turnstile</td><td>When you sign in, sign up, ask for a code or reset a password: confirms that sign-ins and code requests come from a person, not a bot. It runs in your browser and sees your IP address and basic browser details. We don't use it for anything else.</td></tr>
       </tbody>
     </table></div>
     <p>We don't sell your data or share it with advertisers. We share it with authorities only when the law requires it,
@@ -184,7 +181,10 @@ td:first-child{font-weight:600;min-width:110px}
     <h2>6. What stays on your device</h2>
     <p>The app keeps a few things in your browser's storage: your sign-in session, your light or dark theme choice, your
       profile photo, a few display choices (such as tips you've closed), and a copy of the app so it opens quickly and
-      works offline. We don't use advertising cookies.
+      works offline. Overhere doesn't set cookies, and uses no advertising, tracking or session-recording tools. The
+      fonts and code the pages need are served from our own site, so loading a page doesn't contact Google or other
+      font or code providers. Cloudflare Turnstile runs only when you sign in or ask for a code (see
+      <a href="#providers">section 5</a>).
       Clearing this site's data in your browser removes all of it and signs you out.</p>
   </section>
 
@@ -208,7 +208,8 @@ td:first-child{font-weight:600;min-width:110px}
       <li><b>Delete your account and data:</b> in the app, <i>Profile</i> &rarr; <i>Delete my account</i>. It happens straight
         away. You can also email <a href="mailto:admin@overhere.social">admin@overhere.social</a> from the address or phone
         number on your account.</li>
-      <li><b>Withdraw your consent:</b> delete your account as above. The app can't work without your profile.</li>
+      <li><b>Withdraw your consent:</b> turn off <i>Share usage statistics</i> in <i>Profile</i> at any time (this also deletes
+        what was collected). For everything else, delete your account as above: the app can't work without your profile.</li>
       <li><b>Control who you deal with:</b> mute chats, leave plans, block people and report messages from inside the app.</li>
       <li><b>Complaints:</b> email us first and we'll try to put it right. You also have the right to complain to the
         data protection authority where you live. In India, that is the Data Protection Board of India.</li>
@@ -217,7 +218,10 @@ td:first-child{font-weight:600;min-width:110px}
 
   <section class="panel" id="age">
     <h2>9. Age</h2>
-    <p>Overhere is only for people aged 18 or over. If you believe someone younger has an account, tell us and we'll
+    <p>Overhere is only for people aged 18 or over. You confirm you're 18 or older before an account is made, and you
+      give your date of birth when you create your profile. If the date of birth shows you're under 18, we don't create
+      the account, and we delete the sign-in details (phone number or email) straight away. Sign-ups that are started
+      but never finished are deleted after 7 days. If you believe someone younger has an account, tell us and we'll
       delete it.</p>
   </section>
 
@@ -234,7 +238,7 @@ td:first-child{font-weight:600;min-width:110px}
       you in the app first.</p>
     <p>Questions, requests or complaints: <a href="mailto:admin@overhere.social">admin@overhere.social</a>.</p>
   </section>
-  <p class="mute" style="text-align:center;font-size:13.5px"><a href="terms.html">Terms and community guidelines</a> · <a href="credits.html">Photo, icon and font credits</a></p>
+  <p class="mute" style="text-align:center;font-size:13.5px"><a href="terms.html">Terms and community guidelines</a> · <a href="copyright.html">Copyright</a> · <a href="credits.html">Photo, icon and font credits</a></p>
 </main>
 </body>
 </html>

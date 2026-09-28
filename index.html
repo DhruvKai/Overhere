@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-src 'self'; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; frame-src 'self'; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Overhere - join the beta</title>
@@ -10,9 +10,7 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
 <script src="head.js" data-manifest="manifest.webmanifest"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fonts/fonts.css">
 <style>
 :root{--bg:#F5F0E6;--card:#FFFDF8;--ink:#1A1A1A;--mute:#6B6B6B;--line:#E7DFCF;--field:#EFE8DA;--acc:#3F7D4E;--acch:#336842;--acc2:#E7F0E1;--accink:#2E6139;--ok:#15803D;--okbg:#DCFCE7;--bad:#B91C1C;--badbg:#FEE2E2;--warnbg:#FFFBEB;--warn:#92400E;--shadow:0 2px 14px rgba(26,26,26,.06);--chip:#fff;--acc2h:#D8E8CF;--wline:#FDE68A;color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15130F;--card:#201D18;--ink:#F2EDE4;--mute:#A39C8E;--line:#34302A;--field:#2A2620;--acc:#4A8F5B;--acch:#5AA06B;--acc2:#1F3325;--accink:#9FD3AA;--ok:#4ADE80;--okbg:#14301F;--bad:#F87171;--badbg:#3A1717;--warnbg:#33280E;--warn:#FCD34D;--shadow:0 2px 14px rgba(0,0,0,.35);--chip:#26221C;--acc2h:#28432F;--wline:#5C4812;color-scheme:dark}}
@@ -74,7 +72,7 @@ textarea{min-height:96px;resize:vertical}
   <button class="tab" id="t_fb">Feedback</button>
 </div></header>
 <main id="main"></main>
-<footer style="max-width:760px;margin:0 auto;padding:0 16px 32px;text-align:center" class="small mute"><a href="terms.html" style="color:inherit">Terms</a> · <a href="privacy.html" style="color:inherit">Privacy policy</a> · <a href="credits.html" style="color:inherit">Credits</a></footer>
+<footer style="max-width:760px;margin:0 auto;padding:0 16px 32px;text-align:center" class="small mute"><a href="terms.html" style="color:inherit">Terms</a> · <a href="privacy.html" style="color:inherit">Privacy policy</a> · <a href="copyright.html" style="color:inherit">Copyright</a> · <a href="credits.html" style="color:inherit">Credits</a></footer>
 
 <script src="config.js"></script>
 <script src="site.js"></script>

@@ -192,6 +192,8 @@ create index if not exists verifications_user_idx on verifications (user_id, kin
 
 -- Sign-ups from the old beta form are linked to the account made with the same email.
 alter table participants add column if not exists user_id uuid;
+-- Usage statistics are opt-in: nothing is logged unless the person ticks "Share usage statistics" (onboarding or Profile).
+alter table profiles add column if not exists usage_ok boolean not null default false;
 
 alter table profiles        enable row level security;
 alter table activities      enable row level security;
@@ -421,6 +423,12 @@ begin
       update activities set starts_at = nxt where id = a.id;
     end if;
   end loop;
+
+  -- Logins that never finished sign-up (no profile after 7 days, for example someone under 18 who stopped at the
+  -- date of birth) are deleted, so nothing from the attempt is kept. Demo accounts (profile_presets) are kept.
+  delete from auth.users x where x.created_at < now() - interval '7 days'
+    and not exists (select 1 from profiles p where p.id = x.id)
+    and not exists (select 1 from profile_presets pp where pp.email = lower(coalesce(x.email, '')));
 end $$;
 
 create or replace function _seed_chat(p_act uuid) returns void language plpgsql as $$
@@ -672,7 +680,7 @@ begin
   -- how many audience-limited plans unlock after the face check (the app says so, without showing them)
   select count(*) into n_locked from activities a
   where not prof.face and a.audience is not null and prof.gender = any (a.audience) and a.starts_at > now()
-    and a.hood = prof.hood and not _blocked(u, a.host);
+    and not _blocked(u, a.host);
   select coalesce(jsonb_agg(msg), '[]') into j_rep from reports where reporter = u and msg is not null;
   select coalesce(jsonb_agg(blocked), '[]') into j_blk from blocks where blocker = u;
 
@@ -684,12 +692,23 @@ begin
     'terms_v', 'app-v2');   -- the Terms version the app asks people to agree to (see accept_terms)
 end $$;
 
--- Create or update your own profile. Only the fields sent are changed.
-create or replace function save_profile(p jsonb) returns void language plpgsql security definer set search_path = public as $$
-declare u uuid := _uid(); em text := lower(coalesce(auth.jwt() ->> 'email', '')); cur profiles;
+-- Create or update your own profile. Only the fields sent are changed. Returns null when saved.
+-- Age: Overhere is 18+. A first profile with a date of birth under 18 is refused, and the login made a moment
+-- earlier (phone or email) is deleted, so nothing from the attempt is kept. Returns {"error":"under18"}.
+drop function if exists save_profile(jsonb);
+create or replace function save_profile(p jsonb) returns jsonb language plpgsql security definer set search_path = public as $$
+declare u uuid := _uid(); em text := lower(coalesce(auth.jwt() ->> 'email', '')); cur profiles; b date;
 begin
+  if p ? 'dob' then
+    begin b := (p->>'dob')::date; exception when others then raise exception 'Enter a valid date of birth'; end;
+  end if;
   select * into cur from profiles where id = u;
+  if not found and b is not null and b > current_date - interval '18 years' then
+    delete from auth.users where id = u;    -- no profile exists yet, so this removes everything from the attempt
+    return jsonb_build_object('error', 'under18');
+  end if;
   if found then
+    if b is not null and b > current_date - interval '18 years' then raise exception 'You must be 18 or over to use Overhere'; end if;
     -- After the ID check, gender and date of birth come from the ID: changing them goes through a person.
     if cur.kyc and ((p ? 'gender' and p->>'gender' is distinct from cur.gender) or (p ? 'dob' and (p->>'dob')::date is distinct from cur.dob)) then
       raise exception 'Your gender and date of birth are confirmed by your ID. To change them, please email us.';
@@ -704,19 +723,23 @@ begin
       ints   = case when p ? 'ints'  then array(select jsonb_array_elements_text(p->'ints'))  else ints end,
       avail  = case when p ? 'avail' then array(select jsonb_array_elements_text(p->'avail')) else avail end,
       emo    = coalesce(p->>'emo', emo),
+      usage_ok = coalesce((p->>'usage_ok')::boolean, usage_ok),
       -- the face check is optional at sign-up; face and kyc themselves are never set here
       onboarded = onboarded or coalesce((p->>'onboarded')::boolean, false)
     where id = u;
+    -- turning usage statistics off also deletes the ones already collected
+    if p->>'usage_ok' = 'false' then delete from events where participant_id = u; end if;
   else
     if coalesce(p->>'consent', '') <> 'true' then raise exception 'Please tick the consent box to continue'; end if;
-    insert into profiles (id, email, name, dob, gender, hood, job, bio, ints, avail, emo, consent_version, consent_at)
-    values (u, em, p->>'name', (p->>'dob')::date, p->>'gender', p->>'hood', coalesce(p->>'job', ''), coalesce(p->>'bio', ''),
+    insert into profiles (id, email, name, dob, gender, hood, job, bio, ints, avail, emo, usage_ok, consent_version, consent_at)
+    values (u, em, p->>'name', b, p->>'gender', p->>'hood', coalesce(p->>'job', ''), coalesce(p->>'bio', ''),
             array(select jsonb_array_elements_text(coalesce(p->'ints', '[]'))), array(select jsonb_array_elements_text(coalesce(p->'avail', '[]'))),
-            coalesce(p->>'emo', ''), 'app-v2', now());   -- app-v2: data consent + Terms and community guidelines
+            coalesce(p->>'emo', ''), coalesce((p->>'usage_ok')::boolean, false), 'app-v2', now());   -- app-v2: data consent + Terms and community guidelines
     if _may_prefill() then
       update participants set user_id = u where lower(email) = em and user_id is null and em <> '';
     end if;
   end if;
+  return null;
 end $$;
 
 -- Accounts made before the Terms existed agree to them once (the app asks). Bump the version with any change to terms.html.
@@ -1072,6 +1095,8 @@ language plpgsql security definer set search_path = public as $$
 declare u uuid := auth.uid();
 begin
   if p_session is null or coalesce(p_name, '') !~ '^[a-z_]{2,40}$' or pg_column_size(coalesce(p_props, '{}')) > 2000 then return; end if;
+  -- opt-in only: nothing before sign-in, and nothing unless "Share usage statistics" is on
+  if u is null or not exists (select 1 from profiles where id = u and usage_ok) then return; end if;
   if (select count(*) from events where session_id = p_session and created_at > now() - interval '10 minutes') >= 120 then return; end if;
   if u is null and (select count(*) from events where participant_id is null and created_at > now() - interval '1 hour') >= 1000 then return; end if;
   if u is not null and (select count(*) from events where participant_id = u and created_at > now() - interval '1 hour') >= 600 then return; end if;
@@ -1107,6 +1132,20 @@ begin
   delete from auth.users where id = u;
 end $$;
 
+-- Sign-up age gate, run by Supabase Auth before it creates a login (Authentication -> Hooks -> Before User Created ->
+-- Postgres -> public._before_user_created). Email and phone sign-ups must carry "I'm 18 or older" from the sign-up
+-- screen (user_metadata.age_18), or no login is made. Google sign-ups can't carry it: those are checked at the date of
+-- birth step (save_profile) instead.
+create or replace function _before_user_created(event jsonb) returns jsonb language plpgsql as $$
+begin
+  if coalesce(event->'user'->'app_metadata'->>'provider', '') in ('email', 'phone')
+     and coalesce(event->'user'->'user_metadata'->>'age_18', '') <> 'true' then
+    return jsonb_build_object('error', jsonb_build_object('http_code', 403,
+      'message', 'Overhere is for people aged 18 and over. Please confirm your age to create an account.'));
+  end if;
+  return '{}'::jsonb;
+end $$;
+
 -- Who may call what. Supabase gives new functions to everyone by default, so this takes that away first.
 do $$ declare f record; begin
   for f in select p.oid::regprocedure sig, p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
@@ -1128,6 +1167,8 @@ do $$ declare f record; begin
       execute format('grant execute on function %s to authenticated', f.sig);       -- signed-in people
     end if;
   end loop;
+  grant usage on schema public to supabase_auth_admin;
+  grant execute on function _before_user_created(jsonb) to supabase_auth_admin;   -- Supabase Auth only
 end $$;
 
 -- Deleting someone in Authentication -> Users also deletes their profile, plans, requests, notifications,

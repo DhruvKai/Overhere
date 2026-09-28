@@ -1,8 +1,8 @@
 /* Overhere service worker: makes the app installable and usable offline.
    Network first (revalidating the browser cache), so a new deploy shows up on the next load;
    the cached copy is only used when the network fails. Other sites (Supabase, fonts, photos) are not touched. */
-const V='overhere-v2';
-const CORE=['./','index.html','demo.html','app.js','site.js','head.js','config.js','manifest.webmanifest','icon.svg','icon-192.png','icon-512.png'];
+const V='overhere-v3';
+const CORE=['./','index.html','demo.html','app.js','site.js','head.js','config.js','manifest.webmanifest','icon.svg','icon-192.png','icon-512.png','fonts/fonts.css','fonts/plus-jakarta-sans-latin.woff2','fonts/plus-jakarta-sans-latin-ext.woff2','vendor/supabase/supabase.js'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==V).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',e=>{

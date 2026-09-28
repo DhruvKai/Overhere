@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js https://challenges.cloudflare.com 'wasm-unsafe-eval'; frame-src 'self' https://challenges.cloudflare.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://tile.openstreetmap.org; media-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://*.amazonaws.com wss://*.amazonaws.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com 'wasm-unsafe-eval'; frame-src 'self' https://challenges.cloudflare.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://tile.openstreetmap.org; media-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://*.amazonaws.com wss://*.amazonaws.com; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Overhere</title>
@@ -13,9 +13,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Overhere">
 <script src="head.js" data-manifest="manifest.webmanifest"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fonts/fonts.css">
 <style>
 :root{--bg:#F5F0E6;--card:#FFFDF8;--ink:#1A1A1A;--mute:#6B6B6B;--line:#E7DFCF;--field:#EFE8DA;--acc:#3F7D4E;--acch:#336842;--acc2:#E7F0E1;--accink:#2E6139;--ok:#15803D;--okbg:#DCFCE7;--bad:#B91C1C;--badbg:#FEE2E2;--warn:#A16207;--warnbg:#FEF3C7;--info:#1D4ED8;--infobg:#DBEAFE;--grey:#EFE8DA;--shadow:0 2px 14px rgba(26,26,26,.06);--r:20px;--page:#E8E0CF;--chip:#fff;--lineh:#D6CCB8;--ph:#A8A08E;--acc2h:#D8E8CF;--badh:#FECACA;--okh:#BBF7D0;--greyh:#E6DECE;--wbg:#FFFBEB;--wline:#FDE68A;--wink:#92400E;--hover:#FAF6EE;--newbg:#F4F8F0;--ink2:#3F3F3F;--okline:#A7F3D0;--mapbg:#E9E3D6;color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15130F;--card:#201D18;--ink:#F2EDE4;--mute:#A39C8E;--line:#34302A;--field:#2A2620;--acc:#4A8F5B;--acch:#5AA06B;--acc2:#1F3325;--accink:#9FD3AA;--ok:#4ADE80;--okbg:#14301F;--bad:#F87171;--badbg:#3A1717;--warn:#FBBF24;--warnbg:#3A2E10;--info:#93C5FD;--infobg:#172A45;--grey:#2A2620;--shadow:0 2px 14px rgba(0,0,0,.35);--page:#0C0B09;--chip:#26221C;--lineh:#4A443A;--ph:#6F685C;--acc2h:#28432F;--badh:#4A1D1D;--okh:#1B3F28;--greyh:#332E27;--wbg:#33280E;--wline:#5C4812;--wink:#FCD34D;--hover:#27231D;--newbg:#1C2A1F;--ink2:#CFC8BB;--okline:#1F5134;--mapbg:#1E1B16;color-scheme:dark}}
@@ -442,7 +440,7 @@ a.btn{text-decoration:none}
 </head>
 <body>
 <div id="shell"><div id="screen"></div><div id="toast"></div></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
+<script src="vendor/supabase/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
 </body>
