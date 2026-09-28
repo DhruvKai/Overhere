@@ -4,3 +4,10 @@
 
 # Supabase CLI working files (project link, versions)
 supabase/.temp/
+
+# Secrets: never commit keys or OAuth client files (the repository is public)
+*accessKeys*.csv
+client_secret_*.json
+*.pem
+.env
+.env.*
