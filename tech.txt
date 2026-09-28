@@ -1,0 +1,193 @@
+OVERHERE (overhere.social) - TECHNOLOGY SUMMARY
+Prepared 28 September 2026
+
+======================================================================
+PART 1 - SHORT VERSION (one page)
+======================================================================
+
+Overhere is a mobile-first web app (installable PWA) for finding company for
+plans in Chandigarh: post a plan, others ask to join, the host chooses, and
+the group chats. Built and delivered between 21 and 28 September 2026.
+
+FRONT END
+  - HTML5, CSS3, JavaScript (ES2020+), single-page app, no framework
+  - Progressive Web App: web app manifest + service worker (offline, installable)
+  - Responsive design, light/dark mode, accessibility (ARIA, keyboard use)
+  - Leaflet maps with OpenStreetMap tiles; Plus Jakarta Sans (Google Fonts);
+    Lucide-style SVG icons
+
+BACK END AND DATABASE
+  - Supabase: PostgreSQL database, Auth, Realtime, Edge Functions
+  - PostgreSQL: row-level security, security-definer functions (PL/pgSQL),
+    triggers, pgcrypto (bcrypt), rate limits
+  - Deno + TypeScript Edge Functions
+
+SIGN-IN AND VERIFICATION
+  - Supabase Auth: phone OTP, email + password, Google sign-in
+  - Twilio Verify: SMS one-time codes (India), Fraud Guard, geo permissions
+  - AWS Rekognition Face Liveness: live face check (React, AWS Amplify UI,
+    esbuild widget)
+  - Cloudflare Turnstile: CAPTCHA / bot protection
+
+HOSTING AND DOMAIN
+  - GitHub (Git version control) + GitHub Pages hosting, HTTPS
+  - Custom domain overhere.social (Name.com), domain email forwarding
+
+DATA AND CONTENT
+  - OpenStreetMap / Overpass API: Chandigarh venue list (Python script)
+  - Wikimedia Commons: licensed plan photos (WebP), credits page
+
+SECURITY, LEGAL AND QUALITY
+  - Content Security Policy, secret handling, security audit and fixes
+  - Privacy policy, Terms and community guidelines, consent flows
+  - Automated browser testing (Puppeteer + Microsoft Edge), SQL validation
+
+======================================================================
+PART 2 - DETAILED VERSION (what was done with each technology)
+======================================================================
+
+1. FRONT END (the app and the website)
+
+HTML5 / CSS3
+  Built the landing page, the app, the admin dashboard, and the privacy, terms
+  and credits pages, with a custom responsive design system.
+JavaScript (ES2020+, no framework)
+  Wrote the whole single-page app (about 2,000 lines): swipe deck, discover
+  feed, filters, posting, join requests, group chat, profile and notifications.
+Swipe and Discover feeds
+  Split plans by time (Swipe = today and tomorrow, Discover = after that), with
+  date, category, time-of-day and distance filters.
+Saved filters and alerts
+  Users can save filter sets as one-tap chips and get alerts for new plans that
+  match.
+Chats inbox
+  A header button lists every group chat the user is in, with unread markers.
+Progressive Web App (manifest + service worker)
+  Made the app installable on phones, and it opens offline, with a
+  network-first cache so new releases show up straight away.
+Responsive and dark mode
+  Laid out for phone, tablet and desktop, with light and dark themes that
+  follow the device setting.
+Accessibility (ARIA)
+  Added labels, dialog roles, focus handling and keyboard support across the app.
+Browser APIs
+  Used Geolocation (distance to plans), Web Share, Clipboard, WebOTP (SMS code
+  autofill), Canvas (photo resizing) and localStorage (preferences).
+Leaflet + OpenStreetMap tiles
+  Added maps with venue markers to plan details.
+Google Fonts (Plus Jakarta Sans) / Lucide-style icons
+  Typography, plus an inline SVG icon set, so no extra icon library is loaded.
+
+2. BACK END (Supabase and PostgreSQL)
+
+Supabase (hosted Postgres platform)
+  Set up the project and connected the app to it through the supabase-js
+  client library (loaded from jsDelivr).
+PostgreSQL schema
+  Designed the tables for profiles, plans, requests, members, chats, polls,
+  ratings, reports, blocks, notifications, verifications, feedback and usage
+  events.
+Row-level security
+  Locked every table so the browser can't read or write data directly.
+Security-definer functions (PL/pgSQL)
+  Wrote 30+ server functions that hold all the app logic and permission checks
+  (post, join, approve, chat, report, block, delete account, and more).
+Rate limiting
+  Added limits on plans, join requests, messages, reports, face checks,
+  feedback and admin logins, to stop abuse.
+Triggers
+  Clean-up when an account is deleted, and automatic hashing of the admin
+  password.
+pgcrypto (bcrypt)
+  Admin dashboard password stored hashed, with a lockout after repeated wrong
+  attempts.
+Supabase Realtime
+  Live "pings" so chats and notifications update without reloading.
+Sample content engine
+  Sample hosts and plans that renew themselves, so the app never looks empty.
+  They are clearly labelled "Sample".
+Admin dashboard
+  Password-protected page with sign-up stats, feedback and face-check review
+  decisions.
+Usage analytics
+  Privacy-friendly event logging (feature use only, never message content).
+
+3. SIGN-IN, VERIFICATION AND ABUSE PROTECTION
+
+Supabase Auth
+  Configured phone OTP, email and password (sign-up, sign-in, reset), Google
+  sign-in and a test phone number.
+Twilio Verify
+  Set up SMS one-time codes for Indian numbers: compliance profile, Verify
+  service, India-only geo permissions, Fraud Guard and error troubleshooting.
+AWS Rekognition Face Liveness
+  Built the live face check: a camera video confirms a real person. Results are
+  stored, images are not.
+Supabase Edge Functions (Deno + TypeScript)
+  Wrote face-start and face-result, which talk to AWS securely with
+  server-side secrets.
+AWS IAM
+  Created restricted access keys used only by the Edge Functions.
+React 18 + AWS Amplify UI Liveness + esbuild
+  Built and bundled the camera widget as a single script loaded only when
+  needed.
+Cloudflare Turnstile (CAPTCHA)
+  Added bot protection to phone codes, email sign-in, sign-up, resends and
+  password resets. It stays invisible for most users.
+Verification rules
+  The face check is optional, but needed to post or join. The ID check is
+  shown as "coming soon".
+Safety features
+  Trusted contact (can't be the user's own number), SOS in chat, a safety
+  screen before the first meetup, report and block.
+
+4. HOSTING, DOMAIN AND EMAIL
+
+Git + GitHub
+  Version control for all code, pushed after each batch of changes.
+GitHub Pages
+  Hosting for the site and the app, with HTTPS on the custom domain.
+Domain (overhere.social, Name.com)
+  DNS set up for GitHub Pages, and email forwarding for admin@overhere.social.
+
+5. DATA, CONTENT AND MEDIA
+
+OpenStreetMap + Overpass API + Python
+  Script that builds the Chandigarh venue list (places.json), with each place
+  matched to its sector.
+Wikimedia Commons
+  Sourced freely licensed plan photos with no people in them, cropped and
+  converted to WebP, with attribution on the credits page.
+CSV import
+  Imported the earlier beta sign-ups and feedback into the database.
+
+6. SECURITY, PRIVACY AND LEGAL
+
+Content Security Policy
+  Strict rules on which scripts, frames and connections the app may use.
+Security audit
+  Reviewed the app and database code and fixed the findings: locked tables,
+  hashed admin password, safer feedback path, limited data exposure.
+Secrets hygiene
+  Moved key files out of the project, added .gitignore rules, and confirmed
+  keys were never pushed.
+In-app account deletion
+  Full deletion flow that cancels hosted plans, removes personal data and keeps
+  chats readable for others.
+Privacy policy
+  Written to match the app exactly: data collected, service providers,
+  retention and user rights.
+Terms and community guidelines
+  Written and shown at sign-up. Existing users agree once, and the version is
+  tracked.
+
+7. TESTING AND QUALITY
+
+Puppeteer + Microsoft Edge (headless)
+  Automated end-to-end checks of sign-in, feeds, filters, chat and modals, on
+  desktop and phone screen sizes.
+SQL validation (pglast)
+  Syntax-checked the database script and its PL/pgSQL functions before each
+  release.
+Manual QA
+  Checked every screen with screenshots, for layout, errors and mobile overflow.
