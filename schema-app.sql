@@ -19,7 +19,9 @@ create table if not exists profiles (
   name        text not null check (char_length(name) between 1 and 40),
   dob         date not null check (dob <= current_date - interval '18 years'),
   gender      text not null check (gender in ('Woman','Man','Non-binary')),
-  hood        text not null check (hood in ('Sector 17','Sector 7','Sector 22')),
+  hood        text not null check (char_length(hood) between 1 and 80),  -- home area, e.g. "Koramangala, Bengaluru"
+  lat         double precision,                             -- its centre (rounded to about 1 km); null only on old rows
+  lng         double precision,
   job         text not null default '' check (char_length(job) <= 40),
   bio         text not null default '' check (char_length(bio) <= 300),
   ints        text[] not null default '{}' check (ints <@ array['Movies','Cafe / Food','Concerts']),
@@ -48,7 +50,9 @@ create table if not exists activities (
   venue         text not null check (char_length(venue) between 1 and 120),
   cost          text not null check (cost in ('split','own','host')),
   total         int check (total between 0 and 1000000),
-  hood          text not null check (hood in ('Sector 17','Sector 7','Sector 22')),
+  hood          text not null check (char_length(hood) between 1 and 80),  -- the host's home area when posted
+  lat           double precision,                            -- where the venue is; null only on plans from before
+  lng           double precision,
   repeat        text check (repeat in ('weekly','biweekly','monthly')),
   status        text not null default 'open' check (status in ('open','full')),
   next_id       uuid,                                        -- the next occurrence, once posted
@@ -75,6 +79,23 @@ alter table activities add constraint activities_repeat_check check (repeat in (
 -- 'removed' (taken out of the group by the host) came later: widen the check on databases made before it.
 alter table requests drop constraint if exists requests_status_check;
 alter table requests add constraint requests_status_check check (status in ('pending','accepted','rejected','waitlist','left','removed'));
+-- All of India came later (the beta started in three Chandigarh sectors): any home area, and coordinates for
+-- homes and venues. Widen the checks and add the columns on databases made before it.
+alter table profiles drop constraint if exists profiles_hood_check;
+alter table profiles add constraint profiles_hood_check check (char_length(hood) between 1 and 80);
+alter table activities drop constraint if exists activities_hood_check;
+alter table activities add constraint activities_hood_check check (char_length(hood) between 1 and 80);
+alter table profiles add column if not exists lat double precision, add column if not exists lng double precision;
+alter table activities add column if not exists lat double precision, add column if not exists lng double precision;
+alter table profiles drop constraint if exists profiles_ll_check;
+alter table profiles add constraint profiles_ll_check check ((lat is null) = (lng is null) and (lat is null or (lat between 6 and 37.5 and lng between 68 and 97.5)));
+alter table activities drop constraint if exists activities_ll_check;
+alter table activities add constraint activities_ll_check check ((lat is null) = (lng is null) and (lat is null or (lat between 6 and 37.5 and lng between 68 and 97.5)));
+update profiles set hood = hood || ', Chandigarh',
+  lat = case hood when 'Sector 22' then 30.73 else 30.74 end,
+  lng = case hood when 'Sector 7' then 76.80 when 'Sector 22' then 76.77 else 76.78 end
+where hood in ('Sector 17','Sector 7','Sector 22') and lat is null;
+update activities set hood = hood || ', Chandigarh' where hood in ('Sector 17','Sector 7','Sector 22');
 
 create table if not exists messages (
   id         bigint generated always as identity primary key,
@@ -399,8 +420,8 @@ begin
     -- months differ in length, so step from the first date (the 31st stays the 31st or the month's last day)
     n_step := greatest(1, floor(extract(epoch from now() - a.starts_at) / extract(epoch from step))::int - 1);
     loop nxt := a.starts_at + step * n_step; exit when nxt > now(); n_step := n_step + 1; end loop;
-    insert into activities (host, cat, description, cap, starts_at, audience, venue, cost, total, hood, repeat)
-    values (a.host, a.cat, a.description, a.cap, nxt, a.audience, a.venue, a.cost, a.total, a.hood, a.repeat)
+    insert into activities (host, cat, description, cap, starts_at, audience, venue, cost, total, hood, lat, lng, repeat)
+    values (a.host, a.cat, a.description, a.cap, nxt, a.audience, a.venue, a.cost, a.total, a.hood, a.lat, a.lng, a.repeat)
     returning id into nid;
     update activities set next_id = nid where id = a.id;
     perform _note(a.host, 'update', 'Repeat posted', case a.repeat when 'monthly' then 'Every month' when 'biweekly' then 'Every 2 weeks' else 'Every week' end, 'info', nid,
@@ -410,8 +431,8 @@ begin
   for a in select * from activities where sample_period is not null and starts_at <= now() loop
     nxt := a.starts_at + a.sample_period * (floor(extract(epoch from now() - a.starts_at) / extract(epoch from a.sample_period)) + 1);
     if exists (select 1 from requests r join profiles p on p.id = r.user_id where r.act = a.id and not p.is_sample) then
-      insert into activities (host, cat, description, cap, starts_at, audience, venue, cost, total, hood, repeat, sample_period)
-      values (a.host, a.cat, a.description, a.cap, nxt, a.audience, a.venue, a.cost, a.total, a.hood, a.repeat, a.sample_period)
+      insert into activities (host, cat, description, cap, starts_at, audience, venue, cost, total, hood, lat, lng, repeat, sample_period)
+      values (a.host, a.cat, a.description, a.cap, nxt, a.audience, a.venue, a.cost, a.total, a.hood, a.lat, a.lng, a.repeat, a.sample_period)
       returning id into nid;
       insert into requests (act, user_id, status, created_at)
       select nid, r.user_id, 'accepted', r.created_at from requests r join profiles p on p.id = r.user_id
@@ -578,14 +599,33 @@ begin
                         p_session, p_score, p_detail);
 end $$;
 
--- Everything the signed-in person may see, in one go.
-create or replace function app_state() returns jsonb language plpgsql security definer set search_path = public as $$
+-- Distance in km between two points (haversine).
+create or replace function _km(lat1 float8, lng1 float8, lat2 float8, lng2 float8) returns float8 language sql immutable as $$
+  select 12742 * asin(least(1, sqrt(power(sin(radians(lat2 - lat1) / 2), 2)
+                                    + cos(radians(lat1)) * cos(radians(lat2)) * power(sin(radians(lng2 - lng1) / 2), 2)))) $$;
+
+-- Is plan a within 50 km of home? People and plans from before coordinates were all in Chandigarh.
+create or replace function _near(a activities, h_lat float8, h_lng float8) returns boolean language sql immutable as $$
+  select _km(coalesce(h_lat, 30.74), coalesce(h_lng, 76.78), coalesce(a.lat, 30.74), coalesce(a.lng, 76.78)) <= 50 $$;
+
+-- The cities with sample plans. Someone whose home area is more than 50 km from all of them also sees the nearest
+-- city's plans, and anyone can pick a city to browse (saved in profiles.state as 'city': a key below, or 'home').
+create or replace function _cities() returns table (k text, name text, lat float8, lng float8) language sql immutable as $$
+  values ('chd', 'Chandigarh', 30.7333::float8, 76.7794::float8), ('del', 'Delhi NCR', 28.6139, 77.2090),
+         ('mum', 'Mumbai', 19.0760, 72.8777), ('pun', 'Pune', 18.5204, 73.8567), ('blr', 'Bengaluru', 12.9716, 77.5946),
+         ('hyd', 'Hyderabad', 17.3850, 78.4867), ('chn', 'Chennai', 13.0827, 80.2707), ('amd', 'Ahmedabad', 23.0225, 72.5714) $$;
+
+-- Everything the signed-in person may see, in one go. p_act: a plan opened from an invite link, included even when far away.
+drop function if exists app_state();
+drop function if exists app_state(uuid);
+create or replace function app_state(p_act uuid default null) returns jsonb language plpgsql security definer set search_path = public as $$
 declare
   u uuid := _uid();
   em text := lower(coalesce(auth.jwt() ->> 'email', ''));
   prof profiles; pre jsonb; draft jsonb;
   act_ids uuid[]; chat_ids uuid[]; pids uuid[];
   j_acts jsonb; j_people jsonb; j_reqs jsonb; j_msgs jsonb; j_notes jsonb; j_rat jsonb; j_rep jsonb; j_blk jsonb; n_locked int;
+  pick text; v_city text; v_auto boolean := false; v_lat float8; v_lng float8;
 begin
   perform _housekeeping();
 
@@ -594,8 +634,9 @@ begin
     select data into pre from profile_presets where email = em;
     if pre is not null then
       -- Demo accounts start verified only while checks are simulated; in live mode they verify like anyone else.
-      insert into profiles (id, email, name, dob, gender, hood, job, bio, ints, avail, emo, face, kyc, onboarded, trust_met, trust_shows, hist)
-      values (u, em, pre->>'name', (pre->>'dob')::date, pre->>'gender', pre->>'hood', coalesce(pre->>'job', ''), coalesce(pre->>'bio', ''),
+      insert into profiles (id, email, name, dob, gender, hood, lat, lng, job, bio, ints, avail, emo, face, kyc, onboarded, trust_met, trust_shows, hist)
+      values (u, em, pre->>'name', (pre->>'dob')::date, pre->>'gender', pre->>'hood', (pre->>'lat')::float8, (pre->>'lng')::float8,
+              coalesce(pre->>'job', ''), coalesce(pre->>'bio', ''),
               array(select jsonb_array_elements_text(coalesce(pre->'ints', '[]'))), array(select jsonb_array_elements_text(coalesce(pre->'avail', '[]'))),
               coalesce(pre->>'emo', ''), _simulated('face'), _simulated('kyc') and coalesce((pre->>'kyc')::boolean, true), _simulated('face'),
               coalesce((pre->>'met')::int, 0), coalesce((pre->>'shows')::int, 0), coalesce(pre->'hist', '[]'))
@@ -603,7 +644,8 @@ begin
     else
       if _may_prefill() then
         select jsonb_build_object('name', name, 'dob', dob, 'gender', gender,
-                 'hood', case neighborhood when 'Central Market' then 'Sector 17' when 'Lakeside' then 'Sector 7' when 'Old Quarter' then 'Sector 22' else neighborhood end,
+                 'hood', case neighborhood when 'Central Market' then 'Sector 17, Chandigarh' when 'Lakeside' then 'Sector 7, Chandigarh'
+                                           when 'Old Quarter' then 'Sector 22, Chandigarh' else neighborhood end,
                  'ints', interests, 'avail', availability)
         into draft from participants where lower(email) = em order by created_at desc limit 1;
       end if;
@@ -614,9 +656,21 @@ begin
 
   -- Anyone can browse; posting and asking to join need the face check (post_activity, request_join).
 
-  -- Upcoming plans open to this person, plus anything they host or asked to join (up to 90 days back).
+  -- Plans near home are always included. Besides those: the city picked to browse, or, when no city is within 50 km
+  -- of home and nothing was picked, the nearest city (v_auto).
+  pick := prof.state ->> 'city';
+  select c.k, c.lat, c.lng into v_city, v_lat, v_lng from _cities() c where c.k = pick;
+  if v_city is null and pick is distinct from 'home'
+     and not exists (select 1 from _cities() c where _km(coalesce(prof.lat, 30.74), coalesce(prof.lng, 76.78), c.lat, c.lng) <= 50) then
+    select c.k, c.lat, c.lng into v_city, v_lat, v_lng from _cities() c
+    order by _km(coalesce(prof.lat, 30.74), coalesce(prof.lng, 76.78), c.lat, c.lng) limit 1;
+    v_auto := true;
+  end if;
+
+  -- Upcoming plans near this person and open to them, plus anything they host or asked to join (up to 90 days back).
   select coalesce(array_agg(a.id), '{}') into act_ids from activities a
-  where (a.starts_at > now() and a.host <> u and _eligible(a, u))
+  where (a.starts_at > now() and a.host <> u and _eligible(a, u)
+         and (_near(a, prof.lat, prof.lng) or (v_city is not null and _near(a, v_lat, v_lng)) or a.id = p_act))
      or ((a.host = u or exists (select 1 from requests r where r.act = a.id and r.user_id = u)) and a.starts_at > now() - interval '90 days');
 
   -- Plans whose members and chat this person may see: hosting, or accepted.
@@ -626,7 +680,7 @@ begin
 
   select coalesce(jsonb_agg(jsonb_build_object(
       'id', a.id, 'host', a.host, 'cat', a.cat, 'desc', a.description, 'cap', a.cap, 'when', _ms(a.starts_at),
-      'aud', a.audience, 'venue', a.venue, 'cost', a.cost, 'total', a.total, 'hood', a.hood, 'repeat', a.repeat,
+      'aud', a.audience, 'venue', a.venue, 'cost', a.cost, 'total', a.total, 'hood', a.hood, 'lat', a.lat, 'lng', a.lng, 'repeat', a.repeat,
       'status', a.status, 'created', _ms(a.created_at), 'mcount', cardinality(m.ms),
       'members', case when a.id = any (chat_ids) then to_jsonb(m.ms) else '[]'::jsonb end,
       'wl', (select count(*) from requests r where r.act = a.id and r.status = 'waitlist'),
@@ -654,7 +708,8 @@ begin
       union all select (f.v)::uuid from jsonb_array_elements_text(coalesce(prof.state -> 'following', '[]')) f(v)
         where f.v ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
           -- only people who host a plan this person could see, so a made-up follow can't reveal someone's profile
-          and exists (select 1 from activities a where a.host = (f.v)::uuid and _eligible(a, u))
+          and exists (select 1 from activities a where a.host = (f.v)::uuid and _eligible(a, u)
+                      and (_near(a, prof.lat, prof.lng) or (v_city is not null and _near(a, v_lat, v_lng))))
       union all select u) s where x is not null)
   into pids;
 
@@ -680,7 +735,7 @@ begin
   -- how many audience-limited plans unlock after the face check (the app says so, without showing them)
   select count(*) into n_locked from activities a
   where not prof.face and a.audience is not null and prof.gender = any (a.audience) and a.starts_at > now()
-    and not _blocked(u, a.host);
+    and not _blocked(u, a.host) and (_near(a, prof.lat, prof.lng) or (v_city is not null and _near(a, v_lat, v_lng)));
   select coalesce(jsonb_agg(msg), '[]') into j_rep from reports where reporter = u and msg is not null;
   select coalesce(jsonb_agg(blocked), '[]') into j_blk from blocks where blocker = u;
 
@@ -689,7 +744,23 @@ begin
     'profile', to_jsonb(prof) - 'email' - 'trust_met' - 'trust_shows' - 'hist',
     'people', j_people, 'acts', j_acts, 'reqs', j_reqs, 'msgs', j_msgs, 'notes', j_notes,
     'ratings', j_rat, 'reported', j_rep, 'blocked', j_blk, 'locked', n_locked,
+    'cities', (select jsonb_agg(jsonb_build_array(c.k, c.name, c.lat, c.lng)) from _cities() c), 'city', v_city, 'city_auto', v_auto,
     'terms_v', 'app-v2');   -- the Terms version the app asks people to agree to (see accept_terms)
+end $$;
+
+-- Why a plan from an invite link isn't in someone's app_state, so the app can say so instead of "no longer available":
+-- 'gone' (cancelled, or the host blocked them), 'past', 'audience' (limited to other groups), 'verify' (limited to their
+-- group, which they see after the face check), or 'ok'.
+create or replace function invite_info(p_act uuid) returns text language plpgsql security definer set search_path = public as $$
+declare u uuid := _uid(); a activities; me profiles;
+begin
+  select * into a from activities where id = p_act;
+  if not found or _blocked(u, a.host) then return 'gone'; end if;
+  if a.starts_at <= now() then return 'past'; end if;
+  select * into me from profiles where id = u;
+  if a.audience is not null and not coalesce(me.gender = any (a.audience), false) then return 'audience'; end if;
+  if a.audience is not null and not coalesce(me.face, false) then return 'verify'; end if;
+  return 'ok';
 end $$;
 
 -- Create or update your own profile. Only the fields sent are changed. Returns null when saved.
@@ -718,6 +789,8 @@ begin
       dob    = coalesce((p->>'dob')::date, dob),
       gender = coalesce(p->>'gender', gender),
       hood   = coalesce(p->>'hood', hood),
+      lat    = case when p ? 'lat' then round((p->>'lat')::numeric, 2)::float8 else lat end,
+      lng    = case when p ? 'lng' then round((p->>'lng')::numeric, 2)::float8 else lng end,
       job    = coalesce(p->>'job', job),
       bio    = coalesce(p->>'bio', bio),
       ints   = case when p ? 'ints'  then array(select jsonb_array_elements_text(p->'ints'))  else ints end,
@@ -731,8 +804,10 @@ begin
     if p->>'usage_ok' = 'false' then delete from events where participant_id = u; end if;
   else
     if coalesce(p->>'consent', '') <> 'true' then raise exception 'Please tick the consent box to continue'; end if;
-    insert into profiles (id, email, name, dob, gender, hood, job, bio, ints, avail, emo, usage_ok, consent_version, consent_at)
-    values (u, em, p->>'name', b, p->>'gender', p->>'hood', coalesce(p->>'job', ''), coalesce(p->>'bio', ''),
+    if p->>'lat' is null or p->>'lng' is null then raise exception 'Pick your area from the list, or use your current location'; end if;
+    insert into profiles (id, email, name, dob, gender, hood, lat, lng, job, bio, ints, avail, emo, usage_ok, consent_version, consent_at)
+    values (u, em, p->>'name', b, p->>'gender', p->>'hood', round((p->>'lat')::numeric, 2)::float8, round((p->>'lng')::numeric, 2)::float8,
+            coalesce(p->>'job', ''), coalesce(p->>'bio', ''),
             array(select jsonb_array_elements_text(coalesce(p->'ints', '[]'))), array(select jsonb_array_elements_text(coalesce(p->'avail', '[]'))),
             coalesce(p->>'emo', ''), coalesce((p->>'usage_ok')::boolean, false), 'app-v2', now());   -- app-v2: data consent + Terms and community guidelines
     if _may_prefill() then
@@ -767,10 +842,12 @@ begin
   st := to_timestamp((p->>'when')::double precision / 1000);
   if st <= now() then raise exception 'Pick a future date and time'; end if;
   if st > now() + interval '1 year' then raise exception 'Pick a date within the next year'; end if;
-  insert into activities (host, cat, description, cap, starts_at, audience, venue, cost, total, hood, repeat)
+  if p->>'lat' is null or p->>'lng' is null then raise exception 'Pick the venue from the list, or its area, so it shows on the map'; end if;
+  insert into activities (host, cat, description, cap, starts_at, audience, venue, cost, total, hood, lat, lng, repeat)
   values (u, p->>'cat', trim(p->>'desc'), (p->>'cap')::int, st,
           case when jsonb_typeof(p->'aud') = 'array' then array(select jsonb_array_elements_text(p->'aud')) end,
-          trim(p->>'venue'), p->>'cost', nullif((p->>'total')::int, 0), me.hood, nullif(p->>'repeat', ''))
+          trim(p->>'venue'), p->>'cost', nullif((p->>'total')::int, 0), me.hood, (p->>'lat')::float8, (p->>'lng')::float8,
+          nullif(p->>'repeat', ''))
   returning id into nid;
   perform _ping(array['00000000-0000-0000-0000-000000000000'::uuid]);
   return nid;
@@ -790,7 +867,8 @@ begin
   moved := st <> a.starts_at or trim(p->>'venue') <> a.venue;
   update activities set cat = p->>'cat', description = trim(p->>'desc'), cap = (p->>'cap')::int, starts_at = st,
     audience = case when jsonb_typeof(p->'aud') = 'array' then array(select jsonb_array_elements_text(p->'aud')) end,
-    venue = trim(p->>'venue'), cost = p->>'cost', total = nullif((p->>'total')::int, 0), repeat = nullif(p->>'repeat', '')
+    venue = trim(p->>'venue'), cost = p->>'cost', total = nullif((p->>'total')::int, 0), repeat = nullif(p->>'repeat', ''),
+    lat = coalesce((p->>'lat')::float8, lat), lng = coalesce((p->>'lng')::float8, lng)
   where id = p_act;
   if cardinality(ms) > 0 then
     perform _sys(p_act, 'The host updated the details' || case when moved then ': now ' || _when(st) || ' at ' || trim(p->>'venue') else '' end);
@@ -1153,7 +1231,7 @@ do $$ declare f record; begin
              'edit_activity','cancel_activity','request_join','withdraw_request','decide_request','leave_activity','remove_member','send_message','vote',
              'rate_activity','report','block_user','unblock_user','add_notification','read_notifications','verify_simulated',
              'verify_precheck_service','verify_start_service','verify_finish_service','admin_reviews','admin_decide_review',
-             'admin_stats','log_event','send_feedback','delete_my_account','accept_terms'))
+             'admin_stats','log_event','send_feedback','delete_my_account','accept_terms','invite_info'))
   loop
     execute format('revoke all on function %s from public, anon, authenticated', f.sig);
     execute format('alter function %s set search_path = public', f.sig);
@@ -1189,22 +1267,23 @@ create trigger overhere_user_deleted after delete on auth.users for each row exe
 -- ---------- sample people and plans (added once) ----------
 
 insert into profile_presets (email, data) values
-  ('kajal@overhere.test', '{"name":"Kajal","gender":"Woman","dob":"1998-02-02","hood":"Sector 17","job":"UX Researcher","bio":"Weekend brunches, indie gigs and the occasional horror movie. Always on time.","ints":["Movies","Cafe / Food","Concerts"],"avail":["Weekday evenings","Late nights"],"emo":"👩🏽‍🔬","kyc":true,"met":18,"shows":18,"hist":[["Sunday brunch club","cafe",5,"Hosted",4.9,6],["Indie night in Sector 26","concerts",16,"Joined",4.7,1],["Horror double bill","movies",31,"Hosted",4.8,4]]}'),
-  ('arjun@overhere.test', '{"name":"Arjun","gender":"Man","dob":"1995-09-18","hood":"Sector 17","job":"Software Engineer","bio":"Weekend cricket, Friday night movies, always up for street food.","ints":["Movies","Cafe / Food"],"avail":["Weekend days","Weekend evenings"],"emo":"👨🏾‍💻","kyc":true,"met":9,"shows":9,"hist":[["Friday night thriller","movies",8,"Hosted",4.7,4],["Sector 35 food crawl","cafe",22,"Joined",4.5,1]]}'),
-  ('neha@overhere.test',  '{"name":"Neha","gender":"Woman","dob":"2001-06-14","hood":"Sector 17","job":"","bio":"","ints":["Cafe / Food"],"avail":["Weekend days"],"emo":"👩🏻","kyc":false}')
+  ('kajal@overhere.test', '{"name":"Kajal","gender":"Woman","dob":"1998-02-02","hood":"Sector 17, Chandigarh","lat":30.74,"lng":76.78,"job":"UX Researcher","bio":"Weekend brunches, indie gigs and the occasional horror movie. Always on time.","ints":["Movies","Cafe / Food","Concerts"],"avail":["Weekday evenings","Late nights"],"emo":"👩🏽‍🔬","kyc":true,"met":18,"shows":18,"hist":[["Sunday brunch club","cafe",5,"Hosted",4.9,6],["Indie night in Sector 26","concerts",16,"Joined",4.7,1],["Horror double bill","movies",31,"Hosted",4.8,4]]}'),
+  ('arjun@overhere.test', '{"name":"Arjun","gender":"Man","dob":"1995-09-18","hood":"Sector 17, Chandigarh","lat":30.74,"lng":76.78,"job":"Software Engineer","bio":"Weekend cricket, Friday night movies, always up for street food.","ints":["Movies","Cafe / Food"],"avail":["Weekend days","Weekend evenings"],"emo":"👨🏾‍💻","kyc":true,"met":9,"shows":9,"hist":[["Friday night thriller","movies",8,"Hosted",4.7,4],["Sector 35 food crawl","cafe",22,"Joined",4.5,1]]}'),
+  ('neha@overhere.test',  '{"name":"Neha","gender":"Woman","dob":"2001-06-14","hood":"Sector 17, Chandigarh","lat":30.74,"lng":76.78,"job":"","bio":"","ints":["Cafe / Food"],"avail":["Weekend days"],"emo":"👩🏻","kyc":false}')
 on conflict (email) do nothing;
 
 create or replace function _sid(n int) returns uuid language sql immutable as $$
   select ('a0000000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid $$;
 
+drop function if exists _seed_act(int, text, text, int, timestamptz, text[], text, text, text, int[], interval, int, text, text);
 create or replace function _seed_act(p_host int, p_cat text, p_desc text, p_cap int, p_when timestamptz, p_aud text[], p_venue text,
                                      p_cost text, p_hood text, p_members int[], p_period interval, p_total int default null,
-                                     p_repeat text default null, p_status text default 'open')
+                                     p_repeat text default null, p_status text default 'open', p_lat float8 default null, p_lng float8 default null)
 returns void language plpgsql as $$
 declare nid uuid; m int; i int := 0;
 begin
-  insert into activities (host, cat, description, cap, starts_at, audience, venue, cost, total, hood, repeat, status, sample_period, created_at)
-  values (_sid(p_host), p_cat, p_desc, p_cap, p_when, p_aud, p_venue, p_cost, p_total, p_hood, p_repeat, p_status, p_period, now() - interval '1 day')
+  insert into activities (host, cat, description, cap, starts_at, audience, venue, cost, total, hood, lat, lng, repeat, status, sample_period, created_at)
+  values (_sid(p_host), p_cat, p_desc, p_cap, p_when, p_aud, p_venue, p_cost, p_total, p_hood, p_lat, p_lng, p_repeat, p_status, p_period, now() - interval '1 day')
   returning id into nid;
   foreach m in array coalesce(p_members, '{}') loop
     i := i + 1;
@@ -1213,15 +1292,15 @@ begin
   if cardinality(coalesce(p_members, '{}')) > 0 then perform _seed_chat(nid); end if;
 end $$;
 revoke all on function _sid(int) from public, anon, authenticated;
-revoke all on function _seed_act(int, text, text, int, timestamptz, text[], text, text, text, int[], interval, int, text, text) from public, anon, authenticated;
+revoke all on function _seed_act(int, text, text, int, timestamptz, text[], text, text, text, int[], interval, int, text, text, float8, float8) from public, anon, authenticated;
 
 do $$
-declare D interval := interval '1 day'; W interval := interval '14 days'; S17 text := 'Sector 17'; wo text[] := array['Woman']; mn text[] := array['Man','Non-binary'];
+declare D interval := interval '1 day'; W interval := interval '14 days'; S17 text := 'Sector 17, Chandigarh'; wo text[] := array['Woman']; mn text[] := array['Man','Non-binary'];
 begin
   if exists (select 1 from profiles where is_sample) then return; end if;
 
-  insert into profiles (id, is_sample, name, dob, gender, hood, job, bio, ints, avail, emo, face, kyc, onboarded, trust_met, trust_shows, hist)
-  select _sid(n), true, name, current_date - (age * interval '1 year') - interval '100 days', gender, 'Sector 17', job, bio, ints, avail, emo, true, kyc, true, met, shows, hist::jsonb
+  insert into profiles (id, is_sample, name, dob, gender, hood, lat, lng, job, bio, ints, avail, emo, face, kyc, onboarded, trust_met, trust_shows, hist)
+  select _sid(n), true, name, current_date - (age * interval '1 year') - interval '100 days', gender, 'Sector 17, Chandigarh', 30.74, 76.78, job, bio, ints, avail, emo, true, kyc, true, met, shows, hist::jsonb
   from (values
     (1,'Aarav','Man',27,'Designer','Will watch anything with good sound design.','{Movies}'::text[],'{"Weekend evenings","Late nights"}'::text[],'👨🏽‍🎨',true,12,12,'[["Nolan retrospective: Interstellar on IMAX","movies",9,"Hosted",4.9,5],["Filter coffee tasting","cafe",23,"Joined",4.6,4],["Anime night at Elante","movies",41,"Hosted",4.8,6]]'),
     (2,'Meera','Woman',29,'Architect','Coffee snob, jazz fan, always early.','{"Cafe / Food",Concerts}','{"Weekend days"}','👩🏾‍💼',true,21,21,'[["Jazz brunch in Sector 7","cafe",6,"Hosted",5.0,4],["Le Corbusier architecture walk and chai","cafe",19,"Hosted",4.9,7],["Sunday sitar recital","concerts",33,"Joined",4.7,5]]'),
@@ -1301,3 +1380,205 @@ update activities set starts_at = _t_at(7,18,30), sample_period = interval '14 d
 update activities set starts_at = _t_at(8,20,30), sample_period = interval '14 days' where host = _sid(3) and description = 'Vinyl listening evening, bring a record' and sample_period = interval '1 day';
 update activities set starts_at = _t_at(7,21,0), sample_period = interval '14 days' where host = _sid(7) and description = 'Retro Bollywood karaoke' and sample_period = interval '1 day';
 update activities set starts_at = _t_at(8,14,0), sample_period = interval '14 days' where host = _sid(6) and description = 'Pictionary and pizza, beginners welcome' and sample_period = interval '1 day';
+
+-- ---------- sample people and plans in the other cities (added once per city) ----------
+-- Six sample hosts per city (ids from _sid(101) for Delhi NCR, _sid(201) for Mumbai, and so on) and 16 plans:
+-- nine happening soon (they move forward a day at a time) and seven planned ahead (they move forward two weeks).
+-- The venues are real places, pinned where they are.
+
+create or replace function _seed_host(n int, p_hood text, p_lat float8, p_lng float8, p_name text, p_gender text, p_age int,
+                                      p_job text, p_bio text, p_ints text[], p_avail text[], p_emo text, p_met int, p_hist text)
+returns void language sql as $$
+  insert into profiles (id, is_sample, name, dob, gender, hood, lat, lng, job, bio, ints, avail, emo, face, kyc, onboarded, trust_met, trust_shows, hist)
+  values (_sid(n), true, p_name, current_date - (p_age * interval '1 year') - interval '100 days', p_gender, p_hood, p_lat, p_lng,
+          p_job, p_bio, p_ints, p_avail, p_emo, true, true, true, p_met, p_met, p_hist::jsonb)
+  on conflict (id) do nothing $$;
+revoke all on function _seed_host(int, text, float8, float8, text, text, int, text, text, text[], text[], text, int, text) from public, anon, authenticated;
+
+do $$
+declare D interval := interval '1 day'; W interval := interval '14 days'; wo text[] := array['Woman']; mn text[] := array['Man','Non-binary']; H text;
+  F text[] := '{"Cafe / Food"}'; M text[] := '{Movies}'; C text[] := '{Concerts}'; FM text[] := '{"Cafe / Food",Movies}'; FC text[] := '{"Cafe / Food",Concerts}';
+  WD text[] := '{"Weekend days"}'; WE text[] := '{"Weekday evenings","Weekend evenings"}'; LN text[] := '{"Late nights"}';
+begin
+  if not exists (select 1 from profiles where id = _sid(101)) then
+    H := 'Delhi NCR';
+    perform _seed_host(101,H,28.61,77.21,'Aditi','Woman',28,'Content strategist','Old Delhi food, weekend baithaks and too many bookshops.',F,WD,'👩🏽‍💼',14,'[["Chandni Chowk food walk","cafe",9,"Hosted",4.9,5]]');
+    perform _seed_host(102,H,28.47,77.07,'Karan','Man',31,'Consultant','Gurugram on weekdays, Hauz Khas on weekends.',FM,WE,'👨🏽‍💼',9,'[["Cyber Hub dinner","cafe",12,"Hosted",4.6,4]]');
+    perform _seed_host(103,H,28.57,77.20,'Nikhil','Man',29,'Sound engineer','Gigs, vinyl and the occasional ghazal night.',C,LN,'🧔🏽',11,'[["Qawwali at Nizamuddin","concerts",15,"Hosted",4.8,4]]');
+    perform _seed_host(104,H,28.59,77.22,'Tanya','Woman',33,'Doctor','Early walks in Lodhi Garden and long brunches after.',F,WD,'👩🏻‍⚕️',16,'[["Lodhi Garden walk","cafe",6,"Hosted",5.0,4]]');
+    perform _seed_host(105,H,28.53,77.21,'Rhea','Woman',26,'Film critic','Subtitles on, phones off.',M,WE,'👩🏾',7,'[["Film club at IHC","movies",20,"Hosted",4.7,5]]');
+    perform _seed_host(106,H,28.57,77.32,'Jay','Non-binary',27,'Illustrator','Board games, sketchbooks and Noida street food.',FM,WE,'🧑🏽‍🎨',8,'[["Board game night","cafe",10,"Hosted",4.8,6]]');
+    perform _seed_act(101,'cafe','Paranthe Wali Gali breakfast, then a Chandni Chowk walk',4,_t_next(9),null,'Paranthe Wali Gali, Chandni Chowk','own',H,'{102}',D,p_lat=>28.6562,p_lng=>77.2303);
+    perform _seed_act(104,'cafe','Morning walk in Lodhi Garden, chai after',4,_t_next(7),null,'Lodhi Garden, main gate','own',H,null,D,p_lat=>28.5931,p_lng=>77.2197);
+    perform _seed_act(102,'cafe','Sunset at Hauz Khas lake, then a rooftop café',4,_t_next(18),null,'Hauz Khas Village','split',H,'{103}',D,2000,p_lat=>28.5535,p_lng=>77.1940);
+    perform _seed_act(105,'movies','Evening show of the new thriller',3,_t_next(20,30),null,'PVR, Select Citywalk, Saket','split',H,null,D,1500,p_lat=>28.5286,p_lng=>77.2190);
+    perform _seed_act(103,'concerts','Jazz at The Piano Man, table for four',4,_t_next(21),null,'The Piano Man, Safdarjung Enclave','own',H,null,D,p_lat=>28.5655,p_lng=>77.1960);
+    perform _seed_act(106,'cafe','Board game night, beginners welcome',5,_t_next(19),null,'Board game café, Sector 18, Noida','own',H,'{101,105}',D,p_lat=>28.5700,p_lng=>77.3240);
+    perform _seed_act(102,'cafe','After-work dinner at Cyber Hub',4,_t_next(20),null,'Cyber Hub, DLF Cyber City, Gurugram','split',H,'{104}',D,3200,p_lat=>28.4950,p_lng=>77.0890);
+    perform _seed_act(106,'cafe','Momos and chai in the Sector 18 market',3,_t_next(17,30),null,'Sector 18 market, Noida','split',H,null,D,600,p_lat=>28.5705,p_lng=>77.3218);
+    perform _seed_act(104,'concerts','Open-mic night in Gurugram, come cheer',6,_t_next(20,30),null,'Open-mic café, Sector 29, Gurugram','own',H,null,D,p_lat=>28.4695,p_lng=>77.0630);
+    perform _seed_act(105,'movies','Film club at India Habitat Centre, discussion after',5,_t_at(4,18,30),null,'India Habitat Centre, Lodhi Road','own',H,'{103}',W,p_lat=>28.5895,p_lng=>77.2250);
+    perform _seed_act(103,'concerts','Hindustani classical evening',4,_t_at(6,19),null,'India International Centre, Lodhi Estate','own',H,null,W,p_lat=>28.5925,p_lng=>77.2230);
+    perform _seed_act(101,'cafe','Bookshop crawl in Khan Market, coffee after',4,_t_at(3,16),null,'Khan Market','own',H,null,W,p_lat=>28.6003,p_lng=>77.2270);
+    perform _seed_act(104,'cafe','Picnic at Sunder Nursery, everyone brings one dish',6,_t_at(5,12),wo,'Sunder Nursery, Nizamuddin','own',H,'{101}',W,p_lat=>28.5935,p_lng=>77.2440);
+    perform _seed_act(102,'movies','Weekend blockbuster at Mall of India',4,_t_at(7,15),null,'PVR, DLF Mall of India, Noida','split',H,null,W,1600,p_lat=>28.5672,p_lng=>77.3210);
+    perform _seed_act(106,'cafe','Mehrauli heritage walk, then brunch',5,_t_at(8,8,30),null,'Mehrauli Archaeological Park','own',H,null,W,p_lat=>28.5245,p_lng=>77.1855);
+    perform _seed_act(103,'concerts','Qawwali evening at Nizamuddin',4,_t_at(9,18,30),null,'Hazrat Nizamuddin Dargah','own',H,null,W,p_lat=>28.5913,p_lng=>77.2425);
+  end if;
+
+  if not exists (select 1 from profiles where id = _sid(201)) then
+    H := 'Mumbai';
+    perform _seed_host(201,H,19.06,72.83,'Anika','Woman',29,'Ad film producer','Sea-facing chai, late shows, long walks on Carter Road.',FM,WE,'👩🏽',13,'[["Carter Road sunset walk","cafe",8,"Hosted",4.9,4]]');
+    perform _seed_host(202,H,19.02,72.84,'Vikram','Man',32,'Banker','Weekday grind, weekend vada pav hunts.',F,WD,'👨🏽‍💼',10,'[["Dadar vada pav crawl","cafe",14,"Hosted",4.7,3]]');
+    perform _seed_host(203,H,18.93,72.83,'Farah','Woman',30,'Architect','Kala Ghoda walks and Irani cafés.',F,WD,'👩🏾‍🎨',18,'[["Irani café breakfast","cafe",11,"Hosted",4.9,4]]');
+    perform _seed_host(204,H,19.07,72.84,'Siddharth','Man',28,'Musician','Plays in two bands and hosts one open mic.',C,LN,'👨🏻‍🎤',21,'[["Open-mic night","concerts",7,"Hosted",4.8,7]]');
+    perform _seed_host(205,H,19.13,72.83,'Neel','Non-binary',26,'Game designer','Board games and bad puns.',FM,WE,'🧑🏻‍💻',6,'[["Board games in Andheri","cafe",9,"Hosted",4.8,5]]');
+    perform _seed_host(206,H,18.93,72.82,'Pooja','Woman',27,'Journalist','Films at NCPA, jazz after.',FC,WE,'👩🏻‍💼',12,'[["Jazz evening at NCPA","concerts",16,"Hosted",4.9,4]]');
+    perform _seed_act(201,'cafe','Sunset walk on Carter Road, cutting chai after',4,_t_next(18),null,'Carter Road promenade, Bandra','own',H,'{206}',D,p_lat=>19.0650,p_lng=>72.8225);
+    perform _seed_act(202,'cafe','Vada pav crawl through Dadar',3,_t_next(17),null,'Dadar West, near the station','split',H,null,D,300,p_lat=>19.0190,p_lng=>72.8430);
+    perform _seed_act(203,'cafe','Irani café breakfast and a Kala Ghoda walk',4,_t_next(9),null,'Kala Ghoda, Fort','own',H,'{201}',D,p_lat=>18.9290,p_lng=>72.8315);
+    perform _seed_act(206,'movies','Evening show at Phoenix Palladium',4,_t_next(20,30),null,'PVR, Phoenix Palladium, Lower Parel','split',H,null,D,1800,p_lat=>18.9947,p_lng=>72.8255);
+    perform _seed_act(204,'concerts','Open-mic night at The Habitat, Khar',6,_t_next(21),null,'The Habitat, Khar West','own',H,'{205}',D,p_lat=>19.0700,p_lng=>72.8370);
+    perform _seed_act(205,'cafe','Board games in Andheri, beginners welcome',5,_t_next(19),null,'Board game café, Andheri West','own',H,'{202,206}',D,p_lat=>19.1360,p_lng=>72.8290);
+    perform _seed_act(202,'cafe','Marine Drive stroll and late-night ice cream',4,_t_next(21,30),null,'Marine Drive, near NCPA','own',H,null,D,p_lat=>18.9440,p_lng=>72.8230);
+    perform _seed_act(204,'concerts','Indie gig at antiSOCIAL, got spare spots',3,_t_next(22),null,'antiSOCIAL, Khar West','own',H,null,D,p_lat=>19.0710,p_lng=>72.8360);
+    perform _seed_act(201,'cafe','Coffee at Prithvi Café before the evening play',4,_t_next(18,30),wo,'Prithvi Theatre, Juhu','own',H,'{203}',D,p_lat=>19.1060,p_lng=>72.8260);
+    perform _seed_act(206,'concerts','Jazz evening at NCPA',4,_t_at(4,19),null,'NCPA, Nariman Point','own',H,null,W,p_lat=>18.9255,p_lng=>72.8200);
+    perform _seed_act(202,'cafe','Street food walk on Mohammed Ali Road',4,_t_at(5,20),mn,'Mohammed Ali Road, near Minara Masjid','split',H,null,W,800,p_lat=>18.9570,p_lng=>72.8330);
+    perform _seed_act(203,'cafe','Sunday brunch at Leopold Café, Colaba',4,_t_at(6,11),null,'Leopold Café, Colaba Causeway','split',H,'{205}',W,2400,p_lat=>18.9227,p_lng=>72.8317);
+    perform _seed_act(205,'movies','Late-night movie at Infiniti Mall',3,_t_at(3,22,30),null,'PVR Icon, Infiniti Mall, Andheri West','split',H,null,W,1400,p_lat=>19.1415,p_lng=>72.8317);
+    perform _seed_act(201,'cafe','Sunrise walk around Powai Lake, then breakfast',4,_t_at(7,6,30),null,'Powai Lake promenade','own',H,null,W,p_lat=>19.1270,p_lng=>72.9050);
+    perform _seed_act(206,'movies','Short film club in Versova, discussion after',5,_t_at(8,19),null,'Café in Versova, Andheri West','own',H,'{203}',W,p_lat=>19.1320,p_lng=>72.8150);
+    perform _seed_act(204,'concerts','Retro Bollywood karaoke night',6,_t_at(9,21),null,'Karaoke bar, Lower Parel','split',H,'{202,201}',W,3000,p_lat=>19.0000,p_lng=>72.8270);
+  end if;
+
+  if not exists (select 1 from profiles where id = _sid(301)) then
+    H := 'Pune';
+    perform _seed_host(301,H,18.51,73.85,'Gauri','Woman',27,'Data analyst','Misal, monsoon treks and Marathi theatre.',F,WD,'👩🏽‍💻',11,'[["Misal pav breakfast","cafe",8,"Hosted",4.8,3]]');
+    perform _seed_host(302,H,18.56,73.79,'Aditya','Man',30,'Mechanical engineer','Sinhagad at sunrise, board games at sunset.',F,WD,'👨🏽‍🔧',15,'[["Sinhagad sunrise trek","cafe",13,"Hosted",4.9,5]]');
+    perform _seed_host(303,H,18.52,73.83,'Mira','Woman',23,'Student','Film archive regular.',M,WE,'👩🏻‍🎓',5,'[["Classic film night","movies",10,"Hosted",4.7,4]]');
+    perform _seed_host(304,H,18.54,73.90,'Rahul','Man',29,'Drummer','Koregaon Park gigs every Friday.',C,LN,'👨🏾‍🎤',19,'[["Live band night","concerts",6,"Hosted",4.8,4]]');
+    perform _seed_host(305,H,18.55,73.90,'Sneha','Woman',31,'HR manager','Brunch planner in chief.',F,WD,'👩🏽‍💼',12,'[["Kalyani Nagar brunch","cafe",9,"Hosted",4.9,4]]');
+    perform _seed_host(306,H,18.53,73.78,'Kiran','Non-binary',28,'UX writer','Birdwatching, filter coffee and quiet cafés.',F,WD,'🧑🏽',7,'[["Pashan Lake birdwatch","cafe",17,"Hosted",4.8,3]]');
+    perform _seed_act(301,'cafe','Misal pav breakfast at Bedekar',3,_t_next(9),null,'Bedekar Misal, Narayan Peth','own',H,null,D,p_lat=>18.5140,p_lng=>73.8490);
+    perform _seed_act(306,'cafe','Filter coffee and a chat at Vaishali',4,_t_next(17),null,'Vaishali, FC Road','own',H,'{303}',D,p_lat=>18.5200,p_lng=>73.8410);
+    perform _seed_act(302,'cafe','Morning walk up Vetal Tekdi, chai at the top',4,_t_next(6,30),null,'Vetal Tekdi, Law College Road entry','own',H,null,D,p_lat=>18.5260,p_lng=>73.8210);
+    perform _seed_act(304,'concerts','Live band at High Spirits, Koregaon Park',4,_t_next(21),null,'High Spirits Café, Koregaon Park','own',H,'{305}',D,p_lat=>18.5387,p_lng=>73.8990);
+    perform _seed_act(303,'movies','Evening show at Phoenix Marketcity',3,_t_next(20),null,'PVR, Phoenix Marketcity, Viman Nagar','split',H,null,D,1200,p_lat=>18.5620,p_lng=>73.9167);
+    perform _seed_act(302,'cafe','Board games in Baner, beginners welcome',5,_t_next(19),null,'Board game café, Baner','own',H,'{306,301}',D,p_lat=>18.5590,p_lng=>73.7868);
+    perform _seed_act(305,'cafe','Café hop in Koregaon Park',4,_t_next(16),wo,'Lane 7, Koregaon Park','split',H,null,D,1500,p_lat=>18.5362,p_lng=>73.8940);
+    perform _seed_act(304,'concerts','Open-mic night in Kothrud',6,_t_next(20,30),null,'Open-mic café, Kothrud','own',H,null,D,p_lat=>18.5074,p_lng=>73.8077);
+    perform _seed_act(301,'cafe','Street food on Laxmi Road',4,_t_next(18,30),null,'Laxmi Road, near Tulshibaug','split',H,'{302}',D,500,p_lat=>18.5160,p_lng=>73.8560);
+    perform _seed_act(302,'cafe','Sunrise trek up Sinhagad, kanda bhaji at the top',5,_t_at(5,5,30),null,'Sinhagad Fort, base village','split',H,'{304}',W,600,p_lat=>18.3664,p_lng=>73.7556);
+    perform _seed_act(303,'movies','Classic film at the National Film Archive',4,_t_at(4,18),null,'National Film Archive of India, Law College Road','own',H,null,W,p_lat=>18.5170,p_lng=>73.8290);
+    perform _seed_act(306,'cafe','Birdwatching at Pashan Lake, coffee after',4,_t_at(6,7),null,'Pashan Lake','own',H,null,W,p_lat=>18.5360,p_lng=>73.7790);
+    perform _seed_act(305,'cafe','Sunday brunch in Kalyani Nagar',4,_t_at(7,11),null,'Café in Kalyani Nagar','split',H,'{303}',W,2000,p_lat=>18.5480,p_lng=>73.9010);
+    perform _seed_act(304,'concerts','Jazz night in Viman Nagar',4,_t_at(3,21),null,'Live music bar, Viman Nagar','own',H,null,W,p_lat=>18.5679,p_lng=>73.9143);
+    perform _seed_act(301,'cafe','Walk around Aga Khan Palace, chai after',4,_t_at(8,10),null,'Aga Khan Palace, Kalyani Nagar','own',H,null,W,p_lat=>18.5523,p_lng=>73.9015);
+    perform _seed_act(303,'movies','Marathi film night, discussion over chai',4,_t_at(9,19),null,'INOX, Bund Garden Road','split',H,null,W,1000,p_lat=>18.5340,p_lng=>73.8800);
+  end if;
+
+  if not exists (select 1 from profiles where id = _sid(401)) then
+    H := 'Bengaluru';
+    perform _seed_host(401,H,12.97,77.64,'Divya','Woman',28,'Software engineer','Filter coffee purist and weekend gig-goer.',FC,WE,'👩🏽‍💻',14,'[["Church Street book browse","cafe",9,"Hosted",4.8,4]]');
+    perform _seed_host(402,H,12.98,77.60,'Varun','Man',30,'Product designer','Brewery hopper, Cubbon Park runner.',FM,WE,'👨🏻‍🎨',12,'[["Cubbon Park run","cafe",7,"Hosted",4.9,5]]');
+    perform _seed_host(403,H,13.00,77.57,'Lakshmi','Woman',32,'Researcher','Carnatic concerts and Kannada cinema.',FC,WE,'👩🏾‍🔬',17,'[["Carnatic evening","concerts",14,"Hosted",5.0,4]]');
+    perform _seed_host(404,H,12.91,77.65,'Nitin','Man',33,'Startup founder','Always up for a board game night.',F,WE,'👨🏽‍💻',8,'[["Board game night","cafe",11,"Hosted",4.7,6]]');
+    perform _seed_host(405,H,12.95,77.58,'Shreya','Woman',26,'Teacher','Lalbagh walks and dosa breakfasts.',F,WD,'👩🏻‍🏫',10,'[["Lalbagh morning walk","cafe",12,"Hosted",4.9,4]]');
+    perform _seed_host(406,H,12.93,77.62,'Robin','Non-binary',27,'Bassist','Indie gigs, open mics, late-night dosas.',C,LN,'🧑🏾‍🎤',20,'[["Open-mic night","concerts",5,"Hosted",4.8,7]]');
+    perform _seed_act(405,'cafe','Filter coffee at Brahmin''s Coffee Bar',3,_t_next(8),null,'Brahmin''s Coffee Bar, Basavanagudi','own',H,null,D,p_lat=>12.9540,p_lng=>77.5690);
+    perform _seed_act(402,'cafe','Morning run in Cubbon Park, breakfast after',4,_t_next(6,30),null,'Cubbon Park, Queen''s statue gate','own',H,'{404}',D,p_lat=>12.9763,p_lng=>77.5929);
+    perform _seed_act(402,'cafe','Craft beer and pizza at Toit',4,_t_next(20),null,'Toit, 100 Feet Road, Indiranagar','split',H,'{401}',D,3200,p_lat=>12.9790,p_lng=>77.6408);
+    perform _seed_act(406,'concerts','Open-mic night in Koramangala',6,_t_next(20,30),null,'Open-mic café, Koramangala 5th Block','own',H,null,D,p_lat=>12.9340,p_lng=>77.6230);
+    perform _seed_act(401,'movies','Evening show at Forum Mall',3,_t_next(21),null,'PVR, Forum Mall, Koramangala','split',H,null,D,1200,p_lat=>12.9345,p_lng=>77.6112);
+    perform _seed_act(404,'cafe','Board games in HSR Layout, beginners welcome',5,_t_next(19),null,'Board game café, HSR Layout','own',H,'{405,406}',D,p_lat=>12.9116,p_lng=>77.6474);
+    perform _seed_act(405,'cafe','Dosas and snacks on VV Puram food street',4,_t_next(19,30),null,'VV Puram food street','split',H,null,D,500,p_lat=>12.9480,p_lng=>77.5740);
+    perform _seed_act(406,'concerts','Indie band live at Hard Rock Café',4,_t_next(21,30),null,'Hard Rock Café, St Marks Road','own',H,null,D,p_lat=>12.9740,p_lng=>77.6010);
+    perform _seed_act(401,'cafe','Book browsing on Church Street, coffee after',4,_t_next(17),wo,'Blossom Book House, Church Street','own',H,'{403}',D,p_lat=>12.9750,p_lng=>77.6050);
+    perform _seed_act(403,'concerts','Carnatic classical evening in Malleshwaram',4,_t_at(4,18,30),null,'Concert hall, Malleshwaram','own',H,null,W,p_lat=>13.0035,p_lng=>77.5700);
+    perform _seed_act(405,'cafe','Lalbagh morning walk, then breakfast',5,_t_at(5,7),null,'Lalbagh Botanical Garden, main gate','own',H,'{402}',W,p_lat=>12.9507,p_lng=>77.5848);
+    perform _seed_act(403,'movies','Kannada film club, discussion over coffee',4,_t_at(6,18),null,'Café in Jayanagar 4th Block','own',H,null,W,p_lat=>12.9250,p_lng=>77.5830);
+    perform _seed_act(404,'cafe','Sunset walk around Ulsoor Lake',4,_t_at(3,17,30),null,'Ulsoor Lake, boat club side','own',H,null,W,p_lat=>12.9830,p_lng=>77.6200);
+    perform _seed_act(402,'movies','Weekend blockbuster at Orion Mall',4,_t_at(7,15),null,'PVR, Orion Mall, Rajajinagar','split',H,null,W,1400,p_lat=>13.0110,p_lng=>77.5550);
+    perform _seed_act(406,'concerts','Jazz evening in Indiranagar',4,_t_at(8,21),null,'Live music bar, Indiranagar','own',H,'{401}',W,p_lat=>12.9719,p_lng=>77.6412);
+    perform _seed_act(401,'cafe','Sunday brunch in Whitefield',4,_t_at(9,11),null,'Phoenix Marketcity, Whitefield','split',H,null,W,2000,p_lat=>12.9975,p_lng=>77.6960);
+  end if;
+
+  if not exists (select 1 from profiles where id = _sid(501)) then
+    H := 'Hyderabad';
+    perform _seed_host(501,H,17.36,78.47,'Sana','Woman',28,'Pharmacist','Irani chai at Nimrah and endless biryani debates.',F,WE,'👩🏽',13,'[["Irani chai by the Charminar","cafe",8,"Hosted",4.9,4]]');
+    perform _seed_host(502,H,17.44,78.36,'Rohit','Man',30,'Cloud engineer','Gachibowli weekdays, Old City weekends.',FM,LN,'👨🏽‍💻',9,'[["Biryani night","cafe",12,"Hosted",4.7,4]]');
+    perform _seed_host(503,H,17.42,78.44,'Harika','Woman',26,'Dancer','Lamakaan regular.',C,WE,'👩🏾‍🎤',16,'[["Open mic at Lamakaan","concerts",6,"Hosted",4.8,6]]');
+    perform _seed_host(504,H,17.39,78.47,'Imran','Man',34,'Photographer','Heritage walks and golden hour.',F,WD,'👨🏾',18,'[["Old City photo walk","cafe",15,"Hosted",4.9,5]]');
+    perform _seed_host(505,H,17.43,78.40,'Deepa','Woman',29,'Analyst','Board games and brunch.',F,WD,'👩🏻‍💼',8,'[["Board games in Gachibowli","cafe",10,"Hosted",4.8,5]]');
+    perform _seed_host(506,H,17.41,78.45,'Ash','Non-binary',24,'Film student','Telugu cinema, first day first show.',M,LN,'🧑🏻‍🎓',6,'[["First day first show","movies",9,"Hosted",4.7,4]]');
+    perform _seed_act(501,'cafe','Irani chai and Osmania biscuits by the Charminar',4,_t_next(17),null,'Nimrah Café, Charminar','own',H,'{504}',D,p_lat=>17.3616,p_lng=>78.4747);
+    perform _seed_act(502,'cafe','Biryani night at Paradise',4,_t_next(20),null,'Paradise, MG Road, Secunderabad','split',H,null,D,1600,p_lat=>17.4431,p_lng=>78.4867);
+    perform _seed_act(504,'cafe','Sunset walk on Necklace Road',4,_t_next(18),null,'Necklace Road, near Sanjeevaiah Park','own',H,null,D,p_lat=>17.4239,p_lng=>78.4738);
+    perform _seed_act(506,'movies','First day first show at Prasads',4,_t_next(21),null,'Prasads Multiplex, Necklace Road','split',H,'{502}',D,1200,p_lat=>17.4129,p_lng=>78.4666);
+    perform _seed_act(503,'concerts','Open-mic night at Lamakaan',6,_t_next(19,30),null,'Lamakaan, Banjara Hills','own',H,'{505}',D,p_lat=>17.4210,p_lng=>78.4390);
+    perform _seed_act(505,'cafe','Board games in Gachibowli, beginners welcome',5,_t_next(19),null,'Board game café, Gachibowli','own',H,'{506,502}',D,p_lat=>17.4430,p_lng=>78.3570);
+    perform _seed_act(502,'movies','Late show at AMB Cinemas',3,_t_next(22),null,'AMB Cinemas, Gachibowli','split',H,null,D,1000,p_lat=>17.4400,p_lng=>78.3480);
+    perform _seed_act(505,'cafe','South Indian breakfast at Chutneys',3,_t_next(8,30),wo,'Chutneys, Banjara Hills','own',H,null,D,p_lat=>17.4180,p_lng=>78.4440);
+    perform _seed_act(503,'concerts','Live band at a Gachibowli brewery',4,_t_next(21),null,'Brewery, Gachibowli','own',H,null,D,p_lat=>17.4380,p_lng=>78.3620);
+    perform _seed_act(504,'cafe','Old City heritage walk, then breakfast',5,_t_at(4,7),null,'Charminar, east side','own',H,'{501}',W,p_lat=>17.3610,p_lng=>78.4760);
+    perform _seed_act(504,'concerts','Sound and light show at Golconda Fort',4,_t_at(5,18,30),null,'Golconda Fort','own',H,null,W,p_lat=>17.3833,p_lng=>78.4011);
+    perform _seed_act(501,'cafe','Morning walk in KBR Park',4,_t_at(3,6,30),null,'KBR National Park, main gate','own',H,null,W,p_lat=>17.4239,p_lng=>78.4219);
+    perform _seed_act(506,'movies','Telugu film club, discussion over chai',4,_t_at(6,18),null,'Café in Banjara Hills','own',H,'{503}',W,p_lat=>17.4150,p_lng=>78.4480);
+    perform _seed_act(505,'cafe','Crafts and snacks at Shilparamam',4,_t_at(7,16),null,'Shilparamam, Madhapur','split',H,null,W,600,p_lat=>17.4526,p_lng=>78.3810);
+    perform _seed_act(502,'cafe','Sunset at Durgam Cheruvu, dinner after',4,_t_at(8,17,30),null,'Durgam Cheruvu cable bridge','split',H,null,W,1600,p_lat=>17.4300,p_lng=>78.3890);
+    perform _seed_act(503,'concerts','Qawwali night in the Old City',4,_t_at(9,20),null,'Heritage hall, Old City','own',H,null,W,p_lat=>17.3650,p_lng=>78.4750);
+  end if;
+
+  if not exists (select 1 from profiles where id = _sid(601)) then
+    H := 'Chennai';
+    perform _seed_host(601,H,13.04,80.26,'Keerthana','Woman',31,'Doctor','Kutcheri season is my favourite season.',FC,WE,'👩🏾‍⚕️',15,'[["Music Academy concert","concerts",13,"Hosted",4.9,4]]');
+    perform _seed_host(602,H,13.06,80.26,'Prakash','Man',29,'Engineer','Sathyam regular, beach at sunrise.',FM,WD,'👨🏾‍💻',11,'[["Marina sunrise walk","cafe",7,"Hosted",4.8,4]]');
+    perform _seed_host(603,H,13.03,80.27,'Janani','Woman',27,'Dance teacher','Mylapore mornings, filter coffee always.',F,WD,'👩🏽‍🏫',12,'[["Mylapore tiffin","cafe",10,"Hosted",4.9,3]]');
+    perform _seed_host(604,H,13.00,80.27,'Arvind','Man',33,'Chef','Seafood on ECR, any day.',F,WE,'👨🏽‍🍳',9,'[["Seafood lunch on ECR","cafe",16,"Hosted",4.7,4]]');
+    perform _seed_host(605,H,13.06,80.24,'Nila','Non-binary',26,'Writer','Bookshops and open mics.',FC,WE,'🧑🏾',7,'[["Open-mic night","concerts",8,"Hosted",4.8,6]]');
+    perform _seed_host(606,H,13.08,80.21,'Meenakshi','Woman',30,'Architect','Heritage walks and board games.',FM,WD,'👩🏻‍💼',10,'[["Mylapore heritage walk","cafe",12,"Hosted",4.9,5]]');
+    perform _seed_act(602,'cafe','Sunrise walk on Marina Beach, sundal after',4,_t_next(6),null,'Marina Beach, near the lighthouse','own',H,null,D,p_lat=>13.0500,p_lng=>80.2824);
+    perform _seed_act(603,'cafe','Filter coffee and tiffin in Mylapore',4,_t_next(8),null,'Saravana Bhavan, Mylapore','own',H,'{601}',D,p_lat=>13.0339,p_lng=>80.2677);
+    perform _seed_act(604,'cafe','Evening at Elliot''s Beach, snacks from the carts',4,_t_next(18),null,'Elliot''s Beach, Besant Nagar','split',H,null,D,400,p_lat=>13.0003,p_lng=>80.2717);
+    perform _seed_act(602,'movies','Evening show at Sathyam',4,_t_next(20,30),null,'Sathyam Cinemas, Royapettah','split',H,'{605}',D,1200,p_lat=>13.0555,p_lng=>80.2580);
+    perform _seed_act(605,'concerts','Open-mic night in Nungambakkam',6,_t_next(20),null,'Open-mic café, Nungambakkam','own',H,null,D,p_lat=>13.0600,p_lng=>80.2420);
+    perform _seed_act(606,'cafe','Board games in Anna Nagar, beginners welcome',5,_t_next(19),null,'Board game café, Anna Nagar','own',H,'{602,605}',D,p_lat=>13.0850,p_lng=>80.2101);
+    perform _seed_act(601,'cafe','Shopping and snacks on Pondy Bazaar',4,_t_next(17),wo,'Pondy Bazaar, T Nagar','own',H,null,D,p_lat=>13.0410,p_lng=>80.2340);
+    perform _seed_act(604,'concerts','Indie gig at a Besant Nagar café',4,_t_next(21),null,'Café in Besant Nagar','own',H,null,D,p_lat=>13.0010,p_lng=>80.2660);
+    perform _seed_act(602,'movies','Late show at Phoenix Marketcity',3,_t_next(22),null,'PVR, Phoenix Marketcity, Velachery','split',H,null,D,1000,p_lat=>12.9918,p_lng=>80.2170);
+    perform _seed_act(601,'concerts','Carnatic concert at the Music Academy',4,_t_at(4,18),null,'Music Academy, TTK Road','own',H,'{603}',W,p_lat=>13.0440,p_lng=>80.2590);
+    perform _seed_act(604,'cafe','Seafood lunch on ECR',4,_t_at(5,13),null,'Seafood restaurant, ECR, Injambakkam','split',H,null,W,2400,p_lat=>12.9150,p_lng=>80.2500);
+    perform _seed_act(606,'cafe','Craft village visit at DakshinaChitra',5,_t_at(6,10),null,'DakshinaChitra, Muttukadu','split',H,null,W,800,p_lat=>12.8230,p_lng=>80.2420);
+    perform _seed_act(605,'cafe','Book browsing at Higginbothams, coffee after',4,_t_at(3,16),null,'Higginbothams, Anna Salai','own',H,null,W,p_lat=>13.0640,p_lng=>80.2740);
+    perform _seed_act(603,'cafe','Morning walk in the Theosophical Society gardens',4,_t_at(7,7),null,'Theosophical Society, Adyar','own',H,null,W,p_lat=>13.0120,p_lng=>80.2580);
+    perform _seed_act(605,'movies','French film night at Alliance Française',4,_t_at(8,18,30),null,'Alliance Française, Nungambakkam','own',H,'{606}',W,p_lat=>13.0670,p_lng=>80.2460);
+    perform _seed_act(606,'cafe','Mylapore heritage walk around the temple tank',5,_t_at(9,7),null,'Kapaleeshwarar temple tank, Mylapore','own',H,null,W,p_lat=>13.0335,p_lng=>80.2698);
+  end if;
+
+  if not exists (select 1 from profiles where id = _sid(701)) then
+    H := 'Ahmedabad';
+    perform _seed_host(701,H,23.03,72.56,'Hetal','Woman',30,'Chartered accountant','Manek Chowk after midnight.',F,LN,'👩🏽‍💼',12,'[["Manek Chowk late-night food","cafe",8,"Hosted",4.8,4]]');
+    perform _seed_host(702,H,23.03,72.59,'Parth','Man',32,'Textile designer','Heritage walks through the pols.',F,WD,'👨🏽‍🎨',17,'[["Pol heritage walk","cafe",14,"Hosted",4.9,5]]');
+    perform _seed_host(703,H,23.04,72.55,'Riya','Woman',23,'Architecture student','Film club and chai.',M,WE,'👩🏻‍🎓',5,'[["Film club screening","movies",10,"Hosted",4.7,5]]');
+    perform _seed_host(704,H,23.04,72.51,'Jignesh','Man',29,'Engineer','Board games and thali lunches.',F,WD,'👨🏻‍💻',9,'[["Board game night","cafe",11,"Hosted",4.8,5]]');
+    perform _seed_host(705,H,23.03,72.53,'Krupa','Woman',27,'Singer','Sufi and folk nights.',C,WE,'👩🏾‍🎤',15,'[["Sufi night","concerts",6,"Hosted",4.9,4]]');
+    perform _seed_host(706,H,23.02,72.57,'Neil','Non-binary',28,'Photographer','Riverfront sunsets.',F,WE,'🧑🏽',8,'[["Riverfront sunset walk","cafe",9,"Hosted",4.8,4]]');
+    perform _seed_act(706,'cafe','Sunset walk on the Sabarmati Riverfront',4,_t_next(18),null,'Sabarmati Riverfront, near Ellis Bridge','own',H,null,D,p_lat=>23.0250,p_lng=>72.5710);
+    perform _seed_act(701,'cafe','Late-night food at Manek Chowk',4,_t_next(22),null,'Manek Chowk','split',H,'{704}',D,600,p_lat=>23.0240,p_lng=>72.5880);
+    perform _seed_act(704,'cafe','Gujarati thali lunch at Agashiye',4,_t_next(13),null,'Agashiye, Lal Darwaja','split',H,null,D,2800,p_lat=>23.0250,p_lng=>72.5830);
+    perform _seed_act(703,'movies','Evening show at Ahmedabad One',3,_t_next(20,30),null,'PVR, Ahmedabad One mall, Vastrapur','split',H,null,D,900,p_lat=>23.0395,p_lng=>72.5310);
+    perform _seed_act(705,'concerts','Open-mic night in Navrangpura',6,_t_next(20),null,'Open-mic café, Navrangpura','own',H,'{703}',D,p_lat=>23.0370,p_lng=>72.5600);
+    perform _seed_act(704,'cafe','Board games in Bodakdev, beginners welcome',5,_t_next(19),null,'Board game café, Bodakdev','own',H,'{702,706}',D,p_lat=>23.0395,p_lng=>72.5140);
+    perform _seed_act(701,'cafe','Snacks and shopping at the Law Garden night market',4,_t_next(19,30),wo,'Law Garden night market','own',H,null,D,p_lat=>23.0270,p_lng=>72.5560);
+    perform _seed_act(706,'cafe','Evening at Kankaria Lake',4,_t_next(18,30),null,'Kankaria Lake, main gate','own',H,null,D,p_lat=>23.0060,p_lng=>72.6020);
+    perform _seed_act(705,'concerts','Live acoustic set on SG Highway',4,_t_next(21),null,'Café on SG Highway','own',H,null,D,p_lat=>23.0300,p_lng=>72.5070);
+    perform _seed_act(702,'cafe','Old city heritage walk through the pols',5,_t_at(4,8),null,'Swaminarayan Temple, Kalupur','own',H,'{701}',W,p_lat=>23.0270,p_lng=>72.5920);
+    perform _seed_act(706,'cafe','Morning at Sabarmati Ashram, chai after',4,_t_at(5,9),null,'Sabarmati Ashram','own',H,null,W,p_lat=>23.0607,p_lng=>72.5807);
+    perform _seed_act(705,'concerts','Sufi and folk night',4,_t_at(6,20),null,'Music café, Satellite','own',H,'{702}',W,p_lat=>23.0280,p_lng=>72.5250);
+    perform _seed_act(703,'movies','Film club screening, chai after',5,_t_at(3,18,30),null,'Café near CEPT University, Navrangpura','own',H,null,W,p_lat=>23.0390,p_lng=>72.5480);
+    perform _seed_act(702,'cafe','Trip to Adalaj stepwell, breakfast on the way',4,_t_at(7,7,30),null,'Adalaj Stepwell','split',H,null,W,800,p_lat=>23.1668,p_lng=>72.5807);
+    perform _seed_act(704,'movies','Weekend blockbuster at Himalaya Mall',4,_t_at(8,15),null,'INOX, Himalaya Mall, Drive-in Road','split',H,null,W,1000,p_lat=>23.0490,p_lng=>72.5310);
+    perform _seed_act(701,'cafe','Morning walk around Vastrapur Lake',4,_t_at(9,7),null,'Vastrapur Lake','own',H,null,W,p_lat=>23.0370,p_lng=>72.5270);
+  end if;
+end $$;

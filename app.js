@@ -8,6 +8,8 @@ const IC={
   heart:'<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
   calendar:'<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
   'calendar-check':'<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/>',
+  'locate':'<line x1="2" x2="5" y1="12" y2="12"/><line x1="19" x2="22" y1="12" y2="12"/><line x1="12" x2="12" y1="2" y2="5"/><line x1="12" x2="12" y1="19" y2="22"/><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3"/>',
+  'chevron-down':'<path d="m6 9 6 6 6-6"/>',
   'map-pin':'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
   users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
   'user-check':'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/>',
@@ -65,7 +67,6 @@ const IC={
 const I=(n,s=16)=>`<svg class="i" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]||''}</svg>`;
 
 /* ---------- constants ---------- */
-const HOODS=['Sector 17','Sector 7','Sector 22'];   // Chandigarh launch areas
 const GENDERS=['Woman','Man','Non-binary'];
 const INTERESTS=['Movies','Cafe / Food','Concerts'];
 const TIMES=['Weekday evenings','Weekend days','Weekend evenings','Late nights'];
@@ -125,19 +126,19 @@ const SB_URL=(CFG.SUPABASE_URL||'').replace(/\/+$/,'').replace(/\/rest\/v1$/,'')
 const ONLINE=!!(SB_URL&&CFG.SUPABASE_ANON_KEY&&/^https?:$/.test(location.protocol)&&window.supabase);
 const SB=ONLINE?window.supabase.createClient(SB_URL,CFG.SUPABASE_ANON_KEY):null;
 const EVERYONE='00000000-0000-0000-0000-000000000000';
-let ME=null,MYPHONE='',AUTHU={},MODE={face:'simulated',kyc:'simulated'},VER={face:{fails:0,attempts:0,max:5,review:false},kyc:{fails:0,attempts:0,max:5,review:false}},skew=0,loaded=false,DRAFT=null,LOCKED=0;
+let ME=null,MYPHONE='',AUTHU={},MODE={face:'simulated',kyc:'simulated'},VER={face:{fails:0,attempts:0,max:5,review:false},kyc:{fails:0,attempts:0,max:5,review:false}},skew=0,loaded=false,DRAFT=null,LOCKED=0,CITIES=[],VIEW={city:null,auto:false};
 const isUuid=x=>typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(x);
 /* Your private settings, saved to your account. ACT_FLAGS remember which reminders an activity already gave you. */
-const PRIV=['dismissed','following','alerts','muted','tips','asked','actf','seenPost','savedF'];
+const PRIV=['dismissed','following','alerts','muted','tips','asked','actf','seenPost','savedF','city'];
 /* The consent version that includes the Terms and community guidelines (terms.html). The database says which one is
    current (app_state's terms_v), so the app only asks once the database can record the answer. */
 let TERMS_V=null,GONE18=false;
 const ACT_FLAGS=['arrive','arriveAt','arriveNag','reminded','remind24','checkin'];
-const blank=()=>({me:null,acts:[],reqs:[],chats:{},notes:[],ratings:{},blocked:[],reported:{},dismissed:[],following:[],alerts:[],muted:{},tips:{},asked:{},actf:{},seenPost:0});
+const blank=()=>({me:null,acts:[],reqs:[],chats:{},notes:[],ratings:{},blocked:[],reported:{},dismissed:[],following:[],alerts:[],muted:{},tips:{},asked:{},actf:{},seenPost:0,city:null});
 let S=blank();
 const freshF=()=>({cat:'all',dfrom:'',dto:'',tod:'any',dist:0,sort:'for',view:'list'});
 const SORTS={for:['sparkles','My interests','Plans that match what you like come first'],soon:['clock','Time','Soonest first'],near:['map-pin','Distance','Closest to you first']};
-const DISTS=[2,5,10];
+const DISTS=[2,5,10,25];
 const freshUi=()=>({tab:'swipe',modal:null,f:freshF(),auth:{mode:'in'}});
 let ui=freshUi();
 const sid=id=>id==='me'?ME:id;   // back to a database id
@@ -146,6 +147,7 @@ const sid=id=>id==='me'?ME:id;   // back to a database id
 function applyState(st){
   ME=st.me;MODE=st.mode||MODE;VER=st.verify||VER;skew=(st.now||Date.now())-Date.now();DRAFT=null;   // the profile form starts empty: nothing pre-filled, not even from the old beta sign-up
   LOCKED=st.locked||0;TERMS_V=st.terms_v||null;
+  CITIES=Array.isArray(st.cities)?st.cities:[];VIEW={city:st.city||null,auto:!!st.city_auto};
   const mid=id=>id===ME?'me':id,p=st.profile,first=!loaded,known=new Set(S.notes.map(n=>n.id));
   const keepLocal=dirty?Object.fromEntries(PRIV.map(k=>[k,S[k]])):null,keepTrusted=dirty?S.me?.trusted:undefined;
   loaded=true;
@@ -160,18 +162,22 @@ function applyState(st){
   PRIV.forEach(k=>{if(priv[k]!=null)S[k]=priv[k]});
   if(keepLocal)Object.assign(S,keepLocal);   // settings you changed a moment ago and are still being saved
   S.following=(Array.isArray(S.following)?S.following:[]).filter(isUuid);S.dismissed=(Array.isArray(S.dismissed)?S.dismissed:[]).filter(isUuid);
+  if(typeof S.city!=='string'||S.city.length>8)S.city=null;
   ['muted','tips','asked','actf'].forEach(k=>{if(!S[k]||typeof S[k]!=='object'||Array.isArray(S[k]))S[k]={}});if(typeof S.seenPost!=='number')S.seenPost=0;
   S.savedF=(Array.isArray(S.savedF)?S.savedF:[]).filter(x=>x&&/^sf[0-9a-z]+$/.test(x.id)&&typeof x.label==='string'&&x.f&&typeof x.f==='object').slice(0,10);
   S.alerts=(Array.isArray(S.alerts)?S.alerts:[]).filter(x=>x&&/^al[0-9a-z]+$/.test(x.id)&&typeof x.label==='string');
-  S.me={name:p.name,dob:p.dob,gender:p.gender,hood:p.hood,job:p.job||'',bio:p.bio||'',ints:p.ints||[],avail:p.avail||[],emo:p.emo||defEmo(p.gender),
+  S.me={name:p.name,dob:p.dob,gender:p.gender,hood:p.hood,ll:p.lat!=null?[p.lat,p.lng]:null,job:p.job||'',bio:p.bio||'',ints:p.ints||[],avail:p.avail||[],emo:p.emo||defEmo(p.gender),
     usageOk:!!p.usage_ok,face:!!p.face,kyc:!!p.kyc,obDone:!!p.onboarded,terms:!TERMS_V||p.consent_version===TERMS_V,trusted:keepTrusted!==undefined?keepTrusted:(priv.trusted||null),trustv:mine.trust||[0,0],hist:mine.hist||[],photo:loadPhoto()};
   const t=now();
   S.acts=(st.acts||[]).map(a=>{
     const mem=(a.members||[]).map(mid);
     return {id:a.id,host:mid(a.host),cat:a.cat,desc:a.desc,cap:a.cap,when:a.when,aud:a.aud&&a.aud.length?a.aud:'everyone',venue:a.venue,cost:a.cost,
-      ...(a.total?{total:a.total}:{}),...(a.repeat?{repeat:a.repeat}:{}),hood:a.hood,status:a.when<=t?'past':a.status,created:a.created,
+      ...(a.total?{total:a.total}:{}),...(a.repeat?{repeat:a.repeat}:{}),...(a.lat!=null?{ll:[a.lat,a.lng]}:{}),hood:a.hood,status:a.when<=t?'past':a.status,created:a.created,
       members:mem.length===a.mcount?mem:Array.from({length:a.mcount},()=>'?'),wl:a.wl||0,mypos:a.mypos||0,...flagsOf(a.id)};
   });
+  /* your home area and your own venues are known places, so the profile and edit forms accept them as they are */
+  if(S.me.ll)PLACE_AT[S.me.hood.toLowerCase()]=S.me.ll;
+  S.acts.forEach(a=>{if(a.host==='me'&&a.ll)PLACE_AT[a.venue.toLowerCase()]=a.ll});
   const pastIds=new Set(S.acts.filter(a=>a.status==='past').map(a=>a.id));
   S.reqs=(st.reqs||[]).sort((x,y)=>x.at-y.at).map(r=>({id:r.id,act:r.act,user:mid(r.user),note:r.note||'',
     status:pastIds.has(r.act)&&(r.status==='pending'||r.status==='waitlist')?'no_action':r.status}));
@@ -299,29 +305,47 @@ const PLACE_LL=[
 /* Areas of Chandigarh outside the numbered sectors (also looked up on OpenStreetMap). */
 const LOCALITY_LL={'Manimajra':[30.71275,76.83294],'Industrial Area Phase 1':[30.7054,76.80096],'Industrial Area Phase 2':[30.69813,76.78801],'IT Park':[30.72732,76.84352],'Daria':[30.69838,76.81428],'Dhanas':[30.769,76.75515],'Hallomajra':[30.6923,76.79997],'Kaimbwala':[30.75847,76.82606],'Khuda Lahora':[30.77582,76.77184],'Kishangarh':[30.73443,76.82821],'Maloya':[30.75315,76.71713],'Mauli Jagran':[30.69703,76.82901],'Sarangpur':[30.78087,76.7576]};
 const hoodLL=h=>SECTOR_LL[(/\d+/.exec(h||'')||[17])[0]]||SECTOR_LL[17];
-/* A venue's spot: a landmark it names, else the sector it names, else the area it names. */
+/* Your home area: anywhere in India, saved with its centre. Profiles from the Chandigarh-only beta may lack the centre. */
+const homeLL=()=>S.me?.ll||hoodLL(S.me?.hood);
+const homeName=()=>(S.me?.hood||'').split(',')[0];
+const NEAR_KM=50;   // the server sends plans within this distance of your home area (_near in schema-app.sql)
+const nearChd=()=>kmBetween(homeLL(),SECTOR_LL[17])<40;
+/* Cities with sample plans (CITIES, from app_state: [key, name, lat, lng]). Besides plans near your home area you see
+   one city's: the one you picked, or the nearest one when none is near home (VIEW.auto). */
+const viewCity=()=>VIEW.city&&CITIES.find(c=>c[0]===VIEW.city);
+const viewLL=()=>{const c=viewCity();return c?[c[2],c[3]]:homeLL()};
+const viewName=()=>viewCity()?.[1]||homeName();
+const whereTxt=()=>!viewCity()?`within ${NEAR_KM} km of ${homeName()}`:VIEW.auto?`in ${viewName()} and near ${homeName()}`:`in ${viewName()}`;
+/* A city you picked shows only that city; the automatic one comes with whatever is posted near home. */
+const inView=a=>!viewCity()||VIEW.auto||kmBetween(viewLL(),geo(a))<=NEAR_KM;
+/* A Chandigarh venue's spot, for plans posted before venues had coordinates: a landmark it names, else the sector it
+   names, else the area it names. */
 const spotOf=t=>{t=(t||'').toLowerCase();const p=PLACE_LL.find(([re])=>re.test(t));if(p)return p[1];
   const s=/sector[\s-]*(\d{1,2})\b/.exec(t);if(s&&SECTOR_LL[+s[1]])return SECTOR_LL[+s[1]];
   const l=Object.keys(LOCALITY_LL).find(n=>t.includes(n.toLowerCase()));return l&&LOCALITY_LL[l]};
-/* ", Sector 26" or ", Manimajra" at the end of a venue: what picking an area adds (and replaces when you pick another). */
-const AREA_TAIL=new RegExp(',\\s*(sector\\s*\\d{1,2}|'+Object.keys(LOCALITY_LL).join('|')+')\\s*$','i');
 function geo(a){
-  const exact=PLACE_AT[(a.venue||'').trim().toLowerCase()],base=exact||spotOf(a.venue)||spotOf(a.desc)||hoodLL(a.hood);
+  const exact=a.ll||PLACE_AT[(a.venue||'').trim().toLowerCase()],base=exact||spotOf(a.venue)||spotOf(a.desc)||hoodLL(a.hood);
   /* plans at the same spot are spread out a little (up to about 270 m, or 45 m at a known place) so their pins don't hide each other */
   let h=2166136261;for(const c of a.id){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}h>>>=0;
   const ang=(h%360)*Math.PI/180,r=(0.25+((h>>>9)%75)/100)*(exact?0.0004:0.0025);
   return [base[0]+r*Math.sin(ang),base[1]+r*Math.cos(ang)];
 }
 function kmBetween([a1,o1],[a2,o2]){const r=Math.PI/180,x=Math.sin((a2-a1)*r/2)**2+Math.cos(a1*r)*Math.cos(a2*r)*Math.sin((o2-o1)*r/2)**2;return 12742*Math.asin(Math.sqrt(x))}
-/* distance from the centre of your neighbourhood (the app never asks for your own location) */
-const kmAway=a=>kmBetween(hoodLL(S.me.hood),geo(a));
+/* distance from the centre of your home area (your live location is only read when you tap "Use my current location") */
+const kmAway=a=>{const g=geo(a),h=kmBetween(homeLL(),g);return h<=NEAR_KM||!viewCity()?h:kmBetween(viewLL(),g)};   // from the city you browse, for its plans
 const distKm=a=>kmAway(a).toFixed(1);
 
-/* ---------- venue search (post and edit forms) ---------- */
-/* places.json: Chandigarh's named meetup places from OpenStreetMap (tools/update-places.py rebuilds it).
-   Loaded once in the background, and searched in the browser: nothing is sent anywhere while typing. */
+/* ---------- place search: venues, their areas, and your home area ---------- */
+/* Two sources. places.json: Chandigarh's named meetup places from OpenStreetMap (tools/update-places.py rebuilds it),
+   searched in the browser. And Photon (CFG.GEO_URL), a search over OpenStreetMap for all of India: what you type is
+   sent there a moment after you stop typing. PLACE_AT remembers the spot of every name offered, so a form knows where
+   a typed name is once it matches one. */
 let PLACES=null,placesP=null,PLACE_AT={},vPick=-1;
-const normTxt=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+Object.entries(SECTOR_LL).forEach(([n,ll])=>{PLACE_AT[`sector ${n}, chandigarh`]=ll});
+Object.entries(LOCALITY_LL).forEach(([n,ll])=>{PLACE_AT[n.toLowerCase()+', chandigarh']=ll});
+const GEO_URL=(CFG.GEO_URL||'https://photon.komoot.io').replace(/\/+$/,'');
+const inIndia=([la,lo])=>la>=6&&la<=37.5&&lo>=68&&lo<=97.5;   // the same bounds the database checks
+const normTxt=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
 function loadPlaces(){
   return placesP||(placesP=fetch('places.json').then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(d=>{
     PLACES=d.places.map(([label,kind,lat,lon])=>({label,kind,ll:[lat,lon],key:' '+normTxt(label+' '+kind)}));
@@ -329,38 +353,94 @@ function loadPlaces(){
     if(loaded)redraw();   // pins and distances for picked venues become exact
   }).catch(()=>{placesP=null}));
 }
-/* Every word typed must start a word of the place's name, sector or kind ("cafe sector 17" works).
-   Names that start with what was typed come first, then the nearest to your neighbourhood. */
+/* Chandigarh's list, for people based there: every word typed must start a word of the place's name, sector or kind
+   ("cafe sector 17" works). Names that start with what was typed come first, then the nearest to your home area. */
 function findPlaces(q){
-  const whole=normTxt(q),w=whole.split(' ').filter(Boolean),home=hoodLL(S.me.hood);
-  if(!w.length||!PLACES)return [];
+  const whole=normTxt(q),w=whole.split(' ').filter(Boolean),home=homeLL();
+  if(!w.length||!PLACES||!nearChd())return [];
   return PLACES.filter(p=>w.every(x=>p.key.includes(' '+x)))
-    .map(p=>[normTxt(p.label).startsWith(whole)?0:1,kmBetween(home,p.ll),p]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]).slice(0,8).map(x=>x[2]);
+    .map(p=>[normTxt(p.label).startsWith(whole)?0:1,kmBetween(home,p.ll),p]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]).slice(0,6).map(x=>x[2]);
 }
-function venueList(show){
-  const inp=document.getElementById('f_venue'),box=document.getElementById('f_vlist');if(!inp||!box)return;
-  const q=inp.value.trim(),list=show&&q.length>=2?findPlaces(q):[];
-  if(show&&q.length>=2&&!PLACES)loadPlaces().then(()=>{if(document.activeElement===inp)venueList(true)});
-  /* last option: the venue as typed. If it already names a place or area the map knows, it's used as it is; if not, you pick its area. */
-  const n=list.length,exact=list.some(p=>p.label.toLowerCase()===q.toLowerCase()),known=PLACE_AT[q.toLowerCase()]||spotOf(q);
-  const other=!show||q.length<2||exact?'':known
-    ?`<button type="button" class="vopt vother" role="option" id="f_vo${n}" aria-selected="false" data-a="pickvenue" data-v="${esc(q)}"><b>Use “${esc(q)}”</b><span>As typed. It shows on the map in that area.</span></button>`
-    :`<button type="button" class="vopt vother" role="option" id="f_vo${n}" aria-selected="false" data-a="venueother"><b>Not listed? Use “${esc(q)}”</b><span>Then pick its area, so it shows on the map</span></button>`;
-  vPick=-1;box.hidden=!n&&!other;inp.setAttribute('aria-expanded',String(!box.hidden));inp.removeAttribute('aria-activedescendant');
-  box.innerHTML=list.map((p,i)=>`<button type="button" class="vopt" role="option" id="f_vo${i}" aria-selected="false" data-a="pickvenue" data-v="${esc(p.label)}"><b>${esc(p.label)}</b><span>${esc(p.kind)} · ${kmBetween(hoodLL(S.me.hood),p.ll).toFixed(1)} km from ${esc(S.me.hood)}</span></button>`).join('')+other;
+/* A Photon result as {label, kind, ll}. A venue reads "Name, Locality, City"; an area "Area, City". */
+const kindOf=v=>(v||'place').replace(/_/g,' ').replace(/^./,c=>c.toUpperCase());
+function geoItem(f,mode){
+  const p=f.properties||{},[lo,la]=f.geometry?.coordinates||[],town=p.city||p.county,areaT=['locality','district','city','county','state'].includes(p.type);
+  const parts=mode==='venue'?[p.name||p.street,p.locality||p.district||(p.name?p.street:''),town||p.state]
+    :mode==='here'?[p.locality||p.district||(areaT?p.name:''),town,town?'':p.state]
+    :[p.name,town,town?'':p.state];
+  const seen=new Set(),label=parts.filter(x=>x&&!seen.has(x.toLowerCase())&&seen.add(x.toLowerCase())).join(', ').slice(0,mode==='venue'?120:80);
+  if(!label||la==null||!inIndia([la,lo]))return null;
+  PLACE_AT[label.toLowerCase()]=[la,lo];
+  return {label,ll:[la,lo],kind:p.osm_key==='boundary'?'Area':kindOf(p.osm_value),state:p.state||''};
 }
+function geoFetch(path,params,mode){
+  const u=new URL(GEO_URL+path);Object.entries(params).forEach(([k,v])=>[].concat(v).forEach(x=>u.searchParams.append(k,x)));
+  return fetch(u,{referrerPolicy:'no-referrer'}).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()})
+    .then(d=>(d.features||[]).filter(f=>f.properties?.countrycode==='IN').map(f=>geoItem(f,mode)).filter(Boolean));
+}
+/* Search results by query: a list once back, null while waiting, 'fail' when the search couldn't be reached. */
+const GEO_HITS=new Map();let geoT=null;
+const geoKey=(q,area)=>(area?'a|':'v|')+normTxt(q);
+function geoSearch(q,area){
+  const k=geoKey(q,area),h=S.me?homeLL():null;
+  GEO_HITS.set(k,null);
+  const par={q,limit:8,lang:'en',bbox:'68,6,97.5,37.5',...(h?{lat:h[0].toFixed(3),lon:h[1].toFixed(3)}:{}),...(area?{osm_tag:['place','boundary:administrative']}:{})};
+  return geoFetch('/api/',par,area?'area':'venue').then(list=>{
+    const seen=new Set();GEO_HITS.set(k,list.filter(p=>!seen.has(p.label)&&seen.add(p.label)));
+  },()=>GEO_HITS.set(k,'fail'));
+}
+/* The search boxes: a plan's venue, the venue's area when it isn't listed, and your home area. */
+const PF={f_venue:{area:false},f_area:{area:true},o_hood:{area:true},p_hood:{area:true}};
+const placeBox=(id,ph,v,aria)=>`<div class="vbox"><input id="${id}" maxlength="${PF[id].area?80:120}" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="${id}_l" placeholder="${ph}" value="${esc(v||'')}"><div id="${id}_l" class="vlist" role="listbox" aria-label="${aria}" hidden></div></div>`;
+const locBtn=(id,t)=>`<button type="button" class="locbtn" data-a="myloc" data-f="${id}">${I('locate',15)}<span>${t}</span></button>`;
+function placeList(id,show){
+  const inp=document.getElementById(id),box=document.getElementById(id+'_l');if(!inp||!box)return;
+  const area=PF[id].area,q=inp.value.trim();
+  if(!show||q.length<2){box.hidden=true;box.innerHTML='';vPick=-1;inp.setAttribute('aria-expanded','false');inp.removeAttribute('aria-activedescendant');return}
+  if(!area&&!PLACES)loadPlaces().then(()=>{if(document.activeElement===inp)placeList(id,true)});
+  const k=geoKey(q,area),hits=GEO_HITS.get(k);
+  if(hits===undefined){clearTimeout(geoT);geoT=setTimeout(()=>geoSearch(q,area).then(()=>{if(document.activeElement===inp&&inp.value.trim()===q)placeList(id,true)}),300)}
+  const local=area?[]:findPlaces(q),seen=new Set(local.map(p=>p.label.toLowerCase()));
+  const remote=Array.isArray(hits)?hits.filter(p=>!seen.has(p.label.toLowerCase())):[];
+  const list=[...local,...remote].slice(0,8),waiting=hits===undefined||hits===null,home=S.me?homeLL():null;
+  const sub=p=>area?esc(p.kind+(p.state?' · '+p.state:'')):esc(p.kind)+(home?` · ${kmBetween(home,p.ll).toFixed(1)} km from ${esc(homeName())}`:'');
+  /* a venue's last option is the name as typed: used as it is if the map already knows it, otherwise you pick its area */
+  const n=list.length,exact=list.some(p=>p.label.toLowerCase()===q.toLowerCase()),known=placeLL(q,id);
+  const other=area||exact?'':known
+    ?`<button type="button" class="vopt vother" role="option" id="${id}_o${n}" aria-selected="false" data-a="pickplace" data-f="${id}" data-v="${esc(q)}"><b>Use “${esc(q)}”</b><span>As typed. It shows on the map in that area.</span></button>`
+    :`<button type="button" class="vopt vother" role="option" id="${id}_o${n}" aria-selected="false" data-a="venueother"><b>Not listed? Use “${esc(q)}”</b><span>Then pick its area, so it shows on the map</span></button>`;
+  const note=waiting&&!n?'<div class="vnote">Searching…</div>'
+    :hits==='fail'&&!n?`<div class="vnote">Couldn't search places right now. Check your connection${area?', or use your current location':''}.</div>`
+    :!n&&area?'<div class="vnote">No places found. Try the city name, or use your current location.</div>':'';
+  box.innerHTML=note+list.map((p,i)=>`<button type="button" class="vopt" role="option" id="${id}_o${i}" aria-selected="false" data-a="pickplace" data-f="${id}" data-v="${esc(p.label)}"><b>${esc(p.label)}</b><span>${sub(p)}</span></button>`).join('')+other
+    +(remote.length?'<div class="vnote vsrc">Search by Photon · © OpenStreetMap</div>':'');
+  vPick=-1;box.hidden=false;inp.setAttribute('aria-expanded','true');inp.removeAttribute('aria-activedescendant');
+}
+const closePlaceLists=except=>Object.keys(PF).forEach(id=>{if(id!==except)placeList(id,false)});
+/* Where a name typed in a search box is: one that was offered or picked, else (for a venue in Chandigarh) a sector,
+   landmark or area it names. Home areas must be picked, so "Sector 62" in Noida never lands in Chandigarh. */
+const placeLL=(v,id)=>PLACE_AT[(v||'').trim().toLowerCase()]||(id==='f_venue'&&nearChd()&&spotOf(v))||null;
 /* The area picker, shown after "Not listed?" (or when a venue can't be placed on the map). */
-const areaPicker=()=>`<div class="varea"><label for="f_area">Which area is it in?</label><select id="f_area"><option value="">Pick an area…</option>
-  <optgroup label="Sectors">${Object.keys(SECTOR_LL).map(n=>`<option>Sector ${n}</option>`).join('')}</optgroup>
-  <optgroup label="Other areas">${Object.keys(LOCALITY_LL).map(n=>`<option>${esc(n)}</option>`).join('')}</optgroup></select>
+const areaPicker=()=>`<div class="varea"><label for="f_area">Which area is it in?</label>${placeBox('f_area','Search the area or city, e.g. Indiranagar, Bengaluru','','Areas in India')}
+  ${locBtn('f_area',"I'm there now: use my location")}
   <p class="small mute" style="margin-top:6px">The pin goes in the middle of that area, so people can see roughly where it is.</p></div>`;
-function askArea(){if(ui.modal?.type!=='post')return;ui.modal.other=true;venueList(false);redraw();document.getElementById('f_area')?.focus()}
+function askArea(){if(ui.modal?.type!=='post')return;ui.modal.other=true;closePlaceLists();redraw();document.getElementById('f_area')?.focus()}
+/* An area picked for an unlisted venue: the venue becomes "Name, Area, City" and is pinned in that area. */
+function areaPicked(area){
+  const i=document.getElementById('f_venue'),ll=PLACE_AT[area.toLowerCase()],m=ui.modal;if(!i||!ll||!m)return;
+  const nm=(m.tail&&i.value.endsWith(m.tail)?i.value.slice(0,-m.tail.length):i.value).trim();
+  m.tail=', '+area;i.value=((nm?nm+m.tail:area)).slice(0,120);PLACE_AT[i.value.toLowerCase()]=ll;
+}
+/* Your current position, once you allow it. Only asked when you tap "Use my current location". */
+const myPosition=()=>new Promise((ok,no)=>navigator.geolocation
+  ?navigator.geolocation.getCurrentPosition(p=>ok([p.coords.latitude,p.coords.longitude]),no,{enableHighAccuracy:true,timeout:15000,maximumAge:120000})
+  :no({code:0}));
 /* Arrow keys move through the suggestions, Enter picks one, Escape closes them (and not the whole form). */
-function venueKey(e){
-  const box=document.getElementById('f_vlist'),opts=box&&!box.hidden?[...box.children]:[];
+function placeKey(e){
+  const id=e.target.id,box=document.getElementById(id+'_l'),opts=box&&!box.hidden?[...box.querySelectorAll('.vopt')]:[];
   if(!opts.length||!['ArrowDown','ArrowUp','Enter','Escape'].includes(e.key))return false;
   e.preventDefault();
-  if(e.key==='Escape'){venueList(false);return true}
+  if(e.key==='Escape'){placeList(id,false);return true}
   if(e.key==='Enter'){opts[Math.max(vPick,0)].click();return true}
   vPick=(vPick+(e.key==='ArrowDown'?1:-1)+opts.length)%opts.length;
   opts.forEach((o,i)=>{o.classList.toggle('on',i===vPick);o.setAttribute('aria-selected',String(i===vPick))});
@@ -480,8 +560,8 @@ function notify(text,o={}){
 
 /* ---------- domain logic ---------- */
 /* visible: listed in Discover (full ones too, for the waitlist). eligible: can be requested right now. */
-/* all of Chandigarh: the launch sectors are a few km apart, and Distance filters by how far from your neighbourhood */
-function visible(a){return (a.status==='open'||a.status==='full')&&a.host!=='me'&&audOK(a)&&!isBlocked(a.host)&&a.when>now()}
+/* the server sends plans within NEAR_KM of your home area and of the city you browse; Distance narrows that down */
+function visible(a){return (a.status==='open'||a.status==='full')&&a.host!=='me'&&audOK(a)&&!isBlocked(a.host)&&a.when>now()&&inView(a)}
 function eligible(a){return visible(a)&&a.status==='open'&&spots(a)>0&&!S.dismissed.includes(a.id)}
 /* Real people's plans come before the sample hosts' ones, so a new post isn't buried behind them. */
 const isSample=id=>!!USERS[id]?.sample;
@@ -491,6 +571,9 @@ const deck=()=>S.acts.filter(a=>eligible(a)&&!myReq(a.id)&&a.when<swipeEnd()).so
 const feed=()=>S.acts.filter(a=>visible(a)&&!myReq(a.id)&&a.when>=swipeEnd()).sort((a,b)=>a.when-b.when);
 
 /* ---------- talking to the database ---------- */
+/* A plan opened from an invite link is sent even when it's further away than the plans you'd normally see. */
+const inviteId=()=>(location.hash.match(/^#act=([0-9a-f-]{36})$/i)||[])[1]||null;
+let INVITE=inviteId();
 async function call(fn,args={},quiet){
   const {data,error}=await SB.rpc(fn,args);
   if(error){if(!quiet)toast(friendly(error));throw error}
@@ -519,7 +602,7 @@ let busy=null,again=false;
 function refresh(){
   if(busy){again=true;return busy}
   busy=(async()=>{
-    try{applyState(await call('app_state',{},true));ui.err=''}
+    try{applyState(await call('app_state',INVITE?{p_act:INVITE}:{},true));ui.err=''}
     catch(e){ui.err=friendly(e);if(!loaded)loaded=false}
     busy=null;
     if(again){again=false;return refresh()}
@@ -693,10 +776,12 @@ const empty=(ic,t,sub,btn)=>`<div class="empty"><div class="big">${I(ic,30)}</di
 /* ---------- render: tabs ---------- */
 /* Audience-limited plans (e.g. women-only) are only sent to people whose ID check passed. */
 const lockedNote=()=>LOCKED&&!S.me.face?`<div class="dn" style="margin:0 0 14px;text-align:left">${I('shield-check',14)} ${LOCKED} ${LOCKED===1?'plan near you is':'plans near you are'} only open to certain groups, like women-only plans. <button class="lnk" data-a="unlock">Do the face check to see ${LOCKED===1?'it':'them'}</button></div>`:'';
+const whereBar=()=>`<div class="wbar"><button class="where" data-a="citymenu" aria-haspopup="dialog" aria-label="Showing plans ${esc(whereTxt())}. Change city">${I('map-pin',14)}<span>${viewCity()?esc(viewName()):'Near '+esc(homeName())}</span>${I('chevron-down',14)}</button></div>
+  ${VIEW.auto&&viewCity()?`<div class="dn" style="margin:0 0 14px;text-align:left">${I('compass',14)} Overhere is new in ${esc(homeName())}, so you're seeing plans in ${esc(viewName())} (${Math.round(kmBetween(homeLL(),viewLL()))} km away) too. Anything posted near you shows here first. <button class="lnk" data-a="citymenu">Pick another city</button></div>`:''}`;
 function tabSwipe(){
   const d=deck();
-  if(!d.length)return lockedNote()+empty('compass','Nothing new right now','You have gone through all plans happening soon in Chandigarh. Check Discover for plans further out.','<button class="btn" data-a="tab" data-t="discover">Go to Discover</button>');
-  return `<div class="deck"><h1 class="pt">What's happening tonight?</h1><p class="sub">Activities today and tomorrow · Tap a card for details</p>${lockedNote()}
+  if(!d.length)return whereBar()+lockedNote()+empty('compass','Nothing new right now',`You have gone through all plans happening soon ${esc(whereTxt())}. Check Discover for plans further out, or pick another city.`,'<button class="btn" data-a="tab" data-t="discover">Go to Discover</button>');
+  return `<div class="deck">${whereBar()}<h1 class="pt">What's happening tonight?</h1><p class="sub">Activities today and tomorrow · Tap a card for details</p>${lockedNote()}
   <div class="stack">${d[1]?cardHtml(d[1],'back'):''}${cardHtml(d[0],'top')}</div>
   <div class="acts"><button class="rb" data-a="swipe" data-d="left" title="Skip">${I('x',24)}</button>
   <div class="cnt">1 of ${d.length}<br>← dismiss · request →</div>
@@ -727,7 +812,7 @@ function tabDiscover(){
   if(f.sort==='for')list.sort((a,b)=>score(b)-score(a)||a.when-b.when);
   else if(f.sort==='near')list.sort((a,b)=>kmAway(a)-kmAway(b)||a.when-b.when);
   const alertable=act.some(([k])=>k!=='date'),saved=S.alerts.some(x=>x.label===alertLabel(f));
-  return `<div class="hd"><div><h1 class="pt">All upcoming plans</h1><p class="sub">${all.length} upcoming in Chandigarh, from ${dLbl(dayKey(swipeEnd()))} onwards</p></div><button class="btn sm mobonly" data-a="newpost">${I('plus',15)} Post</button></div>
+  return `${whereBar()}<div class="hd"><div><h1 class="pt">All upcoming plans</h1><p class="sub">${all.length} upcoming ${esc(whereTxt())}, from ${dLbl(dayKey(swipeEnd()))} onwards</p></div><button class="btn sm mobonly" data-a="newpost">${I('plus',15)} Post</button></div>
   ${lockedNote()}${(()=>{const n=deck().length;return `<div class="alerts"><button class="alchip tn" data-a="tab" data-t="swipe">${I('flame',13)} Tonight &amp; tomorrow${n?` · ${n}`:''}</button>${S.savedF.map(sf=>`<span class="alchip sf"><button class="lnk" data-a="applyf" data-id="${sf.id}">${I('filter',12)} ${esc(sf.label)}</button><button data-a="rmf" data-id="${sf.id}" aria-label="Remove saved filters ${esc(sf.label)}">${I('x',12)}</button></span>`).join('')}</div>`})()}${S.alerts.length?`<div class="alerts"><span class="small mute" style="display:inline-flex;align-items:center;gap:4px">${I('bell',13)} Your alerts</span>${S.alerts.map(al=>`<span class="alchip">${esc(al.label)}<button data-a="rmalert" data-id="${al.id}" aria-label="Remove alert ${esc(al.label)}">${I('x',12)}</button></span>`).join('')}</div>`:''}
   <div class="dtools"><button class="fbtn ${act.length?'on':''}" data-a="filters" aria-haspopup="dialog">${I('filter',14)} Filters${act.length?`<b aria-label="${act.length} active">${act.length}</b>`:''}</button>
   <button class="fbtn" data-a="sortmenu" aria-haspopup="dialog" aria-label="Sort by ${SORTS[f.sort][1]}">${I('arrow-up-down',14)} Sort: ${SORTS[f.sort][1]}</button>
@@ -743,7 +828,7 @@ let mapList=[],mapView=null,liveMap=null,leafletP=null;
 function mapHtml(list){
   mapList=list;
   return `<div id="lmap" class="map" role="region" aria-label="Map of plans near you"></div>
-  <p class="small mute" style="margin-top:8px">The blue dot is the centre of ${esc(S.me.hood)}, Chandigarh. A pin is at the place when the host picked it from the list, otherwise in the middle of the area the venue is in.</p>`;
+  <p class="small mute" style="margin-top:8px">${kmBetween(homeLL(),viewLL())<=NEAR_KM?`The blue dot is the centre of ${esc(S.me.hood)}. `:''}A pin is at the place when the host picked it from the list, otherwise in the middle of the area the venue is in.</p>`;
 }
 function loadLeaflet(){
   if(window.L)return Promise.resolve();
@@ -758,19 +843,19 @@ async function drawMap(){
   if(!el.isConnected||el.dataset.on)return;
   el.dataset.on='1';
   if(liveMap){liveMap.remove();liveMap=null}   // the previous render's map
-  const home=hoodLL(S.me.hood),m=L.map(el).setView(mapView?.c||home,mapView?.z||13);
+  const home=homeLL(),mid=viewLL(),homeIn=kmBetween(home,mid)<=NEAR_KM,m=L.map(el).setView(mapView?.c||mid,mapView?.z||13);
   liveMap=m;
   m.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>');
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,
     attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'}).addTo(m);
-  L.marker(home,{zIndexOffset:1000,keyboard:false,icon:L.divIcon({className:'',iconSize:[18,18],iconAnchor:[9,9],html:'<span class="lyou"></span>'})}).addTo(m).bindTooltip('Centre of '+esc(S.me.hood));
+  if(homeIn)L.marker(home,{zIndexOffset:1000,keyboard:false,icon:L.divIcon({className:'',iconSize:[18,18],iconAnchor:[9,9],html:'<span class="lyou"></span>'})}).addTo(m).bindTooltip('Centre of '+esc(homeName()));
   mapList.forEach(a=>{
     const c=CATS[a.cat],label=`${short(a.desc)} · ${whenStr(a.when)} · ${distKm(a)} km`;
     L.marker(geo(a),{title:label,keyboard:true,icon:L.divIcon({className:'',iconSize:[34,34],iconAnchor:[17,17],html:`<span class="lpin" style="--pc:${c.fg}">${I(c.icon,15)}</span>`})})
       .addTo(m).bindTooltip(esc(label),{direction:'top',offset:[0,-16]}).on('click',()=>A.detail({id:a.id}));
   });
   m.on('moveend',()=>{mapView={c:m.getCenter(),z:m.getZoom()}});
-  if(!mapView&&mapList.length)m.fitBounds(L.latLngBounds([home,...mapList.map(geo)]).pad(0.15),{maxZoom:15});
+  if(!mapView&&mapList.length)m.fitBounds(L.latLngBounds([homeIn?home:mid,...mapList.map(geo)]).pad(0.15),{maxZoom:15});
 }
 function tabActs(){
   const mine=S.acts.filter(a=>a.host==='me').sort((a,b)=>(a.status==='past')-(b.status==='past')||(a.status==='past'?b.when-a.when:a.when-b.when));
@@ -836,7 +921,7 @@ function tabProfile(){
   const soft=(arr,none)=>arr&&arr.length?`<div class="soft">${arr.map(x=>`<span>${esc(x)}</span>`).join('')}</div>`:`<p class="small mute">${none}</p>`;
   return `<div class="panel"><div class="ph">${I('user',15)} Your profile<button class="btn sm sec" data-a="editprofile">${I('pencil',14)} Edit profile</button></div>
   <div class="pt2"><div class="phw" data-a="photo">${av('me','lg')}<button class="pe" id="p_pe" title="Change profile picture" aria-label="Change profile picture" aria-haspopup="menu" aria-expanded="false">${I('camera',14)}</button>
-  <div class="pmenu" id="p_menu" role="menu" hidden></div></div><div><div class="pn">${esc(m.name)} ${isVer('me')?`<span class="vf">${I('badge-check',14)} Verified</span>`:''}</div><div class="small mute">${esc(m.hood)}, Chandigarh</div><div class="small" style="margin-top:4px">${trustTxt('me')}</div></div></div>
+  <div class="pmenu" id="p_menu" role="menu" hidden></div></div><div><div class="pn">${esc(m.name)} ${isVer('me')?`<span class="vf">${I('badge-check',14)} Verified</span>`:''}</div><div class="small mute">${esc(m.hood)}</div><div class="small" style="margin-top:4px">${trustTxt('me')}</div></div></div>
   <input type="file" id="p_photo" accept="image/jpeg,image/png,image/webp,image/*" hidden>
   <div class="facts"><span>${ageOf(m.dob)} yrs</span><span>${esc(m.gender)}</span>${m.job?`<span>${I('briefcase',14)}${esc(m.job)}</span>`:''}</div>
   <p>${m.bio?esc(m.bio):'<span class="mute">Add a short bio so hosts know who you are. Tap Edit profile.</span>'}</p></div>
@@ -882,7 +967,7 @@ function modalHtml(){
     return sheet(face?'Face verification':'Identity verification',`<div class="sb">${inner}</div>`);
   }
   if(m.type==='post'){
-    const mn=localInput(now()+3600e3),e=m.id&&actOf(m.id),t=!e&&m.tpl&&actOf(m.tpl),src=e||t,minCap=Math.max(1,e?e.members.length:1),aud=src?src.aud:'everyone';
+    const mn=localInput(now()+3600e3),e=m.id&&actOf(m.id),t=!e&&m.tpl&&actOf(m.tpl),src=e||t,minCap=Math.max(2,e?e.members.length:0),cap0=Math.max(minCap,src?src.cap:2),aud=src?src.aud:'everyone';
     const tplWhen=t?(()=>{let w=t.when;while(w<now()+3600e3)w+=7*864e5;return w})():0;
     const past=[...new Map(S.acts.filter(a=>a.host==='me').sort((a,b)=>b.when-a.when).map(a=>[a.desc,a])).values()].slice(0,8);
     return sheet(e?'Edit activity':'Create Activity',`<div class="sb">
@@ -890,16 +975,17 @@ function modalHtml(){
       ${!e&&past.length?`<label style="margin-top:0" for="f_tpl">Start from a past plan <span class="mute" style="font-weight:400">(optional)</span></label><select id="f_tpl"><option value="">Start fresh</option>${past.map(a=>`<option value="${a.id}" ${t&&t.id===a.id?'selected':''}>${esc(short(a.desc))}</option>`).join('')}</select>`:''}
       <label ${!e&&past.length?'':'style="margin-top:0"'}>Category</label><select id="f_cat">${Object.entries(CATS).map(([k,c])=>`<option value="${k}" ${src&&src.cat===k?'selected':''}>${c.label}</option>`).join('')}</select>
       <label>What is the plan?</label><textarea id="f_desc" maxlength="160" placeholder="Short description of what you are doing">${src?esc(src.desc):''}</textarea>
-      <label>Group capacity <span class="mute" style="font-weight:400">(excluding you)</span></label><select id="f_cap">${[1,2,3,4,5,6,7,8,9,10].filter(n=>n>=minCap).map(n=>`<option ${n===(src?src.cap:2)?'selected':''}>${n}</option>`).join('')}</select>
-      <p class="small mute" style="margin-top:6px">Shows on your card as "spots open", so 2 means two people can join you.</p>
+      <label id="f_capl">How many people can join you?</label><div class="capg" role="radiogroup" aria-labelledby="f_capl">${[2,3,4,5,6,7,8,9,10].filter(n=>n>=minCap).map(n=>`<label><input type="radio" name="f_cap" value="${n}" ${n===cap0?'checked':''}><span>${n}</span></label>`).join('')}</div>
+      <p class="small mute capx" id="f_capx">${capNote(cap0)}</p>
       <label>Date and time</label><input id="f_when" type="datetime-local" min="${mn}" value="${localInput(e?e.when:t?tplWhen:now()+26*3600e3)}">
       <label>Repeats</label><select id="f_rep"><option value="">Does not repeat</option>${Object.entries(REPEAT).map(([k,v])=>`<option value="${k}" ${src&&src.repeat===k?'selected':''}>${v}</option>`).join('')}</select>
       <p class="small mute" style="margin-top:6px">The next one is posted automatically when this one ends.</p>
       <label>Who can see and request this?</label>
       <label class="chk"><input type="checkbox" id="f_all" ${aud==='everyone'?'checked':''}> Everyone</label>
       ${GENDERS.map(g=>`<label class="chk"><input type="checkbox" class="f_g" value="${g}" ${aud!=='everyone'&&aud.includes(g)?'checked':''}> ${g}</label>`).join('')}
-      <label for="f_venue">Venue</label><div class="vbox"><input id="f_venue" maxlength="120" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="f_vlist" placeholder="Search a place, e.g. Indian Coffee House" value="${src?esc(src.venue):''}"><div id="f_vlist" class="vlist" role="listbox" aria-label="Places in Chandigarh" hidden></div></div>
-      <p class="small mute" style="margin-top:6px">Pick a Chandigarh place from the list. Not listed? Type its name, choose “Not listed”, then pick its area.</p>
+      <label for="f_venue">Venue</label>${placeBox('f_venue','Search a place, e.g. Blue Tokai, Indiranagar',src?src.venue:'','Places in India')}
+      ${locBtn('f_venue',"I'm at the venue: use my location")}
+      <p class="small mute" style="margin-top:6px">Search any place in India and pick it from the list. Not listed? Type its name, choose “Not listed”, then pick its area.</p>
       ${m.other?areaPicker():''}
       <label>How will costs work? (informational only)</label><select id="f_cost">${Object.entries(COST).map(([k,v])=>`<option value="${k}" ${src&&src.cost===k?'selected':''}>${v}</option>`).join('')}</select>
       <label for="f_total">Estimated total cost <span class="mute" style="font-weight:400">(₹, optional)</span></label><input id="f_total" type="number" min="0" max="1000000" step="50" inputmode="numeric" placeholder="e.g. 1200" value="${src?.total||''}">
@@ -1046,6 +1132,15 @@ function modalHtml(){
       ${done.length?`<h3>Decided</h3>`+done.map(r=>`<div class="panel row" style="padding:12px 16px"><div class="hn">${av(r.user,'sm')}${esc(uname(r.user))}</div><div style="text-align:right">${statusChip(r.status,true)}</div></div>`).join(''):''}
       ${past?'':`<div style="height:10px"></div><button class="btn bad" data-a="cancelact" data-id="${a.id}">Cancel this activity</button>`}</div>`,'full wide');
   }
+  if(m.type==='city'){
+    const h=homeLL(),cur=VIEW.city||'home',covered=CITIES.some(c=>kmBetween(h,[c[2],c[3]])<=NEAR_KM);
+    const opt=(k,ic,t,sub)=>`<button class="sorto ${cur===k?'on':''}" role="radio" aria-checked="${cur===k}" data-a="setcity" data-k="${k}">${I(ic,18)}<span><b>${esc(t)}</b><small>${sub}</small></span>${cur===k?I('check',18):''}</button>`;
+    const list=CITIES.map(c=>[c,kmBetween(h,[c[2],c[3]])]).sort((a,b)=>a[1]-b[1]);
+    return sheet('Show plans in',`<div class="sb sortl" role="radiogroup" aria-label="Show plans in">
+      ${opt('home','locate','Near '+homeName(),covered?`Within ${NEAR_KM} km of your home area`:'Only what people post near you, for now')}
+      ${list.map(([c,km])=>opt(c[0],'map-pin',c[1],km<=NEAR_KM?'Your city':`${Math.round(km).toLocaleString('en-IN')} km from ${esc(homeName())}`+(VIEW.auto&&VIEW.city===c[0]?' · nearest to you':''))).join('')}
+      <p class="small mute" style="margin:6px 2px 0">Your home area stays ${esc(S.me.hood)}. You can change it in Profile.</p></div>`);
+  }
   if(m.type==='sort'){
     const cur=ui.f.sort;
     return sheet('Sort by',`<div class="sb sortl" role="radiogroup" aria-label="Sort by">${Object.entries(SORTS).map(([k,[ic,l,sub]])=>`<button class="sorto ${cur===k?'on':''}" role="radio" aria-checked="${cur===k}" data-a="fsort" data-k="${k}">${I(ic,18)}<span><b>${l}</b><small>${sub}</small></span>${cur===k?I('check',18):''}</button>`).join('')}</div>`);
@@ -1077,7 +1172,9 @@ function modalHtml(){
       <label for="p_dob">Date of birth</label><input id="p_dob" type="date" value="${esc(me.dob)}" ${me.kyc?'disabled':''}>
       <label for="p_gender">Gender identity</label><select id="p_gender" ${me.kyc?'disabled':''}>${GENDERS.map(g=>`<option ${g===me.gender?'selected':''}>${g}</option>`).join('')}</select>
       <p class="small mute" style="margin-top:6px">${me.kyc?`Confirmed by your ID check. To change these, email ${esc(CFG.CONTACT_EMAIL||'the beta team')}.`:'Decides which audience-limited plans you can see.'}</p>
-      <label for="p_hood">Neighbourhood <span class="mute" style="font-weight:400">(Chandigarh)</span></label><select id="p_hood">${HOODS.map(g=>`<option ${g===me.hood?'selected':''}>${g}</option>`).join('')}</select>
+      <label for="p_hood">Home area</label>${placeBox('p_hood','Search your area or city',me.hood,'Areas in India')}
+      ${locBtn('p_hood','Use my current location')}
+      <p class="small mute" style="margin-top:6px">Anywhere in India. You see plans within ${NEAR_KM} km of here, and distances are measured from it. With your current location, only the area is saved (to about 1 km), never your exact spot.</p>
       <label for="p_job">Profession</label><input id="p_job" maxlength="40" value="${esc(me.job||'')}" placeholder="e.g. Designer">
       <label for="p_bio">Bio</label><textarea id="p_bio" maxlength="300" placeholder="A line or two so hosts know who you are">${esc(me.bio||'')}</textarea>
       <label>What would you want to do with company?</label>${opts('p_int',INTERESTS,me.ints)}
@@ -1238,8 +1335,9 @@ function onboardHtml(){
     <label for="o_dob">Date of birth</label><input id="o_dob" type="date" value="${esc(d.dob||'')}">
     <label for="o_gender">Gender identity (required)</label><select id="o_gender"><option value="">Select…</option>${GENDERS.map(g=>`<option ${g===d.gender?'selected':''}>${g}</option>`).join('')}</select>
     <p class="small mute" style="margin-top:6px">Used only for the safety-oriented audience filter on posts.</p>
-    <label for="o_hood">Neighborhood in Chandigarh</label><select id="o_hood"><option value="">Select…</option>${HOODS.map(g=>`<option ${g===d.hood?'selected':''}>${g}</option>`).join('')}</select>
-    <p class="small mute" style="margin-top:6px">Overhere is starting in these three Chandigarh sectors. Distances to plans are measured from here.</p>
+    <label for="o_hood">Where are you based?</label>${placeBox('o_hood','Search your area or city, e.g. Indiranagar, Bengaluru',d.hood,'Areas in India')}
+    ${locBtn('o_hood','Use my current location')}
+    <p class="small mute" style="margin-top:6px">Anywhere in India. You see plans within ${NEAR_KM} km of here, and distances are measured from it. With your current location, only the area is saved (to about 1 km), never your exact spot.</p>
     <label>What would you want to do with company?</label>${opts('o_int',INTERESTS,d.ints)}
     <label>When are you usually free?</label>${opts('o_avail',TIMES,d.avail)}
     <label class="chk top" style="margin-top:18px"><input type="checkbox" id="o_ok"> <span>I agree to the <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms and community guidelines</a>, and that Overhere may store these details to run the beta. I am 18 or older. I can ask for my data to be deleted at any time by emailing ${esc(CFG.CONTACT_EMAIL||'the beta team')}. <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a></span></label>
@@ -1435,6 +1533,7 @@ function afterRender(){
 }
 
 /* ---------- actions ---------- */
+const capNote=n=>`You + <b>${n}</b> = a group of <b>${n+1}</b>. Your card shows ${n} spots open.`;
 const val=id=>document.getElementById(id)?.value?.trim()||'';
 const pw=()=>document.getElementById('a_pw')?.value||'';
 const here=()=>location.origin+location.pathname;
@@ -1745,20 +1844,48 @@ const A={
     ui.modal={type:a.host==='me'?'host':'detail',id:a.id};render();
   },
   venueother:()=>askArea(),
-  pickvenue:d=>{const i=document.getElementById('f_venue');if(i){i.value=d.v;i.focus()}venueList(false);track('venue_picked')},
+  citymenu:()=>{ui.modal={type:'city'};render()},
+  /* Saved first, so the server sends that city's plans on the next read. */
+  setcity:async d=>{
+    ui.modal=null;S.city=d.k;clearTimeout(saveT);await pushState();
+    mapView=null;await refresh();track('city_picked',{city:d.k});
+    toast(viewCity()?`Showing plans in ${viewName()}`:`Showing plans near ${homeName()}`);
+  },
+  pickplace:d=>{
+    const i=document.getElementById(d.f);if(i){i.value=d.v;i.focus()}placeList(d.f,false);
+    if(d.f==='f_area')areaPicked(d.v);track(d.f==='f_venue'?'venue_picked':'area_picked');
+  },
+  /* "Use my current location": the browser asks first. A home area keeps only about 1 km of precision. */
+  myloc:async(d,e)=>{
+    const id=d.f,b=e.target.closest('button'),t=b.innerHTML;if(b.disabled)return;
+    b.disabled=true;b.innerHTML=`${I('locate',15)}<span>Finding where you are…</span>`;
+    try{
+      const ll=await myPosition();
+      if(!inIndia(ll))return toast('That location is outside India. Overhere is only in India for now.');
+      const home=id==='o_hood'||id==='p_hood',spot=home?ll.map(x=>Math.round(x*100)/100):ll;
+      const r=await geoFetch('/reverse',{lat:ll[0].toFixed(5),lon:ll[1].toFixed(5),lang:'en',limit:1},id==='f_venue'?'venue':'here').catch(()=>[]);
+      const label=r[0]?.label||`Near ${spot[0].toFixed(2)}, ${spot[1].toFixed(2)}`;
+      PLACE_AT[label.toLowerCase()]=spot;
+      const i=document.getElementById(id);if(i){i.value=label;placeList(id,false)}
+      if(id==='f_area')areaPicked(label);
+      track('location_used',{field:id});
+    }catch(err){toast(err?.code===1?'Location is blocked for this site. Allow it in your browser settings, or search instead.':"Couldn't get your location. Search for the place instead.")}
+    finally{if(b.isConnected){b.disabled=false;b.innerHTML=t}}
+  },
   /* hosting */
   newpost:()=>safetyOnce(()=>gate(()=>{ui.modal={type:'post'};render()})),
   unlock:()=>gate(()=>{toast('Face check passed. Plans for your group now show too.');render()}),
   submitpost:async(d,e)=>{
     const desc=val('f_desc'),venue=val('f_venue'),when=new Date(document.getElementById('f_when').value).getTime();
     const gs=[...document.querySelectorAll('.f_g:checked')].map(x=>x.value),all=document.getElementById('f_all').checked||gs.length===GENDERS.length;
-    const ed=ui.modal?.id&&actOf(ui.modal.id),cap=+val('f_cap'),rep=val('f_rep');
+    const ed=ui.modal?.id&&actOf(ui.modal.id),cap=+(document.querySelector('[name=f_cap]:checked')?.value||2),rep=val('f_rep');
     if(!desc||!venue)return toast('Add a description and a venue');
-    if(!PLACE_AT[venue.toLowerCase()]&&!spotOf(venue)){askArea();return toast('Pick which area the venue is in, so it shows on the map')}
+    const vll=placeLL(venue,'f_venue');
+    if(!vll){askArea();return toast('Pick which area the venue is in, so it shows on the map')}
     if(!(when>now()))return toast('Pick a future date and time');
     if(!all&&!gs.length)return toast('Choose Everyone or at least one identity');
     const tot=Math.max(0,Math.min(1e6,Math.round(+val('f_total')||0)));
-    const p={cat:val('f_cat'),desc,cap,when,aud:all?null:gs,venue,cost:val('f_cost'),total:tot,repeat:rep};
+    const p={cat:val('f_cat'),desc,cap,when,aud:all?null:gs,venue,lat:vll[0],lng:vll[1],cost:val('f_cost'),total:tot,repeat:rep};
     e.target.closest('button').disabled=true;
     if(ed){
       if(await run('edit_activity',{p_act:ed.id,p})===undefined){e.target.closest('button').disabled=false;return}
@@ -1895,7 +2022,9 @@ const A={
     if(!dob||!(ageOf(dob)>=18))return toast('Check your date of birth: you must be 18 or over');
     if((tn||tp)&&(!tn||tp.replace(/\D/g,'').length<7))return toast('Add a name and a valid phone for your trusted contact, or leave both empty');
     if(tp&&ownPhone(tp))return toast("Your trusted contact can't be the number you signed in with");
-    const p={name,dob,gender:val('p_gender'),hood:val('p_hood'),job:val('p_job'),bio:document.getElementById('p_bio').value.trim(),ints:many('p_int'),avail:many('p_avail')};
+    const hood=val('p_hood'),hll=placeLL(hood,'p_hood');
+    if(!hll)return toast('Pick your home area from the list, or use your current location');
+    const p={name,dob,gender:val('p_gender'),hood,lat:hll[0],lng:hll[1],job:val('p_job'),bio:document.getElementById('p_bio').value.trim(),ints:many('p_int'),avail:many('p_avail')};
     if(ui.modal?.emo)p.emo=ui.modal.emo;
     S.me.trusted=tn?{name:tn.slice(0,40),phone:tp.slice(0,20)}:null;save();
     if(await run('save_profile',{p})===undefined)return;
@@ -1918,7 +2047,10 @@ const A={
   /* onboarding */
   ob2:async(d,e)=>{
     const p={name:val('o_name'),dob:val('o_dob'),gender:val('o_gender'),hood:val('o_hood'),ints:many('o_int'),avail:many('o_avail')};
-    if(!p.name||!p.dob||!p.gender||!p.hood)return toast('Name, date of birth, gender identity and neighbourhood are required');
+    if(!p.name||!p.dob||!p.gender||!p.hood)return toast('Name, date of birth, gender identity and home area are required');
+    const hll=placeLL(p.hood,'o_hood');
+    if(!hll)return toast('Pick your home area from the list, or use your current location');
+    p.lat=hll[0];p.lng=hll[1];
     if(!(ageOf(p.dob)>=18)){DRAFT={...(DRAFT||{}),...p,typed:true};ui.modal={type:'under18',dob:p.dob};render();return}   // DRAFT keeps what they typed
     if(!document.getElementById('o_ok')?.checked)return toast('Please tick the consent box to continue');
     p.emo=defEmo(p.gender);p.consent=true;p.terms=true;p.usage_ok=!!document.getElementById('o_usage')?.checked;
@@ -1945,7 +2077,7 @@ const A={
 };
 document.addEventListener('click',e=>{
   if(!e.target.closest('.phw'))photoMenu(false);
-  if(!e.target.closest('.vbox'))venueList(false);
+  if(!e.target.closest('.vbox'))closePlaceLists();
   if(e.target.matches('input[type=checkbox]')&&e.target.id!=='d_fail'){
     if(e.target.id==='f_all'&&e.target.checked)document.querySelectorAll('.f_g').forEach(x=>x.checked=false);
     else if(e.target.classList.contains('f_g')&&e.target.checked){
@@ -1960,6 +2092,7 @@ document.addEventListener('click',e=>{
   const fn=A[el.dataset.a];if(fn){e.stopPropagation();fn(el.dataset,e)}
 });
 document.addEventListener('input',e=>{
+  if(e.target.name==='f_cap'){const c=document.getElementById('f_capx');if(c)c.innerHTML=capNote(+e.target.value)}
   if(e.target.id==='r_note'){const c=document.getElementById('r_cnt');if(c)c.textContent=e.target.value.length}
   if(e.target.id==='a_code'){
     const i=e.target,v=i.value.replace(/\D/g,'').slice(0,6);if(i.value!==v)i.value=v;
@@ -1971,7 +2104,7 @@ document.addEventListener('input',e=>{
     if(atEnd)i.value=fmtPhone(n);   // reformat only when typing at the end, so the cursor doesn't jump
     if(i.getAttribute('aria-invalid')&&!phoneProblem(n))fieldMsg('a_phone','');
   }
-  if(e.target.id==='f_venue')venueList(true);
+  if(PF[e.target.id])placeList(e.target.id,true);
   if(e.target.id==='a_email'){
     document.getElementById('a_email_hint')?.setAttribute('hidden','');
     if(e.target.getAttribute('aria-invalid')&&EMAIL_RE.test(e.target.value.trim()))fieldMsg('a_email','');
@@ -1987,9 +2120,9 @@ document.addEventListener('focusout',e=>{
 /* the six code boxes: typing always goes on the end */
 document.addEventListener('focusin',e=>{if(e.target.id==='a_code'){const i=e.target;setTimeout(()=>i.setSelectionRange(i.value.length,i.value.length),0)}});
 document.addEventListener('keyup',e=>{if(e.target.classList?.contains('pwi'))capsWarn(e)});
-/* Suggestions stay open while focus is in the venue box or its list; clicking one keeps the focus in the box. */
+/* Suggestions stay open while focus is in a search box or its list; clicking one keeps the focus in the box. */
 document.addEventListener('mousedown',e=>{if(e.target.closest('.vopt'))e.preventDefault()});
-document.addEventListener('focusout',e=>{if(e.target.closest?.('.vbox'))setTimeout(()=>{if(!document.activeElement?.closest?.('.vbox'))venueList(false)},200)});
+document.addEventListener('focusout',e=>{const id=e.target.id,box=PF[id]&&e.target.closest('.vbox');if(box)setTimeout(()=>{if(!box.contains(document.activeElement))placeList(id,false)},200)});
 document.addEventListener('change',e=>{
   if(e.target.id==='d_from'||e.target.id==='d_to'){
     const f=ui.f;f[e.target.id==='d_from'?'dfrom':'dto']=e.target.value;
@@ -1998,11 +2131,10 @@ document.addEventListener('change',e=>{
   if(e.target.id==='p_usage'){const on=e.target.checked;run('save_profile',{p:{usage_ok:on}}).then(r=>{if(r===undefined){e.target.checked=!on;return}toast(on?'Thanks! Usage statistics are on.':'Usage statistics are off, and what was collected is deleted.')})}
   if(e.target.id==='f_tpl'&&ui.modal?.type==='post'){ui.modal.tpl=e.target.value||null;render()}
   if(e.target.id==='p_photo'){const f=e.target.files[0];e.target.value='';openCropper(f)}
-  if(e.target.id==='f_area'&&e.target.value){const i=document.getElementById('f_venue');if(i){const nm=i.value.replace(AREA_TAIL,'').trim();i.value=((nm?nm+', ':'')+e.target.value).slice(0,120)}}
 });
 document.addEventListener('keydown',e=>{
   if(e.target.classList?.contains('pwi'))capsWarn(e);
-  if(e.target.id==='f_venue'&&venueKey(e))return;
+  if(PF[e.target.id]&&placeKey(e))return;
   const pm=document.getElementById('p_menu');
   if(e.key==='Escape'&&pm&&!pm.hidden){photoMenu(false);document.getElementById('p_pe')?.focus();return}
   if(e.key==='Enter'&&e.target.matches('[role=button][data-a]')){e.target.click();return}
@@ -2015,6 +2147,21 @@ document.addEventListener('keydown',e=>{
 
 /* ---------- start ---------- */
 let starting=null;
+/* Invite links open straight to the activity. When it isn't in your list, the server says why, so the message is right. */
+const INVITE_MISS={past:'That activity has already happened.',audience:"That activity is for a different group, so it isn't open to you.",
+  verify:'That activity is for a limited group. Do the face check (Profile) to see it.'};
+async function openInvite(){
+  const id=INVITE;if(!id||!S.me?.obDone)return;
+  const a=actOf(id);
+  if(a){ui.modal={type:a.host==='me'?'host':'detail',id:a.id};render();return}
+  const why=await call('invite_info',{p_act:id},true).catch(()=>'gone');
+  toast(INVITE_MISS[why]||'That activity is no longer available.');
+}
+/* A link tapped while the app is already open only changes the address, so load that plan too. */
+window.addEventListener('hashchange',async()=>{
+  const id=inviteId();if(!id||id===INVITE||!ME||!loaded)return;
+  INVITE=id;await refresh();openInvite();
+});
 async function start(){
   if(starting)return starting;
   starting=(async()=>{
@@ -2026,10 +2173,7 @@ async function start(){
     loadPlaces();
     listen();
     track('app_open',{standalone:isStandalone(),embedded:window.parent!==window});
-    /* Invite links open straight to the activity. */
-    const mm=location.hash.match(/^#act=([0-9a-f-]{36})$/i),a=mm&&S.me?.obDone&&actOf(mm[1]);
-    if(a){ui.modal={type:a.host==='me'?'host':'detail',id:a.id};render()}
-    else if(mm&&S.me?.obDone)toast('That activity is no longer available');
+    openInvite();
   })();
   return starting;
 }

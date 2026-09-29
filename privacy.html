@@ -62,7 +62,7 @@ td:first-child{font-weight:600;min-width:110px}
     <ul>
       <li>We collect what the app needs: your account, your profile, the plans you post or join, and your group chats.</li>
       <li>Other people see your name, age and profile. They never see your email, phone number, date of birth or trusted contact.</li>
-      <li>Your profile photo and your location never leave your phone.</li>
+      <li>Your profile photo never leaves your phone. Your live location is read only when you tap <i>Use my current location</i> or use SOS, and for your home area we keep only the area (to about 1 km), never your exact spot.</li>
       <li>The face check is optional. If you take it, the video goes to Amazon to confirm you're a real person; we keep only
         the result, never the video or images.</li>
       <li>We don't sell your data, show ads, or use advertising trackers.</li>
@@ -100,7 +100,7 @@ td:first-child{font-weight:600;min-width:110px}
       <thead><tr><th scope="col">What</th><th scope="col">Details</th><th scope="col">Why</th></tr></thead>
       <tbody>
         <tr><td>Your account</td><td>Your email address and password, or your phone number, or your name and email from Google if you choose <i>Continue with Google</i>. Passwords are stored scrambled (hashed), so nobody can read them, including us.</td><td>To sign you in and keep your account yours. If you sign in with your phone, we also use your number to stop it being saved as your own trusted contact.</td></tr>
-        <tr><td>Your profile</td><td>Name, date of birth, gender, neighbourhood, job, a short bio, interests, when you're usually free, and the emoji you pick.</td><td>So hosts and members know who they're meeting, and to show you plans that fit you. Gender is used for plans limited to some groups, such as women-only plans.</td></tr>
+        <tr><td>Your profile</td><td>Name, date of birth, gender, home area (its name and its centre, to about 1 km), job, a short bio, interests, when you're usually free, and the emoji you pick.</td><td>So hosts and members know who they're meeting, and to show you plans that fit you and are near your home area. Gender is used for plans limited to some groups, such as women-only plans.</td></tr>
         <tr><td>Plans and chats</td><td>Plans you post, join requests and the notes you add, who is in which plan, group chat messages and polls, poll votes, and your notifications.</td><td>To run the app, including the Chats list of every group you're in.</td></tr>
         <tr><td>After a meetup</td><td>Your rating of the meetup and who showed up.</td><td>To show how many meetups people have been to and turned up for, which helps everyone decide who to meet.</td></tr>
         <tr><td>Safety</td><td>Reports you make (including the reported message and your reason), people you block, your answers to "Arrived safely?" check-ins, and your trusted contact's name and phone number.</td><td>To keep people safe and act on reports.</td></tr>
@@ -113,7 +113,7 @@ td:first-child{font-weight:600;min-width:110px}
     <h3>What we don't collect</h3>
     <ul>
       <li><b>Your profile photo.</b> It stays on your device. Other people see your emoji.</li>
-      <li><b>Your location.</b> Only the SOS screen reads it, and only to put it into a message <i>you</i> send from your own SMS or WhatsApp. It is never sent to us.</li>
+      <li><b>Your exact location.</b> The app reads it only when you ask: on the SOS screen, to put it into a message <i>you</i> send from your own SMS or WhatsApp, and when you tap <i>Use my current location</i>, to find the name of the area or place you're in (see Photon in <a href="#providers">section 5</a>). For your home area we save only the area, rounded to about 1 km. For a plan's venue we save the venue's spot, which the plan shows to people nearby.</li>
       <li><b>Your contacts, or other apps' data.</b></li>
     </ul>
   </section>
@@ -164,6 +164,7 @@ td:first-child{font-weight:600;min-width:110px}
       <tbody>
         <tr><td>Supabase</td><td>Stores the app's data and handles sign-in.</td></tr>
         <tr><td>GitHub Pages</td><td>Hosts the website. Like any web host, it receives your IP address when you load a page.</td></tr>
+        <tr><td>Photon (komoot, Germany)</td><td>Searches places across India when you type a venue or your home area: what you type is sent to it a moment after you stop typing. If you tap <i>Use my current location</i>, your position is sent to it once to find the area's or place's name. It sees your IP address, but not your name or account.</td></tr>
         <tr><td>OpenStreetMap</td><td>Only when you open the map in Discover: supplies the map images. Your browser fetches them from OpenStreetMap's servers, which see your IP address.</td></tr>
         <tr><td>Google</td><td>Only if you choose <i>Continue with Google</i>: confirms your account and shares your name and email with us.</td></tr>
         <tr><td>Our email provider</td><td>Sends sign-up confirmation and password emails (these are the only emails we send; we don't send marketing email).</td></tr>

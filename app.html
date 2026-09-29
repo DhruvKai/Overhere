@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com 'wasm-unsafe-eval'; frame-src 'self' https://challenges.cloudflare.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://tile.openstreetmap.org; media-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://*.amazonaws.com wss://*.amazonaws.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com 'wasm-unsafe-eval'; frame-src 'self' https://challenges.cloudflare.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://tile.openstreetmap.org; media-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://*.amazonaws.com wss://*.amazonaws.com https://photon.komoot.io; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Overhere</title>
@@ -109,6 +109,14 @@ input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--acc)}
 .opt:hover{border-color:var(--lineh)}
 .opt:has(input:checked){border-color:var(--acc);background:var(--acc2);color:var(--accink)}
 .opt input{margin:0}
+.capg{display:grid;grid-template-columns:repeat(9,1fr);gap:6px}
+.capg label{position:relative;margin:0;cursor:pointer}
+.capg input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.capg span{display:flex;align-items:center;justify-content:center;aspect-ratio:1;border-radius:14px;background:var(--field);border:1px solid var(--line);font-size:15px;font-weight:600;color:var(--ink2);transition:transform .15s,background .15s,border-color .15s,box-shadow .15s}
+.capg label:hover span{border-color:var(--lineh);color:var(--ink)}
+.capg input:checked+span{background:var(--acc);border-color:var(--acc);color:#fff;transform:translateY(-2px);box-shadow:0 8px 18px -8px var(--acc)}
+.capg input:focus-visible+span{outline:2px solid var(--acc);outline-offset:2px}
+.capx{margin-top:8px}.capx b{color:var(--ink)}
 
 /* sign in / create account */
 .atab{display:flex;width:100%;margin:18px 0 20px}
@@ -304,6 +312,10 @@ a.btn{text-decoration:none}
 .why{font-size:12px;color:var(--accink);display:flex;align-items:center;gap:5px;font-weight:600}
 .sig{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .alerts{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 12px}
+.wbar{display:flex;margin:0 0 10px}
+.where{display:inline-flex;align-items:center;gap:6px;max-width:100%;border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:99px;padding:6px 12px 6px 10px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:border-color .15s,background .15s}
+.where span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.where .i:first-child{color:var(--acc)}
+.where:hover{border-color:var(--acc);background:var(--acc2)}.where:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .alchip{display:inline-flex;align-items:center;gap:4px;background:var(--acc2);color:var(--accink);border-radius:99px;padding:4px 6px 4px 12px;font-size:12.5px;font-weight:600}
 .alchip button{border:0;background:none;color:inherit;cursor:pointer;display:inline-flex;padding:3px;border-radius:50%}
 .alchip.tn{border:0;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:99px;background:var(--warnbg);color:var(--warn)}
@@ -317,6 +329,10 @@ a.btn{text-decoration:none}
 .vopt:hover,.vopt.on{background:var(--acc2)}
 .vopt.vother:not(:first-child){border-top:1px solid var(--line);border-radius:0 0 10px 10px;margin-top:2px}.vopt.vother b{color:var(--acch)}
 .varea{margin-top:4px}
+.vnote{padding:9px 12px;font-size:12.5px;color:var(--mute)}.vnote.vsrc{padding:6px 12px 4px;font-size:11px;text-align:right}
+.locbtn{display:inline-flex;align-items:center;gap:7px;margin-top:8px;border:1px dashed var(--lineh);background:var(--chip);color:var(--accink);border-radius:99px;padding:7px 14px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:border-color .15s,background .15s}
+.locbtn:hover{border-color:var(--acc);background:var(--acc2)}.locbtn:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.locbtn:disabled{cursor:progress;opacity:.75}.locbtn:disabled .i{animation:spin 1.2s linear infinite}
 .lyou{display:block;width:18px;height:18px;border-radius:50%;background:var(--info);border:3px solid #fff;box-shadow:0 0 0 7px rgba(59,130,246,.25)}
 .lpin{width:34px;height:34px;border-radius:50%;border:2px solid #fff;background:var(--pc);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,.3);cursor:pointer;transition:transform .12s}
 .leaflet-marker-icon:hover .lpin,.leaflet-marker-icon:focus-visible .lpin{transform:scale(1.12)}
