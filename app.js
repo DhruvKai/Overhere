@@ -368,7 +368,8 @@ function geoItem(f,mode){
   const parts=mode==='venue'?[p.name||p.street,p.locality||p.district||(p.name?p.street:''),town||p.state]
     :mode==='here'?[p.locality||p.district||(areaT?p.name:''),town,town?'':p.state]
     :[p.name,town,town?'':p.state];
-  const seen=new Set(),label=parts.filter(x=>x&&!seen.has(x.toLowerCase())&&seen.add(x.toLowerCase())).join(', ').slice(0,mode==='venue'?120:80);
+  /* each comma-separated piece once, so a name that already ends in its city ("Sector 17, Chandigarh") doesn't repeat it */
+  const seen=new Set(),label=parts.flatMap(x=>String(x||'').split(/\s*,\s*/)).filter(x=>x&&!seen.has(x.toLowerCase())&&seen.add(x.toLowerCase())).join(', ').slice(0,mode==='venue'?120:80);
   if(!label||la==null||!inIndia([la,lo]))return null;
   PLACE_AT[label.toLowerCase()]=[la,lo];
   return {label,ll:[la,lo],kind:p.osm_key==='boundary'?'Area':kindOf(p.osm_value),state:p.state||''};
@@ -1504,7 +1505,7 @@ function render(){
   const pend=S.reqs.filter(r=>r.status==='pending'&&actOf(r.act)?.host==='me').length;
   const TT=(k,l)=>`<button class="tt ${ui.tab===k?'on':''}" data-a="tab" data-t="${k}">${l}</button>`;
   const T=(k,ic,l)=>`<button class="${ui.tab===k?'on':''}" data-a="tab" data-t="${k}">${I(ic,20)}${l}</button>`;
-  scr.innerHTML=`<header><div class="hb"><div class="logo"><span class="dots"><i></i><i></i></span>Overhere</div>
+  scr.innerHTML=`<header><div class="hb"><div class="logo"><button class="logob" data-a="tab" data-t="swipe" title="Home" aria-label="Overhere: go to Swipe"><span class="dots"><i></i><i></i></span>Overhere</button></div>
   <div class="tnav">${TT('swipe','Swipe')}${TT('discover','Discover')}<button class="btn sm" data-a="newpost">${I('plus',15)} Create Activity</button>${TT('acts','Activities'+(pend?` (${pend})`:''))}${TT('reqs','Requests')}</div>
   <div class="hr"><button class="ib${ui.tab==='chats'?' on':''}" data-a="chats" title="Chats" aria-label="Chats" aria-pressed="${ui.tab==='chats'}">${I('messages-square',19)}${chatUnread()?'<span class="dot"></span>':''}</button><button class="ib${ui.tab==='notes'?' on':''}" data-a="bell" title="Notifications" aria-label="Notifications" aria-pressed="${ui.tab==='notes'}">${I('bell',19)}${unread?'<span class="dot"></span>':''}</button><button class="ib" data-a="fb" title="Leave feedback" aria-label="Leave feedback">${I('megaphone',19)}</button><button class="ib${ui.tab==='profile'?' on':''}" data-a="tab" data-t="profile" title="Your profile" aria-label="Your profile">${av('me')}</button></div></div></header>
   <main><div class="${ui.tab==='discover'?'wrap':'narrow'}">${view}</div></main>
