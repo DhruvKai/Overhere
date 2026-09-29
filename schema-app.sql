@@ -97,7 +97,7 @@ update profiles set hood = hood || ', Chandigarh',
 where hood in ('Sector 17','Sector 7','Sector 22') and lat is null;
 update activities set hood = hood || ', Chandigarh' where hood in ('Sector 17','Sector 7','Sector 22');
 -- A home area named with its city twice ("Sector 17, Chandigarh, Chandigarh"): keep it once.
-update profiles set hood = regexp_replace(hood, ', ([^,]+), $', ', ') where hood ~ ', ([^,]+), $';
+update profiles set hood = regexp_replace(hood, ', ([^,]+), \1$', ', \1') where hood ~ ', ([^,]+), \1$';
 
 create table if not exists messages (
   id         bigint generated always as identity primary key,
