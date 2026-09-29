@@ -2181,6 +2181,15 @@ applyTheme(themePref());
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>applyTheme(themePref()));
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(ui.tab==='profile'&&!ui.modal)render()});
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+/* An installed app can stay open for days, running the code it started with. When you come back to it, check whether
+   app.js changed (a new deploy) and reload, unless a form or sheet is open: then it checks again next time. */
+const appTag=()=>fetch('app.js',{method:'HEAD',cache:'no-store'}).then(r=>r.ok&&(r.headers.get('etag')||r.headers.get('last-modified'))||null,()=>null);
+let appTag0=null;appTag().then(t=>{appTag0=t});
+document.addEventListener('visibilitychange',async()=>{
+  if(document.visibilityState!=='visible'||!appTag0||ui.modal)return;
+  const t=await appTag();
+  if(t&&t!==appTag0&&!ui.modal&&!saveT)location.reload();
+});
 if(!ONLINE)render();
 else{
   /* Opened from a password-reset email: ask for the new password before anything else. */

@@ -842,11 +842,13 @@ begin
   st := to_timestamp((p->>'when')::double precision / 1000);
   if st <= now() then raise exception 'Pick a future date and time'; end if;
   if st > now() + interval '1 year' then raise exception 'Pick a date within the next year'; end if;
-  if p->>'lat' is null or p->>'lng' is null then raise exception 'Pick the venue from the list, or its area, so it shows on the map'; end if;
   insert into activities (host, cat, description, cap, starts_at, audience, venue, cost, total, hood, lat, lng, repeat)
   values (u, p->>'cat', trim(p->>'desc'), (p->>'cap')::int, st,
           case when jsonb_typeof(p->'aud') = 'array' then array(select jsonb_array_elements_text(p->'aud')) end,
-          trim(p->>'venue'), p->>'cost', nullif((p->>'total')::int, 0), me.hood, (p->>'lat')::float8, (p->>'lng')::float8,
+          -- no venue spot (an app still open from before venues had one): pin it at the host's home area
+          trim(p->>'venue'), p->>'cost', nullif((p->>'total')::int, 0), me.hood,
+          case when p->>'lat' is null or p->>'lng' is null then me.lat else (p->>'lat')::float8 end,
+          case when p->>'lat' is null or p->>'lng' is null then me.lng else (p->>'lng')::float8 end,
           nullif(p->>'repeat', ''))
   returning id into nid;
   perform _ping(array['00000000-0000-0000-0000-000000000000'::uuid]);
