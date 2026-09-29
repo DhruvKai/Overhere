@@ -2,7 +2,7 @@
   "name": "Overhere",
   "short_name": "Overhere",
   "description": "Do things in your city with company. Post a plan, pick who joins.",
-  "start_url": "demo.html",
+  "start_url": "app.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#F5F0E6",

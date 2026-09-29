@@ -1,5 +1,5 @@
 // The camera part of the live face check, built into ../face-widget.js (see face-widget/README.md).
-// demo.html calls window.OverhereFaceWidget.run(element, { sessionId, region, credentials }) with what the
+// app.html calls window.OverhereFaceWidget.run(element, { sessionId, region, credentials }) with what the
 // face-start Edge Function returned. The promise resolves once AWS has analysed the video; face-result then
 // fetches the verdict on the server. Nothing here decides whether the check passed.
 import React from 'react';

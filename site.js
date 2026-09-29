@@ -47,7 +47,7 @@ let view='home';
 const fromApp=location.hash==='#feedback';   // opened from the full-screen app's feedback button
 function nav(v){
   /* The app always opens full page; "Join the beta" opens it on "Create your account". */
-  if(v==='try'||v==='join'){location.href=v==='join'?'demo.html?join':'demo.html';return}
+  if(v==='try'||v==='join'){location.href=v==='join'?'app.html?join':'app.html';return}
   view=v;
   $('#t_fb').classList.toggle('on',v==='feedback');
   $('#main').innerHTML=({home,feedback,thanks,admin})[v]();
@@ -71,7 +71,7 @@ function admin(){
   <p class="small mute" style="margin:18px 0 0;text-align:center">Looking for results? <a href="addmin/" style="color:var(--acch);font-weight:600">Open the beta dashboard</a></p></div>`;
 }
 function feedback(){
-  return localBanner()+`${fromApp?'<p class="small"><a href="demo.html" style="color:var(--acch);font-weight:600">← Back to the app</a></p>':''}<div class="panel"><h2>Tell us what you think</h2><p class="mute small">Honest is best. Nothing here is required except the consent box.</p>
+  return localBanner()+`${fromApp?'<p class="small"><a href="app.html" style="color:var(--acch);font-weight:600">← Back to the app</a></p>':''}<div class="panel"><h2>Tell us what you think</h2><p class="mute small">Honest is best. Nothing here is required except the consent box.</p>
   <form id="f">
   <label>Overall, how was it?</label><div class="stars" id="stars">${[1,2,3,4,5].map(n=>`<button type="button" data-n="${n}" aria-label="${n} stars">★</button>`).join('')}</div>
   <label for="liked">What did you like?</label><textarea id="liked" maxlength="1000"></textarea>
@@ -87,7 +87,7 @@ function feedback(){
 }
 function thanks(){
   return `<div class="panel" style="text-align:center"><div style="font-size:48px">🙏</div><h2>Thank you!</h2><p class="mute">Your response has been saved. You can keep trying the platform any time.</p>
-  <a class="btn" href="demo.html" style="display:inline-block;text-decoration:none">Back to the app</a></div>`;
+  <a class="btn" href="app.html" style="display:inline-block;text-decoration:none">Back to the app</a></div>`;
 }
 
 /* ---------- behavior ---------- */
