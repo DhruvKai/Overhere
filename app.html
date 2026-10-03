@@ -22,8 +22,9 @@
 html,body{margin:0;height:100%}
 body{font:14.5px/1.45 "Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--page);display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font:inherit}
-/* iOS Safari zooms the page into any field under 16px when it is focused; 16px on touch screens stops that */
-@media (pointer:coarse){input,select,textarea{font-size:16px}}
+/* iOS zooms the page into any field under 16px when it is focused (every iOS browser is Safari underneath). any-pointer
+   also catches an iPad with a trackpad or mouse attached, where the main pointer is no longer the touch screen */
+@media (pointer:coarse),(any-pointer:coarse){input,select,textarea{font-size:16px}}
 /* scrollbars: thin, rounded, in the theme's colours (standard properties first; the -webkit- ones for Safari) */
 *{scrollbar-width:thin;scrollbar-color:var(--lineh) transparent}
 ::-webkit-scrollbar{width:10px;height:10px}
