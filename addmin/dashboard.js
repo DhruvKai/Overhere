@@ -90,7 +90,8 @@ function view(st,rv){
   const avg=st.avg_rating==null?null:Number(st.avg_rating);
   const EVs=sorted(st.events).map(([k,v])=>[EV[k]||k,v]);
   const micro=Object.entries(st.micro||{}).map(([k,v])=>[MICRO[k]||k,Number(v.avg),Number(v.n)]).sort((a,b)=>b[1]-a[1]);
-  const funnel=[['Signed up',P],['Tried the app',T],['Gave feedback',F]];
+  const funnel=[['Signed up',P],['Posted or joined a plan',T],['Gave feedback',F]];
+  const city=sorted(st.by_city||st.by_hood);   // by_hood: the dashboard from before schema-app.sql was re-run
   const rating=[5,4,3,2,1].map(n=>[`${n} star${n>1?'s':''}`,Number(st.rating_dist?.[n]||0)]);
   const would=['Yes','Maybe','No','No answer'].filter(k=>wu[k]!=null).map(k=>[k,Number(wu[k])]);
   $('#main').innerHTML=`${REMOTE?'':'<div class="note">Supabase is not connected, so this shows data saved in this browser only.</div>'}
@@ -99,7 +100,7 @@ function view(st,rv){
   ${reviewPanel(rv)}
   <div class="kpis">
     <div class="panel kpi hero"><div class="l">Sign-ups</div><div class="v">${num(P)}</div><div class="s">${num(st.sessions_30d||0)} app sessions in the last 30 days</div></div>
-    <div class="panel kpi"><div class="l">Tried the app</div><div class="v">${num(T)}</div><div class="s">${P?pct(T,P)+'% of sign-ups':'–'}</div></div>
+    <div class="panel kpi"><div class="l">Posted or joined a plan</div><div class="v">${num(T)}</div><div class="s">${P?pct(T,P)+'% of sign-ups':'–'}</div></div>
     <div class="panel kpi"><div class="l">Feedback responses</div><div class="v">${num(F)}</div><div class="s">${P?pct(F,P)+'% of sign-ups':'–'}</div></div>
     <div class="panel kpi"><div class="l">Average rating</div><div class="v">${avg==null?'–':avg.toFixed(1)+' / 5'}</div><div class="s">${F?'from '+num(F)+' responses':'no ratings yet'}</div></div>
     <div class="panel kpi"><div class="l">Would use it</div><div class="v">${wuN?pct(wu.Yes||0,wuN)+'%':'–'}</div><div class="s">${wuN?`said Yes (${num(wu.Maybe||0)} maybe)`:'no answers yet'}</div></div>
@@ -110,7 +111,7 @@ function view(st,rv){
   </div>
   <div class="grid">
     ${panel('Gender','sign-ups',bars(sorted(st.by_gender))+table(['Gender','Sign-ups'],sorted(st.by_gender)))}
-    ${panel('Neighbourhood','sign-ups',bars(sorted(st.by_hood))+table(['Neighbourhood','Sign-ups'],sorted(st.by_hood)))}
+    ${panel('City','sign-ups, by home area',bars(city)+table(['City','Sign-ups'],city))}
     ${panel('Interests','people who picked each',bars(sorted(st.by_interest))+table(['Interest','People'],sorted(st.by_interest)))}
     ${panel('Ratings','feedback responses',bars(rating)+table(['Rating','Responses'],rating))}
     ${panel('Would you use this in your city?','responses',bars(would)+table(['Answer','Responses'],would))}

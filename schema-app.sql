@@ -1103,29 +1103,37 @@ begin
 end $$;
 
 -- The dashboard's totals (first made in schema.sql). Totals only, never names or emails; feedback text only where
--- the person agreed to be quoted.
+-- the person agreed to be quoted. Sign-ups are app accounts (profiles, without the sample people), not the old
+-- beta waitlist (participants), which nothing adds to any more. Usage events count only for those accounts, which
+-- leaves out the events from the old sample app.
 create or replace function admin_stats(pass text) returns jsonb language plpgsql security definer set search_path = public as $$
 declare e text := _admin_err(pass);
 begin
   if e is not null then return jsonb_build_object('error', e); end if;
   return jsonb_build_object(
-    'participants',   (select count(*) from participants),
-    'by_gender',      (select coalesce(jsonb_object_agg(gender, n), '{}') from (select gender, count(*) n from participants group by gender) x),
-    'by_hood',        (select coalesce(jsonb_object_agg(neighborhood, n), '{}') from (select neighborhood, count(*) n from participants group by neighborhood) x),
-    'by_interest',    (select coalesce(jsonb_object_agg(i, n), '{}') from (select unnest(interests) i, count(*) n from participants group by 1) x),
-    'signups_by_day', (select coalesce(jsonb_object_agg(d, n), '{}') from (select to_char(created_at at time zone 'Asia/Kolkata', 'YYYY-MM-DD') d, count(*) n from participants where created_at > now() - interval '30 days' group by 1) x),
+    'participants',   (select count(*) from profiles where not is_sample),
+    'by_gender',      (select coalesce(jsonb_object_agg(gender, n), '{}') from (select gender, count(*) n from profiles where not is_sample group by gender) x),
+    -- the city part of the home area ("Koramangala, Bengaluru" -> "Bengaluru")
+    'by_city',        (select coalesce(jsonb_object_agg(c, n), '{}') from (select trim(regexp_replace(hood, '^.*,', '')) c, count(*) n from profiles where not is_sample group by 1) x),
+    'by_interest',    (select coalesce(jsonb_object_agg(i, n), '{}') from (select unnest(ints) i, count(*) n from profiles where not is_sample group by 1) x),
+    'signups_by_day', (select coalesce(jsonb_object_agg(d, n), '{}') from (select to_char(created_at at time zone 'Asia/Kolkata', 'YYYY-MM-DD') d, count(*) n from profiles where not is_sample and created_at > now() - interval '30 days' group by 1) x),
     'feedback',       (select count(*) from feedback),
     'avg_rating',     (select round(avg(rating)::numeric, 2) from feedback),
     'rating_dist',    (select coalesce(jsonb_object_agg(rating, n), '{}') from (select rating, count(*) n from feedback group by rating) x),
     'would_use',      (select coalesce(jsonb_object_agg(coalesce(would_use, 'No answer'), n), '{}') from (select would_use, count(*) n from feedback group by would_use) x),
     'quotes',         (select coalesce(jsonb_agg(jsonb_build_object('rating', rating, 'liked', liked, 'improve', improve, 'at', created_at) order by created_at desc), '[]')
                          from (select * from feedback where consent_quote and (liked is not null or improve is not null) order by created_at desc limit 30) x),
-    'events',         (select coalesce(jsonb_object_agg(name, n), '{}') from (select name, count(*) n from events group by name) x),
+    'events',         (select coalesce(jsonb_object_agg(name, n), '{}') from (select name, count(*) n from events v
+                         where v.participant_id in (select id from profiles where not is_sample) group by name) x),
     'micro',          (select coalesce(jsonb_object_agg(m, jsonb_build_object('avg', a, 'n', n)), '{}')
-                         from (select props->>'moment' m, round(avg((props->>'score')::int), 2) a, count(*) n from events
-                               where name = 'micro_feedback' and props->>'score' ~ '^[1-4]$' and props->>'moment' ~ '^[a-z_]{1,20}$' group by 1) x),
-    'tried',          (select count(distinct participant_id) from events where participant_id is not null),
-    'sessions_30d',   (select count(distinct session_id) from events where created_at > now() - interval '30 days')
+                         from (select props->>'moment' m, round(avg((props->>'score')::int), 2) a, count(*) n from events v
+                               where v.participant_id in (select id from profiles where not is_sample)
+                                 and name = 'micro_feedback' and props->>'score' ~ '^[1-4]$' and props->>'moment' ~ '^[a-z_]{1,20}$' group by 1) x),
+    -- signing up now happens inside the app, so "tried it" means posted a plan or asked to join one
+    'tried',          (select count(*) from profiles p where not p.is_sample
+                         and (exists (select 1 from activities a where a.host = p.id) or exists (select 1 from requests r where r.user_id = p.id))),
+    'sessions_30d',   (select count(distinct session_id) from events v
+                         where v.participant_id in (select id from profiles where not is_sample) and created_at > now() - interval '30 days')
   );
 end $$;
 
