@@ -52,6 +52,14 @@ header{background:var(--card);border-bottom:1px solid var(--line)}
 .ib{border:0;background:none;width:38px;height:38px;border-radius:50%;cursor:pointer;position:relative;color:var(--ink);display:inline-flex;align-items:center;justify-content:center;padding:0}
 .ib:hover{background:var(--grey)}
 .ib.on .av{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--acc)}
+.fbb{border:0;background:var(--acc2);color:var(--accink);font-weight:600;font-size:13px;padding:7px 12px;border-radius:99px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin:0 2px;white-space:nowrap;transition:background .15s}
+.fbb:hover{background:var(--acc2h)}.fbb:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+/* on phones the header is tight: the labelled Feedback button stays, the Beta chip goes (it's on wide screens) */
+@media(max-width:899px){.beta{display:none}}
+@media(max-width:389px){.fbb{padding:7px 10px;gap:5px;font-size:12.5px;margin:0}.hr{gap:2px}.hb{gap:6px}}
+@media(max-width:349px){.fbb span{display:none}.fbb{padding:9px}}
+.beta{border:1px solid var(--line);background:none;color:var(--mute);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:99px;cursor:pointer;margin-left:-2px}
+.beta:hover{color:var(--accink);border-color:var(--acc)}
 .dot{position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--acc);border:2px solid var(--card)}
 .av{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;color:#fff;font-weight:700;font-size:13px;flex:0 0 auto;overflow:hidden}
 .av{position:relative}
@@ -353,6 +361,23 @@ a.btn{text-decoration:none}
 .micro .mf button{border:1px solid var(--line);background:var(--chip);border-radius:12px;padding:6px 2px;font-size:11.5px;color:var(--mute);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
 .micro .mf button:hover,.micro .mf button:focus-visible{border-color:var(--acc);color:var(--ink)}
 .micro .mf span{font-size:20px;line-height:1.2}
+.micro .mft{min-height:64px;padding:9px 12px}
+.micro .chk.top{font-size:12px;margin:8px 0 0}
+/* feedback: the card in the feed, the five faces, and the required box */
+.fbcard{display:flex;align-items:center;gap:10px;background:var(--acc2);border-radius:16px;padding:10px 8px 10px 14px;margin:0 0 14px;text-align:left}
+.fbcard .fe{font-size:22px;line-height:1}
+.fbcard .fx{flex:1;min-width:0;display:flex;flex-direction:column;font-size:12.5px;color:var(--mute)}
+.fbcard .fx b{font-size:13.5px;color:var(--ink)}
+.fbcard .btn{flex:0 0 auto}.fbcard .ib{width:32px;height:32px;flex:0 0 auto}
+.faces{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.faces label{position:relative;margin:0;border:1px solid var(--line);background:var(--chip);border-radius:14px;padding:8px 2px 6px;font-size:11.5px;font-weight:500;color:var(--mute);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;transition:.15s}
+.faces label:hover{border-color:var(--lineh)}
+.faces input{position:absolute;opacity:0;pointer-events:none}
+.faces span{font-size:24px;line-height:1.2}
+.faces label:has(input:checked){border-color:var(--acc);background:var(--acc2);color:var(--accink);font-weight:600}
+.faces label:has(input:focus-visible){outline:2px solid var(--acc);outline-offset:2px}
+.chk.top a{color:var(--acc)}
+.fbreq{background:var(--acc2);border-radius:12px;padding:10px 12px}
 .sosb{border:0;background:var(--bad);color:#fff;font-weight:800;font-size:11.5px;letter-spacing:.05em;border-radius:99px;padding:6px 11px;cursor:pointer;margin:0 4px}
 .msg .who{display:flex;align-items:center;gap:6px}
 .mflag{border:0;background:none;color:var(--mute);cursor:pointer;padding:2px;margin-left:auto;opacity:.55;display:inline-flex}

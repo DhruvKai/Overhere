@@ -13,8 +13,12 @@ const EV={app_open:'Opened the app',tab_view:'Switched tab',swipe:'Swiped a card
   follow:'Followed a host',unfollow:'Unfollowed a host',filter:'Used a filter',sort:'Changed sort',map_view:'Opened the map',alert_saved:'Saved an alert',chat_message:'Sent a chat message',
   chat_mute:'Muted a chat',poll_created:'Created a poll',poll_vote:'Voted in a poll',sos_opened:'Opened SOS',safe_checkin:'Confirmed arrived safely',micro_feedback:'Answered a quick question',
   micro_dismissed:'Skipped a quick question',onboarding_done:'Finished sign-up in the app',theme:'Changed appearance',pwa_install:'Install prompt answered',
-  account_created:'Created an account',profile_created:'Created a profile',verify_passed:'Passed a face or ID check',signed_out:'Signed out',activity_cancelled:'Cancelled a plan'};
+  account_created:'Created an account',profile_created:'Created a profile',verify_passed:'Passed a face or ID check',signed_out:'Signed out',activity_cancelled:'Cancelled a plan',
+  feedback_opened:'Opened the feedback form',feedback_sent:'Sent feedback from the app',feedback_card_dismissed:'Said "not now" to the feedback card',micro_why_sent:'Said why after a quick question'};
 const MICRO={swipe:'Swiping to find plans',request:'Asking to join',post:'Posting a plan',rating:'Rating a meetup'};
+/* Where feedback came from (feedback.source); rows from before that column are from the landing page. */
+const SRC={landing:'Landing page form','app:header':'App: Feedback button','app:beta':'App: Beta tag','app:profile':'App: Profile screen','app:card':'App: card in the feed','app:meetup':'App: after rating a meetup'};
+const srcName=k=>SRC[k]||(k.startsWith('micro:')?'Why, after quick question: '+(MICRO[k.slice(6)]||k.slice(6)).toLowerCase():k);
 let PASS='',last=null;
 
 async function fetchStats(){
@@ -55,11 +59,12 @@ function reviewPanel(rv){
 /* Same totals, worked out from data saved in this browser when Supabase is not connected. */
 function localStats(){
   let all={};try{all=JSON.parse(localStorage.getItem(LKEY)||'{}')}catch(e){}
-  const P=all.participants||[],F=all.feedback||[],E=all.events||[];
+  const P=all.participants||[],F=all.feedback||[],E=all.events||[],R=F.filter(f=>f.rating);
   const cnt=(arr,f)=>arr.reduce((o,x)=>{[].concat(f(x)).forEach(k=>{if(k!=null&&k!=='')o[k]=(o[k]||0)+1});return o},{});
   const micro={};E.filter(e=>e.name==='micro_feedback'&&/^[1-4]$/.test(String(e.props?.score))).forEach(e=>{const m=micro[e.props.moment]=micro[e.props.moment]||{s:0,n:0};m.s+=+e.props.score;m.n++});
   return {participants:P.length,by_gender:cnt(P,p=>p.gender),by_hood:cnt(P,p=>p.neighborhood),by_interest:cnt(P,p=>p.interests||[]),signups_by_day:{},
-    feedback:F.length,avg_rating:F.length?F.reduce((a,f)=>a+f.rating,0)/F.length:null,rating_dist:cnt(F,f=>f.rating),would_use:cnt(F,f=>f.would_use||'No answer'),
+    feedback:F.length,rated:R.length,avg_rating:R.length?R.reduce((a,f)=>a+f.rating,0)/R.length:null,rating_dist:cnt(R,f=>f.rating),
+    would_use:cnt(F.filter(f=>!String(f.source||'').startsWith('micro:')),f=>f.would_use||'No answer'),by_source:cnt(F,f=>f.source||'landing'),
     quotes:F.filter(f=>f.consent_quote&&(f.liked||f.improve)).slice(-30).reverse(),events:cnt(E,e=>e.name),
     micro:Object.fromEntries(Object.entries(micro).map(([k,v])=>[k,{avg:v.s/v.n,n:v.n}])),tried:new Set(E.map(e=>e.participant_id).filter(Boolean)).size,sessions_30d:new Set(E.map(e=>e.session_id)).size};
 }
@@ -87,7 +92,8 @@ function dayChart(byDay){
 function view(st,rv){
   last=new Date();
   const P=Number(st.participants||0),T=Number(st.tried||0),F=Number(st.feedback||0),wu=st.would_use||{},wuN=sum(wu);
-  const avg=st.avg_rating==null?null:Number(st.avg_rating);
+  const avg=st.avg_rating==null?null:Number(st.avg_rating),rated=st.rated==null?F:Number(st.rated);   // rated: the dashboard from before schema-app.sql was re-run
+  const srcs=sorted(st.by_source).map(([k,v])=>[srcName(k),v]);
   const EVs=sorted(st.events).map(([k,v])=>[EV[k]||k,v]);
   const micro=Object.entries(st.micro||{}).map(([k,v])=>[MICRO[k]||k,Number(v.avg),Number(v.n)]).sort((a,b)=>b[1]-a[1]);
   const funnel=[['Signed up',P],['Posted or joined a plan',T],['Gave feedback',F]];
@@ -102,7 +108,7 @@ function view(st,rv){
     <div class="panel kpi hero"><div class="l">Sign-ups</div><div class="v">${num(P)}</div><div class="s">${num(st.sessions_30d||0)} app sessions in the last 30 days</div></div>
     <div class="panel kpi"><div class="l">Posted or joined a plan</div><div class="v">${num(T)}</div><div class="s">${P?pct(T,P)+'% of sign-ups':'–'}</div></div>
     <div class="panel kpi"><div class="l">Feedback responses</div><div class="v">${num(F)}</div><div class="s">${P?pct(F,P)+'% of sign-ups':'–'}</div></div>
-    <div class="panel kpi"><div class="l">Average rating</div><div class="v">${avg==null?'–':avg.toFixed(1)+' / 5'}</div><div class="s">${F?'from '+num(F)+' responses':'no ratings yet'}</div></div>
+    <div class="panel kpi"><div class="l">Average rating</div><div class="v">${avg==null?'–':avg.toFixed(1)+' / 5'}</div><div class="s">${rated?'from '+num(rated)+' responses':'no ratings yet'}</div></div>
     <div class="panel kpi"><div class="l">Would use it</div><div class="v">${wuN?pct(wu.Yes||0,wuN)+'%':'–'}</div><div class="s">${wuN?`said Yes (${num(wu.Maybe||0)} maybe)`:'no answers yet'}</div></div>
   </div>
   <div class="grid two">
@@ -115,11 +121,12 @@ function view(st,rv){
     ${panel('Interests','people who picked each',bars(sorted(st.by_interest))+table(['Interest','People'],sorted(st.by_interest)))}
     ${panel('Ratings','feedback responses',bars(rating)+table(['Rating','Responses'],rating))}
     ${panel('Would you use this in your city?','responses',bars(would)+table(['Answer','Responses'],would))}
+    ${panel('Where feedback comes from','responses, by the way people got to the form',srcs.length?bars(srcs)+table(['Where','Responses'],srcs):'<p class="empty">No feedback yet.</p>')}
     ${panel('Quick questions in the app','average ease, 1 to 4',micro.length?bars(micro.map(([l,a])=>[l,a]),{max:4,fmt:v=>v.toFixed(1),tip:(l,v)=>`${l}: ${v.toFixed(1)} of 4 (${micro.find(m=>m[0]===l)[2]} answers)`})+table(['Moment','Average (1-4)','Answers'],micro.map(([l,a,n])=>[l,a.toFixed(2),n])):'<p class="empty">No answers yet.</p>')}
   </div>
   ${panel('What testers do in the app','times each action happened',bars(EVs.slice(0,20))+(EVs.length>20?`<p class="small mute" style="margin-top:8px">Showing the top 20 of ${EVs.length} actions. The table has all of them.</p>`:'')+table(['Action','Times'],EVs))}
   <div style="height:16px"></div>
-  ${panel('What people said','only people who agreed to be quoted',(st.quotes||[]).length?`<div class="quotes">${st.quotes.map(q=>`<div class="q"><div class="st">${'★'.repeat(q.rating)}${'☆'.repeat(5-q.rating)} · ${q.at?new Date(q.at).toLocaleDateString([], {day:'numeric',month:'short'}):''}</div>${q.liked?`<p><b>Liked:</b> ${esc(q.liked)}</p>`:''}${q.improve?`<p style="margin:0"><b>Missing or confusing:</b> ${esc(q.improve)}</p>`:''}</div>`).join('')}</div>`:'<p class="empty">No quotable feedback yet.</p>')}`;
+  ${panel('What people said','only people who agreed to be quoted',(st.quotes||[]).length?`<div class="quotes">${st.quotes.map(q=>`<div class="q"><div class="st">${q.rating?'★'.repeat(q.rating)+'☆'.repeat(5-q.rating):'After a quick question'} · ${q.at?new Date(q.at).toLocaleDateString([], {day:'numeric',month:'short'}):''}</div>${q.liked?`<p><b>Liked:</b> ${esc(q.liked)}</p>`:''}${q.improve?`<p style="margin:0"><b>Missing or confusing:</b> ${esc(q.improve)}</p>`:''}</div>`).join('')}</div>`:'<p class="empty">No quotable feedback yet.</p>')}`;
   $('#refresh').onclick=load;
   document.querySelectorAll('[data-rv]').forEach(b=>b.onclick=async()=>{
     b.disabled=true;

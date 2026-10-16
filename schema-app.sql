@@ -253,6 +253,14 @@ drop policy if exists "signed-in people can log events" on events;
 revoke insert, update, delete on table participants, feedback, events from anon, authenticated;
 create index if not exists events_session_idx on events (session_id, created_at);
 create index if not exists events_participant_idx on events (participant_id, created_at);
+-- Where each piece of feedback came from: 'landing' (the form on the home page), 'app:<way in>' (the feedback sheet in
+-- the app: header, beta, profile, card or meetup), or 'micro:<moment>' (a line on why, after a quick question). Rows from
+-- before this column are from the landing page. A line on why has no rating, so rating may be empty.
+alter table feedback add column if not exists source text;
+alter table feedback alter column rating drop not null;
+do $$ begin
+  alter table feedback add constraint f_source check (source ~ '^(landing|app:[a-z]{1,12}|micro:[a-z_]{1,20})$');
+exception when duplicate_object then null; end $$;
 
 -- Dashboard password: stored as a bcrypt hash (a plain one set with insert/update is hashed on save), and after
 -- 20 wrong tries in 15 minutes the dashboard refuses every password until the 15 minutes pass.
@@ -1117,10 +1125,14 @@ begin
     'by_city',        (select coalesce(jsonb_object_agg(c, n), '{}') from (select trim(regexp_replace(hood, '^.*,', '')) c, count(*) n from profiles where not is_sample group by 1) x),
     'by_interest',    (select coalesce(jsonb_object_agg(i, n), '{}') from (select unnest(ints) i, count(*) n from profiles where not is_sample group by 1) x),
     'signups_by_day', (select coalesce(jsonb_object_agg(d, n), '{}') from (select to_char(created_at at time zone 'Asia/Kolkata', 'YYYY-MM-DD') d, count(*) n from profiles where not is_sample and created_at > now() - interval '30 days' group by 1) x),
+    -- every piece of feedback counts; ratings and "would use" only come from the full forms, not the lines on why
     'feedback',       (select count(*) from feedback),
+    'rated',          (select count(*) from feedback where rating is not null),
     'avg_rating',     (select round(avg(rating)::numeric, 2) from feedback),
-    'rating_dist',    (select coalesce(jsonb_object_agg(rating, n), '{}') from (select rating, count(*) n from feedback group by rating) x),
-    'would_use',      (select coalesce(jsonb_object_agg(coalesce(would_use, 'No answer'), n), '{}') from (select would_use, count(*) n from feedback group by would_use) x),
+    'rating_dist',    (select coalesce(jsonb_object_agg(rating, n), '{}') from (select rating, count(*) n from feedback where rating is not null group by rating) x),
+    'would_use',      (select coalesce(jsonb_object_agg(coalesce(would_use, 'No answer'), n), '{}') from (select would_use, count(*) n from feedback
+                         where coalesce(source, 'landing') not like 'micro:%' group by would_use) x),
+    'by_source',      (select coalesce(jsonb_object_agg(src, n), '{}') from (select coalesce(source, 'landing') src, count(*) n from feedback group by 1) x),
     'quotes',         (select coalesce(jsonb_agg(jsonb_build_object('rating', rating, 'liked', liked, 'improve', improve, 'at', created_at) order by created_at desc), '[]')
                          from (select * from feedback where consent_quote and (liked is not null or improve is not null) order by created_at desc limit 30) x),
     'events',         (select coalesce(jsonb_object_agg(name, n), '{}') from (select name, count(*) n from events v
@@ -1193,17 +1205,22 @@ begin
   insert into events (id, participant_id, session_id, name, props) values (gen_random_uuid(), u, p_session, p_name, coalesce(p_props, '{}'));
 end $$;
 
--- Feedback from the landing page's form. Linked to the login when there is one; at most 60 an hour from everyone.
+-- Feedback from the landing page's form and the app's feedback sheet and quick questions (source says which).
+-- Linked to the login when there is one; at most 60 an hour from everyone.
 create or replace function send_feedback(p jsonb) returns void language plpgsql security definer set search_path = public as $$
+declare src text := coalesce(nullif(p->>'source', ''), 'landing'); why text := nullif(left(trim(p->>'improve'), 1000), '');
 begin
   if not coalesce((p->>'consent_store')::boolean, false) then raise exception 'Please tick the required consent box to send feedback.'; end if;
+  -- a line on why (after a quick question) is just the text; everything else needs a rating
+  if src like 'micro:%' and why is null then raise exception 'Please write a few words first.'; end if;
+  if src not like 'micro:%' and p->>'rating' is null then raise exception 'Please pick a rating.'; end if;
   if (select count(*) from feedback where created_at > now() - interval '1 hour') >= 60 then
     raise exception 'A lot of feedback is arriving right now. Please try again in an hour.';
   end if;
-  insert into feedback (id, participant_id, rating, liked, improve, would_use, consent_store, consent_quote, consent_contact, consent_version)
-  values (gen_random_uuid(), auth.uid(), (p->>'rating')::int, nullif(left(trim(p->>'liked'), 1000), ''), nullif(left(trim(p->>'improve'), 1000), ''),
+  insert into feedback (id, participant_id, rating, liked, improve, would_use, consent_store, consent_quote, consent_contact, consent_version, source)
+  values (gen_random_uuid(), auth.uid(), case when src like 'micro:%' then null else (p->>'rating')::int end, nullif(left(trim(p->>'liked'), 1000), ''), why,
           p->>'would_use', true, coalesce((p->>'consent_quote')::boolean, false), coalesce((p->>'consent_contact')::boolean, false),
-          left(coalesce(p->>'consent_version', 'v1'), 20));
+          left(coalesce(p->>'consent_version', 'v1'), 20), src);
 end $$;
 
 -- "Delete my account" in the app. Plans this person hosts are cancelled (members are told), they leave the groups

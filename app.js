@@ -19,7 +19,7 @@ const IC={
   'settings-2':'<path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/>',
   'message-circle':'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
   'messages-square':'<path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/>',
-  megaphone:'<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+  'message-heart':'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M15.8 9.2a2.5 2.5 0 0 0-3.5 0l-.3.4-.35-.3a2.42 2.42 0 1 0-3.2 3.6l3.6 3.5 3.6-3.5c1.2-1.2 1.1-2.7.2-3.7"/>',
   send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
   clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
   flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
@@ -114,6 +114,9 @@ let USERS={};
 const CAT_INT={movies:'Movies',cafe:'Cafe / Food',concerts:'Concerts'};
 const CHAT_REASONS=['Harassment or threats','Sexual or unwanted messages','Spam or scam','Hate speech','Copyright infringement','Something else'];
 const MICRO={swipe:'Was swiping an easy way to find plans?',request:'How easy was it to ask to join?',post:'How easy was posting your plan?',rating:'Was rating the meetup quick enough?'};
+/* The feedback sheet: the consent wording version (same as the landing page's form) and its five faces. */
+const FEEDBACK_V='v1';
+const FACES=[['😞','Bad'],['😕','Meh'],['😐','OK'],['🙂','Good'],['😍','Love it']];
 const REPORT_REASONS=['Made me feel unsafe','Inappropriate messages or behaviour','Fake profile or scam',"Didn't show up",'Copyright infringement','Something else'];
 const REPEAT={weekly:'Every week',biweekly:'Every 2 weeks',monthly:'Every month'};
 const NK={req:{ic:'user-check',bg:'#E7F0E1',fg:'#336842'},update:{ic:'layers',bg:'#DBEAFE',fg:'#1D4ED8'},remind:{ic:'calendar',bg:'#FEF3C7',fg:'#A16207'}};
@@ -189,7 +192,7 @@ function applyState(st){
   (st.ratings||[]).forEach(r=>{S.ratings[r.act]={at:r.at,ok:r.ok,stars:r.stars,people:Object.fromEntries(Object.entries(r.people||{}).map(([k,v])=>[mid(k),v]))}});
   S.blocked=(st.blocked||[]).map(mid);
   if(!first){const fresh=S.notes.filter(n=>!n.read&&!known.has(n.id));if(fresh.length)toast(fresh[0].title+' · '+fresh[0].text)}
-  checkNewPlans();
+  checkNewPlans();countOpen();
   try{localStorage.setItem('overhere_participant',JSON.stringify({id:ME,name:S.me.name}))}catch(e){}
 }
 /* Reminder flags saved for one activity: only the known keys, with plain values. */
@@ -488,9 +491,41 @@ function track(name,props={}){
 function askMicro(k){if(MICRO[k]&&!S.asked[k])ui.micro=k}
 function microHtml(){
   const k=ui.micro;if(!k||ui.modal)return '';
+  /* after "Hard" or "OK", one line on why (ui.microWhy holds the score) */
+  if(ui.microWhy)return `<div class="micro" role="dialog" aria-label="Quick question"><div class="mq"><span>Thanks! One more thing</span><button class="ib" data-a="microx" aria-label="Skip">${I('x',15)}</button></div>
+  <p><label for="mf_t" style="margin:0;font-size:inherit">${ui.microWhy===1?'What made it hard?':'What would have made it easier?'}</label></p>
+  <textarea id="mf_t" class="mft" maxlength="1000" placeholder="A few words is plenty"></textarea>
+  <label class="chk top"><input type="checkbox" id="mf_ok"> <span><b>Required:</b> I agree this is stored and used to improve Overhere (<a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>).</span></label>
+  <div class="row" style="margin-top:8px"><button class="btn sm ghost" data-a="microx">Skip</button><button class="btn sm" id="mf_go" data-a="microsend" disabled><span class="spin" aria-hidden="true"></span>Send</button></div></div>`;
   return `<div class="micro" role="dialog" aria-label="Quick question"><div class="mq"><span>Quick question</span><button class="ib" data-a="microx" aria-label="Dismiss question">${I('x',15)}</button></div><p>${MICRO[k]}</p>
   <div class="mf">${[['😞','Hard',1],['😐','OK',2],['🙂','Easy',3],['😀','Very easy',4]].map(([e,l,n])=>`<button data-a="microans" data-n="${n}"><span aria-hidden="true">${e}</span>${l}</button>`).join('')}</div></div>`;
 }
+/* ---- the feedback sheet, and when to ask for it ---- */
+/* S.asked also remembers: fbSent (when you last sent feedback from the app), fbFirst and fbOpens (your first visit and
+   how many times you've opened the app), fbNo and fbNoAt (how often, and when, you said "not now" to the card). */
+const FB_AFTER=2*864e5,FB_AGAIN=7*864e5;
+let OPENED=false;
+function countOpen(){if(OPENED||!S.me)return;OPENED=true;const a=S.asked;a.fbOpens=(a.fbOpens||0)+1;if(!a.fbFirst)a.fbFirst=now();save()}
+/* The card in the feed shows from your 3rd visit or 2nd day, and once more a week after "not now". */
+function fbDue(){
+  const a=S.asked||{};if(a.fbSent||(a.fbNo||0)>=2)return false;
+  if(a.fbNo&&now()-(a.fbNoAt||0)<FB_AGAIN)return false;
+  return (a.fbOpens||0)>=3||(!!a.fbFirst&&now()-a.fbFirst>=FB_AFTER);
+}
+const fbCard=()=>fbDue()?`<div class="fbcard"><span class="fe" aria-hidden="true">💬</span><div class="fx"><b>How's Overhere going so far?</b><span>20 seconds, and it shapes what we build next.</span></div>
+  <button class="btn sm" data-a="fb" data-k="card">Tell us</button><button class="ib" data-a="fbnot" title="Not now" aria-label="Not now">${I('x',15)}</button></div>`:'';
+/* Send stays off until the required parts are done, and the line under it says what's missing. */
+function fbState(){
+  const b=document.getElementById('fb_go');if(b&&!b.classList.contains('busy')){
+    const r=!!document.querySelector('input[name=fb_r]:checked'),ok=!!document.getElementById('fb_ok')?.checked;
+    b.disabled=!(r&&ok);
+    const w=document.getElementById('fb_why');if(w)w.textContent=r&&ok?'':!r&&!ok?'Pick a face and tick the required box to send.':!r?'Pick a face to send.':'Tick the required box to send.';
+  }
+  const m=document.getElementById('mf_go');if(m&&!m.classList.contains('busy'))m.disabled=!(val('mf_t')&&document.getElementById('mf_ok')?.checked);
+}
+function busyBtn(b,on){if(!b)return;b.disabled=on;b.classList.toggle('busy',on);if(on)b.setAttribute('aria-busy','true');else b.removeAttribute('aria-busy')}
+/* send_feedback (schema-app.sql) links it to your login and limits how much can arrive. */
+async function sendFeedback(p){await call('send_feedback',{p:{consent_store:true,consent_version:FEEDBACK_V,...p}})}
 /* ---- theme + install ---- */
 let installEvt=null;
 const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
@@ -781,8 +816,8 @@ const whereBar=()=>`<div class="wbar"><button class="where" data-a="citymenu" ar
   ${VIEW.auto&&viewCity()?`<div class="dn" style="margin:0 0 14px;text-align:left">${I('compass',14)} Overhere is new in ${esc(homeName())}, so you're seeing plans in ${esc(viewName())} (${Math.round(kmBetween(homeLL(),viewLL()))} km away) too. Anything posted near you shows here first. <button class="lnk" data-a="citymenu">Pick another city</button></div>`:''}`;
 function tabSwipe(){
   const d=deck();
-  if(!d.length)return whereBar()+lockedNote()+empty('compass','Nothing new right now',`You have gone through all plans happening soon ${esc(whereTxt())}. Check Discover for plans further out, or pick another city.`,'<button class="btn" data-a="tab" data-t="discover">Go to Discover</button>');
-  return `<div class="deck">${whereBar()}<h1 class="pt">What's happening tonight?</h1><p class="sub">Activities today and tomorrow · Tap a card for details</p>${lockedNote()}
+  if(!d.length)return whereBar()+fbCard()+lockedNote()+empty('compass','Nothing new right now',`You have gone through all plans happening soon ${esc(whereTxt())}. Check Discover for plans further out, or pick another city.`,'<button class="btn" data-a="tab" data-t="discover">Go to Discover</button>');
+  return `<div class="deck">${whereBar()}${fbCard()}<h1 class="pt">What's happening tonight?</h1><p class="sub">Activities today and tomorrow · Tap a card for details</p>${lockedNote()}
   <div class="stack">${d[1]?cardHtml(d[1],'back'):''}${cardHtml(d[0],'top')}</div>
   <div class="acts"><button class="rb" data-a="swipe" data-d="left" title="Skip">${I('x',24)}</button>
   <div class="cnt">1 of ${d.length}<br>← dismiss · request →</div>
@@ -814,7 +849,7 @@ function tabDiscover(){
   else if(f.sort==='near')list.sort((a,b)=>kmAway(a)-kmAway(b)||a.when-b.when);
   const alertable=act.some(([k])=>k!=='date'),saved=S.alerts.some(x=>x.label===alertLabel(f));
   return `${whereBar()}<div class="hd"><div><h1 class="pt">All upcoming plans</h1><p class="sub">${all.length} upcoming ${esc(whereTxt())}, from ${dLbl(dayKey(swipeEnd()))} onwards</p></div><button class="btn sm mobonly" data-a="newpost">${I('plus',15)} Post</button></div>
-  ${lockedNote()}${(()=>{const n=deck().length;return `<div class="alerts"><button class="alchip tn" data-a="tab" data-t="swipe">${I('flame',13)} Tonight &amp; tomorrow${n?` · ${n}`:''}</button>${S.savedF.map(sf=>`<span class="alchip sf"><button class="lnk" data-a="applyf" data-id="${sf.id}">${I('filter',12)} ${esc(sf.label)}</button><button data-a="rmf" data-id="${sf.id}" aria-label="Remove saved filters ${esc(sf.label)}">${I('x',12)}</button></span>`).join('')}</div>`})()}${S.alerts.length?`<div class="alerts"><span class="small mute" style="display:inline-flex;align-items:center;gap:4px">${I('bell',13)} Your alerts</span>${S.alerts.map(al=>`<span class="alchip">${esc(al.label)}<button data-a="rmalert" data-id="${al.id}" aria-label="Remove alert ${esc(al.label)}">${I('x',12)}</button></span>`).join('')}</div>`:''}
+  ${lockedNote()}${fbCard()}${(()=>{const n=deck().length;return `<div class="alerts"><button class="alchip tn" data-a="tab" data-t="swipe">${I('flame',13)} Tonight &amp; tomorrow${n?` · ${n}`:''}</button>${S.savedF.map(sf=>`<span class="alchip sf"><button class="lnk" data-a="applyf" data-id="${sf.id}">${I('filter',12)} ${esc(sf.label)}</button><button data-a="rmf" data-id="${sf.id}" aria-label="Remove saved filters ${esc(sf.label)}">${I('x',12)}</button></span>`).join('')}</div>`})()}${S.alerts.length?`<div class="alerts"><span class="small mute" style="display:inline-flex;align-items:center;gap:4px">${I('bell',13)} Your alerts</span>${S.alerts.map(al=>`<span class="alchip">${esc(al.label)}<button data-a="rmalert" data-id="${al.id}" aria-label="Remove alert ${esc(al.label)}">${I('x',12)}</button></span>`).join('')}</div>`:''}
   <div class="dtools"><button class="fbtn ${act.length?'on':''}" data-a="filters" aria-haspopup="dialog">${I('filter',14)} Filters${act.length?`<b aria-label="${act.length} active">${act.length}</b>`:''}</button>
   <button class="fbtn" data-a="sortmenu" aria-haspopup="dialog" aria-label="Sort by ${SORTS[f.sort][1]}">${I('arrow-up-down',14)} Sort: ${SORTS[f.sort][1]}</button>
   ${SEG('fview',f.view,[['list',I('list',13)+'<span class="tl">List</span>','List view'],['map',I('map',13)+'<span class="tl">Map</span>','Map view']])}</div>
@@ -933,6 +968,9 @@ function tabProfile(){
   <div class="bar"><i style="width:${done/V.length*100}%"></i></div>
   <div class="vg">${V.map(vi).join('')}</div></div>
   <div class="panel"><div class="ph">${I('user-plus',15)} Following</div>${S.following.length?S.following.map(u=>`<div class="blk">${av(u,'sm')}<button class="hlink" data-a="user" data-id="${u}">${esc(uname(u))}</button><button class="lnk" data-a="follow" data-id="${u}">Unfollow</button></div>`).join(''):'<p class="small mute" style="margin:0">Follow hosts from their profile to hear when they post a new plan.</p>'}</div>
+  <div class="panel fbp"><div class="ph">${I('message-heart',15)} Help shape Overhere</div>
+  <p class="small mute" style="margin-top:0">Overhere is in beta. Tell us what's working, what's confusing and what you'd like next. It takes about 20 seconds.</p>
+  <button class="btn sm" data-a="fb" data-k="profile">${I('message-heart',14)} Send feedback</button>${S.asked.fbSent?`<span class="small mute" style="margin-left:10px">Last sent ${new Date(S.asked.fbSent).toLocaleDateString([], {day:'numeric',month:'short'})}. Thank you!</span>`:''}</div>
   <div class="panel"><div class="ph">${I('sun',15)} App</div>
   <label style="margin-top:0">Appearance</label><span class="seg" role="radiogroup" aria-label="Appearance">${[['system','System'],['light','Light'],['dark','Dark']].map(([k,l])=>`<button role="radio" aria-checked="${th===k}" class="${th===k?'on':''}" data-a="theme" data-k="${k}">${l}</button>`).join('')}</span>
   <label>Install</label>${isStandalone()?'<p class="small mute" style="margin:0">Overhere is installed on this device.</p>':installEvt?`<button class="btn sm sec" data-a="install">${I('download',14)} Install Overhere</button>`:ios?'<p class="small mute" style="margin:0">On iPhone: tap Share, then “Add to Home Screen”.</p>':'<p class="small mute" style="margin:0">Open the published site in Chrome or Edge and use “Install app” in the address bar. Installing is not available from a file or inside the beta page.</p>'}
@@ -951,6 +989,22 @@ function tabProfile(){
 function modalHtml(){
   const m=ui.modal;if(!m)return '';
   const sheet=(title,body,cls='')=>`<div class="ov" data-a="closebg"><div class="sheet ${cls}" data-stop="1"><div class="sh"><h2>${title}</h2><button class="ib" data-a="close" title="Close">${I('x',18)}</button></div>${body}</div></div>`;
+  if(m.type==='feedback'){
+    const meet=m.k==='meetup';
+    return sheet(meet?'And Overhere itself?':'Send feedback',`<div class="sb">
+      <p class="small mute" style="margin-top:0">${meet?'Thanks for rating your meetup. One more quick one, about the app this time.':"Overhere is in beta and we're a small team. We read every message."}</p>
+      <label style="margin-top:0" id="fb_rl">How's Overhere working for you?</label>
+      <div class="faces" role="radiogroup" aria-labelledby="fb_rl">${FACES.map(([e,l],i)=>`<label><input type="radio" name="fb_r" value="${i+1}"><span aria-hidden="true">${e}</span>${l}</label>`).join('')}</div>
+      <label for="fb_t">What's one thing we should change? <span class="mute" style="font-weight:400">(optional)</span></label>
+      <textarea id="fb_t" maxlength="1000" placeholder="Something confusing, missing, or that you'd love to see"></textarea>
+      <label>Would you use Overhere in your city? <span class="mute" style="font-weight:400">(optional)</span></label><div class="opts">${['Yes','Maybe','No'].map(v=>`<label class="opt"><input type="radio" name="fb_u" value="${v}">${v}</label>`).join('')}</div>
+      <div style="height:12px"></div>
+      <label class="chk top"><input type="checkbox" id="fb_q"> <span>Optional: you may quote this publicly, without my name.</span></label>
+      <label class="chk top"><input type="checkbox" id="fb_c"> <span>Optional: you may contact me with follow-up questions.</span></label>
+      <label class="chk top fbreq"><input type="checkbox" id="fb_ok"> <span><b>Required:</b> I agree my feedback is stored and used to improve Overhere (<a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>).</span></label>
+      <div style="height:12px"></div><button class="btn" id="fb_go" data-a="sendfb" disabled><span class="spin" aria-hidden="true"></span>Send feedback</button>
+      <p class="small mute" id="fb_why" aria-live="polite" style="text-align:center;margin:8px 0 0">Pick a face and tick the required box to send.</p></div>`);
+  }
   if(m.type==='verify'){
     const face=m.kind==='face',v=VER[m.kind]||{fails:0,attempts:0,max:5},left=Math.max(0,(v.max||5)-(v.attempts||0)),ic=face?'scan-face':'id-card',live=MODE[m.kind]==='live';
     let inner;
@@ -1505,9 +1559,9 @@ function render(){
   const pend=S.reqs.filter(r=>r.status==='pending'&&actOf(r.act)?.host==='me').length;
   const TT=(k,l)=>`<button class="tt ${ui.tab===k?'on':''}" data-a="tab" data-t="${k}">${l}</button>`;
   const T=(k,ic,l)=>`<button class="${ui.tab===k?'on':''}" data-a="tab" data-t="${k}">${I(ic,20)}${l}</button>`;
-  scr.innerHTML=`<header><div class="hb"><div class="logo"><button class="logob" data-a="tab" data-t="swipe" title="Home" aria-label="Overhere: go to Swipe"><span class="dots"><i></i><i></i></span>Overhere</button></div>
+  scr.innerHTML=`<header><div class="hb"><div class="logo"><button class="logob" data-a="tab" data-t="swipe" title="Home" aria-label="Overhere: go to Swipe"><span class="dots"><i></i><i></i></span>Overhere</button><button class="beta" data-a="fb" data-k="beta" title="Overhere is in beta. Tell us what you think">Beta</button></div>
   <div class="tnav">${TT('swipe','Swipe')}${TT('discover','Discover')}<button class="btn sm" data-a="newpost">${I('plus',15)} Create Activity</button>${TT('acts','Activities'+(pend?` (${pend})`:''))}${TT('reqs','Requests')}</div>
-  <div class="hr"><button class="ib${ui.tab==='chats'?' on':''}" data-a="chats" title="Chats" aria-label="Chats" aria-pressed="${ui.tab==='chats'}">${I('messages-square',19)}${chatUnread()?'<span class="dot"></span>':''}</button><button class="ib${ui.tab==='notes'?' on':''}" data-a="bell" title="Notifications" aria-label="Notifications" aria-pressed="${ui.tab==='notes'}">${I('bell',19)}${unread?'<span class="dot"></span>':''}</button><button class="ib" data-a="fb" title="Leave feedback" aria-label="Leave feedback">${I('megaphone',19)}</button><button class="ib${ui.tab==='profile'?' on':''}" data-a="tab" data-t="profile" title="Your profile" aria-label="Your profile">${av('me')}</button></div></div></header>
+  <div class="hr"><button class="ib${ui.tab==='chats'?' on':''}" data-a="chats" title="Chats" aria-label="Chats" aria-pressed="${ui.tab==='chats'}">${I('messages-square',19)}${chatUnread()?'<span class="dot"></span>':''}</button><button class="ib${ui.tab==='notes'?' on':''}" data-a="bell" title="Notifications" aria-label="Notifications" aria-pressed="${ui.tab==='notes'}">${I('bell',19)}${unread?'<span class="dot"></span>':''}</button><button class="fbb" data-a="fb" data-k="header" title="Tell us what you think of Overhere">${I('message-heart',16)}<span>Feedback</span></button><button class="ib${ui.tab==='profile'?' on':''}" data-a="tab" data-t="profile" title="Your profile" aria-label="Your profile">${av('me')}</button></div></div></header>
   <main><div class="${ui.tab==='discover'?'wrap':'narrow'}">${view}</div></main>
   <nav>${T('swipe','flame','Swipe')}${T('discover','compass','Discover')}${T('acts','calendar-check','Activities'+(pend?` (${pend})`:''))}${T('reqs','mail','Requests')}</nav>${microHtml()}${modalHtml()}`;
   restore();afterRender();
@@ -1526,6 +1580,7 @@ function redraw(){
   if(scene()!==before)return;
   box.querySelectorAll('input,textarea,select').forEach(el=>{const v=vals.get(key(el));if(v===undefined||el.type==='file')return;if(typeof v==='boolean')el.checked=v;else el.value=v});
   if(foc){const el=document.getElementById(foc.id);if(el){el.focus();try{if(foc.s!=null)el.setSelectionRange(foc.s,foc.e)}catch(e){}}}
+  fbState();   // the values put back may have completed (or not) the feedback form
 }
 function afterRender(){
   bindDrag();
@@ -1740,8 +1795,25 @@ const A={
     if(ui.tab!=='notes')ui.prevTab=ui.tab;
     ui.tab='notes';ui.modal=null;render();
   },
-  /* Inside the landing page, it switches that page to its feedback form; in full screen, it opens the form (which links back here). */
-  fb:()=>{if(window.parent!==window){try{window.parent.postMessage('overhere-feedback',location.origin)}catch(e){}}else location.href='index.html#feedback'},
+  /* The feedback sheet opens over whatever you were doing. d.k says where it was opened from (header, beta, profile,
+     card, meetup), which is sent with it. Opening it from the card counts as an answer to the card. */
+  fb:d=>{
+    const k=/^[a-z]{1,12}$/.test(d?.k||'')?d.k:'header';
+    if(k==='card'){S.asked.fbNo=(S.asked.fbNo||0)+1;S.asked.fbNoAt=now();save()}
+    track('feedback_opened',{from:k});ui.modal={type:'feedback',k};render();
+  },
+  sendfb:async()=>{
+    const b=document.getElementById('fb_go'),r=+(document.querySelector('input[name=fb_r]:checked')?.value||0);
+    if(!b||b.disabled||!r||!document.getElementById('fb_ok')?.checked)return fbState();
+    const k=ui.modal?.k||'header';
+    busyBtn(b,true);
+    try{await sendFeedback({rating:r,improve:val('fb_t')||null,would_use:document.querySelector('input[name=fb_u]:checked')?.value||null,
+      consent_quote:!!document.getElementById('fb_q')?.checked,consent_contact:!!document.getElementById('fb_c')?.checked,source:'app:'+k})}
+    catch(e){busyBtn(b,false);return}
+    S.asked.fbSent=now();save();track('feedback_sent',{from:k,rating:r});
+    ui.modal=null;toast('Thank you! We read every one of these.');render();
+  },
+  fbnot:()=>{S.asked.fbNo=(S.asked.fbNo||0)+1;S.asked.fbNoAt=now();save();track('feedback_card_dismissed');render()},
   scan:()=>scan(),
   retry:()=>{ui.err='';render();refresh()},
   /* sign in */
@@ -1931,7 +2003,10 @@ const A={
     const ok=document.querySelector('input[name=rt_ok]:checked')?.value||'yes',people={};
     [a.host,...a.members].filter(x=>x!=='me'&&x!=='?').forEach(u=>{people[u]=document.querySelector(`input[name="rt_${u}"]:checked`)?.value||'show'});
     if(await run('rate_activity',{p_act:a.id,p_ok:ok,p_stars:+st.value,p_people:people})===undefined)return;
-    track('rating_submitted',{stars:+st.value,ok});askMicro('rating');
+    track('rating_submitted',{stars:+st.value,ok});
+    /* the first time, ask about the app as well; after that, just the quick question */
+    if(ok!=='no'&&!S.asked.fbSent&&!S.asked.fbMeet){S.asked.fbMeet=true;save();ui.modal={type:'feedback',k:'meetup'};track('feedback_opened',{from:'meetup'});render();return}
+    askMicro('rating');
     ui.modal=null;toast(ok==='no'?'Thanks for telling us. Our safety team will follow up with you.':'Thanks! Your feedback helps keep meetups good and reliable.');render();
   },
   /* safety */
@@ -1997,8 +2072,18 @@ const A={
   sos:d=>{track('sos_opened');ui.modal={type:'sos',id:d.id,back:ui.modal?.type==='safe'?null:ui.modal,locState:'wait'};render();getLoc()},
   sosloc:()=>{ui.modal.locState='wait';render();getLoc()},
   safeok:d=>{const a=actOf(d.id);if(a){a.arrive='ok'}save();track('safe_checkin',{answer:'ok'});ui.modal=null;toast("Great, have fun! We'll check in again afterwards.");render()},
-  microans:d=>{const k=ui.micro;if(!k)return;track('micro_feedback',{moment:k,score:+d.n});S.asked[k]=true;ui.micro=null;save();toast('Thanks! That helps us improve.');render()},
-  microx:()=>{const k=ui.micro;if(k){track('micro_dismissed',{moment:k});S.asked[k]=true}ui.micro=null;save();render()},
+  /* "Hard" or "OK" asks why in one line; "Easy" and "Very easy" are done. */
+  microans:d=>{const k=ui.micro;if(!k)return;track('micro_feedback',{moment:k,score:+d.n});S.asked[k]=true;save();
+    if(+d.n<=2){ui.microWhy=+d.n;render();document.getElementById('mf_t')?.focus();return}
+    ui.micro=null;toast('Thanks! That helps us improve.');render()},
+  microx:()=>{const k=ui.micro;if(k&&!ui.microWhy){track('micro_dismissed',{moment:k});S.asked[k]=true}ui.micro=null;ui.microWhy=null;save();render()},
+  microsend:async()=>{
+    const k=ui.micro,b=document.getElementById('mf_go'),t=val('mf_t');
+    if(!k||!b||b.disabled||!t||!document.getElementById('mf_ok')?.checked)return fbState();
+    busyBtn(b,true);
+    try{await sendFeedback({improve:t,source:'micro:'+k})}catch(e){busyBtn(b,false);return}
+    track('micro_why_sent',{moment:k});ui.micro=null;ui.microWhy=null;toast('Thank you! That really helps.');render();
+  },
   theme:d=>{try{localStorage.setItem('overhere_theme',d.k)}catch(e){}applyTheme(d.k);track('theme',{mode:d.k});render()},
   install:()=>{if(!installEvt)return;installEvt.prompt();installEvt.userChoice.then(c=>{track('pwa_install',{outcome:c.outcome});installEvt=null;render()}).catch(()=>{})},
   edittrusted:()=>{ui.modal.edit=true;render()},
@@ -2095,6 +2180,7 @@ document.addEventListener('click',e=>{
 document.addEventListener('input',e=>{
   if(e.target.name==='f_cap'){const c=document.getElementById('f_capx');if(c)c.innerHTML=capNote(+e.target.value)}
   if(e.target.id==='r_note'){const c=document.getElementById('r_cnt');if(c)c.textContent=e.target.value.length}
+  if(e.target.id==='mf_t')fbState();
   if(e.target.id==='a_code'){
     const i=e.target,v=i.value.replace(/\D/g,'').slice(0,6);if(i.value!==v)i.value=v;
     if(v&&i.getAttribute('aria-invalid'))fieldMsg('a_code','');
@@ -2131,6 +2217,7 @@ document.addEventListener('change',e=>{
     track('filter',{type:'date'});render()}
   if(e.target.id==='p_usage'){const on=e.target.checked;run('save_profile',{p:{usage_ok:on}}).then(r=>{if(r===undefined){e.target.checked=!on;return}toast(on?'Thanks! Usage statistics are on.':'Usage statistics are off, and what was collected is deleted.')})}
   if(e.target.id==='f_tpl'&&ui.modal?.type==='post'){ui.modal.tpl=e.target.value||null;render()}
+  if(e.target.name==='fb_r'||e.target.id==='fb_ok'||e.target.id==='mf_ok')fbState();
   if(e.target.id==='p_photo'){const f=e.target.files[0];e.target.value='';openCropper(f)}
 });
 document.addEventListener('keydown',e=>{
