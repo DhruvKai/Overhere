@@ -132,8 +132,15 @@ input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--acc)}
 .capx{margin-top:8px}.capx b{color:var(--ink)}
 
 /* sign in / create account */
-.atab{display:flex;width:100%;margin:18px 0 20px}
-.atab button{flex:1;justify-content:center;padding:9px 12px;font-size:13.5px}
+.atab{display:flex;width:100%;margin:18px 0 20px;position:relative}
+.atab button{flex:1;justify-content:center;padding:9px 12px;font-size:13.5px;position:relative;transition:color .2s}
+/* one white pill that slides between the two tabs; what's under the tabs fades in after a switch */
+.atab::before{content:'';position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 4px);border-radius:99px;background:var(--card);box-shadow:var(--shadow);transition:transform .3s cubic-bezier(.3,.7,.4,1)}
+.atab.up::before{transform:translateX(calc(100% + 2px))}
+.seg.atab button.on{background:none;box-shadow:none}
+.aswap.in{animation:aswap .26s ease-out}
+@keyframes aswap{from{opacity:0;transform:translateY(8px)}}
+@media (prefers-reduced-motion:reduce){.atab::before{transition:none}.aswap.in{animation:none}}
 .btn.out{background:var(--card);color:var(--ink);border:1px solid var(--line)}.btn.out:hover{background:var(--hover);border-color:var(--lineh)}
 .lrow{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:14px 0 6px}.lrow label{margin:0}.lrow .lnk{padding:0}
 .fi{position:relative}
@@ -150,19 +157,25 @@ input[aria-invalid=true],input[aria-invalid=true]:focus{border-color:var(--bad)}
 .fhint{font-size:12.5px;color:var(--mute);margin:6px 0 0}.fhint .lnk{padding:0}
 .caps{display:flex;align-items:center;gap:6px;color:var(--warn);font-size:12.5px;font-weight:500;margin:6px 0 0}
 .caps[hidden],.fhint[hidden],.fbad[hidden]{display:none}
-.pws{margin-top:10px}
-.pwbar{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
-.pwbar i{height:5px;border-radius:99px;background:var(--grey);transition:background .25s}
+/* the strength card under a new password: label and bar, a tip about what gives it away, and the checklist */
+.pws{margin-top:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 13px 12px}
+.pwbar{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:8px}
+.pwbar i{height:6px;border-radius:99px;background:var(--grey);transition:background .3s}
 .pws[data-s="1"] .pwbar i:nth-child(-n+1){background:var(--bad)}
 .pws[data-s="2"] .pwbar i:nth-child(-n+2){background:var(--warn)}
 .pws[data-s="3"] .pwbar i:nth-child(-n+3){background:var(--acc)}
 .pws[data-s="4"] .pwbar i{background:var(--ok)}
-.pwl{display:flex;justify-content:space-between;font-size:12px;color:var(--mute);margin:6px 0 0}
-.pws[data-s="1"] .pwl b{color:var(--bad)}.pws[data-s="2"] .pwl b{color:var(--warn)}.pws[data-s="3"] .pwl b{color:var(--accink)}.pws[data-s="4"] .pwl b{color:var(--ok)}
-.pwr{list-style:none;padding:0;margin:8px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:12px;color:var(--mute)}
-.pwr li{display:flex;align-items:center;gap:6px;transition:color .15s}
-.pwr li .i+.i,.pwr li.y .i:first-child{display:none}
-.pwr li.y{color:var(--ok)}.pwr li.y .i+.i{display:inline}
+.pwl{display:flex;justify-content:space-between;align-items:center;min-height:22px;font-size:12.5px;font-weight:600;color:var(--ink);margin:0}
+.pwl b{font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:99px}.pwl b:empty{display:none}
+.pws[data-s="1"] .pwl b{color:var(--bad);background:var(--badbg)}.pws[data-s="2"] .pwl b{color:var(--warn);background:var(--warnbg)}.pws[data-s="3"] .pwl b{color:var(--accink);background:var(--acc2)}.pws[data-s="4"] .pwl b{color:var(--ok);background:var(--okbg)}
+.pwtip{display:flex;align-items:flex-start;gap:7px;margin:10px 0 0;padding:8px 10px;border-radius:10px;background:var(--warnbg);color:var(--warn);font-size:12.5px;font-weight:500;line-height:1.4;animation:fade .2s}
+.pwtip .i{flex:none;margin-top:1px}.pwtip.ok{background:var(--okbg);color:var(--ok)}.pwtip[hidden]{display:none}
+.pwr{list-style:none;padding:0;margin:10px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:12.5px;color:var(--ink)}
+.pwr li{display:flex;align-items:center;gap:7px;opacity:.75;transition:color .2s,opacity .2s}
+.pwc{flex:none;width:16px;height:16px;border-radius:50%;border:1.5px solid var(--lineh);display:inline-flex;align-items:center;justify-content:center;color:var(--card);transition:background .2s,border-color .2s}
+.pwc .i{stroke-width:3.5;transform:scale(0);transition:transform .2s cubic-bezier(.3,1.6,.5,1)}
+.pwr li.y{color:var(--ok);opacity:1}.pwr li.y .pwc{background:var(--ok);border-color:var(--ok)}.pwr li.y .pwc .i{transform:scale(1)}
+@media (prefers-reduced-motion:reduce){.pwtip{animation:none}.pwc .i,.pwc,.pwr li,.pwbar i{transition:none}}
 .fbad{display:flex;align-items:flex-start;gap:8px;background:var(--badbg);color:var(--bad);border-radius:14px;padding:11px 14px;font-size:13px;font-weight:500;margin:0 0 12px}
 .fbad .i{margin-top:1px}.fbad .lnk{padding:0;color:inherit;text-decoration:underline;font-size:inherit}
 .spin{display:none;width:16px;height:16px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite}

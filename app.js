@@ -57,6 +57,7 @@ const IC={
   'eye-off':'<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="m2 2 20 20"/>',
   lock:'<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
   circle:'<circle cx="12" cy="12" r="9"/>',
+  lightbulb:'<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>',
   trash:'<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
   search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
   camera:'<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
@@ -1318,9 +1319,10 @@ const emailField=()=>`<label for="a_email">Email</label><div class="fi">${I('mai
   <p class="ferr" id="a_email_err" aria-live="polite"></p><p class="fhint" id="a_email_hint" aria-live="polite" hidden></p>`;
 const pwField=(id,label,ac,side='')=>`<div class="lrow"><label for="${id}">${label}</label>${side}</div><div class="fi">${I('lock',18)}<input id="${id}" class="pwi" type="password" autocomplete="${ac}" maxlength="72" autocapitalize="off" spellcheck="false" aria-describedby="${id}_err ${id}_caps"><button type="button" class="pwt" data-a="pwshow" data-id="${id}" aria-label="Show password" aria-pressed="false">${I('eye',18)}</button></div>
   <p class="caps" id="${id}_caps" hidden>${I('alert-triangle',14)} Caps Lock is on</p><p class="ferr" id="${id}_err" aria-live="polite"></p>`;
-const pwMeter=()=>`<div class="pws" id="a_pws" data-s="0"><div class="pwbar"><i></i><i></i><i></i><i></i></div>
-  <p class="pwl"><span>Password strength</span><b id="a_pwl" aria-live="polite"></b></p>
-  <ul class="pwr">${PW_RULES.map(([t])=>`<li>${I('circle',13)}${I('check',13)}${t}</li>`).join('')}</ul></div>`;
+const pwMeter=()=>`<div class="pws" id="a_pws" data-s="0">
+  <p class="pwl"><span>Password strength</span><b id="a_pwl" aria-live="polite"></b></p><div class="pwbar"><i></i><i></i><i></i><i></i></div>
+  <p class="pwtip" id="a_pwtip" aria-live="polite" hidden></p>
+  <ul class="pwr">${PW_RULES.map(([t])=>`<li><span class="pwc">${I('check',11)}</span>${t}</li>`).join('')}</ul></div>`;
 const ERRBOX='<p class="fbad" id="a_formerr" role="alert" hidden></p>';
 const goBtn=t=>`<button class="btn" id="a_go" type="submit"><span class="spin" aria-hidden="true"></span>${t}</button>`;
 /* "Open Gmail" and the like on the check-your-email screen, for the big providers. */
@@ -1365,10 +1367,11 @@ function authHtml(){
     <div style="height:18px"></div>${ERRBOX}${goBtn('Verify')}</form>
     <p class="small" style="text-align:center;margin-top:14px">Didn't get it? <button class="lnk" id="a_resend" data-a="sendcode" data-k="again"${left>0?' disabled':''}>${left>0?`Resend code in ${left}s`:'Resend code'}</button> · <button class="lnk" data-a="authmode" data-k="phone">Change number</button></p></div>`;
   }
-  const up=md==='up';
+  /* anim: the tab you just left. The pill starts there and authmode slides it across. */
+  const up=md==='up',was=ui.auth.anim;
   return `<div class="ob">${LOGO}<p class="mute">Do things in your city with company. Post a plan you are already making, pick who joins. Not a dating app.</p>
-    <div class="seg atab"><button type="button" class="${up?'':'on'}" aria-pressed="${!up}" data-a="authmode" data-k="in">Sign in</button><button type="button" class="${up?'on':''}" aria-pressed="${up}" data-a="authmode" data-k="up">Create account</button></div>
-    <h1 class="pt">${up?'Create your account':'Welcome back'}</h1><p class="sub">${up?'Free, and it takes under a minute.':'Sign in to see plans near you.'}</p>
+    <div class="seg atab${(was?was==='up':up)?' up':''}"><button type="button" class="${up?'':'on'}" aria-pressed="${!up}" data-a="authmode" data-k="in">Sign in</button><button type="button" class="${up?'on':''}" aria-pressed="${up}" data-a="authmode" data-k="up">Create account</button></div>
+    <div class="aswap${was?' in':''}"><h1 class="pt">${up?'Create your account':'Welcome back'}</h1><p class="sub">${up?'Free, and it takes under a minute.':'Sign in to see plans near you.'}</p>
     ${up?AGEBOX.replace('margin-top:14px','margin:0 0 14px'):''}<button class="btn out" disabled aria-disabled="true" title="Coming soon" style="cursor:not-allowed">${GOOGLE_G} Continue with Google <span class="small mute" style="font-weight:500">· Coming soon</span></button>
     ${CFG.PHONE_LOGIN?`<div style="height:8px"></div><button class="btn out" data-a="authmode" data-k="phone">${I('phone',16)} Continue with phone</button>`:''}
     <div class="or">or with email</div>
@@ -1379,7 +1382,7 @@ function authHtml(){
     ${up?'<p class="small mute" style="text-align:center;margin-top:12px">By creating an account you agree to our <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a>.</p>':''}
     <p class="small" style="text-align:center;margin-top:14px">${up?'Already have an account? <button class="lnk" data-a="authmode" data-k="in">Sign in</button>'
       :'New here? <button class="lnk" data-a="authmode" data-k="up">Create an account</button>'}</p>
-    <p class="small mute" style="text-align:center;margin-top:10px"><a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> · <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a> · <a href="copyright.html" target="_blank" rel="noopener" style="color:inherit">Copyright</a> · <a href="credits.html" target="_blank" rel="noopener" style="color:inherit">Credits</a></p></div>`;
+    <p class="small mute" style="text-align:center;margin-top:10px"><a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> · <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a> · <a href="copyright.html" target="_blank" rel="noopener" style="color:inherit">Copyright</a> · <a href="credits.html" target="_blank" rel="noopener" style="color:inherit">Credits</a></p></div></div>`;
 }
 function onboardHtml(){
   let body;
@@ -1611,22 +1614,56 @@ const PW_RULES=[['8+ characters',p=>p.length>=8],['Upper and lowercase',p=>/[a-z
 const COMMON_PW=new Set(['password','password1','password12','password123','passw0rd','12345678','123456789','1234567890','87654321','11111111','00000000',
   'qwerty12','qwerty123','qwertyuiop','asdfghjkl','1q2w3e4r','zaq12wsx','abc12345','abcd1234','iloveyou','letmein1','welcome1','welcome123','admin123',
   'sunshine','princess','football','baseball','superman','monkey123','india123','india@123','overhere','overhere1']);
-/* 0 to 4. Length counts most; mixing kinds of characters helps. Common passwords score 0, and one built from your email stays weak. */
+/* Words people build passwords around. Matched anywhere, after undoing look-alike swaps, so "P@ssw0rd" is still "password". */
+const WEAK_WORDS=['password','passwd','pass','welcome','qwerty','admin','india','bharat','love','letmein','hello','secret','monkey','dragon',
+  'cricket','football','baseball','soccer','sunshine','princess','master','login','user','test','overhere','tagalong','angel','shadow','super',
+  'batman','killer','computer','internet','google','facebook','summer','winter','flower','freedom','whatever','trustno','starwars','pokemon',
+  'naruto','cheese','chocolate','money','family','friend','happy','lucky','apple','orange','banana','mother','father','baby','delhi','mumbai',
+  'punjab','chandigarh','krishna','ganesh','sairam','hunter','charlie','michael','jordan','iloveyou','pakistan']
+  .sort((a,b)=>b.length-a.length);
+const LEET={'@':'a','4':'a','0':'o','1':'i','!':'i','|':'l','3':'e','5':'s','$':'s','7':'t'};
+const KEYS=['qwertyuiop','asdfghjkl','zxcvbnm','1qaz2wsx3edc4rfv'];
+/* 0 to 4, from a rough count of how many guesses the password would take. Each character you'd have to guess adds a lot;
+   a common word, a year, a run like 123 or qwerty, or a repeat adds only a little, however it's dressed up with capitals
+   and symbols. Also says what made it weak (why, and the part it found), for the hint under the field. */
 function pwScore(p,email){
-  const lo=p.toLowerCase(),user=(email.split('@')[0]||'').toLowerCase();
-  if(COMMON_PW.has(lo)||/^(.)\1+$/.test(p))return 0;
-  const kinds=PW_RULES.slice(1).filter(([,ok])=>ok(p)).length+(/[a-z]/i.test(p)?1:0);
-  let s=(p.length>=8)+(p.length>=12)+(p.length>=16)+(kinds>=2)+(kinds>=3);
-  if(user.length>=3&&lo.includes(user))s=Math.min(s,1);
-  return Math.min(s,4);
+  const lo=p.toLowerCase(),n=[...lo].map(c=>LEET[c]||c).join(''),user=(email.split('@')[0]||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  if(COMMON_PW.has(lo)||COMMON_PW.has(n)||/^(.)\1+$/.test(p))return {s:0,why:'common'};
+  const used=Array(p.length).fill(false),found=[];let bits=0;
+  /* claim p[i..j) for a weak part, if none of it is claimed yet */
+  const take=(i,j,cost,why)=>{for(let k=i;k<j;k++)if(used[k])return;for(let k=i;k<j;k++)used[k]=true;bits+=cost;found.push({why,hit:p.slice(i,j)})};
+  const each=(s,w,fn)=>{for(let i=s.indexOf(w);i>=0;i=s.indexOf(w,i+1))fn(i)};
+  if(user.length>=3)each(n,user,i=>take(i,i+user.length,6,'email'));
+  WEAK_WORDS.forEach(w=>each(n,w,i=>take(i,i+w.length,10+(/[A-Z]/.test(p.slice(i,i+w.length)))+(lo.slice(i,i+w.length)!==w),'word')));
+  KEYS.forEach(r=>{for(let len=r.length;len>=4;len--)for(let a=0;a+len<=r.length;a++){const w=r.slice(a,a+len);each(lo,w,i=>take(i,i+len,5,'keys'));each(lo,[...w].reverse().join(''),i=>take(i,i+len,5,'keys'))}});
+  for(const m of p.matchAll(/(19|20)\d\d/g))take(m.index,m.index+4,5,'year');
+  /* runs like abc, 123, 987: each step one letter or digit up, or down */
+  for(let i=0;i<lo.length-2;){
+    const d=lo.charCodeAt(i+1)-lo.charCodeAt(i);let j=i+1;
+    if(Math.abs(d)===1&&/[a-z0-9]/.test(lo[i]))while(j<lo.length&&lo.charCodeAt(j)-lo.charCodeAt(j-1)===d&&/[a-z0-9]/.test(lo[j]))j++;
+    if(j-i>=3){take(i,j,4,'run');i=j}else i++;
+  }
+  for(const m of p.matchAll(/(.)\1{2,}/g))take(m.index,m.index+m[0].length,6,'repeat');
+  for(const m of p.matchAll(/(.{2,}?)\1+/g))take(m.index+m[1].length,m.index+m[0].length,2,'repeat');
+  const pool=(/[a-z]/.test(p)?26:0)+(/[A-Z]/.test(p)?26:0)+(/\d/.test(p)?10:0)+(/[^A-Za-z0-9]/.test(p)?33:0);
+  bits+=used.filter(u=>!u).length*Math.log2(pool||1);
+  return {s:bits<30?1:bits<40?2:bits<55?3:4,...(found[0]||{})};
+}
+/* What to say about a weak password: names the part that gives it away. */
+function pwHint({why,hit}){
+  return why==='common'?'This is one of the first passwords attackers try. Pick something less common'
+    :why==='email'?"Leave your email name out of your password"
+    :why==='word'?`Common words like "${hit}" are easy to guess, even with symbols swapped in`
+    :why==='keys'?`Keyboard patterns like "${hit}" are easy to guess`
+    :why==='run'?`Runs like "${hit}" are easy to guess`
+    :why==='year'?`Years like ${hit} are easy to guess`
+    :why==='repeat'?'Repeated characters add little. Mix it up'
+    :'Longer is stronger: try three or four random words together';
 }
 function pwProblem(p,email){
   if(p.length<8)return 'Use at least 8 characters';
-  const s=pwScore(p,email),user=(email.split('@')[0]||'').toLowerCase();
-  if(s===0)return 'That password is too common. Pick something harder to guess';
-  if(user.length>=3&&p.toLowerCase().includes(user))return "Don't use your email in your password";
-  if(s<2)return 'Too weak. Mix letters with numbers or symbols, or make it longer';
-  return '';
+  const r=pwScore(p,email);
+  return r.s<2?pwHint(r):'';
 }
 /* Typos in the big email providers ("gmial.com") get a "Did you mean" under the field. Short domains only match one letter off. */
 const MAIL_DOMAINS=['gmail.com','googlemail.com','yahoo.com','yahoo.co.in','ymail.com','rediffmail.com','outlook.com','outlook.in','hotmail.com','live.com','msn.com','icloud.com','me.com','mail.com','aol.com','proton.me','protonmail.com','zoho.com'];
@@ -1677,9 +1714,12 @@ function authCheck(up){
 function pwLive(){
   const p=pw(),email=val('a_email'),box=document.getElementById('a_pws'),up=ui.auth.mode!=='in';
   if(box){
-    const s=pwScore(p,email);
+    const r=pwScore(p,email),s=r.s,tip=document.getElementById('a_pwtip');
     box.dataset.s=!p?0:p.length<8?1:Math.max(s,1);
     document.getElementById('a_pwl').textContent=!p?'':p.length<8?'Too short':s===0?'Too common':['','Weak','Fair','Good','Strong'][s];
+    /* a tip while you type: what gives it away, or a nod once it's strong */
+    const t=!p||p.length<8||s===3?'':s===4?"Nice, that's hard to guess":pwHint(r);
+    tip.hidden=!t;tip.className='pwtip'+(s===4?' ok':'');tip.innerHTML=t?I(s===4?'shield-check':'lightbulb',14)+`<span>${esc(t)}</span>`:'';
     box.querySelectorAll('li').forEach((li,k)=>li.classList.toggle('y',PW_RULES[k][1](p)));
   }
   if(p&&document.getElementById('a_pw')?.getAttribute('aria-invalid')&&!(up&&pwProblem(p,email)))fieldMsg('a_pw','');
@@ -1821,7 +1861,10 @@ const A={
   /* was: the tab you came from (Sign in or Create account), so the phone screens can word things and go back to it */
   authmode:d=>{
     otpAbort?.abort();
-    ui.auth={mode:d.k,phone:ui.auth.phone,email:val('a_email')||ui.auth.email,was:['in','up'].includes(ui.auth.mode)?ui.auth.mode:ui.auth.was};render();
+    const old=ui.auth.mode,swap=old!==d.k&&['in','up'].includes(old)&&['in','up'].includes(d.k);
+    ui.auth={mode:d.k,phone:ui.auth.phone,email:val('a_email')||ui.auth.email,was:['in','up'].includes(old)?old:ui.auth.was,anim:swap?old:''};render();
+    /* Sign in <-> Create account: the screen is drawn with the pill on the old tab; slide it over once that's on screen */
+    if(swap){const t=document.querySelector('.atab');ui.auth.anim='';if(t){void t.offsetWidth;t.classList.toggle('up',d.k==='up');t.querySelector('.on').focus({preventScroll:true})}}
     if(d.k==='phone')document.getElementById('a_phone')?.focus();
   },
   pwshow:d=>{
@@ -2278,6 +2321,8 @@ document.addEventListener('visibilitychange',async()=>{
   const t=await appTag();
   if(t&&t!==appTag0&&!ui.modal&&!saveT)location.reload();
 });
+/* You've been here: from now on the landing page sends you straight to the app (head.js). */
+try{localStorage.setItem('overhere_seen','1')}catch(e){}
 if(!ONLINE)render();
 else{
   /* Opened from a password-reset email: ask for the new password before anything else. */
