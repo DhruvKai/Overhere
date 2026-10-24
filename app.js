@@ -764,6 +764,8 @@ const safetyOnce=fn=>{if(S.tips.safety1)fn();else{ui.modal={type:'safety1',next:
 function swipe(dir){
   const a=deck()[0];if(!a)return;
   const el=document.querySelector('.card.top');
+  /* the first skip and the first request each ask "are you sure?" once, then never again */
+  if(!S.tips['swipe_'+dir]){if(el)el.style.transform='';ui.modal={type:'swipeask',dir,id:a.id};render();return}
   track('swipe',{dir});
   /* the how-to hints under the deck only show until the first swipe */
   if(!S.tips.swiped){S.tips.swiped=true;save()}
@@ -1113,6 +1115,14 @@ function modalHtml(){
       <ul style="padding-left:20px;margin:0 0 12px"><li>Meet in a busy public place, and make your own way there and back.</li><li>Tell someone you trust where you'll be. You can send them your plan in one tap.</li><li>Keep your home address and workplace to yourself until you know people.</li><li>Never send money to someone you met here.</li><li>Leave whenever you like. In an emergency call 112, or tap SOS in the group chat.</li></ul>
       <p class="small mute">The face check confirms a real person made each account. It doesn't tell you what they're like. More in the <a href="terms.html#safety" target="_blank" rel="noopener" style="color:inherit">Terms</a>.</p>
       <button class="btn" data-a="safetyok">I understand, continue</button></div>`);
+  if(m.type==='swipeask'){
+    const a=actOf(m.id);if(!a)return '';
+    const r=m.dir==='right';
+    return sheet(r?'Ask to join?':'Skip this plan?',`<div class="sb">
+      <p style="margin-top:0">${r?`Swiping right asks ${a.host==='me'?'the host':esc(profileOf(a.host).name)} if you can join <b>${esc(a.desc)}</b>. You can add a note before it's sent.`
+        :`Swiping left skips <b>${esc(a.desc)}</b>. You won't see it here again.`}</p>
+      <button class="btn" data-a="swipeok" data-d="${m.dir}">OK</button><div style="height:8px"></div><button class="btn ghost" data-a="close">Cancel</button></div>`);
+  }
   if(m.type==='under18')return sheet('Overhere is for adults',`<div class="sb">
       <p style="margin-top:0">The date of birth you entered means you're under 18. Overhere is only for people aged 18 and over.</p>
       <p class="small mute">If that's right, we won't create your account, and we'll delete the sign-in details you've given us straight away. If you made a mistake, go back and fix it.</p>
@@ -1841,6 +1851,7 @@ async function working(fn){
 const A={
   tab:d=>{if(ui.tab!==d.t)track('tab_view',{tab:d.t});ui.tab=d.t;ui.seen=null;ui.modal=null;render()},
   swipe:d=>swipe(d.d),
+  swipeok:d=>{S.tips['swipe_'+d.d]=true;save();ui.modal=null;render();swipe(d.d)},
   detail:d=>{ui.modal={type:'detail',id:d.id};render()},
   detailback:d=>{ui.modal={type:'detail',id:d.id,back:ui.modal};render()},   // from a profile: closing goes back to it
   hostview:d=>{ui.modal={type:'host',id:d.id};render()},
