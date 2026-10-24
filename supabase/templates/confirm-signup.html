@@ -1,0 +1,72 @@
+<!doctype html>
+<!-- Supabase -> Authentication -> Emails -> Templates -> Confirm signup. Subject: Confirm your Overhere account
+     Paste this whole file. Keep {{ .ConfirmationURL }} and {{ .Email }}: Supabase fills them in. -->
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>Confirm your Overhere account</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;padding:0;background:#F5F0E6}
+  a{color:#336842}
+  @media (max-width:600px){.card{border-radius:0!important;border-left:0!important;border-right:0!important}.pad{padding-left:24px!important;padding-right:24px!important}.h1{font-size:24px!important}}
+</style>
+</head>
+<body style="margin:0;padding:0;background:#F5F0E6;-webkit-text-size-adjust:100%">
+<!-- preview text in the inbox list -->
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#F5F0E6">One tap to confirm your email and start finding plans near you.&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;</div>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#F5F0E6">
+<tr><td align="center" style="padding:32px 12px">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:520px">
+    <!-- logo -->
+    <tr><td style="padding:0 8px 20px;font-family:'Plus Jakarta Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif">
+      <a href="https://overhere.social" style="text-decoration:none;color:#1A1A1A;font-size:20px;font-weight:700;letter-spacing:-.3px">
+        <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#1A1A1A;border:3px solid #3F7D4E;vertical-align:-2px"></span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#1A1A1A;border:3px solid #3F7D4E;vertical-align:-2px;margin-left:2px"></span>&nbsp;&nbsp;Overhere</a>
+    </td></tr>
+    <!-- card -->
+    <tr><td class="card" style="background:#FFFDF8;border:1px solid #E7DFCF;border-top:6px solid #3F7D4E;border-radius:20px">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tr><td class="pad" style="padding:36px 40px 8px;font-family:'Plus Jakarta Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#1A1A1A">
+          <p style="margin:0 0 10px;font-size:13px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:#3F7D4E">Welcome to Overhere</p>
+          <h1 class="h1" style="margin:0 0 14px;font-size:28px;line-height:1.2;font-weight:700;letter-spacing:-.5px">Confirm your email</h1>
+          <p style="margin:0 0 28px;font-size:16px;line-height:1.6;color:#3F3F3F">You're one tap away from finding people to catch a gig, a film or a coffee with, near you. Confirm this is your email to finish setting up your account.</p>
+          <!-- button (VML for Outlook on Windows) -->
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" bgcolor="#3F7D4E" style="border-radius:999px">
+            <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="{{ .ConfirmationURL }}" style="height:52px;v-text-anchor:middle;width:260px" arcsize="50%" stroke="f" fillcolor="#3F7D4E"><center style="color:#ffffff;font-family:Arial,sans-serif;font-size:16px;font-weight:bold">Confirm my email</center></v:roundrect><![endif]-->
+            <!--[if !mso]><!--><a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:16px 36px;font-family:'Plus Jakarta Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:999px">Confirm my email &rarr;</a><!--<![endif]-->
+          </td></tr></table>
+          <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#6B6B6B">The link works once and expires in 1 hour. Button not working? Paste this into your browser:<br>
+            <a href="{{ .ConfirmationURL }}" style="color:#336842;word-break:break-all">{{ .ConfirmationURL }}</a></p>
+        </td></tr>
+        <!-- what's next -->
+        <tr><td class="pad" style="padding:28px 40px 8px;font-family:'Plus Jakarta Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#EFE8DA;border-radius:14px">
+            <tr><td style="padding:18px 20px;font-size:14px;line-height:1.55;color:#3F3F3F">
+              <b style="color:#1A1A1A">What happens next</b><br>
+              <span style="color:#3F7D4E">&#9679;</span>&nbsp; Set up your profile and a quick face check<br>
+              <span style="color:#3F7D4E">&#9679;</span>&nbsp; Swipe through plans happening today and tomorrow<br>
+              <span style="color:#3F7D4E">&#9679;</span>&nbsp; Request to join, or post your own
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td class="pad" style="padding:20px 40px 32px;font-family:'Plus Jakarta Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:13px;line-height:1.6;color:#6B6B6B">
+          Didn't sign up? Ignore this email. No account is made until the link is tapped.
+        </td></tr>
+      </table>
+    </td></tr>
+    <!-- footer -->
+    <tr><td style="padding:24px 16px 0;font-family:'Plus Jakarta Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:12px;line-height:1.6;color:#8A8270;text-align:center">
+      Sent to {{ .Email }} because it was used to sign up for Overhere.<br>
+      This is a one-time account email, not a newsletter, so there's nothing to unsubscribe from.<br><br>
+      <a href="https://overhere.social/privacy.html" style="color:#6B6B6B">Privacy</a> &nbsp;&middot;&nbsp; <a href="https://overhere.social/terms.html" style="color:#6B6B6B">Terms</a> &nbsp;&middot;&nbsp; <a href="mailto:admin@overhere.social" style="color:#6B6B6B">admin@overhere.social</a><br>
+      &copy; Overhere &middot; Made in India
+    </td></tr>
+  </table>
+</td></tr>
+</table>
+</body>
+</html>
