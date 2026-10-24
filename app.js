@@ -764,8 +764,8 @@ const safetyOnce=fn=>{if(S.tips.safety1)fn();else{ui.modal={type:'safety1',next:
 function swipe(dir){
   const a=deck()[0];if(!a)return;
   const el=document.querySelector('.card.top');
-  /* the first skip and the first request each ask "are you sure?" once, then never again */
-  if(!S.tips['swipe_'+dir]){if(el)el.style.transform='';ui.modal={type:'swipeask',dir,id:a.id};render();return}
+  /* the first skip asks "are you sure?" once, then never again (a request already has its own sheet) */
+  if(dir==='left'&&!S.tips.swipe_left){if(el)el.style.transform='';ui.modal={type:'swipeask',dir,id:a.id};render();return}
   track('swipe',{dir});
   /* the how-to hints under the deck only show until the first swipe */
   if(!S.tips.swiped){S.tips.swiped=true;save()}
@@ -1117,11 +1117,9 @@ function modalHtml(){
       <button class="btn" data-a="safetyok">I understand, continue</button></div>`);
   if(m.type==='swipeask'){
     const a=actOf(m.id);if(!a)return '';
-    const r=m.dir==='right';
-    return sheet(r?'Ask to join?':'Skip this plan?',`<div class="sb">
-      <p style="margin-top:0">${r?`Swiping right asks ${a.host==='me'?'the host':esc(profileOf(a.host).name)} if you can join <b>${esc(a.desc)}</b>. You can add a note before it's sent.`
-        :`Swiping left skips <b>${esc(a.desc)}</b>. You won't see it here again.`}</p>
-      <button class="btn" data-a="swipeok" data-d="${m.dir}">OK</button><div style="height:8px"></div><button class="btn ghost" data-a="close">Cancel</button></div>`);
+    return sheet('Skip this plan?',`<div class="sb">
+      <p style="margin-top:0">Swiping left skips <b>${esc(a.desc)}</b>. You won't see it here again.</p>
+      <button class="btn" data-a="swipeok" data-d="left">OK</button><div style="height:8px"></div><button class="btn ghost" data-a="close">Cancel</button></div>`);
   }
   if(m.type==='under18')return sheet('Overhere is for adults',`<div class="sb">
       <p style="margin-top:0">The date of birth you entered means you're under 18. Overhere is only for people aged 18 and over.</p>
