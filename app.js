@@ -234,11 +234,13 @@ const hostName=id=>{const p=profileOf(id),t=`<span><span class="hname">${esc(id=
   return id==='me'?t:`<button class="hlink" data-a="user" data-id="${id}" title="View ${esc(p.name)}'s profile">${t}</button>`};
 const short=s=>s.length>40?s.slice(0,40)+'…':s;
 const fmt=t=>new Date(t).toLocaleString([], {weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-function whenStr(t){
+/* [day, time], e.g. ['Tomorrow','4:30 pm'] */
+function whenParts(t){
   const d=new Date(t),n=new Date(now()),day=x=>new Date(x.getFullYear(),x.getMonth(),x.getDate()).getTime();
   const diff=Math.round((day(d)-day(n))/864e5),tm=d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
-  return diff===0?'Today '+tm:diff===1?'Tomorrow '+tm:d.toLocaleDateString([], {weekday:'short',day:'numeric',month:'short'})+' · '+tm;
+  return [diff===0?'Today':diff===1?'Tomorrow':d.toLocaleDateString([], {weekday:'short',day:'numeric',month:'short'}),tm];
 }
+function whenStr(t){const [d,tm]=whenParts(t);return d==='Today'||d==='Tomorrow'?d+' '+tm:d+' · '+tm}
 function ago(t){
   const s=Math.max(0,(now()-t)/1000);
   return s<60?'just now':s<3600?Math.floor(s/60)+'m ago':s<86400?Math.floor(s/3600)+'h ago':s<14*86400?Math.floor(s/86400)+'d ago':Math.floor(s/604800)+'w ago';
@@ -464,6 +466,12 @@ function costLine(a){
   if(a.cost==='host')return a.host==='me'?`You cover everyone${t?' · about '+rupees(t)+' total':''}`:'Host covers it · free for you';
   if(a.cost==='own')return 'Everyone pays their own way'+(t?` · about ${rupees(each)} each`:'');
   return t?`Split equally · about ${rupees(each)} each when full (${rupees(t)} total)`:'Split equally';
+}
+/* the second line under COST_S in the plan's detail tiles */
+function costSub(a){
+  const t=a.total,each=t?Math.ceil(t/(a.cap+1)/10)*10:0;
+  if(a.cost==='host')return a.host==='me'?'you cover everyone':'free for you';
+  return t?`about ${rupees(each)} each`:a.cost==='own'?'pay your own way':'everyone pays a share';
 }
 const metWith=u=>S.acts.filter(a=>a.status==='past'&&attended(a)&&(a.host===u||a.members.includes(u))).length;
 function signals(u){
@@ -757,6 +765,8 @@ function swipe(dir){
   const a=deck()[0];if(!a)return;
   const el=document.querySelector('.card.top');
   track('swipe',{dir});
+  /* the how-to hints under the deck only show until the first swipe */
+  if(!S.tips.swiped){S.tips.swiped=true;save()}
   if(dir==='right'){if(el)el.style.transform='';ui.modal={type:'confirm',id:a.id};render();return}
   if(el){el.style.transition='transform .25s';el.style.transform='translateX(-600px) rotate(-25deg)'}
   setTimeout(()=>{
@@ -827,9 +837,9 @@ function tabSwipe(){
   return `<div class="deck">${whereBar()}${fbCard()}<h1 class="pt">What's happening tonight?</h1><p class="sub">Activities today and tomorrow · Tap a card for details</p>${lockedNote()}
   <div class="stack">${d[1]?cardHtml(d[1],'back'):''}${cardHtml(d[0],'top')}</div>
   <div class="acts"><button class="rb" data-a="swipe" data-d="left" title="Skip">${I('x',24)}</button>
-  <div class="cnt">1 of ${d.length}<br>← dismiss · request →</div>
+  <div class="cnt">1 of ${d.length}${S.tips.swiped?'':'<br>← dismiss · request →'}</div>
   <button class="rb go" data-a="swipe" data-d="right" title="Request to join">${I('heart',24)}</button></div>
-  <p class="small mute kb" style="margin-top:6px">Use ← → arrow keys to navigate</p></div>`;
+  ${S.tips.swiped?'':'<p class="small mute kb" style="margin-top:6px">Use ← → arrow keys to navigate</p>'}</div>`;
 }
 /* Date range: YYYY-MM-DD strings, either end optional */
 const dLbl=k=>new Date(k+'T12:00:00').toLocaleDateString([], {weekday:'short',day:'numeric',month:'short'});
@@ -1063,9 +1073,17 @@ function modalHtml(){
       <div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(placeLine(a))}${a.host==='me'?'':` · ${distKm(a)} km`}</span></div>
       <div class="meta2" style="margin-top:3px"><span>${I('users',13)}${a.members.length} going · ${spotTxt(a)}${wl?` · ${wl} on waitlist`:''}</span></div>
       <div class="meta2" style="margin-top:3px"><span>${I('wallet',13)}${costLine(a)}</span></div>
-      <div class="tg" style="margin-top:8px"><span>${COST_S[a.cost]}</span><span>${a.aud==='everyone'?'Open to everyone':esc(a.aud.join(' / '))+' only'}</span>${a.repeat?`<span>${REPEAT[a.repeat]}</span>`:''}</div></div></div>
-      <div class="hostline">Hosted by ${a.host==='me'?`${av('me','sm')}<b style="color:var(--ink);font-weight:600">You</b>`:`<button class="hlink" data-a="user" data-id="${a.host}" title="View ${esc(h.name)}'s profile">${av(a.host,'sm')}<span><b style="color:var(--ink);font-weight:600">${esc(h.name)}</b>, ${h.age}</span></button> ${vf(a.host,true)}${sampleTag(a.host)}`}</div>`;
-    if(m.type==='confirm'&&(can||canWait))return sheet(can?'Request to Join':'Join the waitlist',`<div class="sb">${top}
+      <div class="tg" style="margin-top:8px"><span>${COST_S[a.cost]}</span><span>${a.aud==='everyone'?'Open to everyone':esc(a.aud.join(' / '))+' only'}</span>${a.repeat?`<span>${REPEAT[a.repeat]}</span>`:''}</div></div></div>`;
+    const hostline=`<div class="hostline">Hosted by ${a.host==='me'?`${av('me','sm')}<b style="color:var(--ink);font-weight:600">You</b>`:`<button class="hlink" data-a="user" data-id="${a.host}" title="View ${esc(h.name)}'s profile">${av(a.host,'sm')}<span><b style="color:var(--ink);font-weight:600">${esc(h.name)}</b>, ${h.age}</span></button> ${vf(a.host,true)}${sampleTag(a.host)}`}</div>`;
+    /* the detail view: the plan's photo with its title, then when / where / who / cost as four tiles */
+    const [day,tm]=whenParts(a.when),n=a.members.length,left=spots(a);
+    const tile=(ic,t,sub)=>`<div class="dtile">${I(ic,20)}<div><b>${t}</b>${sub?`<span>${sub}</span>`:''}</div></div>`;
+    const extra=[...(a.aud==='everyone'?[]:[esc(a.aud.join(' / '))+' only']),...(a.repeat?[REPEAT[a.repeat]]:[])];
+    const hero=`<div class="dhero" style="background:${planBg(a)}"><div class="shade"></div>${catPill(a.cat,true)}<h3>${esc(a.desc)}</h3></div>
+      <div class="dtiles">${tile('calendar',day,tm)}${tile('map-pin',esc(placeLine(a)),a.host==='me'?'':`${distKm(a)} km away`)}
+      ${tile('users',left>0?`${left} of ${a.cap} open`:'Full',(n?`${n} going`:'be the first')+(wl?` · ${wl} on waitlist`:''))}${tile('wallet',COST_S[a.cost],costSub(a))}</div>
+      ${extra.length?`<div class="tg" style="margin-top:10px">${extra.map(x=>`<span>${x}</span>`).join('')}</div>`:''}`;
+    if(m.type==='confirm'&&(can||canWait))return sheet(can?'Request to Join':'Join the waitlist',`<div class="sb">${top}${hostline}
       ${canWait?`<div class="warnbox" style="background:var(--infobg);border-color:#BFDBFE;color:var(--info)">${I('users',16)}<span>This activity is full. Join the waitlist and your request goes to ${esc(h.name)} automatically if a spot opens${wl?` (${wl} ahead of you)`:''}.</span></div>`:''}
       <label for="r_note" style="font-size:14px;margin-top:18px">Add a note <span class="mute" style="font-weight:400">(optional)</span></label>
       <p class="small mute">Introduce yourself or mention why you want to join.</p>
@@ -1075,7 +1093,7 @@ function modalHtml(){
       <button class="btn" data-a="request" data-id="${a.id}">${I('send',16)} ${canWait?(S.me.face?'Join waitlist':'Verify &amp; join waitlist'):(S.me.face?'Send Request':'Verify &amp; Send Request')}</button>
       <div style="height:8px"></div><button class="btn ghost" data-a="close">Not now</button></div>`);
     const acc=rq?.status==='accepted',pos=rq?.status==='waitlist'?waitlist(a.id).findIndex(r=>r.user==='me')+1:0;
-    return sheet(backB(m)+'Activity',`<div class="sb">${top}
+    return sheet(backB(m)+'Activity',`<div class="sb">${hero}${hostline}
       ${rq?`<p style="margin-top:14px">Your request: ${statusChip(rq.status)}${pos?` <span class="small mute">#${pos} in line</span>`:''}</p>${rq.note?`<p class="small mute">Your note: ${esc(rq.note)}</p>`:''}`:''}
       ${can?`<div style="height:16px"></div><button class="btn" data-a="askreq" data-id="${a.id}">Request to join</button>`
       :canWait?`<div style="height:16px"></div><button class="btn sec" data-a="askreq" data-id="${a.id}">${I('users',16)} Full · Join waitlist</button>`
