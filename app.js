@@ -106,6 +106,12 @@ function photoOf(a){
 /* The photo over the category's colours (shown while it loads), and the category icon only when there's no photo. */
 const planBg=a=>{const c=CATS[a.cat]||CATS.cafe,p=photoOf(a);return p?`url('${p}') center/cover no-repeat,${c.g}`:c.g};
 const planThumb=a=>`<div class="thumb" style="background:${planBg(a)}"></div>`;
+/* The venue line under a plan's title, without the place's name when the title already says it: "Indie band live at
+   Hard Rock Café" shows "St Marks Road", not "Hard Rock Café, St Marks Road". Whole words only, so "Bar, ..." stays
+   under "Barbecue night". */
+const wordsOf=s=>' '+String(s||'').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ')+' ';
+const placeLine=a=>{const [name,...rest]=(a.venue||'').split(/\s*,\s*/);
+  return rest.length&&wordsOf(name).trim()&&wordsOf(a.desc).includes(wordsOf(name))?rest.join(', '):a.venue};
 /* Dummy portraits for the demo; if one fails to load the initial shows instead. */
 /* Everyone gets an emoji avatar; your own can be an uploaded photo instead. */
 const defEmo=g=>g==='Woman'?'👩':g==='Man'?'👨':'🧑';
@@ -785,7 +791,7 @@ function cardHtml(a,cls){
   <div class="cp">${catPill(a.cat)}</div>
   <div class="body"><div class="who">${a.host==='me'?`${av('me','sm')}You`:`<button class="hlink" data-a="user" data-id="${a.host}" title="View ${esc(h.name)}'s profile">${av(a.host,'sm')}<span><span class="hname">${esc(h.name)}</span>, ${h.age}</span></button>`} ${vf(a.host)}${sampleTag(a.host)}</div>
   <h2>${esc(a.desc)}</h2>
-  <div class="meta"><span>${I('calendar',14)}${whenStr(a.when)}</span><span>${I('map-pin',14)}${esc(a.venue)}</span><span>${I('users',14)}${spotTxt(a)}</span></div>
+  <div class="meta"><span>${I('calendar',14)}${whenStr(a.when)}</span><span>${I('map-pin',14)}${esc(placeLine(a))}</span><span>${I('users',14)}${spotTxt(a)}</span></div>
   <div class="tags">${tags(a).map(t=>`<span>${esc(t)}</span>`).join('')}</div></div></div>`;
 }
 const REQ_LBL={pending:'Requested',accepted:'Accepted',rejected:'Declined',waitlist:'Waitlisted',left:'Left',removed:'Removed',no_action:'No response'};
@@ -794,7 +800,7 @@ function acCard(a){
   const rq=myReq(a.id),full=spots(a)<=0;
   return `<div class="ac" data-a="detail" data-id="${a.id}"><div class="media" style="background:${planBg(a)}">${catPill(a.cat)}${sampleTag(a.host)}</div>
   <div class="bd">${ui.f.sort==='for'&&reasons(a)[0]?`<div class="why">${I('sparkles',12)} ${esc(reasons(a)[0][0])}</div>`:''}<h4>${esc(a.desc)}</h4>
-  <div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)} · ${distKm(a)} km</span></div>
+  <div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(placeLine(a))} · ${distKm(a)} km</span></div>
   <div class="tg"><span>${I('users',12)}${spotTxt(a)}</span>${tags(a).map(t=>`<span>${esc(t)}</span>`).join('')}</div>
   <div class="ft"><div class="hn">${av(a.host,'sm')}${hostName(a.host)} ${vf(a.host)}</div>
   ${rq?`<span class="chip ${REQ_TONE[rq.status]||''}">${REQ_LBL[rq.status]||esc(rq.status)}</span>`
@@ -1054,7 +1060,7 @@ function modalHtml(){
     const open=a.host!=='me'&&!past&&(a.status==='open'||a.status==='full')&&audOK(a)&&!isBlocked(a.host)&&!rq;
     const can=open&&a.status==='open'&&spots(a)>0,canWait=open&&!can;
     const top=`<div class="sum">${planThumb(a)}<div style="min-width:0">${catPill(a.cat,true)}<div class="t">${esc(a.desc)}</div>
-      <div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)}${a.host==='me'?'':` · ${distKm(a)} km`}</span></div>
+      <div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(placeLine(a))}${a.host==='me'?'':` · ${distKm(a)} km`}</span></div>
       <div class="meta2" style="margin-top:3px"><span>${I('users',13)}${a.members.length} going · ${spotTxt(a)}${wl?` · ${wl} on waitlist`:''}</span></div>
       <div class="meta2" style="margin-top:3px"><span>${I('wallet',13)}${costLine(a)}</span></div>
       <div class="tg" style="margin-top:8px"><span>${COST_S[a.cost]}</span><span>${a.aud==='everyone'?'Open to everyone':esc(a.aud.join(' / '))+' only'}</span>${a.repeat?`<span>${REPEAT[a.repeat]}</span>`:''}</div></div></div>
@@ -1110,7 +1116,7 @@ function modalHtml(){
       <p class="small mute" style="margin:6px 0 0;text-align:center">${S.following.includes(m.id)?`You'll hear when ${esc(p.name)} posts a new plan.`:`Get notified when ${esc(p.name)} posts a new plan.`}</p>
       ${isVer(m.id)?'':`<div class="warnbox">${I('alert-triangle',16)}<span>${esc(p.name)} has not verified their ID yet. Meet in busy public places and share your plan with someone you trust.</span></div>`}
       <h3>Upcoming activities${ups.length?` (${ups.length})`:''}</h3>
-      ${ups.length?ups.map(a=>{const rq=myReq(a.id);return liHtml(a,'detailback',`<span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)} · ${distKm(a)} km</span>`,
+      ${ups.length?ups.map(a=>{const rq=myReq(a.id);return liHtml(a,'detailback',`<span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(placeLine(a))} · ${distKm(a)} km</span>`,
         rq?`<span class="chip ${REQ_TONE[rq.status]||''}">${REQ_LBL[rq.status]||esc(rq.status)}</span>`:`<span class="chip">${spotTxt(a)}</span>`)}).join('')
         :`<p class="small mute">No upcoming activities near you right now.</p>`}
       <h3>Past activities</h3>${pastHtml(pastList(m.id),'No past activities yet.')}
@@ -1131,7 +1137,7 @@ function modalHtml(){
     const a=actOf(m.id);if(!a)return '';
     const ppl=[a.host,...a.members].filter(x=>x!=='me'),prev=S.ratings[a.id];
     return sheet(backB(m)+'How did it go?',`<div class="sb">
-      <div class="sum">${planThumb(a)}<div style="min-width:0"><div class="t">${esc(a.desc)}</div><div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)}</span></div></div></div>
+      <div class="sum">${planThumb(a)}<div style="min-width:0"><div class="t">${esc(a.desc)}</div><div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(placeLine(a))}</span></div></div></div>
       <label>Did everything go OK?</label><div class="opts"><label class="opt"><input type="radio" name="rt_ok" value="yes" ${prev?.ok!=='no'?'checked':''}>Yes, all good</label><label class="opt"><input type="radio" name="rt_ok" value="no" ${prev?.ok==='no'?'checked':''}>Something went wrong</label></div>
       <label>How much did you enjoy it?</label><div class="rstars" role="radiogroup" aria-label="How much you enjoyed it">${[5,4,3,2,1].map(n=>`<label title="${n} star${n>1?'s':''}"><input type="radio" name="rt_star" value="${n}" aria-label="${n} star${n>1?'s':''}" ${prev?.stars===n?'checked':''}><span>★</span></label>`).join('')}</div>
       <label>Who showed up?</label>
@@ -1177,7 +1183,7 @@ function modalHtml(){
     const a=actOf(m.id);if(!a)return '';
     const reqs=S.reqs.filter(r=>r.act===a.id),pend=reqs.filter(r=>r.status==='pending'),wl=waitlist(a.id),done=reqs.filter(r=>r.status!=='pending'&&r.status!=='waitlist'),past=isPast(a);
     const person=r=>{const p=profileOf(r.user);return `<div class="panel" style="background:var(--bg);box-shadow:none"><div class="hn">${av(r.user)}<div><button class="hlink" data-a="user" data-id="${r.user}"><strong>${esc(p.name)}</strong></button> ${vf(r.user)}<div class="mute small">${esc(p.gender)}, ${p.age}${p.job?' · '+esc(p.job):''}</div><div class="small" style="margin-top:2px">${trustTxt(r.user)}</div></div></div>${signals(r.user)}<p class="small mute" style="margin:8px 0 4px">${esc(p.bio)}</p>${r.note?`<div class="dn">Note: ${esc(r.note)}</div>`:'<p class="small mute">No note attached</p>'}`;};
-    return sheet('Manage activity',`<div class="sb"><div class="sum">${planThumb(a)}<div style="min-width:0"><div class="t">${esc(a.desc)}</div><div class="meta2" style="margin-bottom:6px"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(a.venue)}</span></div>${actChip(a.status)} <span class="chip">${a.members.length}/${a.cap} accepted</span></div></div>
+    return sheet('Manage activity',`<div class="sb"><div class="sum">${planThumb(a)}<div style="min-width:0"><div class="t">${esc(a.desc)}</div><div class="meta2" style="margin-bottom:6px"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(placeLine(a))}</span></div>${actChip(a.status)} <span class="chip">${a.members.length}/${a.cap} accepted</span></div></div>
       <div style="height:12px"></div>
       ${a.members.length?`<button class="btn sec" data-a="chat" data-id="${a.id}">${I('message-circle',16)} Open group chat</button>`:'<p class="small mute">Chat opens when you accept the first member.</p>'}
       ${past?`<div class="row" style="margin-top:8px"><button class="btn sm ghost" data-a="postagain" data-id="${a.id}">${I('repeat',14)} Post again</button></div>`+(a.members.length?(S.ratings[a.id]?`<p class="small mute">${I('circle-check',14)} You rated this meetup.</p>`:`<div style="height:8px"></div><button class="btn" data-a="rate" data-id="${a.id}">${I('star',16)} Rate the meetup</button>`):'')
