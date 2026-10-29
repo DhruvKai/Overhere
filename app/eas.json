@@ -1,0 +1,45 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://ctkfyxwtssmmeelslrig.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_1XecJ_qlquD514OVKF_GNQ_QGYaPX-8",
+        "EXPO_PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAAFG3dLojvYus1RSv",
+        "EXPO_PUBLIC_GEO_URL": "https://photon.komoot.io"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://ctkfyxwtssmmeelslrig.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_1XecJ_qlquD514OVKF_GNQ_QGYaPX-8",
+        "EXPO_PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAAFG3dLojvYus1RSv",
+        "EXPO_PUBLIC_GEO_URL": "https://photon.komoot.io"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://ctkfyxwtssmmeelslrig.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_1XecJ_qlquD514OVKF_GNQ_QGYaPX-8",
+        "EXPO_PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAAFG3dLojvYus1RSv",
+        "EXPO_PUBLIC_GEO_URL": "https://photon.komoot.io"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
