@@ -101,7 +101,7 @@ function DeckCard({ m, a, onOpen }: { m: Model; a: Plan; onOpen?: () => void }) 
       <LinearGradient colors={['transparent', 'rgba(0,0,0,.25)', 'rgba(0,0,0,.85)']} locations={[0.35, 0.55, 1]} style={StyleSheet.absoluteFill} />
       <View style={s.body}>
         <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-          <View style={s.pillBg}><CatPill cat={a.cat} /></View>
+          <View style={s.pillBg}><CatPill cat={a.cat} light /></View>
           {tags(a).map(x => <View key={x} style={s.tag}><Text style={s.tagT}>{x}</Text></View>)}
         </View>
         <Text style={s.title} numberOfLines={3}>{a.desc}</Text>

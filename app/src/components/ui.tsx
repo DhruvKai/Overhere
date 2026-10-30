@@ -105,9 +105,10 @@ export function Avatar({ m, id, size = 36 }: { m: Model; id: string; size?: numb
   );
 }
 
-export function CatPill({ cat, tint }: { cat: Cat; tint?: boolean }) {
+/* light: the pill sits on a fixed white background (the swipe card's photo), so it keeps the light colours in dark mode */
+export function CatPill({ cat, tint, light }: { cat: Cat; tint?: boolean; light?: boolean }) {
   const t = useTheme(), c = CATS[cat];
-  const fg = t.dark ? c.fgDark : c.fg;
+  const fg = t.dark && !light ? c.fgDark : c.fg;
   return (
     <View style={[s.cat, tint && { backgroundColor: t.dark ? c.bgDark : c.bg }]}>
       <Feather name={c.icon} size={12} color={fg} />

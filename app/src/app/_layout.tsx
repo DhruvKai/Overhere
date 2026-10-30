@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -72,14 +72,20 @@ function Gate() {
 
 export default function RootLayout() {
   const t = useTheme();
+  /* The navigators' own colours (tab screens, headers) from the app's tokens. Without this they keep React
+     Navigation's light grey background while the text follows the phone's dark mode, so it can't be read. */
+  const base = t.dark ? DarkTheme : DefaultTheme;
+  const nav = { ...base, colors: { ...base.colors, primary: t.acc, background: t.bg, card: t.card, text: t.ink, border: t.line, notification: t.bad } };
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: t.bg }}>
       <SafeAreaProvider>
-        <StoreProvider>
-          <StatusBar style={t.dark ? 'light' : 'dark'} />
-          <Gate />
-          <Toast />
-        </StoreProvider>
+        <ThemeProvider value={nav}>
+          <StoreProvider>
+            <StatusBar style={t.dark ? 'light' : 'dark'} />
+            <Gate />
+            <Toast />
+          </StoreProvider>
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
