@@ -6,6 +6,7 @@ import { Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Btn, Empty, Loading } from '@/components/ui';
+import { onPushTap, openFromPush, registerPush } from '@/lib/push';
 import { StoreProvider, useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 
@@ -28,7 +29,15 @@ function Gate() {
   const t = useTheme();
   const signedIn = !!session;
   const loading = signedIn && !model;
+  const hasProfile = !!model?.profile;
   useEffect(() => { if (ready && !loading) SplashScreen.hideAsync(); }, [ready, loading]);
+  /* Push: register this phone once the profile exists, and open whatever notification was tapped. */
+  const pushOn = signedIn && hasProfile;
+  useEffect(() => {
+    if (!pushOn) return;
+    registerPush();
+    return onPushTap(openFromPush);
+  }, [pushOn]);
   if (!ready) return null;
   if (loading) {
     return error ? (
@@ -41,7 +50,6 @@ function Gate() {
       </View>
     ) : <Loading />;
   }
-  const hasProfile = !!model?.profile;
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg } }}>
       <Stack.Protected guard={!signedIn}>

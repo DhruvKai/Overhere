@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AppState } from 'react-native';
 import { api, friendly } from './api';
 import { toModel, type Model } from './model';
+import { forgetPush } from './push';
 import { supabase } from './supabase';
 
 const EVERYONE = '00000000-0000-0000-0000-000000000000';
@@ -76,6 +77,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [toast]);
 
   const signOut = useCallback(async () => {
+    await forgetPush();
     await supabase.auth.signOut();
     setModel(null);
   }, []);

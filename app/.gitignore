@@ -17,6 +17,8 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
+# Firebase service account key (PUSH-SETUP.md step 3): it goes to EAS, never into git
+*firebase-adminsdk*.json
 
 # Metro
 .metro-health-check*

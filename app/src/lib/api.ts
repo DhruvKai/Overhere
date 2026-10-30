@@ -8,6 +8,23 @@ async function call<T = unknown>(fn: string, args: Record<string, unknown> = {})
   return data as T;
 }
 
+/* The Edge Functions in web/supabase/functions, with the message the function sent back when it refuses. */
+async function edge<T = unknown>(name: string, body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke(name, { body });
+  if (error) {
+    let m = error.message;
+    try { const j = await (error as { context?: Response }).context?.json(); if (j?.error) m = j.error; } catch {}
+    throw new Error(m);
+  }
+  return data as T;
+}
+
+/* What face-start hands over: an AWS liveness session and credentials that can only stream video to it (15 min). */
+export type FaceSession = {
+  sessionId: string; region: string;
+  credentials: { accessKeyId: string; secretAccessKey: string; sessionToken: string; expiration: string };
+};
+
 export type NewPlan = {
   cat: Cat; desc: string; cap: number; when: number; aud: Gender[] | null; venue: string;
   cost: Cost; total?: number | null; lat?: number | null; lng?: number | null; repeat?: string | null;
@@ -42,7 +59,12 @@ export const api = {
   blockUser: (user: string) => call('block_user', { p_user: user }),
   unblockUser: (user: string) => call('unblock_user', { p_user: user }),
   readNotifications: (ids: string[] | null) => call('read_notifications', { p_ids: ids }),
+  savePushToken: (token: string, platform: string) => call('save_push_token', { p_token: token, p_platform: platform }),
+  forgetPushToken: (token: string) => call('forget_push_token', { p_token: token }),
   verifySimulated: (kind: 'face' | 'kyc') => call('verify_simulated', { p_kind: kind, p_pass: true, p_consent: true }),
+  /* the live face check, the same steps as CHECKS.live in web/app.js */
+  faceStart: () => edge<FaceSession | { status: 'review' }>('face-start', { consent: true }),
+  faceResult: (sessionId: string) => edge<{ status: 'passed' | 'failed' | 'review' }>('face-result', { sessionId }),
   deleteMyAccount: () => call('delete_my_account'),
 };
 

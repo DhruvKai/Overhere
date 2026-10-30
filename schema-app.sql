@@ -134,6 +134,16 @@ create table if not exists notifications (
 );
 create index if not exists notifications_user_idx on notifications (user_id, created_at desc);
 
+-- Phones that get push notifications (the Overhere app, expo-notifications). A token belongs to whoever signed in
+-- last on that phone. Signing out unlinks it (user_id null) instead of deleting the row.
+create table if not exists push_tokens (
+  token      text primary key check (char_length(token) <= 200),
+  user_id    uuid references profiles(id) on delete cascade,
+  platform   text not null default '' check (char_length(platform) <= 10),
+  updated_at timestamptz not null default now()
+);
+create index if not exists push_tokens_user_idx on push_tokens (user_id);
+
 -- After a meetup: did it go OK, how much you enjoyed it, and who showed up.
 create table if not exists ratings (
   act        uuid not null references activities(id) on delete cascade,
@@ -195,7 +205,10 @@ insert into app_config (k, v) values
   -- (with your own SMTP). Then someone who signed up with the old beta form and makes an account with
   -- the same email gets their details filled in. Google sign-ins always get it, because Google has
   -- confirmed the email. Left 'off', nobody can claim someone else's email to see their details.
-  ('prefill_email_signups', 'off')
+  ('prefill_email_signups', 'off'),
+  -- 'on' once the app's push notifications are set up (Firebase + EAS credentials, see app/PUSH-SETUP.md).
+  -- Then every notification also goes to the person's phones through Expo's push service.
+  ('push', 'off')
 on conflict (k) do nothing;
 
 -- Every face / ID check attempt. Never images or ID numbers, only the outcome.
@@ -232,11 +245,12 @@ alter table pings           enable row level security;
 alter table app_meta        enable row level security;
 alter table app_config      enable row level security;
 alter table verifications   enable row level security;
+alter table push_tokens     enable row level security;
 
 -- Belt and braces: the browser roles get no table rights at all (reading pings is the one exception,
 -- for Realtime). Without this, Supabase's default grants would rely on row level security alone.
 revoke all on table profiles, activities, requests, messages, poll_votes, notifications, ratings, reports, blocks,
-  profile_presets, pings, app_meta, app_config, verifications from anon, authenticated;
+  profile_presets, pings, app_meta, app_config, verifications, push_tokens from anon, authenticated;
 grant select on table pings to authenticated;
 
 drop policy if exists "see your own pings" on pings;
@@ -1093,6 +1107,42 @@ create or replace function read_notifications(p_ids uuid[]) returns void languag
 begin
   update notifications set read = true where user_id = _uid() and not read and (p_ids is null or id = any (p_ids));
 end $$;
+
+-- The app's push token for this phone. Signing in on a phone someone else used moves the token to you.
+create or replace function save_push_token(p_token text, p_platform text) returns void language plpgsql security definer set search_path = public as $$
+begin
+  if p_token is null or p_token !~ '^ExponentPushToken\[[A-Za-z0-9_-]{1,180}\]$' then raise exception 'Bad push token'; end if;
+  if not exists (select 1 from profiles where id = _uid()) then return; end if;
+  insert into push_tokens (token, user_id, platform) values (p_token, _uid(), left(coalesce(p_platform, ''), 10))
+  on conflict (token) do update set user_id = excluded.user_id, platform = excluded.platform, updated_at = now();
+end $$;
+
+-- Signing out on a phone: it stops getting this person's notifications. The row stays, with no owner.
+create or replace function forget_push_token(p_token text) returns void language sql security definer set search_path = public as $$
+  update push_tokens set user_id = null, updated_at = now() where token = p_token and user_id = _uid() $$;
+
+-- Push: each new notification (and each chat note brought back to the top) also goes to the person's phones through
+-- Expo's push service, once app_config push is 'on'. pg_net sends it after the transaction commits, and any error
+-- here is swallowed, so push can never stop a notification (or the action behind it) from being saved.
+create extension if not exists pg_net with schema extensions;
+create or replace function _push_note() returns trigger language plpgsql security definer set search_path = public as $$
+declare msgs jsonb;
+begin
+  if coalesce((select v from app_config where k = 'push'), 'off') <> 'on' then return null; end if;
+  select jsonb_agg(jsonb_build_object('to', t.token, 'title', new.title, 'body', new.body, 'sound', 'default',
+           'channelId', 'default', 'data', jsonb_build_object('act', new.act, 'chat', 'chat' = any (new.flags))))
+    into msgs from push_tokens t where t.user_id = new.user_id;
+  if msgs is null then return null; end if;
+  perform net.http_post(url := 'https://exp.host/--/api/v2/push/send', body := msgs,
+                        headers := '{"Content-Type": "application/json", "Accept": "application/json"}'::jsonb);
+  return null;
+exception when others then
+  return null;
+end $$;
+drop trigger if exists notifications_push on notifications;
+create trigger notifications_push after insert or update of created_at on notifications
+  for each row execute function _push_note();
+revoke all on function _push_note() from public, anon, authenticated;
 
 -- Human review, from the /addmin page. The dashboard password (schema.sql, admin_secret) is checked by the database.
 -- Returns null when the password is right, otherwise what to tell the dashboard. It doesn't raise an error,
