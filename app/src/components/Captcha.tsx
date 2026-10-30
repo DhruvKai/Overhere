@@ -8,7 +8,8 @@ import { useTheme } from '@/lib/theme';
    It runs in a WebView whose page claims overhere.social as its address, so the site key's hostname check passes.
    Usually it finishes on its own; when Cloudflare wants a tap, the sheet shows it. */
 const html = (key: string) => `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=go&render=explicit" async defer></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=go&render=explicit" async defer
+ onerror="window.ReactNativeWebView.postMessage(JSON.stringify({t:'err',m:'The security check couldn\\'t load. Check your connection and try again.'}))"></script>
 <style>html,body{margin:0;background:transparent;display:flex;justify-content:center}</style></head><body><div id="b"></div><script>
 function send(o){window.ReactNativeWebView.postMessage(JSON.stringify(o))}
 function go(){turnstile.render('#b',{sitekey:${JSON.stringify(key)},appearance:'interaction-only',
@@ -48,7 +49,7 @@ export function useCaptcha() {
         <View style={[s.box, { backgroundColor: t.card, opacity: show ? 1 : 0 }]}>
           <Text style={[s.title, { color: t.ink }]}>Quick security check</Text>
           <WebView key={run} originWhitelist={['*']} source={{ html: html(TURNSTILE_SITE_KEY), baseUrl: SITE }}
-            onMessage={onMessage} style={s.web} javaScriptEnabled />
+            onMessage={onMessage} style={s.web} containerStyle={s.web} javaScriptEnabled />
         </View>
       </View>
     </Modal>
@@ -61,5 +62,7 @@ const s = StyleSheet.create({
   wrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
   box: { width: '100%', maxWidth: 360, borderRadius: 20, padding: 16, alignItems: 'center' },
   title: { fontSize: 16, fontWeight: '700', marginBottom: 8 },
-  web: { width: 320, height: 80, backgroundColor: 'transparent' },
+  /* also the WebView's own wrapper (containerStyle), which is flex: 1 + overflow hidden: in this auto-height box that
+     collapses to 0 px, hiding Cloudflare's checkbox so the check can never finish */
+  web: { width: 320, height: 80, flex: 0, backgroundColor: 'transparent' },
 });

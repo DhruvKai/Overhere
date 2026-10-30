@@ -9,7 +9,7 @@ import { useStore } from '@/lib/store';
 import { SITE, supabase } from '@/lib/supabase';
 import { useTheme } from '@/lib/theme';
 
-type Mode = 'phone' | 'code' | 'email';
+type Mode = 'phone' | 'code' | 'email' | 'reset' | 'resetSent';
 const RESEND_MS = 30000;
 const phoneDigits = (s: string) => { const d = s.replace(/\D/g, ''); return (d.length > 10 ? d.replace(/^(91|0)(?=\d{10}$)/, '') : d).slice(0, 10); };
 const phoneProblem = (n: string) => (!n ? 'Enter your mobile number' : n.length < 10 ? 'Enter all 10 digits' : !/^[6-9]/.test(n) ? 'Indian mobile numbers start with 6, 7, 8 or 9' : '');
@@ -76,6 +76,23 @@ export default function SignIn() {
     setBusy(false);
   }
 
+  /* The link in the email opens the website's "choose a new password" step (web/app.js, PASSWORD_RECOVERY);
+     after that they come back here and sign in with the new one. */
+  async function sendReset(again?: boolean) {
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) return setErr('Enter a valid email address');
+    const wait = again ? Math.ceil((sent + RESEND_MS - Date.now()) / 1000) : 0;
+    if (wait > 0) return toast(`Please wait ${wait}s before asking again`);
+    setBusy(true); setErr('');
+    try {
+      const captchaToken = await getToken();
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { captchaToken, redirectTo: SITE + '/app.html' });
+      if (error) throw error;
+      setSent(Date.now()); setMode('resetSent');
+      if (again) toast('Sent again. Check your inbox.');
+    } catch (e) { setErr(friendly(e)); }
+    setBusy(false);
+  }
+
   const Check = (
     <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: is18 }} onPress={() => setIs18(v => !v)}
       style={{ flexDirection: 'row', gap: 10, alignItems: 'center', marginBottom: 16 }}>
@@ -118,17 +135,38 @@ export default function SignIn() {
           {mode === 'email' && (<>
             <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress" />
             <Field label="Password" value={pw} onChangeText={setPw} secureTextEntry autoComplete={signUp ? 'new-password' : 'current-password'} textContentType={signUp ? 'newPassword' : 'password'} hint={signUp ? 'At least 8 characters' : undefined} />
-            {signUp ? Check : null}
+            {signUp ? Check : (
+              <Pressable onPress={() => { setMode('reset'); setErr(''); }} style={{ alignSelf: 'flex-end', marginTop: -6, marginBottom: 16 }}>
+                <Text style={{ color: t.accink, fontWeight: '700', fontSize: 15 }}>Forgot password?</Text>
+              </Pressable>
+            )}
             <Btn title={signUp ? 'Create account' : 'Sign in'} onPress={emailGo} busy={busy} />
             <Pressable onPress={() => { setSignUp(v => !v); setErr(''); }} style={{ marginTop: 14 }}>
               <Text style={{ color: t.accink, fontWeight: '700', fontSize: 15 }}>{signUp ? 'I already have an account' : 'New here? Create an account'}</Text>
             </Pressable>
           </>)}
 
+          {mode === 'reset' && (<>
+            <P style={{ marginBottom: 14 }}>Enter the email you signed up with and we&apos;ll send you a link to choose a new password.</P>
+            <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress" autoFocus />
+            <Btn title="Send reset link" onPress={() => sendReset()} busy={busy} />
+            <Pressable onPress={() => { setMode('email'); setErr(''); }} style={{ marginTop: 14 }}>
+              <Text style={{ color: t.accink, fontWeight: '700', fontSize: 15 }}>Back to sign in</Text>
+            </Pressable>
+          </>)}
+
+          {mode === 'resetSent' && (<>
+            <P style={{ marginBottom: 14 }}>We sent a link to {email.trim()}. Open it, choose a new password, then come back here and sign in with it.</P>
+            <Btn title="Back to sign in" onPress={() => { setMode('email'); setSignUp(false); setPw(''); setErr(''); }} />
+            <Pressable onPress={() => sendReset(true)} style={{ marginTop: 14 }}>
+              <Text style={{ color: t.accink, fontWeight: '700', fontSize: 15 }}>Didn&apos;t get it? Send again</Text>
+            </Pressable>
+          </>)}
+
           {err ? <Text accessibilityLiveRegion="polite" style={{ color: t.bad, marginTop: 14, fontSize: 14 }}>{err}</Text> : null}
 
           <View style={{ height: 1, backgroundColor: t.line, marginVertical: 24 }} />
-          {mode !== 'email'
+          {mode === 'phone' || mode === 'code'
             ? <Btn title="Use email instead" kind="ghost" icon="mail" onPress={() => { setMode('email'); setErr(''); }} />
             : <Btn title="Use phone instead" kind="ghost" icon="phone" onPress={() => { setMode('phone'); setErr(''); }} />}
           <P mute small style={{ marginTop: 20, textAlign: 'center' }}>
