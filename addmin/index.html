@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://*.supabase.co; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Overhere dashboard</title>
@@ -82,7 +82,8 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 #tip.on{opacity:1}
 .login{max-width:420px;margin:40px auto}
 .rv{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}.rv:last-child{border-bottom:0}
-.rv .who{flex:1;min-width:160px}.rv .btn{padding:8px 14px;font-size:13px}
+.rv .who{flex:1;min-width:160px}
+.rvp{width:56px;height:56px;border-radius:50%;object-fit:cover;flex:0 0 auto;background:var(--line)}.rvp.none{display:inline-flex;align-items:center;justify-content:center;color:var(--mute);font-weight:700}.rv .btn{padding:8px 14px;font-size:13px}
 </style>
 </head>
 <body>

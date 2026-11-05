@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Pressable, ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
+import { column } from '@/lib/layout';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 import { Btn, Chip, Field, H, P } from './ui';
@@ -10,6 +12,8 @@ export function ReportSheet({ open, title, reasons, target, act, msg, onClose }:
   open: boolean; title: string; reasons: string[]; target?: string | null; act?: string | null; msg?: number | null; onClose: () => void;
 }) {
   const t = useTheme();
+  /* the sheet runs edge to edge, so it clears the gesture bar or a tablet's taskbar itself */
+  const pad = 20 + Math.max(useSafeAreaInsets().bottom, 14);
   const { run, toast } = useStore();
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
@@ -28,21 +32,24 @@ export function ReportSheet({ open, title, reasons, target, act, msg, onClose }:
 
   return (
     <Modal transparent visible animationType="slide" onRequestClose={onClose}>
-      <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,.35)' }} onPress={onClose} accessibilityLabel="Close" />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView style={{ backgroundColor: t.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: 560 }}
-          contentContainerStyle={{ padding: 20, paddingBottom: 34 }} keyboardShouldPersistTaps="handled">
-          <H size={20}>{title}</H>
-          <P mute style={{ marginTop: 6, marginBottom: 14 }}>If you&apos;re in danger, call 112 first.</P>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
-            {reasons.map(r => <Chip key={r} label={r} on={reason === r} onPress={() => setReason(r)} />)}
-          </View>
-          <Field label="What happened? (optional)" value={note} onChangeText={setNote} maxLength={500} multiline />
-          <Btn title="Send report" onPress={send} busy={busy} />
-          <View style={{ height: 8 }} />
-          <Btn title="Cancel" kind="ghost" onPress={onClose} />
-        </ScrollView>
-      </KeyboardAvoidingView>
+      {/* the dimmed backdrop covers the screen; the sheet keeps to the middle column on tablets (lib/layout.ts) */}
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,.35)' }}>
+        <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Close" />
+        <KeyboardAvoidingView behavior="padding">
+          <ScrollView style={[{ backgroundColor: t.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: 560 }, column]}
+            contentContainerStyle={{ padding: 20, paddingBottom: pad }} keyboardShouldPersistTaps="handled">
+            <H size={20}>{title}</H>
+            <P mute style={{ marginTop: 6, marginBottom: 14 }}>If you&apos;re in danger, call 112 first.</P>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+              {reasons.map(r => <Chip key={r} label={r} on={reason === r} onPress={() => setReason(r)} />)}
+            </View>
+            <Field label="What happened? (optional)" value={note} onChangeText={setNote} maxLength={500} multiline />
+            <Btn title="Send report" onPress={send} busy={busy} />
+            <View style={{ height: 8 }} />
+            <Btn title="Cancel" kind="ghost" onPress={onClose} />
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }

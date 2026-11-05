@@ -1,4 +1,4 @@
-import { useColorScheme } from 'react-native';
+import { Appearance, useColorScheme } from 'react-native';
 
 /* The web app's colour tokens (app.html :root and [data-theme="dark"]). */
 const light = {
@@ -16,3 +16,16 @@ const dark: typeof light = {
 export type Theme = typeof light;
 export const useTheme = (): Theme => (useColorScheme() === 'dark' ? dark : light);
 export const R = 20;   // card corner radius, --r on the web
+
+/* Appearance in Profile: follow the phone, or always light or dark. Kept on this phone, like the website's
+   overhere_theme, and put back when the app starts (applyThemePref in the root layout). */
+export type ThemePref = 'system' | 'light' | 'dark';
+const THEME_KEY = 'overhere_theme';
+export function themePref(): ThemePref {
+  try { const v = localStorage.getItem(THEME_KEY); return v === 'light' || v === 'dark' ? v : 'system'; } catch { return 'system'; }
+}
+export function setThemePref(p: ThemePref) {
+  try { localStorage.setItem(THEME_KEY, p); } catch {}
+  Appearance.setColorScheme(p === 'system' ? 'unspecified' : p);
+}
+export const applyThemePref = () => { const p = themePref(); if (p !== 'system') Appearance.setColorScheme(p); };

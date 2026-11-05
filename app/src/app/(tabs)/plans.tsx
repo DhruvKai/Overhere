@@ -2,9 +2,9 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, RefreshControl, SectionList, View } from 'react-native';
 import { Header } from '@/components/Header';
-import { Badge, Btn, Empty, H, Icon, PlanRow } from '@/components/ui';
-import { inChat, myPlans, myReq, nowOf, type Model, type Plan } from '@/lib/model';
-import { useModel, useStore } from '@/lib/store';
+import { Badge, Btn, Empty, H, Icon, PlanRow, SaveToggle } from '@/components/ui';
+import { inChat, myPlans, myReq, nowOf, saved, type Model, type Plan } from '@/lib/model';
+import { useModel, useStore, useToggleSave } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 
 function status(m: Model, a: Plan): [string, 'ok' | 'bad' | 'warn' | 'info' | 'acc'] {
@@ -29,10 +29,14 @@ export default function Plans() {
   const t = useTheme();
   const m = useModel();
   const { refresh } = useStore();
+  const toggleSave = useToggleSave();
   const [pulling, setPulling] = useState(false);
   const now = nowOf(m);
   const all = myPlans(m);
+  /* saved from Discover, until you ask to join, the plan starts or it's gone */
+  const savedPlans = saved(m).map(id => m.acts.find(a => a.id === id)).filter((a): a is Plan => !!a && a.when > now && !myReq(m, a.id)).sort((a, b) => a.when - b.when);
   const sections = [
+    { title: 'Saved for later', data: savedPlans },
     { title: 'Coming up', data: all.filter(a => a.when > now && (a.host === m.me || ['accepted', 'pending', 'waitlist'].includes(myReq(m, a.id)?.status ?? ''))) },
     { title: 'Past and closed', data: all.filter(a => a.when <= now || (a.host !== m.me && !['accepted', 'pending', 'waitlist'].includes(myReq(m, a.id)?.status ?? ''))).reverse() },
   ].filter(s => s.data.length);
@@ -48,7 +52,10 @@ export default function Plans() {
         refreshControl={<RefreshControl refreshing={pulling} onRefresh={async () => { setPulling(true); await refresh(); setPulling(false); }} tintColor={t.acc} />}
         renderSectionHeader={({ section }) => <View style={{ paddingTop: 10, paddingBottom: 8 }}><H size={17}>{section.title}</H></View>}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-        renderItem={({ item }) => {
+        renderItem={({ item, section }) => {
+          if (section.title === 'Saved for later') {
+            return <PlanRow m={m} a={item} onPress={() => router.push({ pathname: '/plan/[id]', params: { id: item.id } })} right={<SaveToggle on onPress={() => toggleSave(item.id)} />} />;
+          }
           const [txt, tone] = status(m, item);
           const unreadChat = inChat(m, item) && (m.chats[item.id]?.length ?? 0) > 0;
           return (

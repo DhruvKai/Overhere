@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { homeName, viewCity, viewName } from '@/lib/model';
 import { useModel } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 import { Icon } from './ui';
@@ -14,7 +15,7 @@ export function Header({ title, sub, right }: { title: string; sub?: string; rig
     <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       <View style={{ flex: 1 }}>
         <Text accessibilityRole="header" style={{ fontSize: 26, fontWeight: '800', color: t.ink, letterSpacing: -0.4 }}>{title}</Text>
-        <Text style={{ fontSize: 13, color: t.mute }} numberOfLines={1}>{sub ?? `Near ${(m.profile?.hood || '').split(',')[0]}`}</Text>
+        <Text style={{ fontSize: 13, color: t.mute }} numberOfLines={1}>{sub ?? (viewCity(m) ? `In ${viewName(m)}` : `Near ${homeName(m)}`)}</Text>
       </View>
       {right ?? (
         <Pressable accessibilityRole="button" accessibilityLabel="Post a plan" onPress={() => router.push('/post')}

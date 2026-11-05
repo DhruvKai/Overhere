@@ -6,12 +6,12 @@ export type ReqStatus = 'pending' | 'accepted' | 'rejected' | 'waitlist' | 'left
 
 export type RawProfile = {
   id: string; name: string; dob: string; gender: Gender; hood: string; lat: number | null; lng: number | null;
-  job: string; bio: string; ints: string[]; avail: string[]; emo: string; face: boolean; kyc: boolean;
+  job: string; bio: string; ints: string[]; avail: string[]; emo: string; photo: string | null; photo2: string | null; face: boolean; kyc: boolean;
   onboarded: boolean; usage_ok: boolean; consent_version: string | null; state: Record<string, unknown>;
 };
 
 export type RawPerson = {
-  id: string; name: string; gender: Gender; age: number; job: string; bio: string; emo: string;
+  id: string; name: string; gender: Gender; age: number; job: string; bio: string; emo: string; photo: string | null; photo2: string | null;
   kyc: boolean; face: boolean; sample: boolean; ints: string[]; avail: string[]; hist: unknown[]; met: number; shows: number;
 };
 

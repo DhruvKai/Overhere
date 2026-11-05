@@ -1,0 +1,67 @@
+/* Overhere's look for the AWS widget, on top of Amplify's own styles. The colours are the site's tokens (app.html
+   :root, so dark mode follows); the app's WebView sets the same tokens itself (app/src/components/FaceScan.tsx).
+   The oval and the colour flashes are AWS's liveness check itself and are left as they are.
+   Amplify resolves its component variables at :root, so the button ones are set here too, not only the palette. */
+.ovh-face {
+  --o-bg: var(--bg, #F5F0E6); --o-card: var(--card, #FFFDF8); --o-ink: var(--ink, #1A1A1A); --o-mute: var(--mute, #6B6B6B);
+  --o-line: var(--line, #E7DFCF); --o-field: var(--field, #EFE8DA); --o-btn: var(--btn, #3F7D4E); --o-btnh: var(--btnh, #336842);
+  --o-acc2: var(--acc2, #E7F0E1); --o-accink: var(--accink, #2E6139); --o-bad: var(--bad, #B91C1C);
+  --o-font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --amplify-fonts-default-variable: var(--o-font);
+  --amplify-fonts-default-static: var(--o-font);
+  --amplify-colors-background-primary: var(--o-card);
+  --amplify-colors-background-secondary: var(--o-field);
+  --amplify-colors-font-primary: var(--o-ink);
+  --amplify-colors-font-secondary: var(--o-mute);
+  --amplify-colors-font-tertiary: var(--o-mute);
+  --amplify-colors-border-primary: var(--o-line);
+  --amplify-colors-border-secondary: var(--o-line);
+  --amplify-colors-border-tertiary: var(--o-line);
+  --amplify-colors-primary-10: var(--o-acc2);
+  --amplify-colors-primary-80: var(--o-btn);
+  --amplify-colors-primary-90: var(--o-btnh);
+  --amplify-colors-primary-100: var(--o-btnh);
+  --amplify-colors-blue-10: var(--o-acc2);
+  --amplify-colors-blue-90: var(--o-accink);
+  --amplify-colors-red-80: var(--o-bad);
+  --amplify-radii-small: 12px;
+  --amplify-radii-medium: 16px;
+  --amplify-radii-large: 20px;
+  --amplify-components-liveness-camera-module-background-color: var(--o-bg);
+  --amplify-components-button-border-radius: 99px;
+  --amplify-components-button-font-weight: 600;
+  --amplify-components-button-primary-background-color: var(--o-btn);
+  --amplify-components-button-primary-color: #fff;
+  --amplify-components-button-primary-hover-background-color: var(--o-btnh);
+  --amplify-components-button-primary-focus-background-color: var(--o-btnh);
+  --amplify-components-button-primary-active-background-color: var(--o-btnh);
+  --amplify-components-button-primary-focus-box-shadow: 0 0 0 2px var(--o-card), 0 0 0 4px var(--o-btn);
+  --amplify-components-button-focus-color: var(--o-btn);
+  --amplify-components-button-link-color: var(--o-accink);
+  --amplify-components-button-link-hover-background-color: var(--o-acc2);
+  --amplify-components-button-link-hover-color: var(--o-accink);
+  --amplify-components-loader-stroke-filled: var(--o-btn);
+  --amplify-components-loader-stroke-empty: var(--o-line);
+  font-family: var(--o-font);
+  color: var(--o-ink);
+  height: 100%;
+}
+.ovh-face .amplify-button--primary { padding: 13px 18px; font-size: 14.5px; width: 100%; }
+.ovh-face .amplify-liveness-camera-module { border: 0; border-radius: 18px; overflow: hidden; }
+.ovh-face .amplify-liveness-start-screen-header__heading { font-size: 20px; font-weight: 800; letter-spacing: -0.3px; }
+.ovh-face .amplify-liveness-start-screen-header__body { color: var(--o-mute); }
+/* the photosensitivity note: a quiet card instead of a blue alert */
+.ovh-face .amplify-liveness-start-screen-warning { background: var(--o-acc2); color: var(--o-accink); border-radius: 16px; padding: 12px 14px; }
+.ovh-face .amplify-liveness-popover__container { border-radius: 12px; border: 1px solid var(--o-line); box-shadow: 0 2px 14px rgba(26, 26, 26, .08); }
+/* the numbered tips: small green numbers instead of filled circles */
+.ovh-face .amplify-liveness-description-bullet__index { background: var(--o-acc2); border-radius: 99px; }
+.ovh-face .amplify-liveness-description-bullet__index__text { color: var(--o-accink); font-weight: 700; }
+/* hints over the camera ("Move closer" ...): a soft pill */
+.ovh-face .amplify-liveness-toast { border-radius: 99px; padding: 8px 16px; box-shadow: 0 2px 14px rgba(0, 0, 0, .18); }
+.ovh-face .amplify-liveness-toast__message { font-weight: 600; font-size: 14px; }
+.ovh-face .amplify-liveness-toast--error .amplify-liveness-toast__message { color: #fff; }
+.ovh-face .amplify-liveness-cancel-button { background: var(--o-card); color: var(--o-ink); border-radius: 99px; }
+.ovh-face .amplify-liveness-recording-icon { border-radius: 99px; }
+.ovh-face .amplify-liveness-countdown-container { box-shadow: 0 2px 14px rgba(0, 0, 0, .18); }
+.ovh-face .amplify-liveness-error-modal { border-radius: 16px; }

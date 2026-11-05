@@ -5,83 +5,497 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; frame-src 'self'; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Overhere - join the beta</title>
+<title>Overhere: find people to do things with</title>
+<meta name="description" content="Go out and meet people. Join small plans near you: treks, gigs, game nights, picnics. You choose who comes. Free, and not a dating app.">
 <meta name="theme-color" content="#3F7D4E">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
-<script src="head.js" data-manifest="manifest.webmanifest" data-skip-landing></script>
+<script src="head.js" data-manifest="manifest.webmanifest"></script>
 <link rel="stylesheet" href="fonts/fonts.css">
+<link rel="preload" as="image" href="img/people/guitar.webp" type="image/webp">
 <style>
-:root{--bg:#F5F0E6;--card:#FFFDF8;--ink:#1A1A1A;--mute:#6B6B6B;--line:#E7DFCF;--field:#EFE8DA;--acc:#3F7D4E;--acch:#336842;--acc2:#E7F0E1;--accink:#2E6139;--ok:#15803D;--okbg:#DCFCE7;--bad:#B91C1C;--badbg:#FEE2E2;--warnbg:#FFFBEB;--warn:#92400E;--shadow:0 2px 14px rgba(26,26,26,.06);--chip:#fff;--acc2h:#D8E8CF;--wline:#FDE68A;color-scheme:light}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15130F;--card:#201D18;--ink:#F2EDE4;--mute:#A39C8E;--line:#34302A;--field:#2A2620;--acc:#4A8F5B;--acch:#5AA06B;--acc2:#1F3325;--accink:#9FD3AA;--ok:#4ADE80;--okbg:#14301F;--bad:#F87171;--badbg:#3A1717;--warnbg:#33280E;--warn:#FCD34D;--shadow:0 2px 14px rgba(0,0,0,.35);--chip:#26221C;--acc2h:#28432F;--wline:#5C4812;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#15130F;--card:#201D18;--ink:#F2EDE4;--mute:#A39C8E;--line:#34302A;--field:#2A2620;--acc:#4A8F5B;--acch:#5AA06B;--acc2:#1F3325;--accink:#9FD3AA;--ok:#4ADE80;--okbg:#14301F;--bad:#F87171;--badbg:#3A1717;--warnbg:#33280E;--warn:#FCD34D;--shadow:0 2px 14px rgba(0,0,0,.35);--chip:#26221C;--acc2h:#28432F;--wline:#5C4812;color-scheme:dark}
+:root{--bg:#F5F0E6;--card:#FFFDF8;--ink:#1A1A1A;--mute:#5F5F5F;--line:#E7DFCF;--field:#EFE8DA;--acc:#3F7D4E;--acch:#336842;--acc2:#E7F0E1;--accink:#2E6139;--ok:#15803D;--okbg:#DCFCE7;--bad:#B91C1C;--badbg:#FEE2E2;--warnbg:#FFFBEB;--warn:#92400E;--shadow:0 2px 14px rgba(44,38,24,.07);--lift:0 22px 50px rgba(44,38,24,.18);--chip:#fff;--acc2h:#D8E8CF;--wline:#FDE68A;--band:#E4EEDD;--btn:#3F7D4E;--btnh:#336842;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15130F;--card:#201D18;--ink:#F2EDE4;--mute:#A9A294;--line:#34302A;--field:#2A2620;--acc:#4A8F5B;--acch:#5AA06B;--acc2:#1F3325;--accink:#9FD3AA;--ok:#4ADE80;--okbg:#14301F;--bad:#F87171;--badbg:#3A1717;--warnbg:#33280E;--warn:#FCD34D;--shadow:0 2px 14px rgba(0,0,0,.35);--lift:0 22px 50px rgba(0,0,0,.5);--chip:#26221C;--acc2h:#28432F;--wline:#5C4812;--band:#1B2A1F;--btn:#3F7D4E;--btnh:#336842;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15130F;--card:#201D18;--ink:#F2EDE4;--mute:#A9A294;--line:#34302A;--field:#2A2620;--acc:#4A8F5B;--acch:#5AA06B;--acc2:#1F3325;--accink:#9FD3AA;--ok:#4ADE80;--okbg:#14301F;--bad:#F87171;--badbg:#3A1717;--warnbg:#33280E;--warn:#FCD34D;--shadow:0 2px 14px rgba(0,0,0,.35);--lift:0 22px 50px rgba(0,0,0,.5);--chip:#26221C;--acc2h:#28432F;--wline:#5C4812;--band:#1B2A1F;--btn:#3F7D4E;--btnh:#336842;color-scheme:dark}
 *{box-sizing:border-box}
-body{margin:0;font:15.5px/1.5 "Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;font:16px/1.55 "Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased;overflow-x:hidden}
 button,input,select,textarea{font:inherit}
 /* iOS zooms the page into any field under 16px when it is focused (every iOS browser is Safari underneath). any-pointer
    also catches an iPad with a trackpad or mouse attached, where the main pointer is no longer the touch screen */
 @media (pointer:coarse),(any-pointer:coarse){input,select,textarea{font-size:16px}}
-header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
-.bar{max-width:760px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:6px}
-.logo{font-weight:800;font-size:18px;letter-spacing:-.02em;flex:1;cursor:pointer;display:flex;align-items:center;gap:9px}
-.dots{display:flex;gap:2px}.dots i{width:11px;height:11px;border-radius:50%;background:#1A1A1A;box-shadow:inset 0 0 0 2.5px var(--acc)}
-.tab{border:0;background:none;padding:8px 16px;border-radius:99px;font-size:14px;font-weight:500;color:var(--mute);cursor:pointer}
-.tab:hover{color:var(--ink)}
-.tab.on{background:var(--acc2);color:var(--acch)}
-.tab:disabled{opacity:.4;cursor:not-allowed}
-/* Feedback stands out from the other tab, so it's easy to find */
-.tab.fb{background:var(--acc2);color:var(--accink);font-weight:600}.tab.fb:hover{background:var(--acc2h)}
-.tab.fb.on{background:var(--acc);color:#fff}
-main{max-width:760px;margin:0 auto;padding:28px 16px 60px}
-h1{font-size:32px;line-height:1.2;margin:0 0 10px;letter-spacing:-.02em;font-weight:600}
-h2{font-size:22px;margin:0 0 6px;font-weight:600;letter-spacing:-.01em}
-p{margin:0 0 12px}
+a{color:var(--acch)}
+img{display:block;max-width:100%}
+.i{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px}
+.hide{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- buttons ---------- */
+/* --btn rather than --acc: in dark mode the accent is lighter, too light behind white text (4.5:1) */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;background:var(--btn);color:#fff;font-weight:600;padding:13px 24px;border-radius:99px;cursor:pointer;text-decoration:none;white-space:nowrap;transition:background .15s,transform .15s cubic-bezier(.16,1,.3,1),box-shadow .2s}
+.btn:hover{background:var(--btnh);box-shadow:0 8px 20px rgba(63,125,78,.28)}
+.btn:active{transform:scale(.98)}
+.btn.sec{background:var(--acc2);color:var(--accink)}.btn.sec:hover{background:var(--acc2h);box-shadow:none}
+.btn.out{background:var(--card);color:var(--ink);border:1px solid var(--line)}.btn.out:hover{box-shadow:none;border-color:var(--mute)}
+.btn.out:disabled{cursor:not-allowed;opacity:.7}
+.btn.sm{padding:9px 18px;font-size:14.5px}
+.btn.wide{width:100%}
+.btn:focus-visible,.nl:focus-visible,.seg button:focus-visible,.rb:focus-visible,summary:focus-visible,.logo:focus-visible{outline:3px solid color-mix(in srgb,var(--acc) 55%,transparent);outline-offset:2px}
+
+/* the swipe demo: the same card as the app's Swipe tab */
+.demo{display:flex;flex-direction:column;align-items:center}
+.stack{position:relative;width:100%;max-width:340px;height:470px;touch-action:pan-y}
+.card{position:absolute;inset:0;border-radius:28px;color:#fff;overflow:hidden;user-select:none;-webkit-user-select:none;box-shadow:var(--lift);background:#2a1d14;transform-origin:50% 90%;transition:transform .45s cubic-bezier(.16,1,.3,1),opacity .3s}
+.card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
+.card .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 30%,rgba(0,0,0,.5) 55%,rgba(12,9,6,.93) 100%)}
+.card .cat{position:absolute;top:14px;left:14px;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:5px 11px;border-radius:99px;background:#fff}
+.card .body{position:absolute;left:0;right:0;bottom:0;padding:18px 18px 20px}
+.card .who{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-bottom:8px}
+.card .av{width:26px;height:26px;border-radius:50%;background:#FFFDF8;display:inline-flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 0 0 2px rgba(255,255,255,.35)}
+.card .vf{color:#A7D7A0;font-size:15px}
+.card h3{font-size:21px;line-height:1.22;margin:0;letter-spacing:-.01em;font-weight:700}
+.card .meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;font-weight:500;opacity:.92;margin-top:9px}
+.card .meta span{display:inline-flex;align-items:center;gap:5px}
+.card .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.card .tags span{font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.16);backdrop-filter:blur(4px)}
+.card .stamp{position:absolute;top:64px;padding:6px 14px;border-radius:12px;border:3px solid;font-weight:800;font-size:18px;letter-spacing:.06em;opacity:0;transition:opacity .1s}
+.card .stamp.yes{left:22px;color:#A7F3B5;border-color:#A7F3B5;transform:rotate(-12deg)}
+.card .stamp.no{right:22px;color:#FCA5A5;border-color:#FCA5A5;transform:rotate(12deg)}
+.card[data-pos="0"]{z-index:3;cursor:grab}
+.card[data-pos="0"].drag{transition:none;cursor:grabbing}
+.card[data-pos="1"]{z-index:2;transform:translateY(16px) scale(.95)}
+.card[data-pos="2"]{z-index:1;transform:translateY(32px) scale(.9);opacity:.9}
+.card[data-pos="h"]{z-index:0;transform:translateY(32px) scale(.9);opacity:0}
+.acts{display:flex;align-items:center;justify-content:center;gap:22px;margin-top:44px}
+.rb{width:60px;height:60px;border-radius:50%;border:0;background:var(--chip);color:var(--mute);box-shadow:0 6px 18px rgba(44,38,24,.12);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:24px;transition:transform .15s cubic-bezier(.16,1,.3,1)}
+.rb:hover{transform:translateY(-2px)}.rb:active{transform:scale(.94)}
+.rb.go{background:var(--acc);color:#fff;box-shadow:0 8px 22px rgba(63,125,78,.35)}
+.dcap{font-size:13.5px;color:var(--mute);margin:14px 0 0;text-align:center;min-height:21px}
+.dcap b{color:var(--accink)}
+@media(max-width:420px){.stack{height:430px}}
+
+/* sign-up box */
+.join>*{min-width:0}
+.auth{padding:44px 44px 36px;display:flex;flex-direction:column}
+.auth .btn.out{white-space:normal;flex-wrap:wrap;text-align:center}
+.seg{display:inline-flex;background:var(--field);border-radius:99px;padding:4px;gap:2px;align-self:flex-start;margin-bottom:22px}
+.seg button{border:0;background:none;padding:8px 18px;border-radius:99px;font-size:14.5px;font-weight:600;color:var(--mute);cursor:pointer;transition:background .2s,color .2s}
+.seg button[aria-selected="true"]{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+.auth h3{font-size:26px;letter-spacing:-.02em;margin:0 0 4px}
+.auth .s{color:var(--mute);margin:0 0 22px}
+.g{display:inline-flex;width:18px;height:18px}
+.soon{font-size:12.5px;color:var(--mute);font-weight:500}
+.or{display:flex;align-items:center;gap:12px;color:var(--mute);font-size:13px;margin:18px 0}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.via{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
+.via label{display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);border-radius:14px;padding:11px;font-weight:600;font-size:15px;cursor:pointer;background:var(--chip);transition:.15s}
+.via label:has(input:checked){border-color:var(--acc);background:var(--acc2);color:var(--accink)}
+.via label:has(input:focus-visible){outline:3px solid color-mix(in srgb,var(--acc) 55%,transparent);outline-offset:2px}
+.via input{position:absolute;opacity:0;pointer-events:none}
+.auth label.f{display:block;font-size:14px;font-weight:600;margin:16px 0 6px}
+.fi{position:relative;display:flex;align-items:center}
+.fi .pre{position:absolute;left:14px;display:inline-flex;align-items:center;gap:7px;color:var(--mute);font-weight:600;pointer-events:none}
+.fi input{width:100%;padding:13px 14px 13px 44px;border:1px solid transparent;border-radius:14px;background:var(--field);color:var(--ink);outline:none;transition:border-color .15s,background .15s}
+.fi.tel input{padding-left:78px}
+.fi input:focus{border-color:var(--acc);background:var(--card)}
+.fi input[aria-invalid="true"]{border-color:var(--bad)}
+.fi input::placeholder{color:#8A847A}
+.hint{font-size:13.5px;color:var(--mute);margin:8px 0 0}
+.ferr{font-size:13.5px;color:var(--bad);margin:6px 0 0;min-height:0}
+.ferr:empty{display:none}
+.auth form .btn{margin-top:20px}
+.legal{font-size:13px;color:var(--mute);text-align:center;margin:16px 0 0}
+.legal a{color:inherit}
+/* ---------- photo-led layout: the hero and the sign-up run to the edges as photos, content sits close to the edges ---------- */
+:root{--g:clamp(14px,2vw,32px);--r:14px}
+html{scroll-padding-top:63px}   /* the fixed header: 62px and its 1px line */
+.wrap{max-width:none;padding-inline:var(--g)}
+.btn{border-radius:12px}
+.btn.light{background:#fff;color:#14110D}.btn.light:hover{background:#F2EDE4;box-shadow:none}
+.btn.ghost{background:rgba(255,255,255,.14);color:#fff;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
+.btn.ghost:hover{background:rgba(255,255,255,.24);box-shadow:inset 0 0 0 1px rgba(255,255,255,.45)}
+
+/* header: white on the photo, cream once the page moves */
+header{position:fixed;top:0;left:0;right:0;z-index:20;color:#fff;transition:background .25s,color .25s,border-color .25s;border-bottom:1px solid transparent}
+header.sc,header.solid{background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:var(--ink);border-bottom-color:var(--line)}
+.bar{display:flex;align-items:center;gap:4px;height:62px}
+.logo{font-weight:800;font-size:21px;letter-spacing:-.035em;display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none;margin-right:auto;background:none;border:0;padding:0;cursor:pointer}
+.logo .mark{width:34px;height:34px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+/* on the photo: a soft shadow keeps the white name readable over bright patches */
+header:not(.sc):not(.solid) .logo{text-shadow:0 1px 14px rgba(0,0,0,.45)}
+.nl{color:inherit;opacity:.85;text-decoration:none;font-size:14.5px;font-weight:500;padding:8px 12px;border-radius:10px}
+.nl:hover{opacity:1;background:rgba(127,127,127,.14)}
+header:not(.sc):not(.solid) .btn.sm{background:#fff;color:#14110D}
+@media(max-width:760px){.nl{display:none}}
+
+/* hero: a mosaic of people filling the screen, words on top */
+.hero{position:relative;min-height:min(100svh,940px);display:flex;flex-direction:column;justify-content:flex-end;color:#fff;isolation:isolate;overflow:hidden;background:#14110D}
+.mosaic{position:absolute;inset:0;z-index:-2;display:grid;grid-template-columns:1.4fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:3px}
+.mosaic img{width:100%;height:100%;object-fit:cover}
+.mosaic img:first-child{grid-row:span 2;object-position:42% 80%}
+/* keep the people in frame when a cell crops its photo */
+.mosaic img:nth-child(2){object-position:50% 45%}.mosaic img:nth-child(4){object-position:50% 45%}.mosaic img:nth-child(5){object-position:50% 8%}
+.hero::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(12,10,7,.55) 0,rgba(12,10,7,0) 22%,rgba(12,10,7,.15) 45%,rgba(12,10,7,.82) 100%)}
+.hin{padding-bottom:clamp(28px,4vw,56px);display:grid;grid-template-columns:1fr auto;align-items:end;gap:24px}
+.hero h1{font-size:clamp(54px,9.6vw,158px);line-height:.88;letter-spacing:-.055em;font-weight:800;margin:0 0 22px;text-shadow:0 2px 30px rgba(0,0,0,.25)}
+.hero h1 em{font-style:normal;color:#B8E0BF}
+.hero p.lead{font-size:clamp(17px,1.5vw,21px);color:rgba(255,255,255,.88);max-width:24em;margin:0 0 24px}
+.ctas{display:flex;flex-wrap:wrap;gap:8px}
+.trust{display:flex;flex-direction:column;gap:10px;font-size:14px;font-weight:600;color:rgba(255,255,255,.9);text-align:right}
+.trust span{display:inline-flex;align-items:center;justify-content:flex-end;gap:8px}.trust .i{color:#B8E0BF}
+@media(max-width:760px){
+  .hero{min-height:92svh}
+  .mosaic{grid-template-columns:1fr 1fr;grid-template-rows:1.3fr 1fr 1fr}
+  .mosaic img:first-child{grid-row:auto;grid-column:span 2}
+  .mosaic img:nth-child(n+6){display:none}
+  .hin{grid-template-columns:1fr}
+  .trust{flex-direction:row;flex-wrap:wrap;gap:6px 16px;text-align:left}
+}
+
+section{padding-block:clamp(64px,8vw,120px)}
+h2{font-size:clamp(38px,5.6vw,88px);line-height:.95;letter-spacing:-.05em;font-weight:800;margin:0}
+.sub{color:var(--mute);font-size:17.5px;max-width:28em;margin:14px 0 0}
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 40px;margin-bottom:clamp(24px,3vw,40px)}
+
+/* what's on: a rail of tall cards that runs off the right edge */
+.rail{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding-inline:var(--g);scroll-padding-inline:var(--g);scrollbar-width:none}
+.rail::-webkit-scrollbar{display:none}
+.tile{position:relative;flex:0 0 clamp(250px,23vw,360px);aspect-ratio:3/4;margin:0;border-radius:var(--r);overflow:hidden;color:#fff;background:#2a1d14;isolation:isolate;scroll-snap-align:start}
+.tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;transition:transform .7s cubic-bezier(.16,1,.3,1)}
+.tile::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(0,0,0,0) 50%,rgba(10,8,5,.75))}
+.tile:hover img{transform:scale(1.05)}
+.tile figcaption{position:absolute;left:18px;right:18px;bottom:16px;font-size:clamp(24px,2.2vw,32px);font-weight:800;letter-spacing:-.035em;line-height:1.02}
+.tile small{display:block;font-size:13px;font-weight:600;letter-spacing:0;opacity:.85;margin-bottom:6px}
+@media(max-width:760px){.tile{flex-basis:72%}}
+/* arrows for a mouse (a trackpad or a finger scrolls sideways by itself); site.js also lets a mouse drag the rail */
+.rnav{display:flex;align-items:center;gap:8px}
+.rnav .rb{width:48px;height:48px;font-size:20px}
+.rnav .rb:disabled{opacity:.35;cursor:default;transform:none}
+@media (hover:none){.rnav .rb{display:none}}
+.rail{cursor:grab}.rail.drag{cursor:grabbing;scroll-snap-type:none;user-select:none;-webkit-user-select:none}.rail.drag .tile{pointer-events:none}
+.rail:focus-visible{outline:3px solid color-mix(in srgb,var(--acc) 55%,transparent);outline-offset:4px}
+
+/* how it works: a full-width tinted band, words left, demo right */
+.howband{background:var(--band)}
+.how{display:grid;grid-template-columns:1fr 1fr;gap:var(--g);align-items:center}
+.steps{list-style:none;margin:32px 0;padding:0;display:grid;gap:6px}
+.steps li{display:flex;align-items:center;gap:18px;font-size:clamp(22px,2.4vw,34px);font-weight:700;letter-spacing:-.03em;line-height:1.15;padding:18px 20px;background:color-mix(in srgb,var(--card) 70%,transparent);border-radius:12px}
+.steps li span{flex:0 0 auto;width:36px;height:36px;border-radius:10px;background:var(--acc);color:#fff;font-size:15px;letter-spacing:0;display:inline-flex;align-items:center;justify-content:center}
+@media(max-width:900px){.how{grid-template-columns:1fr;gap:44px}}
+
+/* safety: heading left, four statements right */
+.safety{display:grid;grid-template-columns:5fr 7fr;gap:var(--g)}
+.safe{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.safe div{background:var(--card);border-radius:var(--r);padding:26px;display:flex;flex-direction:column;justify-content:space-between;gap:36px;min-height:180px}
+.safe .i{font-size:30px;color:var(--acc)}
+.safe b{font-size:clamp(19px,1.7vw,24px);letter-spacing:-.02em;line-height:1.2}
+@media(max-width:900px){.safety{grid-template-columns:1fr}}
+@media(max-width:560px){.safe div{min-height:150px;padding:20px;gap:24px}}
+
+/* questions */
+.faqw{display:grid;grid-template-columns:5fr 7fr;gap:var(--g)}
+.faq details{border-bottom:1px solid var(--line)}
+.faq details:first-child{border-top:1px solid var(--line)}
+.faq summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 0;font-weight:700;font-size:18px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary .i{font-size:20px;color:var(--mute);transition:transform .25s}
+.faq details[open] summary .i{transform:rotate(180deg)}
+.faq details p{margin:0 0 22px;color:var(--mute);max-width:42em}
+@media(max-width:900px){.faqw{grid-template-columns:1fr}}
+
+/* join: full-width photo, sign-up box floating on it */
+.joinw{position:relative;isolation:isolate;padding-block:clamp(40px,6vw,96px);min-height:720px;display:flex;align-items:center}
+.joinw>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
+.joinw::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(10,8,5,.72),rgba(10,8,5,.25) 60%,rgba(10,8,5,.1))}
+.join{display:grid;grid-template-columns:1fr minmax(0,500px);gap:var(--g);align-items:center;width:100%}
+.join .say{color:#fff}
+.join .say h2{color:#fff;margin-bottom:12px}
+.join .say p{margin:0;color:rgba(255,255,255,.86);font-size:18px}
+.join .auth{background:var(--card);border-radius:20px;padding:clamp(24px,3vw,40px);box-shadow:0 30px 60px rgba(0,0,0,.3)}
+.seg{border-radius:12px}.seg button{border-radius:9px}.fi input{border-radius:12px}.via label{border-radius:12px}
+@media(max-width:900px){.joinw{min-height:0;padding-top:260px}.joinw::after{background:linear-gradient(180deg,rgba(10,8,5,.1),rgba(10,8,5,.75) 40%)}.join{grid-template-columns:1fr}}
+
+footer{padding:28px 0 32px;color:var(--mute);font-size:14px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between}
+footer nav{display:flex;flex-wrap:wrap;gap:6px 18px}
+footer a,footer button{color:inherit;text-decoration:none;background:none;border:0;padding:0;cursor:pointer;font-size:14px}
+footer a:hover,footer button:hover{color:var(--ink);text-decoration:underline}
+
+/* 3D: the hero photos sit at different depths, tilt towards the mouse and tip back as you scroll (--mx, --my, --sp on
+   .hero); the activity cards turn as they slide past the middle (--ry, --s on each card); the swipe demo is a real
+   pile, and the top card tilts under the mouse or your finger with a glare (--tx, --ty, --gx, --gy, --go). site.js
+   only sets these with motion allowed. */
+@media (prefers-reduced-motion:no-preference){
+  .hero{perspective:1300px;perspective-origin:50% 30%}
+  .mosaic{inset:-4% -3%;transform-style:preserve-3d;transform-origin:50% 100%;will-change:transform;
+    transform:rotateX(calc(var(--my,0)*-3deg + var(--sp,0)*16deg)) rotateY(calc(var(--mx,0)*5deg)) scale(calc(1 - var(--sp,0)*.1))}
+  .mosaic img{transform:translateZ(var(--z,0px))}
+  .mosaic img:nth-child(2){--z:70px}.mosaic img:nth-child(3){--z:30px}.mosaic img:nth-child(4){--z:50px}.mosaic img:nth-child(5){--z:90px}
+  .hin{transform:translate3d(calc(var(--mx,0)*-10px),calc(var(--sp,0)*-50px),0)}
+  .rail{perspective:1400px}
+  .tile{transform:rotateY(var(--ry,0deg)) scale(var(--s,1));will-change:transform}
+  .stack{perspective:1100px}
+  .card[data-pos="0"]{transform:rotateX(var(--tx,0deg)) rotateY(var(--ty,0deg))}
+  .card[data-pos="0"].tilt{transition:transform .12s ease-out,opacity .3s}
+  .card[data-pos="1"]{transform:translate3d(0,18px,-50px) rotateX(5deg)}
+  .card[data-pos="2"]{transform:translate3d(0,36px,-100px) rotateX(9deg)}
+  .card[data-pos="h"]{transform:translate3d(0,36px,-100px) rotateX(9deg)}
+  .card::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;mix-blend-mode:soft-light;
+    background:radial-gradient(circle at var(--gx,50%) var(--gy,0%),rgba(255,255,255,.75),transparent 60%);opacity:var(--go,0);transition:opacity .3s}
+}
+
+/* entrance and scroll reveal: only with motion allowed, and only once site.js has started (html.anim) */
+@media (prefers-reduced-motion:no-preference){
+  .hero .up{animation:up .8s cubic-bezier(.16,1,.3,1) both}
+  .hero .up:nth-child(2){animation-delay:.08s}.hero .up:nth-child(3){animation-delay:.16s}.hero .up:nth-child(4){animation-delay:.24s}
+  html.anim .rv{opacity:0;transform:translateY(22px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1)}
+  html.anim .rv.in{opacity:1;transform:none}
+}
+@keyframes up{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+
+/* ---------- feedback and demo-account views (#feedback, #admin) ---------- */
+#main{max-width:760px;margin:0 auto;padding:90px 20px 60px}
+#main h2{font-size:24px;letter-spacing:-.01em;margin:0 0 6px}
 .mute{color:var(--mute)}.small{font-size:13.5px}
 .panel{background:var(--card);border-radius:22px;padding:24px;margin-bottom:16px;box-shadow:var(--shadow)}
-.btn{border:0;background:var(--acc);color:#fff;font-weight:600;padding:13px 22px;border-radius:99px;cursor:pointer;transition:background .15s}
-.btn:hover{background:var(--acch)}
-.btn.sec{background:var(--acc2);color:var(--accink)}.btn.sec:hover{background:var(--acc2h)}
-.btn:disabled{opacity:.55;cursor:wait}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-@media(max-width:560px){.grid{grid-template-columns:1fr}}
-label{display:block;font-size:14px;font-weight:600;margin:16px 0 6px}
-input[type=text],input[type=email],input[type=date],select,textarea{width:100%;padding:12px 14px;border:1px solid transparent;border-radius:14px;background:var(--field);color:var(--ink);outline:none;transition:border-color .15s,background .15s}
-input[type=text]:focus,input[type=email]:focus,input[type=date]:focus,select:focus,textarea:focus{border-color:var(--acc);background:var(--card)}
+#main label{display:block;font-size:14px;font-weight:600;margin:16px 0 6px}
+#main textarea{width:100%;min-height:96px;resize:vertical;padding:12px 14px;border:1px solid transparent;border-radius:14px;background:var(--field);color:var(--ink);outline:none}
+#main textarea:focus{border-color:var(--acc);background:var(--card)}
 input[type=checkbox],input[type=radio]{accent-color:var(--acc)}
-textarea{min-height:96px;resize:vertical}
 .opts{display:flex;flex-wrap:wrap;gap:8px}
-.opt{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:99px;padding:9px 16px;font-weight:500;margin:0;cursor:pointer;background:var(--chip);font-size:14.5px;transition:.15s}
-.opt:hover{border-color:#D6CCB8}
-.opt:has(input:checked){border-color:var(--acc);background:var(--acc2);color:var(--accink)}
-.opt input{margin:0}
+#main .opt{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:99px;padding:9px 16px;font-weight:500;margin:0;cursor:pointer;background:var(--chip);font-size:14.5px}
+#main .opt:has(input:checked){border-color:var(--acc);background:var(--acc2);color:var(--accink)}
 .consent{background:var(--warnbg);border:1px solid var(--wline);border-radius:16px;padding:16px;margin-top:20px}
-.consent label{display:flex;gap:10px;align-items:flex-start;font-weight:500;margin:8px 0 0;font-size:14px}
+#main .consent label{display:flex;gap:10px;align-items:flex-start;font-weight:500;margin:8px 0 0;font-size:14px}
 .consent input{margin-top:4px;flex:0 0 auto}
 .consent .req{background:var(--card);border-radius:12px;padding:10px 12px;margin-top:12px}
-.consent a{color:var(--acch)}
-#go:disabled{cursor:not-allowed}
+#go:disabled{cursor:not-allowed;opacity:.55}
 .err{background:var(--badbg);color:var(--bad);padding:10px 14px;border-radius:14px;margin-top:14px;font-size:14px}
 .note{background:var(--warnbg);border:1px solid var(--wline);color:var(--warn);padding:10px 14px;border-radius:14px;font-size:13px;margin-bottom:14px}
-.note a{color:var(--acch)}
-.ok{background:var(--okbg);color:var(--ok);padding:12px 16px;border-radius:14px;margin-bottom:14px;font-weight:600}
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0}
-@media(max-width:560px){.steps{grid-template-columns:1fr}}
-.steps div{background:var(--card);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
-.steps b{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:var(--acc2);color:var(--acch);font-size:15px;margin-bottom:10px}
 .stars{display:flex;gap:6px}
 .stars button{border:0;background:none;font-size:34px;cursor:pointer;color:#E2DFD7;padding:0;line-height:1}
 .stars button.on{color:var(--acc)}
-.hide{display:none}
 </style>
 </head>
 <body>
-<header><div class="bar">
-  <div class="logo" id="logo"><span class="dots"><i></i><i></i></span>Overhere</div>
-  <button class="tab" id="t_try">Try it</button>
-  <button class="tab fb" id="t_fb">Feedback</button>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="i-calendar" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></symbol>
+<symbol id="i-map-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+<symbol id="i-heart" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+<symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></symbol>
+<symbol id="i-mail" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></symbol>
+<symbol id="i-film" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M3 7.5h4"/><path d="M3 12h18"/><path d="M3 16.5h4"/><path d="M17 3v18"/><path d="M17 7.5h4"/><path d="M17 16.5h4"/></symbol>
+<symbol id="i-coffee" viewBox="0 0 24 24"><path d="M10 2v2"/><path d="M14 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/><path d="M6 2v2"/></symbol>
+<symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+<symbol id="i-scan-face" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01"/><path d="M15 9h.01"/></symbol>
+<symbol id="i-user-check" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></symbol>
+<symbol id="i-map" viewBox="0 0 24 24"><path d="M14.1 6 9.9 3.9a2 2 0 0 0-1.8 0L3.6 6.2A1 1 0 0 0 3 7.1v12.3a1 1 0 0 0 1.4.9l4.2-2.1a2 2 0 0 1 1.8 0l4.2 2.1a2 2 0 0 0 1.8 0l4.5-2.3a1 1 0 0 0 .6-.9V4.6a1 1 0 0 0-1.4-.9l-4.2 2.1a2 2 0 0 1-1.8 0z"/><path d="M15 5.8v15"/><path d="M9 3.2v15"/></symbol>
+<symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+<symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+<symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+<symbol id="i-badge-check" viewBox="0 0 24 24"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/></symbol>
+</svg>
+
+<header id="hd"><div class="wrap bar">
+  <button class="logo" id="logo" aria-label="Overhere home"><img class="mark" src="icon.svg" alt="" width="34" height="34">Overhere</button>
+  <a class="nl" href="#out">What's on</a>
+  <a class="nl" href="#how">How it works</a>
+  <a class="nl" href="#safety">Safety</a>
+  <a class="btn sm" href="#join" data-mode="in">Sign in</a>
 </div></header>
-<main id="main"></main>
-<footer style="max-width:760px;margin:0 auto;padding:0 16px 32px;text-align:center" class="small mute"><a href="terms.html" style="color:inherit">Terms</a> · <a href="privacy.html" style="color:inherit">Privacy policy</a> · <a href="copyright.html" style="color:inherit">Copyright</a> · <a href="credits.html" style="color:inherit">Credits</a></footer>
+
+<!-- the page has two <main>s and shows one at a time: this one, or #main (feedback and its thank-you) -->
+<main id="welcome">
+<div class="hero">
+  <div class="mosaic" aria-hidden="true">
+    <img src="img/people/guitar.webp" alt="" width="1600" height="1067" fetchpriority="high">
+    <img src="img/people/walk-p.webp" alt="" width="720" height="960">
+    <img src="img/people/boardgame-p.webp" alt="" width="720" height="960">
+    <img src="img/people/bikes-p.webp" alt="" width="720" height="960">
+    <img src="img/people/selfie2-p.webp" alt="" width="720" height="960">
+  </div>
+  <div class="wrap hin">
+    <div>
+      <h1 class="up">Go out.<br>Meet <em>your people.</em></h1>
+      <p class="lead up">Small plans near you, with people who want to go too.</p>
+      <div class="ctas up"><a class="btn light" href="#join" data-mode="up">Find your people</a><a class="btn ghost" href="#out">See what's on</a></div>
+    </div>
+    <div class="trust up"><span><svg class="i"><use href="#i-scan-face"/></svg>Face-checked</span><span><svg class="i"><use href="#i-heart"/></svg>Free</span><span><svg class="i"><use href="#i-users"/></svg>Not a dating app</span></div>
+  </div>
+</div>
+
+<section id="out" aria-labelledby="h_out">
+  <div class="wrap head rv"><div><h2 id="h_out">What's on out there</h2><p class="sub">Pick one. Someone's already going.</p></div><div class="rnav"><button class="rb" type="button" id="r_prev" aria-label="Previous" aria-controls="rail"><svg class="i"><use href="#i-chevron-left"/></svg></button><button class="rb" type="button" id="r_next" aria-label="Next" aria-controls="rail"><svg class="i"><use href="#i-chevron-right"/></svg></button><a class="btn" href="#join" data-mode="up">Join a plan</a></div></div>
+  <div class="rail rv" id="rail" tabindex="0" aria-label="Things people do on Overhere. Scroll sideways for more.">
+    <figure class="tile"><img src="img/people/himtrek.webp" alt="A line of hikers on a hillside below snowy peaks in Himachal" loading="lazy" draggable="false" width="720" height="960"><figcaption><small>Sun, 6 am</small>Treks</figcaption></figure>
+    <figure class="tile"><img src="img/people/gamenight.webp" alt="Friends round a table playing a board game" loading="lazy" draggable="false" width="720" height="960"><figcaption><small>Thu, 8 pm</small>Game nights</figcaption></figure>
+    <figure class="tile"><img src="img/people/rafting.webp" alt="A raft full of people paddling on the Ganga at Rishikesh" loading="lazy" draggable="false" width="720" height="960"><figcaption><small>Weekend</small>Rafting</figcaption></figure>
+    <figure class="tile"><img src="img/people/cafe.webp" alt="People chatting at busy café tables outdoors" loading="lazy" draggable="false" width="720" height="960"><figcaption><small>This evening</small>Café hangouts</figcaption></figure>
+    <figure class="tile"><img src="img/people/hillwalk.webp" alt="Two women walking a path through a green valley" loading="lazy" draggable="false" width="720" height="960"><figcaption><small>Sat morning</small>Hill walks</figcaption></figure>
+    <figure class="tile"><img src="img/people/snowhike.webp" alt="Hikers walking through snowy woods" loading="lazy" draggable="false" width="720" height="960"><figcaption><small>Winter</small>Snow hikes</figcaption></figure>
+    <figure class="tile"><img src="img/people/picnic2.webp" alt="Friends and families having a picnic on the grass" loading="lazy" draggable="false" width="720" height="960"><figcaption><small>Sunday</small>Picnics</figcaption></figure>
+    <figure class="tile"><img src="img/people/skate.webp" alt="A skateboarder rolling across a plaza" loading="lazy" draggable="false" width="1000" height="750"><figcaption><small>Today</small>Skating</figcaption></figure>
+    <figure class="tile"><img src="img/people/cricket.webp" alt="Kids playing cricket on a beach" loading="lazy" draggable="false" width="1000" height="750"><figcaption><small>Tomorrow</small>Cricket</figcaption></figure>
+    <figure class="tile"><img src="img/plans/karaoke.webp" alt="A microphone close up" loading="lazy" draggable="false" width="1200" height="800"><figcaption><small>Fri, 9 pm</small>Karaoke</figcaption></figure>
+    <figure class="tile"><img src="img/people/cowork.webp" alt="Two people working on laptops at one table" loading="lazy" draggable="false" width="1000" height="667"><figcaption><small>Weekdays</small>Cowork</figcaption></figure>
+  </div>
+</section>
+
+<section class="howband" id="how" aria-labelledby="h_how">
+  <div class="wrap how rv">
+    <div>
+      <h2 id="h_how">Swipe right.<br>Show up.</h2>
+      <ol class="steps">
+        <li><span>1</span>Post a plan</li>
+        <li><span>2</span>People ask to join</li>
+        <li><span>3</span>You pick who comes</li>
+      </ol>
+      <a class="btn" href="#join" data-mode="up">Create account</a>
+    </div>
+    <div class="demo" aria-label="Example plans, the way they look in the app">
+        <div class="stack" id="stack" tabindex="0" aria-describedby="dcap">
+          <article class="card" data-pos="0" data-host="Ishita">
+            <img src="img/plans/concert.webp" alt="" width="1200" height="800" fetchpriority="high">
+            <div class="shade"></div><span class="stamp yes">JOIN</span><span class="stamp no">SKIP</span>
+            <span class="cat" style="color:#DB2777"><svg class="i"><use href="#i-music"/></svg>Concerts</span>
+            <div class="body">
+              <div class="who"><span class="av" aria-hidden="true">👩🏽</span>Ishita, 26 <svg class="i vf" aria-label="Face verified"><use href="#i-badge-check"/></svg></div>
+              <h3>Indie gig at the amphitheatre, need two more</h3>
+              <div class="meta"><span><svg class="i"><use href="#i-calendar"/></svg>Sat, 8:00 pm</span><span><svg class="i"><use href="#i-map-pin"/></svg>Sector 10</span><span><svg class="i"><use href="#i-users"/></svg>2 spots left</span></div>
+              <div class="tags"><span>Go Dutch</span><span>Women only</span></div>
+            </div>
+          </article>
+          <article class="card" data-pos="1" data-host="Kabir">
+            <img src="img/plans/chai.webp" alt="" width="1200" height="799">
+            <div class="shade"></div><span class="stamp yes">JOIN</span><span class="stamp no">SKIP</span>
+            <span class="cat" style="color:#15803D"><svg class="i"><use href="#i-coffee"/></svg>Cafe/Food</span>
+            <div class="body">
+              <div class="who"><span class="av" aria-hidden="true">👨🏻</span>Kabir, 29 <svg class="i vf" aria-label="Face verified"><use href="#i-badge-check"/></svg></div>
+              <h3>Chai and samosas after work, anyone?</h3>
+              <div class="meta"><span><svg class="i"><use href="#i-calendar"/></svg>Today, 6:30 pm</span><span><svg class="i"><use href="#i-map-pin"/></svg>Sector 22</span><span><svg class="i"><use href="#i-users"/></svg>3 spots left</span></div>
+              <div class="tags"><span>Equal split</span><span>Everyone</span></div>
+            </div>
+          </article>
+          <article class="card" data-pos="2" data-host="Meher">
+            <img src="img/plans/classicfilm.webp" alt="" width="1200" height="800" loading="lazy">
+            <div class="shade"></div><span class="stamp yes">JOIN</span><span class="stamp no">SKIP</span>
+            <span class="cat" style="color:#7C3AED"><svg class="i"><use href="#i-film"/></svg>Movies</span>
+            <div class="body">
+              <div class="who"><span class="av" aria-hidden="true">🧕🏽</span>Meher, 31 <svg class="i vf" aria-label="Face verified"><use href="#i-badge-check"/></svg></div>
+              <h3>First-day show of the new Malayalam thriller</h3>
+              <div class="meta"><span><svg class="i"><use href="#i-calendar"/></svg>Fri, 9:15 pm</span><span><svg class="i"><use href="#i-map-pin"/></svg>Elante Mall</span><span><svg class="i"><use href="#i-users"/></svg>1 spot left</span></div>
+              <div class="tags"><span>Host pays</span><span>Everyone</span></div>
+            </div>
+          </article>
+          <article class="card" data-pos="h" data-host="Arjun">
+            <img src="img/plans/momos.webp" alt="" width="1200" height="904" loading="lazy">
+            <div class="shade"></div><span class="stamp yes">JOIN</span><span class="stamp no">SKIP</span>
+            <span class="cat" style="color:#15803D"><svg class="i"><use href="#i-coffee"/></svg>Cafe/Food</span>
+            <div class="body">
+              <div class="who"><span class="av" aria-hidden="true">👨🏽</span>Arjun, 24 <svg class="i vf" aria-label="Face verified"><use href="#i-badge-check"/></svg></div>
+              <h3>Momo crawl through the Sector 15 market</h3>
+              <div class="meta"><span><svg class="i"><use href="#i-calendar"/></svg>Tomorrow, 7:00 pm</span><span><svg class="i"><use href="#i-map-pin"/></svg>Sector 15</span><span><svg class="i"><use href="#i-users"/></svg>4 spots left</span></div>
+              <div class="tags"><span>Go Dutch</span><span>Everyone</span></div>
+            </div>
+          </article>
+          <article class="card" data-pos="h" data-host="Tara">
+            <img src="img/plans/jazz.webp" alt="" width="1200" height="800" loading="lazy">
+            <div class="shade"></div><span class="stamp yes">JOIN</span><span class="stamp no">SKIP</span>
+            <span class="cat" style="color:#DB2777"><svg class="i"><use href="#i-music"/></svg>Concerts</span>
+            <div class="body">
+              <div class="who"><span class="av" aria-hidden="true">👩🏻</span>Tara, 27 <svg class="i vf" aria-label="Face verified"><use href="#i-badge-check"/></svg></div>
+              <h3>Jazz trio at a tiny bar, looking for two</h3>
+              <div class="meta"><span><svg class="i"><use href="#i-calendar"/></svg>Tomorrow, 9:00 pm</span><span><svg class="i"><use href="#i-map-pin"/></svg>Sector 26</span><span><svg class="i"><use href="#i-users"/></svg>2 spots left</span></div>
+              <div class="tags"><span>Go Dutch</span><span>Everyone</span></div>
+            </div>
+          </article>
+        </div>
+        <div class="acts">
+          <button class="rb" id="d_no" aria-label="Skip this plan"><svg class="i"><use href="#i-x"/></svg></button>
+          <button class="rb go" id="d_yes" aria-label="Ask to join this plan"><svg class="i"><use href="#i-heart"/></svg></button>
+        </div>
+        <p class="dcap" id="dcap" aria-live="polite">Example plans. Swipe, or tap the buttons.</p>
+
+    </div>
+  </div>
+</section>
+
+<section class="wrap safety" id="safety" aria-labelledby="h_safe">
+  <div><h2 id="h_safe">Real people.<br>Small groups.</h2><p class="sub">Public places, up to 10 people, and the host says yes to everyone.</p></div>
+  <div class="safe rv">
+    <div><svg class="i"><use href="#i-scan-face"/></svg><b>Everyone does a live face check</b></div>
+    <div><svg class="i"><use href="#i-user-check"/></svg><b>Hosts approve every request</b></div>
+    <div><svg class="i"><use href="#i-users"/></svg><b>Women-only plans</b></div>
+    <div><svg class="i"><use href="#i-phone"/></svg><b>SOS in every group chat</b></div>
+  </div>
+</section>
+
+<section class="wrap faqw" id="faq" aria-labelledby="h_faq" style="padding-top:0">
+  <div><h2 id="h_faq">Questions</h2></div>
+  <div class="faq rv">
+    <details><summary>Is Overhere free?<svg class="i" aria-hidden="true"><use href="#i-chevron-down"/></svg></summary><p>Yes, it's free to use. What the plan itself costs, like tickets or food, is split the way the host chooses: equally, everyone pays their own, or the host covers it.</p></details>
+    <details><summary>Is this a dating app?<svg class="i" aria-hidden="true"><use href="#i-chevron-down"/></svg></summary><p>No. Overhere is for doing things in a small group: a movie, a meal, a gig. A plan can have up to 10 people plus the host.</p></details>
+    <details><summary>Where does it work?<svg class="i" aria-hidden="true"><use href="#i-chevron-down"/></svg></summary><p>Anywhere in India. We started in Chandigarh. You see plans within 50 km of the home area you choose, and you can change it.</p></details>
+    <details><summary>Who can see my phone number and email?<svg class="i" aria-hidden="true"><use href="#i-chevron-down"/></svg></summary><p>Nobody. Other people see your name, age, profile and show-up record. Your number and email stay private.</p></details>
+    <details><summary>What if someone doesn't show up?<svg class="i" aria-hidden="true"><use href="#i-chevron-down"/></svg></summary><p>After each plan, everyone marks who came. No-shows appear on profiles, so hosts can see who's reliable before saying yes.</p></details>
+    <details><summary>Do I need to download anything?<svg class="i" aria-hidden="true"><use href="#i-chevron-down"/></svg></summary><p>No. Overhere works in your phone's browser, and you can add it to your home screen. Android and iPhone apps are on the way.</p></details>
+  </div>
+</section>
+
+<div class="joinw" id="join">
+  <img src="img/people/triund.webp" alt="Hikers on a grassy ridge below snowy mountains on the Triund trek" width="2000" height="972" loading="lazy">
+  <div class="wrap join rv">
+    <div class="say"><h2>Someone's<br>already going.</h2><p>Free. Takes a minute.</p></div>
+    <div class="auth hide" id="au_in">
+      <h3>You're signed in</h3>
+      <p class="s">Your plans and chats are waiting in the app.</p>
+      <a class="btn wide" href="app.html">Open the app</a>
+    </div>
+    <div class="auth" id="au_box">
+      <div class="seg" role="tablist" aria-label="Create an account or sign in">
+        <button type="button" role="tab" id="tab_up" aria-selected="true" aria-controls="au_f" data-mode="up">Create account</button>
+        <button type="button" role="tab" id="tab_in" aria-selected="false" aria-controls="au_f" data-mode="in">Sign in</button>
+      </div>
+      <h3 id="au_t">Create your account</h3>
+      <p class="s" id="au_s">Start with your phone number or email.</p>
+      <button class="btn out wide" type="button" disabled aria-disabled="true"><svg class="g" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>Continue with Google <span class="soon">Coming soon</span></button>
+      <div class="or">or</div>
+      <form id="au_f" novalidate>
+        <div class="via" role="radiogroup" aria-label="Continue with" id="au_via">
+          <label><input type="radio" name="via" value="phone" checked><svg class="i"><use href="#i-phone"/></svg>Phone</label>
+          <label><input type="radio" name="via" value="email"><svg class="i"><use href="#i-mail"/></svg>Email</label>
+        </div>
+        <div id="f_phone">
+          <label class="f" for="au_phone">Mobile number</label>
+          <div class="fi tel"><span class="pre"><svg class="i"><use href="#i-phone"/></svg>+91</span><input id="au_phone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="16" placeholder="98765 43210" aria-describedby="au_phone_err au_phone_hint"></div>
+          <p class="ferr" id="au_phone_err" aria-live="polite"></p>
+          <p class="hint" id="au_phone_hint"></p>
+        </div>
+        <div id="f_email" class="hide">
+          <label class="f" for="au_email">Email</label>
+          <div class="fi"><span class="pre"><svg class="i"><use href="#i-mail"/></svg></span><input id="au_email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" maxlength="120" placeholder="you@example.com" aria-describedby="au_email_err au_email_hint"></div>
+          <p class="ferr" id="au_email_err" aria-live="polite"></p>
+          <p class="hint" id="au_email_hint"></p>
+        </div>
+        <button class="btn wide" type="submit">Continue</button>
+      </form>
+      <p class="legal" id="au_legal">By creating an account you agree to our <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy policy</a>. For adults 18 and over.</p>
+    </div>
+
+  </div>
+</div>
+</main>
+
+<main id="main" hidden></main>
+
+<footer><div class="wrap">
+  <span><b style="color:var(--ink)">Overhere</b>. Not a dating app.</span>
+  <nav aria-label="Footer"><a href="terms.html">Terms</a><a href="privacy.html">Privacy policy</a><a href="copyright.html">Copyright</a><a href="credits.html">Photo credits</a><button type="button" id="t_fb">Feedback</button></nav>
+</div></footer>
 
 <script src="config.js"></script>
 <script src="site.js"></script>

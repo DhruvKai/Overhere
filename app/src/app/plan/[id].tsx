@@ -1,17 +1,18 @@
 import { Image } from 'expo-image';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ActionSheetIOS, Alert, Platform, Pressable, ScrollView, Share, Text, View } from 'react-native';
+import { ActionSheetIOS, Alert, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { JoinSheet } from '@/components/JoinSheet';
 import { ReportSheet } from '@/components/ReportSheet';
+import { TrustShareSheet } from '@/components/TrustShareSheet';
 import { Avatar, Badge, Btn, Card, CatPill, Empty, H, Icon, Meta, P } from '@/components/ui';
 import { api } from '@/lib/api';
 import {
-  COST, inChat, isVer, kmAway, myReq, nowOf, REPORT_REASONS, rupees, spots, spotTxt, tags, uname, whenStr,
+  canRate, canSave, COST, inChat, isVer, kmAway, myReq, nowOf, REPORT_REASONS, rupees, saved, short, signals, spots, spotTxt, tags, trustTxt, uname, whenStr,
 } from '@/lib/model';
 import { photoOf } from '@/lib/photos';
-import { useModel, useStore } from '@/lib/store';
-import { SITE } from '@/lib/supabase';
+import { sharePlan } from '@/lib/share';
+import { useModel, useStore, useToggleSave } from '@/lib/store';
 import { R, useTheme } from '@/lib/theme';
 
 export default function PlanScreen() {
@@ -19,8 +20,10 @@ export default function PlanScreen() {
   const t = useTheme();
   const m = useModel();
   const { run, toast } = useStore();
+  const toggleSave = useToggleSave();
   const [asking, setAsking] = useState(false);
   const [reporting, setReporting] = useState(false);
+  const [trustShare, setTrustShare] = useState(false);
   const a = m.acts.find(x => x.id === id);
 
   if (!a) return <Empty icon="calendar" title="This plan isn't available" text="It may have been cancelled, or it's no longer open to you." />;
@@ -30,6 +33,10 @@ export default function PlanScreen() {
   const past = a.when <= nowOf(m);
   const host = m.people[a.host];
   const pending = mine ? m.reqs.filter(r => r.act === a.id && r.status === 'pending') : [];
+  /* the host also sees the waitlist in order (they move up by themselves) and who was already decided */
+  const waiting = mine ? m.reqs.filter(r => r.act === a.id && r.status === 'waitlist') : [];
+  const decided = mine ? m.reqs.filter(r => r.act === a.id && !['pending', 'waitlist', 'accepted'].includes(r.status)) : [];
+  const DECIDED: Record<string, string> = { rejected: 'Declined', left: 'Left', removed: 'Removed' };
   const km = kmAway(m, a);
 
   const confirm = (title: string, text: string, label: string, fn: () => Promise<unknown>, done: string) =>
@@ -37,7 +44,7 @@ export default function PlanScreen() {
       text: label, style: 'destructive', onPress: async () => { if (await run(fn) !== undefined) toast(done); },
     }]);
 
-  const share = () => Share.share({ message: `${a.desc}, ${whenStr(a.when)} at ${a.venue}. Join me on Overhere: ${SITE}/app.html#act=${a.id}` });
+  const share = () => sharePlan(a);
 
   const more = () => {
     const opts = ['Report this plan', `Block ${uname(m, a.host)}`, 'Cancel'];
@@ -55,6 +62,10 @@ export default function PlanScreen() {
       <Stack.Screen options={{
         headerRight: () => (
           <View style={{ flexDirection: 'row', gap: 18 }}>
+            {canSave(m, a) ? (
+              <Pressable accessibilityRole="button" accessibilityState={{ selected: saved(m).includes(a.id) }} accessibilityLabel={saved(m).includes(a.id) ? 'Saved. Tap to remove' : 'Save for later'}
+                onPress={() => toggleSave(a.id)} hitSlop={10}><Icon name="bookmark" size={21} color={saved(m).includes(a.id) ? t.accink : undefined} /></Pressable>
+            ) : null}
             <Pressable accessibilityRole="button" accessibilityLabel="Share invite link" onPress={share} hitSlop={10}><Icon name="share" size={21} /></Pressable>
             {!mine ? <Pressable accessibilityRole="button" accessibilityLabel="Report or block" onPress={more} hitSlop={10}><Icon name="more-horizontal" size={22} /></Pressable> : null}
           </View>
@@ -75,7 +86,8 @@ export default function PlanScreen() {
         </View>
 
         <Card>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <Pressable accessibilityRole={mine ? undefined : 'button'} accessibilityLabel={mine ? undefined : `View ${host?.name ?? 'the host'}'s profile`} disabled={mine}
+            onPress={() => router.push({ pathname: '/person/[id]', params: { id: a.host } })} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <Avatar m={m} id={a.host} size={48} />
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -84,7 +96,8 @@ export default function PlanScreen() {
               </View>
               <P small mute>{mine ? 'You host this plan' : `Host${host?.met ? ` · ${host.shows}/${host.met} meetups showed up` : ''}`}</P>
             </View>
-          </View>
+            {!mine ? <Icon name="chevron-right" size={18} color={t.mute} /> : null}
+          </Pressable>
           {!mine && host?.bio ? <P style={{ marginTop: 10 }}>{host.bio}</P> : null}
         </Card>
 
@@ -93,8 +106,11 @@ export default function PlanScreen() {
             <H size={16}>Going</H>
             {a.members.map(u => (
               <View key={u} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 }}>
-                <Avatar m={m} id={u} size={34} />
-                <Text style={{ flex: 1, color: t.ink, fontSize: 15 }}>{uname(m, u)}</Text>
+                <Pressable accessibilityRole="button" disabled={u === m.me || !m.people[u]} onPress={() => router.push({ pathname: '/person/[id]', params: { id: u } })}
+                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <Avatar m={m} id={u} size={34} />
+                  <Text style={{ flex: 1, color: t.ink, fontSize: 15 }}>{uname(m, u)}</Text>
+                </Pressable>
                 {mine && !past ? (
                   <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${uname(m, u)}`} hitSlop={8}
                     onPress={() => confirm(`Remove ${uname(m, u)}?`, "They leave the group chat and can't ask to join this plan again.", 'Remove',
@@ -107,17 +123,30 @@ export default function PlanScreen() {
           </Card>
         ) : null}
 
+        {mine && !past ? (
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Btn title="Edit details" kind="ghost" icon="edit-2" style={{ flex: 1 }} onPress={() => router.push({ pathname: '/post', params: { id: a.id } })} />
+            <Btn title="Invite a friend" kind="ghost" icon="send" style={{ flex: 1 }} onPress={share} />
+          </View>
+        ) : null}
+        {mine && past ? <Btn title="Post again" kind="ghost" icon="repeat" onPress={() => router.push({ pathname: '/post', params: { tpl: a.id } })} /> : null}
+        {mine && !past && !pending.length ? <P small mute>No pending requests yet. Invite a friend to get the word out.</P> : null}
+
         {mine && pending.length ? (
           <Card>
-            <H size={16}>Asking to join</H>
+            <H size={16}>Pending requests ({pending.length})</H>
             {pending.map(r => (
               <View key={r.id} style={{ marginTop: 12, gap: 8 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Pressable accessibilityRole="button" accessibilityLabel={`View ${uname(m, r.user)}'s profile`} onPress={() => router.push({ pathname: '/person/[id]', params: { id: r.user } })}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                   <Avatar m={m} id={r.user} size={34} />
-                  <Text style={{ flex: 1, color: t.ink, fontSize: 15, fontWeight: '600' }}>
-                    {uname(m, r.user)}{m.people[r.user]?.age ? `, ${m.people[r.user].age}` : ''}
-                  </Text>
-                </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: t.ink, fontSize: 15, fontWeight: '600' }}>{uname(m, r.user)}{m.people[r.user]?.age ? `, ${m.people[r.user].age}` : ''}</Text>
+                    <P small mute>{trustTxt(m, r.user)}</P>
+                  </View>
+                  <Icon name="chevron-right" size={18} color={t.mute} />
+                </Pressable>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>{signals(m, r.user).map(s => <Badge key={s.text} text={s.text} tone={s.tone} />)}</View>
                 {r.note ? <P small>“{r.note}”</P> : null}
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <Btn title="Accept" style={{ flex: 1 }} disabled={spots(a) <= 0}
@@ -130,8 +159,36 @@ export default function PlanScreen() {
           </Card>
         ) : null}
 
+        {waiting.length ? (
+          <Card>
+            <H size={16}>Waitlist ({waiting.length})</H>
+            <P small mute style={{ marginTop: 4 }}>They move up to requests automatically, in this order, when a spot opens.</P>
+            {waiting.map((r, i) => (
+              <View key={r.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 }}>
+                <Avatar m={m} id={r.user} size={30} />
+                <Text style={{ flex: 1, color: t.ink, fontSize: 15 }}>{uname(m, r.user)}</Text>
+                <Badge text={`#${i + 1}`} tone="info" />
+              </View>
+            ))}
+          </Card>
+        ) : null}
+        {decided.length ? (
+          <Card>
+            <H size={16}>Decided</H>
+            {decided.map(r => (
+              <View key={r.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 }}>
+                <Avatar m={m} id={r.user} size={30} />
+                <Text style={{ flex: 1, color: t.ink, fontSize: 15 }}>{uname(m, r.user)}</Text>
+                <Badge text={DECIDED[r.status] ?? 'No response'} tone={r.status === 'rejected' || r.status === 'removed' ? 'bad' : 'info'} />
+              </View>
+            ))}
+          </Card>
+        ) : null}
+
         <View style={{ gap: 10 }}>
-          {inChat(m, a) ? <Btn title="Open group chat" icon="message-circle" onPress={() => router.push({ pathname: '/chat/[id]', params: { id: a.id } })} /> : null}
+          {canRate(m, a) ? <Btn title="Rate the meetup" icon="star" onPress={() => router.push({ pathname: '/rate/[id]', params: { id: a.id } })} /> : null}
+          {m.ratings[a.id] && past ? <P small mute style={{ textAlign: 'center' }}>You rated this meetup. Thanks!</P> : null}
+          {inChat(m, a) ? <Btn title="Open group chat" icon="message-circle" kind={canRate(m, a) ? 'ghost' : 'primary'} onPress={() => router.push({ pathname: '/chat/[id]', params: { id: a.id } })} /> : null}
           {!mine && !req && !past ? <Btn title={spots(a) <= 0 || a.status === 'full' ? 'Join the waitlist' : 'Ask to join'} icon="heart" onPress={() => setAsking(true)} /> : null}
           {req && (req.status === 'pending' || req.status === 'waitlist') && !past ? (
             <>
@@ -141,13 +198,17 @@ export default function PlanScreen() {
             </>
           ) : null}
           {req?.status === 'rejected' ? <P mute style={{ textAlign: 'center' }}>{uname(m, a.host)} said no to this one. There are other plans in Discover.</P> : null}
+          {req?.status === 'accepted' && !past ? <Btn title="Share plan with trusted contact" kind="soft" icon="shield" onPress={() => setTrustShare(true)} /> : null}
           {req?.status === 'accepted' && !past ? <Btn title="Leave this plan" kind="ghost" onPress={() => confirm('Leave this plan?', 'You leave the group chat and your spot opens up for someone else.', 'Leave',
             () => api.leaveActivity(a.id), 'You left the plan')} /> : null}
-          {mine && !past ? <Btn title="Cancel this plan" kind="danger" onPress={() => confirm('Cancel this plan?', 'Everyone who is going is told. This can\'t be undone.', 'Cancel plan',
+          {mine && !past ? <Btn title="Cancel this plan" kind="danger" onPress={() => confirm('Cancel this plan?',
+            `You're about to cancel "${short(a.desc)}" on ${whenStr(a.when)}. This can't be undone. ${a.members.length ? `${a.members.length} accepted ${a.members.length === 1 ? 'member' : 'members'} will be told and the group chat will close.` : 'No one has been accepted yet.'}${pending.length ? ` ${pending.length} pending ${pending.length === 1 ? 'request' : 'requests'} will be dropped.` : ''}`,
+            'Cancel plan',
             async () => { await api.cancelActivity(a.id); router.back(); }, 'Plan cancelled')} /> : null}
         </View>
       </ScrollView>
       {asking ? <JoinSheet plan={a} onClose={() => setAsking(false)} /> : null}
+      {trustShare ? <TrustShareSheet plan={a} onClose={() => setTrustShare(false)} /> : null}
       <ReportSheet open={reporting} title="Report this plan" reasons={REPORT_REASONS} target={a.host} act={a.id} onClose={() => setReporting(false)} />
     </>
   );

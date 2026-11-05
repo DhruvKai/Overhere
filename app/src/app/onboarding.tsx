@@ -1,27 +1,88 @@
+import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { PhotoPair } from '@/components/PhotoPair';
 import { PlacePicker } from '@/components/PlacePicker';
-import { Btn, Chip, Field, H, Icon, P } from '@/components/ui';
+import { Avatar, Btn, Chip, Field, H, Icon, P } from '@/components/ui';
 import { api, friendly } from '@/lib/api';
 import { GENDERS, INTERESTS, TIMES } from '@/lib/model';
-import { useStore } from '@/lib/store';
+import { useModel, useStore } from '@/lib/store';
 import { SITE } from '@/lib/supabase';
 import { useTheme } from '@/lib/theme';
 import type { Gender } from '@/lib/types';
+import { isoDob, maskDob } from '@/lib/dob';
 
-/* "DD/MM/YYYY" -> "YYYY-MM-DD", or '' when it isn't a real date. */
-function isoDob(s: string) {
-  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s.trim());
-  if (!m) return '';
-  const [d, mo, y] = [+m[1], +m[2], +m[3]], dt = new Date(Date.UTC(y, mo - 1, d));
-  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d || y < 1900) return '';
-  return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-}
 const toggle = (l: string[], v: string) => (l.includes(v) ? l.filter(x => x !== v) : [...l, v]);
 
+/* Sign-up, the same steps as the website (onboardHtml in web/app.js): "About you" saves the profile, then two
+   photos, the face check (both can be skipped) and "Tell us more", which sets onboarded and opens the tabs. */
 export default function Onboarding() {
+  return useStore().model?.profile ? <Steps /> : <AboutYou />;
+}
+
+function Steps() {
+  const t = useTheme();
+  const m = useModel();
+  const { run, refresh, signOut } = useStore();
+  const [skip, setSkip] = useState(false);
+  const [job, setJob] = useState('');
+  const [bio, setBio] = useState('');
+  const [busy, setBusy] = useState<'' | 'save' | 'skip'>('');
+  const p = m.profile!;
+
+  async function done(save: boolean) {
+    setBusy(save ? 'save' : 'skip');
+    const ok = await run(() => api.saveProfile({ onboarded: true, ...(save ? { job: job.trim(), bio: bio.trim() } : {}) }));
+    if (ok !== undefined) await refresh();
+    else setBusy('');
+  }
+
+  const skipBtn = <><View style={{ height: 8 }} /><Btn title="Skip for now" kind="soft" onPress={() => setSkip(true)} /></>;
+  let body;
+  if (!p.face && !skip && !(p.photo && p.photo2)) {
+    body = (<>
+      <H size={26}>Add two photos of you</H>
+      <P mute style={{ marginTop: 6, marginBottom: 22 }}>Photo 1 is your profile picture, and both show on your profile. The face check matches your live face against both.</P>
+      <PhotoPair />
+      {skipBtn}
+      <P mute small style={{ textAlign: 'center', marginTop: 10 }}>Without photos you can browse, and other people see your emoji. Posting and joining plans need both photos and the face check.</P>
+    </>);
+  } else if (!p.face && !skip) {
+    body = (<>
+      <H size={26}>Quick face check</H>
+      <P mute style={{ marginTop: 6, marginBottom: 22 }}>Confirms you&apos;re a real person, and the person in your two photos. You can browse without it, but you need it to post a plan or ask to join one.</P>
+      <View style={{ alignItems: 'center', marginBottom: 22 }}><Avatar m={m} id={m.me} size={96} /></View>
+      <Btn title="Start face check" onPress={() => router.push('/verify')} />
+      {skipBtn}
+    </>);
+  } else {
+    body = (<>
+      <H size={26}>Tell us more (optional)</H>
+      <P mute style={{ marginTop: 6, marginBottom: 22 }}>You can skip this and add it later.</P>
+      <Field label="Profession" value={job} onChangeText={setJob} maxLength={40} />
+      <Field label="Bio" value={bio} onChangeText={setBio} maxLength={300} multiline />
+      <View style={{ height: 6 }} />
+      <Btn title="Save and start browsing" onPress={() => done(true)} busy={busy === 'save'} disabled={!!busy} />
+      <View style={{ height: 8 }} />
+      <Btn title="Skip for now" kind="soft" onPress={() => done(false)} busy={busy === 'skip'} disabled={!!busy} />
+    </>);
+  }
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={{ padding: 24 }} keyboardShouldPersistTaps="handled">
+          {body}
+          <View style={{ height: 10 }} />
+          <Btn title="Sign out" kind="ghost" onPress={signOut} />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+function AboutYou() {
   const t = useTheme();
   const { refresh, signOut, toast } = useStore();
   const [name, setName] = useState('');
@@ -43,7 +104,7 @@ export default function Onboarding() {
     if (problem || !ll || !gender) return;
     setBusy(true);
     try {
-      const r = await api.saveProfile({ name: name.trim(), dob: iso, gender, hood, lat: ll[0], lng: ll[1], ints, avail, consent: true, onboarded: true });
+      const r = await api.saveProfile({ name: name.trim(), dob: iso, gender, hood, lat: ll[0], lng: ll[1], ints, avail, consent: true });
       if (r && r.error === 'under18') {
         /* the database already removed the login made a moment ago */
         await signOut();
@@ -62,7 +123,7 @@ export default function Onboarding() {
           <H size={26}>About you</H>
           <P mute style={{ marginTop: 6, marginBottom: 22 }}>Hosts see your first name, age, gender and what you like. Your date of birth stays private.</P>
           <Field label="First name" value={name} onChangeText={setName} maxLength={40} autoComplete="given-name" textContentType="givenName" />
-          <Field label="Date of birth" value={dob} onChangeText={setDob} placeholder="DD/MM/YYYY" keyboardType="numbers-and-punctuation" maxLength={10} hint="You must be 18 or older" />
+          <Field label="Date of birth" value={dob} onChangeText={v => setDob(maskDob(v))} placeholder="DD/MM/YYYY" keyboardType="number-pad" maxLength={10} hint="You must be 18 or older" />
           <Text style={{ color: t.ink, fontWeight: '700', fontSize: 14, marginBottom: 8 }}>Gender</Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
             {GENDERS.map(g => <Chip key={g} label={g} on={gender === g} onPress={() => setGender(g)} />)}

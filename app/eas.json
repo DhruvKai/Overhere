@@ -26,6 +26,19 @@
         "EXPO_PUBLIC_GEO_URL": "https://photon.komoot.io"
       }
     },
+    "test": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "APP_VARIANT": "test",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://tzjdikyijtsyoqzdsbxk.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable__M6G_AlyxAfi-UDqGzbasA_aPKwUN4C",
+        "EXPO_PUBLIC_TURNSTILE_SITE_KEY": "1x00000000000000000000AA",
+        "EXPO_PUBLIC_GEO_URL": "https://photon.komoot.io"
+      }
+    },
     "production": {
       "autoIncrement": true,
       "android": {

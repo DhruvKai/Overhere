@@ -1,3 +1,4 @@
+import { FEEDBACK_V } from './feedback';
 import { supabase } from './supabase';
 import type { AppStateResponse, Cat, Cost, Gender } from './types';
 
@@ -49,7 +50,7 @@ export const api = {
   decideRequest: (req: string, accept: boolean) => call('decide_request', { p_req: req, p_accept: accept }),
   leaveActivity: (act: string) => call('leave_activity', { p_act: act }),
   removeMember: (act: string, user: string) => call('remove_member', { p_act: act, p_user: user }),
-  sendMessage: (act: string, body: string, poll?: { q: string; opts: string[] }) =>
+  sendMessage: (act: string, body: string | null, poll?: { q: string; opts: string[] }) =>
     call('send_message', { p_act: act, p_body: body, p_poll: poll ?? null }),
   vote: (msg: number, opt: number) => call('vote', { p_msg: msg, p_opt: opt }),
   rateActivity: (act: string, ok: 'yes' | 'no', stars: number, people: Record<string, 'show' | 'noshow'>) =>
@@ -59,13 +60,23 @@ export const api = {
   blockUser: (user: string) => call('block_user', { p_user: user }),
   unblockUser: (user: string) => call('unblock_user', { p_user: user }),
   readNotifications: (ids: string[] | null) => call('read_notifications', { p_ids: ids }),
-  savePushToken: (token: string, platform: string) => call('save_push_token', { p_token: token, p_platform: platform }),
+  /* a reminder the app makes for you; the key stops the same one being made twice (by the app or the website) */
+  addNotification: (n: { kind: 'update' | 'remind'; title: string; tag: string; tone: string; act: string | null; body: string; flags: ('check' | 'safe' | 'chat')[]; key: string }) =>
+    call('add_notification', { p_kind: n.kind, p_title: n.title, p_tag: n.tag, p_tone: n.tone, p_act: n.act, p_body: n.body, p_flags: n.flags, p_key: n.key }),  savePushToken: (token: string, platform: string) => call('save_push_token', { p_token: token, p_platform: platform }),
   forgetPushToken: (token: string) => call('forget_push_token', { p_token: token }),
   verifySimulated: (kind: 'face' | 'kyc') => call('verify_simulated', { p_kind: kind, p_pass: true, p_consent: true }),
   /* the live face check, the same steps as CHECKS.live in web/app.js */
   faceStart: () => edge<FaceSession | { status: 'review' }>('face-start', { consent: true }),
-  faceResult: (sessionId: string) => edge<{ status: 'passed' | 'failed' | 'review' }>('face-result', { sessionId }),
+  faceResult: (sessionId: string) => edge<{ status: 'passed' | 'failed' | 'review'; reason: string | null; message: string | null }>('face-result', { sessionId }),
+  /* photo 1 (the profile picture) or 2: a path in the avatars bucket, or null to clear it; clearing photo 1 clears both
+     and shows the emoji (set_photo in web/schema-app.sql) */
+  setPhoto: (path: string | null, slot: 1 | 2 = 1) =>
+    call<{ old: string | null; old2: string | null; face_reset: boolean }>('set_photo', { p_path: path, p_slot: slot }),
   deleteMyAccount: () => call('delete_my_account'),
+  /* the feedback sheet (source 'app:<where it was opened>') or a line on why after a quick question ('micro:<moment>');
+     sending means the required consent box was ticked */
+  sendFeedback: (p: { rating?: number; improve?: string | null; would_use?: string | null; consent_quote?: boolean; consent_contact?: boolean; source: string }) =>
+    call('send_feedback', { p: { consent_store: true, consent_version: FEEDBACK_V, ...p } }),
 };
 
 /* Plain-language errors, the same wording as friendly() in web/app.js. */

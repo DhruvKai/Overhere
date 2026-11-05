@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import type { ComponentProps, ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle } from 'react-native';
 import { CATS, defEmo, type Model, type Plan, placeLine, spotTxt, whenStr, kmAway } from '@/lib/model';
+import { avatarUrl } from '@/lib/avatar';
 import { photoOf } from '@/lib/photos';
 import { R, useTheme } from '@/lib/theme';
 import type { Cat } from '@/lib/types';
@@ -14,11 +15,12 @@ export const Icon = ({ name, size = 16, color }: { name: IconName; size?: number
 };
 
 export function Btn({ title, onPress, kind = 'primary', icon, busy, disabled, style }: {
-  title: string; onPress: () => void; kind?: 'primary' | 'ghost' | 'danger' | 'soft'; icon?: IconName; busy?: boolean; disabled?: boolean; style?: ViewStyle;
+  /* alarm: solid red with white text, for getting help (SOS, call 112) */
+  title: string; onPress: () => void; kind?: 'primary' | 'ghost' | 'danger' | 'alarm' | 'soft'; icon?: IconName; busy?: boolean; disabled?: boolean; style?: ViewStyle;
 }) {
   const t = useTheme();
-  const bg = kind === 'primary' ? t.acc : kind === 'danger' ? t.badbg : kind === 'soft' ? t.acc2 : 'transparent';
-  const fg = kind === 'primary' ? t.onAcc : kind === 'danger' ? t.bad : kind === 'soft' ? t.accink : t.ink;
+  const bg = kind === 'primary' ? t.acc : kind === 'danger' ? t.badbg : kind === 'alarm' ? '#B91C1C' : kind === 'soft' ? t.acc2 : 'transparent';
+  const fg = kind === 'primary' ? t.onAcc : kind === 'danger' ? t.bad : kind === 'alarm' ? '#FFFFFF' : kind === 'soft' ? t.accink : t.ink;
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={title} onPress={onPress} disabled={disabled || busy}
       style={({ pressed }) => [s.btn, { backgroundColor: bg, borderColor: kind === 'ghost' ? t.line : bg, opacity: disabled ? 0.5 : pressed ? 0.8 : 1 }, style]}>
@@ -48,6 +50,31 @@ export function Chip({ label, on, onPress, icon }: { label: string; on?: boolean
       {icon ? <Feather name={icon} size={13} color={on ? t.accink : t.ink2} /> : null}
       <Text style={[s.chipT, { color: on ? t.accink : t.ink2 }]}>{label}</Text>
     </Pressable>
+  );
+}
+
+/* A tick box with its words beside it (the label can hold bold parts or a link). */
+export function Check({ on, onPress, children }: { on: boolean; onPress: () => void; children: ReactNode }) {
+  const t = useTheme();
+  return (
+    <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: on }} onPress={onPress} style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start', paddingVertical: 6 }}>
+      <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: on ? t.acc : t.line, backgroundColor: on ? t.acc : 'transparent', alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>
+        {on ? <Feather name="check" size={15} color={t.onAcc} /> : null}
+      </View>
+      <View style={{ flex: 1 }}>{typeof children === 'string' ? <Text style={{ fontSize: 14, lineHeight: 20, color: t.ink2 }}>{children}</Text> : children}</View>
+    </Pressable>
+  );
+}
+
+/* A yellow (or blue) box for something to watch out for. */
+export function Note({ icon = 'alert-triangle', tone = 'warn', children }: { icon?: IconName; tone?: 'warn' | 'info'; children: ReactNode }) {
+  const t = useTheme();
+  const [bg, fg] = tone === 'info' ? [t.infobg, t.info] : [t.warnbg, t.warn];
+  return (
+    <View style={{ flexDirection: 'row', gap: 10, backgroundColor: bg, borderRadius: 14, padding: 12, marginBottom: 14 }}>
+      <Feather name={icon} size={16} color={fg} style={{ marginTop: 2 }} />
+      <Text style={{ flex: 1, color: fg, fontSize: 14, lineHeight: 20 }}>{children}</Text>
+    </View>
   );
 }
 
@@ -98,6 +125,9 @@ export function Avatar({ m, id, size = 36 }: { m: Model; id: string; size?: numb
   let h = 0;
   for (const c of name) h += c.charCodeAt(0);
   const emo = (p?.emo as string) || defEmo(p?.gender || '');
+  /* your own photo comes from the profile row (a path), other people's already as a link (toModel) */
+  const photo = id === m.me ? avatarUrl(m.profile?.photo) : (p as { photo?: string } | undefined)?.photo;
+  if (photo) return <Image accessibilityLabel={name} source={{ uri: photo }} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: PASTEL[h % PASTEL.length] }} contentFit="cover" transition={150} />;
   return (
     <View accessibilityLabel={name} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: PASTEL[h % PASTEL.length], alignItems: 'center', justifyContent: 'center' }}>
       <Text style={{ fontSize: size * 0.55 }}>{emo}</Text>
@@ -124,6 +154,17 @@ export function Meta({ icon, text }: { icon: IconName; text: string }) {
       <Feather name={icon} size={13} color={t.mute} />
       <Text style={{ color: t.mute, fontSize: 13, flexShrink: 1 }} numberOfLines={1}>{text}</Text>
     </View>
+  );
+}
+
+/* Save for later (Discover plans only, see canSave). */
+export function SaveToggle({ on, onPress }: { on: boolean; onPress: () => void }) {
+  const t = useTheme();
+  return (
+    <Pressable accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={on ? 'Saved. Tap to remove' : 'Save for later'} hitSlop={10} onPress={onPress}
+      style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: on ? t.acc2 : t.field, alignItems: 'center', justifyContent: 'center' }}>
+      <Feather name="bookmark" size={18} color={on ? t.accink : t.mute} />
+    </Pressable>
   );
 }
 

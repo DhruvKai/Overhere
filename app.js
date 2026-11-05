@@ -60,6 +60,8 @@ const IC={
   lightbulb:'<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>',
   trash:'<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
   search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  bookmark:'<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>',
+  share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98"/><path d="m15.41 6.51-6.82 3.98"/>',
   camera:'<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
   'rotate-cw':'<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
   'zoom-in':'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><path d="M11 8v6"/><path d="M8 11h6"/>',
@@ -80,6 +82,9 @@ const COST={split:'Split equally',own:'Everyone pays their own way',host:'Host i
 const COST_S={split:'Equal Split',own:'Go Dutch',host:'Host Pays'};
 /* Swipe shows today and tomorrow; Discover starts the day after, so the two never show the same plan. */
 const swipeEnd=()=>{const d=new Date(now());d.setHours(0,0,0,0);d.setDate(d.getDate()+2);return d.getTime()};
+/* Plans in Discover (after Swipe's days) can be saved for later; Swipe plans can be shared, not saved. */
+const canSave=a=>a.when>=swipeEnd()&&a.status!=='past'&&a.host!=='me',isSaved=id=>S.saved.includes(id);
+const saveBtn=(a,cls='svb')=>canSave(a)?`<button class="${cls}${isSaved(a.id)?' on':''}" data-a="save" data-id="${a.id}" aria-pressed="${isSaved(a.id)}" title="${isSaved(a.id)?'Saved':'Save for later'}" aria-label="${isSaved(a.id)?'Saved. Tap to remove':'Save for later'}">${I('bookmark',16)}</button>`:'';
 
 /* ---------- plan photos ---------- */
 /* Real, freely licensed photos from Wikimedia Commons, stored in img/plans (credits.html names each one).
@@ -139,12 +144,12 @@ const EVERYONE='00000000-0000-0000-0000-000000000000';
 let ME=null,MYPHONE='',AUTHU={},MODE={face:'simulated',kyc:'simulated'},VER={face:{fails:0,attempts:0,max:5,review:false},kyc:{fails:0,attempts:0,max:5,review:false}},skew=0,loaded=false,DRAFT=null,LOCKED=0,CITIES=[],VIEW={city:null,auto:false};
 const isUuid=x=>typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(x);
 /* Your private settings, saved to your account. ACT_FLAGS remember which reminders an activity already gave you. */
-const PRIV=['dismissed','following','alerts','muted','tips','asked','actf','seenPost','savedF','city'];
+const PRIV=['dismissed','following','alerts','muted','tips','asked','actf','seenPost','savedF','city','saved'];
 /* The consent version that includes the Terms and community guidelines (terms.html). The database says which one is
    current (app_state's terms_v), so the app only asks once the database can record the answer. */
 let TERMS_V=null,GONE18=false;
 const ACT_FLAGS=['arrive','arriveAt','arriveNag','reminded','remind24','checkin'];
-const blank=()=>({me:null,acts:[],reqs:[],chats:{},notes:[],ratings:{},blocked:[],reported:{},dismissed:[],following:[],alerts:[],muted:{},tips:{},asked:{},actf:{},seenPost:0,city:null});
+const blank=()=>({me:null,acts:[],reqs:[],chats:{},notes:[],ratings:{},blocked:[],reported:{},dismissed:[],following:[],alerts:[],muted:{},tips:{},asked:{},actf:{},seenPost:0,city:null,saved:[]});
 let S=blank();
 const freshF=()=>({cat:'all',dfrom:'',dto:'',tod:'any',dist:0,sort:'for',view:'list'});
 const SORTS={for:['sparkles','My interests','Plans that match what you like come first'],soon:['clock','Time','Soonest first'],near:['map-pin','Distance','Closest to you first']};
@@ -165,19 +170,20 @@ function applyState(st){
   const priv=p.state||{};
   USERS={};let mine={};
   (st.people||[]).forEach(x=>{
-    const u={name:x.name,gender:x.gender,age:x.age,job:x.job||'',bio:x.bio||'',emo:x.emo||defEmo(x.gender),verified:!!x.face,trust:[x.met||0,x.shows||0],hist:x.hist||[],ints:x.ints||[],avail:x.avail||[],sample:!!x.sample};
+    const u={name:x.name,gender:x.gender,age:x.age,job:x.job||'',bio:x.bio||'',emo:x.emo||defEmo(x.gender),photo:avatarUrl(x.photo),photo2:avatarUrl(x.photo2),verified:!!x.face,trust:[x.met||0,x.shows||0],hist:x.hist||[],ints:x.ints||[],avail:x.avail||[],sample:!!x.sample};
     if(x.id===ME)mine=u;else USERS[x.id]=u;
   });
   S=blank();
   PRIV.forEach(k=>{if(priv[k]!=null)S[k]=priv[k]});
   if(keepLocal)Object.assign(S,keepLocal);   // settings you changed a moment ago and are still being saved
-  S.following=(Array.isArray(S.following)?S.following:[]).filter(isUuid);S.dismissed=(Array.isArray(S.dismissed)?S.dismissed:[]).filter(isUuid);
+  S.following=(Array.isArray(S.following)?S.following:[]).filter(isUuid);S.dismissed=(Array.isArray(S.dismissed)?S.dismissed:[]).filter(isUuid);S.saved=(Array.isArray(S.saved)?S.saved:[]).filter(isUuid).slice(-100);
   if(typeof S.city!=='string'||S.city.length>8)S.city=null;
   ['muted','tips','asked','actf'].forEach(k=>{if(!S[k]||typeof S[k]!=='object'||Array.isArray(S[k]))S[k]={}});if(typeof S.seenPost!=='number')S.seenPost=0;
   S.savedF=(Array.isArray(S.savedF)?S.savedF:[]).filter(x=>x&&/^sf[0-9a-z]+$/.test(x.id)&&typeof x.label==='string'&&x.f&&typeof x.f==='object').slice(0,10);
   S.alerts=(Array.isArray(S.alerts)?S.alerts:[]).filter(x=>x&&/^al[0-9a-z]+$/.test(x.id)&&typeof x.label==='string');
   S.me={name:p.name,dob:p.dob,gender:p.gender,hood:p.hood,ll:p.lat!=null?[p.lat,p.lng]:null,job:p.job||'',bio:p.bio||'',ints:p.ints||[],avail:p.avail||[],emo:p.emo||defEmo(p.gender),
-    usageOk:!!p.usage_ok,face:!!p.face,kyc:!!p.kyc,obDone:!!p.onboarded,terms:!TERMS_V||p.consent_version===TERMS_V,trusted:keepTrusted!==undefined?keepTrusted:(priv.trusted||null),trustv:mine.trust||[0,0],hist:mine.hist||[],photo:loadPhoto()};
+    usageOk:!!p.usage_ok,face:!!p.face,kyc:!!p.kyc,obDone:!!p.onboarded,terms:!TERMS_V||p.consent_version===TERMS_V,trusted:keepTrusted!==undefined?keepTrusted:(priv.trusted||null),trustv:mine.trust||[0,0],hist:mine.hist||[],photoPath:AVATAR_RE.test(p.photo||'')?p.photo:'',photo:avatarUrl(p.photo),photo2Path:AVATAR_RE.test(p.photo2||'')?p.photo2:'',photo2:avatarUrl(p.photo2)};
+  if(first)dropOldPhoto();
   const t=now();
   S.acts=(st.acts||[]).map(a=>{
     const mem=(a.members||[]).map(mid);
@@ -204,10 +210,33 @@ function applyState(st){
 }
 /* Reminder flags saved for one activity: only the known keys, with plain values. */
 function flagsOf(id){const f=S.actf&&S.actf[id],o={};if(f&&typeof f==='object')ACT_FLAGS.forEach(k=>{const v=f[k];if(typeof v==='boolean'||typeof v==='number'||v==='asked'||v==='ok')o[k]=v});return o}
-/* Your photo stays on this device only; other people see your emoji. */
-const photoKey=()=>'overhere_photo:'+ME;
-function loadPhoto(){try{const v=localStorage.getItem(photoKey());return PHOTO_RE.test(v||'')?v:''}catch(e){return ''}}
-function savePhoto(url){try{if(url)localStorage.setItem(photoKey(),url);else localStorage.removeItem(photoKey());return true}catch(e){return false}}
+/* Profile photos are kept in Supabase Storage (bucket "avatars", readable by link), up to two files per person at
+   <user id>/<16 random characters>.jpg, so everyone sees them: the profile picture and a second photo. The face
+   check needs both and compares the live face with each.
+   Photos used to stay in this browser only (overhere_photo:<id>): those copies are cleared, not uploaded. */
+const AVATAR_URL=SB_URL?SB_URL+'/storage/v1/object/public/avatars/':'';
+const AVATAR_RE=/^[0-9a-f-]{36}\/[0-9a-z]{16}\.jpg$/;
+const avatarUrl=p=>AVATAR_URL&&AVATAR_RE.test(p||'')?AVATAR_URL+p:'';
+const dropOldPhoto=()=>{try{localStorage.removeItem('overhere_photo:'+ME)}catch(e){}};
+/* Set (or clear, with null) photo 1 or 2 on the server, then delete the files it replaces. Clearing photo 1 clears
+   both. Any change clears a passed face check, because that check matched the old photos (set_photo in schema-app.sql). */
+async function setPhoto(path,slot=1){
+  const r=await run('set_photo',{p_path:path,p_slot:slot});if(r===undefined)return false;
+  const gone=[r?.old,r?.old2].filter(x=>x&&x!==path);
+  if(gone.length)SB.storage.from('avatars').remove(gone).catch(()=>{});
+  if(slot===2){S.me.photo2Path=path||'';S.me.photo2=avatarUrl(path)}
+  else{S.me.photoPath=path||'';S.me.photo=avatarUrl(path);if(!path){S.me.photo2Path='';S.me.photo2=''}}
+  if(r?.face_reset){S.me.face=false;toast('Photo changed. Please do the face check again, so it matches your new photo.')}
+  return true;
+}
+const twoPhotos=()=>!!(S.me?.photo&&S.me?.photo2);
+/* The two photo slots, with what makes a photo pass. Tapping a slot picks a photo for it (photo 2 only after photo 1). */
+function photoPair(){
+  const slot=n=>{const ph=n===1?S.me.photo:S.me.photo2,off=n===2&&!S.me.photo;
+    return `<button class="pslot${ph?' on':''}" data-a="pickphoto" data-k="${n}" ${off?'disabled':''} aria-label="${ph?'Change':'Add'} photo ${n}">${ph?`<img src="${esc(ph)}" alt="">`:I('camera',26)}<span>${ph?'Change':n===1?'Add photo 1':'Add photo 2'}</span></button>`};
+  return `<div class="ppair">${slot(1)}${slot(2)}</div>
+  <ul class="ptips"><li>${I('scan-face',15)}<span><b>Your face must be clearly visible:</b> just you, facing the camera, nothing covering it</span></li><li>${I('sun',15)}Good light. No filters, sunglasses, masks or mirror selfies</li><li>${I('layers',15)}Two different, recent photos, like one close-up and one from another day</li></ul>`;
+}
 
 /* Private settings are saved to your account a moment after the last change. */
 let saveT=null,dirty=false;
@@ -227,12 +256,30 @@ async function pushState(){
 
 /* ---------- helpers ---------- */
 const now=()=>Date.now()+skew;
+/* A group chat is read-only from 3 hours after its plan starts (_chat_closed in schema-app.sql decides). */
+const CHAT_OPEN_H=3,chatClosed=a=>a.when+CHAT_OPEN_H*3600e3<now();
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uname=id=>id==='me'?'You':(USERS[id]?.name||'Someone');
 /* Host name + age; opens their profile unless it's you. */
 const hostName=id=>{const p=profileOf(id),t=`<span><span class="hname">${esc(id==='me'?'You':p.name)}</span>${id==='me'?'':', '+p.age}</span>`;
   return id==='me'?t:`<button class="hlink" data-a="user" data-id="${id}" title="View ${esc(p.name)}'s profile">${t}</button>`};
 const short=s=>s.length>40?s.slice(0,40)+'…':s;
+/* Times and dates typed into a poll ("8am", "20:30", "5 nov", "5/11") written the way the app shows them ("8:00 AM",
+   "Thu, 5 Nov"). Anything else is left as typed. The same as tidyWhen in app/src/lib/when.ts: dates and times are each
+   found in one pass, so nothing already rewritten is read again, and a weekday before a date is replaced by the right one. */
+const MONTHS=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+const WHEN_DATE=(()=>{const mon='(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\\.?',ord='(?:st|nd|rd|th)?',wd='(?:\\b(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*\\.?,?\\s+)?';
+  return new RegExp(`${wd}\\b(\\d{1,2})${ord}\\s+(${mon})(?:,?\\s+(\\d{4}))?\\b|${wd}\\b(${mon})\\s+(\\d{1,2})${ord}\\b(?:,?\\s+(\\d{4}))?|${wd}\\b(\\d{1,2})[/-](\\d{1,2})(?:[/-](\\d{4}|\\d{2}))?\\b`,'gi')})();
+const WHEN_TIME=/\b(\d{1,2})(?:[:.](\d{2}))?\s*([ap])\.?m\b\.?|\b([01]?\d|2[0-3]):([0-5]\d)\b/gi;
+function tidyWhen(s){
+  const n=new Date(now()),tm=(h,m)=>new Date(2000,0,1,h,m).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}),mi=m=>MONTHS.indexOf(m.slice(0,3).toLowerCase());
+  /* a day without a year is the next one from today */
+  const dt=(day,mo,year)=>{let y=year??n.getFullYear();if(y<100)y+=2000;let d=new Date(y,mo,day);if(mo<0||d.getMonth()!==mo||d.getDate()!==day)return null;
+    if(year==null&&d<new Date(n.getFullYear(),n.getMonth(),n.getDate()))d=new Date(y+1,mo,day);
+    return d.toLocaleDateString([], {weekday:'short',day:'numeric',month:'short',...(d.getFullYear()!==n.getFullYear()?{year:'numeric'}:{})})};
+  return s.replace(WHEN_DATE,(all,d1,m1,y1,m2,d2,y2,d3,m3,y3)=>(d1?dt(+d1,mi(m1),y1?+y1:null):m2?dt(+d2,mi(m2),y2?+y2:null):dt(+d3,+m3-1,y3?+y3:null))??all)
+    .replace(WHEN_TIME,(all,h,m,ap,h24,m24)=>{if(h24!==undefined)return tm(+h24,+m24);h=+h;m=+(m||0);return h<1||h>12||m>59?all:tm(h%12+(ap.toLowerCase()==='p'?12:0),m)});
+}
 const fmt=t=>new Date(t).toLocaleString([], {weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
 /* [day, time], e.g. ['Tomorrow','4:30 pm'] */
 function whenParts(t){
@@ -570,7 +617,7 @@ function msgHtml(a,x,i){
   if(x.poll){
     const tot=x.poll.opts.reduce((n,o)=>n+o.v.length,0);
     return `<div class="msg poll ${me?'mine':''}">${who}<div class="pq">${I('bar-chart',14)} ${esc(x.poll.q)}</div>${x.poll.opts.map((o,j)=>{const on=o.v.includes('me'),pct=tot?Math.round(o.v.length/tot*100):0;
-      return `<button class="po ${on?'on':''}" data-a="vote" data-id="${a.id}" data-m="${i}" data-o="${j}" aria-pressed="${on}" aria-label="${esc(o.t)}: ${o.v.length} ${o.v.length===1?'vote':'votes'}"><span class="pb" style="width:${pct}%"></span><span class="pt3">${esc(o.t)}</span><span class="pn2">${o.v.length}</span></button>`}).join('')}
+      return `<button class="po ${on?'on':''}" data-a="vote" data-id="${a.id}" data-m="${i}" data-o="${j}"${chatClosed(a)?' disabled':''} aria-pressed="${on}" aria-label="${esc(o.t)}: ${o.v.length} ${o.v.length===1?'vote':'votes'}"><span class="pb" style="width:${pct}%"></span><span class="pt3">${esc(o.t)}</span><span class="pn2">${o.v.length}</span></button>`}).join('')}
       <div class="small mute">${tot} ${tot===1?'vote':'votes'} · tap to vote</div></div>`;
   }
   return `<div class="msg ${me?'me':''} ${x.reported?'rep':''}">${who}${x.reported?'<i>You reported this message.</i>':esc(x.text)}</div>`;
@@ -590,8 +637,8 @@ function profileOf(id){
 const PASTEL=['#E3EFDB','#E9E4FB','#D9F2E6','#FBE3EE','#DDEEFB','#FBF0D2'];
 function av(id,cls=''){
   const n=id==='me'?(S.me?.name||'?'):(USERS[id]?.name||'?'),hues=['#3F7D4E','#8B5CF6','#10B981','#EC4899','#0EA5E9','#EAB308'];
-  const me=id==='me'?' data-me':'';
-  if(me&&PHOTO_RE.test(S.me?.photo||''))return `<span class="av ${cls}"${me}><img src="${S.me.photo}" alt="${esc(n)}"></span>`;
+  const me=id==='me'?' data-me':'',ph=me?S.me?.photo:USERS[id]?.photo;
+  if(ph)return `<span class="av ${cls}"${me}><img src="${esc(ph)}" alt="${esc(n)}" loading="lazy" decoding="async"></span>`;
   let h=0;for(const c of n)h+=c.charCodeAt(0);
   const emo=me?(S.me?.emo||defEmo(S.me?.gender)):USERS[id]?.emo;
   if(emo)return `<span class="av emo ${cls}"${me} style="background:${PASTEL[h%PASTEL.length]}" aria-hidden="true">${esc(emo)}</span>`;
@@ -752,6 +799,7 @@ async function scan(){
       await refresh();if(nx)nx();return;
     }
     m.state=r?.status==='review'?'flagged':'fail';
+    if(r?.message)m.err=r.message;   // live check: why it failed (not live, or not the same face as the photo)
   }catch(e){m.state='fail';m.err=friendly(e)}
   await refresh();
   if(ui.modal===m){if(VER[m.kind]?.review)m.state='flagged';render()}
@@ -800,7 +848,7 @@ function bindDrag(){
 function cardHtml(a,cls){
   const h=profileOf(a.host);
   return `<div class="card ${cls}" style="background:${planBg(a)}"${cls==='top'?` data-a="detail" data-id="${a.id}" role="button" tabindex="0" aria-label="${esc(a.desc)}: view details"`:''}><div class="shade"></div><div class="stamp"></div>
-  <div class="cp">${catPill(a.cat)}</div>
+  <div class="cp">${catPill(a.cat)}</div>${cls==='top'&&a.host!=='me'?`<button class="shb" data-a="share" data-k="invite" data-id="${a.id}" title="Share" aria-label="Share this plan">${I('share',16)}</button>`:''}
   <div class="body"><div class="who">${a.host==='me'?`${av('me','sm')}You`:`<button class="hlink" data-a="user" data-id="${a.host}" title="View ${esc(h.name)}'s profile">${av(a.host,'sm')}<span><span class="hname">${esc(h.name)}</span>, ${h.age}</span></button>`} ${vf(a.host)}${sampleTag(a.host)}</div>
   <h2>${esc(a.desc)}</h2>
   <div class="meta"><span>${I('calendar',14)}${whenStr(a.when)}</span><span>${I('map-pin',14)}${esc(placeLine(a))}</span><span>${I('users',14)}${spotTxt(a)}</span></div>
@@ -810,7 +858,7 @@ const REQ_LBL={pending:'Requested',accepted:'Accepted',rejected:'Declined',waitl
 const REQ_TONE={pending:'acc',accepted:'ok',rejected:'bad',waitlist:'info'};
 function acCard(a){
   const rq=myReq(a.id),full=spots(a)<=0;
-  return `<div class="ac" data-a="detail" data-id="${a.id}"><div class="media" style="background:${planBg(a)}">${catPill(a.cat)}${sampleTag(a.host)}</div>
+  return `<div class="ac" data-a="detail" data-id="${a.id}"><div class="media" style="background:${planBg(a)}">${catPill(a.cat)}${sampleTag(a.host)}${saveBtn(a)}</div>
   <div class="bd">${ui.f.sort==='for'&&reasons(a)[0]?`<div class="why">${I('sparkles',12)} ${esc(reasons(a)[0][0])}</div>`:''}<h4>${esc(a.desc)}</h4>
   <div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(placeLine(a))} · ${distKm(a)} km</span></div>
   <div class="tg"><span>${I('users',12)}${spotTxt(a)}</span>${tags(a).map(t=>`<span>${esc(t)}</span>`).join('')}</div>
@@ -878,12 +926,16 @@ function tabDiscover(){
   ${!list.length?empty('calendar',all.length?'No matches':'No plans yet',all.length?'Try different filters.':'Be the first to post one.',act.length&&all.length?'<button class="btn sec" data-a="freset">Reset filters</button>':'')
    :f.view==='map'?mapHtml(list):`<div class="grid">${list.map(a=>acCard(a)).join('')}</div>`}`;
 }
-/* Discover's map: OpenStreetMap under Leaflet (both loaded only when the map is first opened). */
-let mapList=[],mapView=null,liveMap=null,leafletP=null;
+/* Discover's map: OpenStreetMap under Leaflet (both loaded only when the map is first opened).
+   Pins closer than a finger's width on screen merge into a numbered bubble: tapping it zooms in, or lists the plans
+   when they're at the same spot. Tapping a pin shows a preview card on the map instead of leaving it. */
+let mapList=[],mapView=null,liveMap=null,leafletP=null,mapPins=null;
 function mapHtml(list){
   mapList=list;
-  return `<div id="lmap" class="map" role="region" aria-label="Map of plans near you"></div>
-  <p class="small mute" style="margin-top:8px">${kmBetween(homeLL(),viewLL())<=NEAR_KM?`The blue dot is the centre of ${esc(S.me.hood)}. `:''}A pin is at the place when the host picked it from the list, otherwise in the middle of the area the venue is in.</p>`;
+  return `<div class="mapw"><div id="lmap" class="map" role="region" aria-label="Map of plans near you"></div>
+    <div class="mctl"><button class="mcb" data-a="mapfit" title="Show all plans" aria-label="Show all plans">${I('layers',17)}</button><button class="mcb" data-a="maphome" title="Back to your area" aria-label="Back to your area">${I('locate',17)}</button></div>
+    <div class="mprev" id="mprev" hidden></div></div>
+  <p class="small mute" style="margin-top:8px">${kmBetween(homeLL(),viewLL())<=NEAR_KM?`The blue dot is the centre of ${esc(S.me.hood)}. `:''}A pin is at the place when the host picked it from the list, otherwise in the middle of the area the venue is in. A number means several plans close together: tap it to zoom in.</p>`;
 }
 function loadLeaflet(){
   if(window.L)return Promise.resolve();
@@ -891,6 +943,41 @@ function loadLeaflet(){
     const css=document.createElement('link');css.rel='stylesheet';css.href='vendor/leaflet/leaflet.css';document.head.appendChild(css);
     const s=document.createElement('script');s.src='vendor/leaflet/leaflet.js';s.onload=ok;s.onerror=()=>{leafletP=null;bad()};document.head.appendChild(s);
   }));
+}
+/* Group the pins by where they land on screen at this zoom, and draw one marker per group. */
+function drawPins(){
+  const m=liveMap;if(!m||!mapPins)return;
+  mapPins.clearLayers();
+  const groups=[];
+  mapList.forEach(a=>{const p=m.latLngToLayerPoint(geo(a)),g=groups.find(g=>g.p.distanceTo(p)<40);if(g)g.items.push(a);else groups.push({p,items:[a]})});
+  groups.forEach(({items})=>{
+    if(items.length===1){
+      const a=items[0],c=CATS[a.cat],label=`${short(a.desc)} · ${whenStr(a.when)} · ${distKm(a)} km`;
+      L.marker(geo(a),{title:label,keyboard:true,riseOnHover:true,icon:L.divIcon({className:'',iconSize:[34,34],iconAnchor:[17,17],html:`<span class="lpin" style="--pc:${c.fg}">${I(c.icon,15)}</span>`})})
+        .addTo(mapPins).on('click',()=>mapPreview([a]));
+      return;
+    }
+    const ll=items.map(geo),mid=[ll.reduce((s,x)=>s+x[0],0)/ll.length,ll.reduce((s,x)=>s+x[1],0)/ll.length];
+    const size=items.length<10?38:items.length<50?44:50,bounds=L.latLngBounds(ll);
+    L.marker(mid,{title:`${items.length} plans here`,keyboard:true,riseOnHover:true,icon:L.divIcon({className:'',iconSize:[size,size],iconAnchor:[size/2,size/2],html:`<span class="lclu" style="width:${size}px;height:${size}px">${items.length}</span>`})})
+      .addTo(mapPins).on('click',()=>{
+        /* the same spot, or as close as the map goes: list them; otherwise zoom in to pull them apart */
+        if(m.getZoom()>=17||bounds.getNorthEast().distanceTo(bounds.getSouthWest())<30)mapPreview(items);
+        else m.flyToBounds(bounds.pad(0.4),{maxZoom:17,duration:.5});
+      });
+  });
+}
+/* The card on the map: one plan with its photo and buttons, or a short list when several share a spot. */
+function mapPreview(items){
+  const el=document.getElementById('mprev');if(!el)return;
+  if(!items||!items.length){el.hidden=true;el.innerHTML='';return}
+  const one=items.length===1,a=items[0];
+  el.innerHTML=`<button class="ib mpx" data-a="mapclose" aria-label="Close preview">${I('x',16)}</button>`+(one
+    ?`<div class="mp1" data-a="detail" data-id="${a.id}" role="button" tabindex="0">${planThumb(a)}<div style="min-width:0;flex:1">${catPill(a.cat,true)}<div class="t">${esc(a.desc)}</div>
+        <div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${distKm(a)} km</span><span>${I('users',13)}${spotTxt(a)}</span></div></div></div>
+      <div class="row" style="gap:8px;margin-top:10px"><button class="btn sm" data-a="detail" data-id="${a.id}">View plan</button>${canSave(a)?`<button class="btn sm ghost" data-a="save" data-id="${a.id}" aria-pressed="${isSaved(a.id)}">${I('bookmark',14)} ${isSaved(a.id)?'Saved':'Save'}</button>`:''}</div>`
+    :`<p class="small" style="margin:0 0 8px;font-weight:600">${items.length} plans at this spot</p><div class="mpl">${items.slice(0,8).map(x=>`<button class="mpr" data-a="detail" data-id="${x.id}">${planThumb(x)}<span><b>${esc(short(x.desc))}</b><small>${whenStr(x.when)}</small></span></button>`).join('')}</div>`);
+  el.hidden=false;
 }
 async function drawMap(){
   const el=document.getElementById('lmap');if(!el)return;
@@ -903,14 +990,21 @@ async function drawMap(){
   m.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>');
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,
     attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'}).addTo(m);
-  if(homeIn)L.marker(home,{zIndexOffset:1000,keyboard:false,icon:L.divIcon({className:'',iconSize:[18,18],iconAnchor:[9,9],html:'<span class="lyou"></span>'})}).addTo(m).bindTooltip('Centre of '+esc(homeName()));
-  mapList.forEach(a=>{
-    const c=CATS[a.cat],label=`${short(a.desc)} · ${whenStr(a.when)} · ${distKm(a)} km`;
-    L.marker(geo(a),{title:label,keyboard:true,icon:L.divIcon({className:'',iconSize:[34,34],iconAnchor:[17,17],html:`<span class="lpin" style="--pc:${c.fg}">${I(c.icon,15)}</span>`})})
-      .addTo(m).bindTooltip(esc(label),{direction:'top',offset:[0,-16]}).on('click',()=>A.detail({id:a.id}));
-  });
+  if(homeIn)L.marker(home,{zIndexOffset:1000,keyboard:false,interactive:false,icon:L.divIcon({className:'',iconSize:[18,18],iconAnchor:[9,9],html:'<span class="lyou"></span>'})}).addTo(m);
+  mapPins=L.layerGroup().addTo(m);
+  m.on('zoomend',drawPins);
+  m.on('click',()=>mapPreview(null));
   m.on('moveend',()=>{mapView={c:m.getCenter(),z:m.getZoom()}});
-  if(!mapView&&mapList.length)m.fitBounds(L.latLngBounds([homeIn?home:mid,...mapList.map(geo)]).pad(0.15),{maxZoom:15});
+  if(!mapView)mapFit(false);
+  drawPins();
+}
+/* Fit every plan in view (with your area), or go back to your area. */
+function mapFit(fly){
+  const m=liveMap;if(!m)return;
+  const home=homeLL(),mid=viewLL(),pts=[kmBetween(home,mid)<=NEAR_KM?home:mid,...mapList.map(geo)];
+  if(pts.length<2){m.setView(pts[0],13);return}
+  const b=L.latLngBounds(pts).pad(0.12);
+  if(fly)m.flyToBounds(b,{maxZoom:15,duration:.5});else m.fitBounds(b,{maxZoom:15});
 }
 function tabActs(){
   const mine=S.acts.filter(a=>a.host==='me').sort((a,b)=>(a.status==='past')-(b.status==='past')||(a.status==='past'?b.when-a.when:a.when-b.when));
@@ -923,7 +1017,12 @@ function tabActs(){
 }
 function tabReqs(){
   const mine=S.reqs.filter(r=>r.user==='me'&&actOf(r.act));
-  return `<h1 class="pt">My Requests</h1><p class="sub">Plans you asked to join</p>`+(mine.length?mine.map(r=>{
+  /* saved from Discover, until you ask to join, the plan starts or it's gone */
+  const saved=S.saved.map(actOf).filter(a=>a&&a.status!=='past'&&!myReq(a.id)).sort((a,b)=>a.when-b.when);
+  return `<h1 class="pt">My Requests</h1><p class="sub">Plans you asked to join</p>`
+    +(saved.length?`<h3 class="sech">${I('bookmark',15)} Saved for later</h3>`+saved.map(a=>liHtml(a,'detail',`<span>${I('calendar',13)}${whenStr(a.when)}</span><span>by ${esc(uname(a.host))}</span>`,'',
+      `<button class="ib" style="flex:0 0 auto" data-a="save" data-id="${a.id}" aria-label="Remove from saved" title="Remove from saved">${I('x',16)}</button>`)).join('')+`<h3 class="sech">${I('mail',15)} Requests</h3>`:'')
+    +(mine.length?mine.map(r=>{
     const a=actOf(r.act);
     const past=isPast(a);
     return liHtml(a,'detail',`<span>${I('calendar',13)}${whenStr(a.when)}</span><span>by ${esc(uname(a.host))}</span>`,statusChip(r.status),
@@ -1027,15 +1126,18 @@ function modalHtml(){
   if(m.type==='verify'){
     const face=m.kind==='face',v=VER[m.kind]||{fails:0,attempts:0,max:5},left=Math.max(0,(v.max||5)-(v.attempts||0)),ic=face?'scan-face':'id-card',live=MODE[m.kind]==='live';
     let inner;
-    if(m.state==='flagged'||v.review)inner=`<div class="scan">${I('shield-check',56)}</div><p style="text-align:center"><strong>Sent for human review</strong></p><p class="mute" style="text-align:center">You have used all ${v.max||5} tries, so the check is paused. A person on our team will check it by hand and you will get a notification. You are not locked out permanently.</p>`;
+    if(m.state==='flagged'||v.review)inner=`<div class="scan">${I('shield-check',56)}</div><p style="text-align:center"><strong>Sent for human review</strong></p><p class="mute" style="text-align:center">You have used all ${v.max||5} tries, so the check is paused. A person on our team will check it by hand and you will get a notification. You are not locked out permanently.</p>
+      ${reviewMail(m.kind)}`;
+    else if(face&&!twoPhotos())inner=`<p style="text-align:center;margin-top:0"><strong>First, add two photos of you</strong></p>
+      <p class="mute" style="text-align:center">The face check compares your live face with both, so people know your photos are really you. Photo 1 is your profile picture; both show on your profile.</p>
+      ${photoPair()}`;
     else if(m.state==='scanning')inner=(live&&face?'<div id="face_box" class="facebox"></div>':`<div class="scan go">${I(ic,56)}</div>`)+`<p style="text-align:center" class="mute">${face?'Checking liveness…':'Reading your ID…'}</p>`;
     else if(!left)inner=`<div class="scan">${I('shield-check',56)}</div><p style="text-align:center"><strong>No tries left</strong></p><p class="mute" style="text-align:center">You have used all ${v.max||5} tries. A person on our team will check it by hand and send you a notification.</p>
       <button class="btn" data-a="scan">Send for review</button>`;
     else inner=`<div class="scan">${I(ic,56)}</div>
-      <p style="text-align:center" class="mute">${face?'A few seconds of video selfie confirm you are a real person. You need it to post a plan or ask to join one.':'Government ID check. Needed once, the first time you post or request. It unlocks both.'}</p>
+      <p style="text-align:center" class="mute">${face?'A few seconds of video selfie confirm you are a real person, and the person in your two photos. You need it to post a plan or ask to join one.':'Government ID check. Needed once, the first time you post or request. It unlocks both.'}</p>
       ${m.state==='fail'?`<p style="text-align:center;color:var(--bad)"><strong>${esc(m.err||'Verification failed.')}</strong> Please try again.</p>`:''}
-      ${v.attempts?`<p style="text-align:center" class="small mute">${left} of ${v.max||5} tries left. After that, a person on our team checks it by hand.</p>`:''}
-      <label class="chk top"><input type="checkbox" id="v_ok"> <span>${face?'I agree to a face scan. The video goes only to our verification provider to check that I am a real person, and is not kept. Overhere stores only whether it passed and the provider\'s confidence score.':'I agree to an ID check. Overhere stores only whether it passed, never my ID number or ID photo.'}</span></label>
+      <label class="chk top"><input type="checkbox" id="v_ok"> <span>${face?'I agree to a face scan. The video goes only to our verification provider to check that I am a real person and match my two photos, and is not kept. Overhere stores only whether it passed and the provider\'s scores.':'I agree to an ID check. Overhere stores only whether it passed, never my ID number or ID photo.'}</span></label>
       ${live?'':'<div class="dn">Demo: this check is simulated. No camera or ID is used.</div>'}
       <button class="btn" data-a="scan">${m.state==='fail'?'Try again':(face?'Start face check':'Start ID check')}</button>`;
     return sheet(face?'Face verification':'Identity verification',`<div class="sb">${inner}</div>`);
@@ -1103,7 +1205,7 @@ function modalHtml(){
       ${acc&&!past?`<div style="height:8px"></div><button class="btn sec" data-a="chat" data-id="${a.id}">${I('message-circle',16)} Open group chat</button>
         <div style="height:8px"></div><button class="btn ghost" data-a="share" data-k="trust" data-id="${a.id}">${I('shield-check',16)} Share plan with trusted contact</button>`:''}
       ${attended(a)&&past&&a.members.length?(S.ratings[a.id]?`<p class="small mute" style="margin-top:14px">${I('circle-check',14)} You rated this meetup. Thanks!</p>`:`<div style="height:12px"></div><button class="btn" data-a="rate" data-id="${a.id}">${I('star',16)} Rate the meetup</button>`):''}
-      <div class="dlinks">${!past&&(a.status==='open'||a.status==='full')?`<button class="lnk" data-a="share" data-k="invite" data-id="${a.id}">${I('send',13)} Invite a friend</button>`:''}${rq&&(rq.status==='pending'||rq.status==='waitlist')?`<button class="lnk m" data-a="withdraw" data-id="${a.id}">${I('x',13)} Withdraw request</button>`:''}${acc&&!past?`<button class="lnk m" data-a="leave" data-id="${a.id}">Leave activity</button>`:''}${a.host!=='me'?`<a class="lnk m" href="copyright.html#notice" target="_blank" rel="noopener">Report copyright infringement</a>`:''}</div>
+      <div class="dlinks">${canSave(a)?`<button class="lnk" data-a="save" data-id="${a.id}" aria-pressed="${isSaved(a.id)}">${I('bookmark',13)} ${isSaved(a.id)?'Saved':'Save for later'}</button>`:''}${!past&&(a.status==='open'||a.status==='full')?`<button class="lnk" data-a="share" data-k="invite" data-id="${a.id}">${I('share',13)} Share</button>`:''}${rq&&(rq.status==='pending'||rq.status==='waitlist')?`<button class="lnk m" data-a="withdraw" data-id="${a.id}">${I('x',13)} Withdraw request</button>`:''}${acc&&!past?`<button class="lnk m" data-a="leave" data-id="${a.id}">Leave activity</button>`:''}${a.host!=='me'?`<a class="lnk m" href="copyright.html#notice" target="_blank" rel="noopener">Report copyright infringement</a>`:''}</div>
       </div>`);
   }
   if(m.type==='terms')return `<div class="ov"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="tm_t"><div class="sh"><h2 id="tm_t">Our terms and community guidelines</h2></div><div class="sb">
@@ -1133,7 +1235,9 @@ function modalHtml(){
   if(m.type==='user'){
     const p=USERS[m.id];if(!p)return '';
     const ups=S.acts.filter(a=>a.host===m.id&&visible(a)).sort((a,b)=>a.when-b.when),bl=isBlocked(m.id),t=trust(m.id);
+    const pics=[p.photo,p.photo2].filter(Boolean);
     return sheet(backB(m)+'Profile',`<div class="sb">
+      ${pics.length>1?`<div class="gal" tabindex="0" aria-label="Photos of ${esc(p.name)}. Swipe for more.">${pics.map((ph,i)=>`<img src="${esc(ph)}" alt="Photo ${i+1} of ${esc(p.name)}" loading="lazy" decoding="async">`).join('')}</div>`:''}
       <div class="pt2">${av(m.id,'lg')}<div><div class="pn">${esc(p.name)} ${vf(m.id,true)}${sampleTag(m.id)}</div><div class="small mute">${esc(p.gender)}, ${p.age}${p.job?' · '+esc(p.job):''}</div></div></div>
       ${p.bio?`<p style="margin:16px 0 0">${esc(p.bio)}</p>`:''}
       <div class="tstats"><div><b>${t.met}</b><span>meetups</span></div><div><b>${t.shows}</b><span>showed up</span></div><div><b>${t.met-t.shows}</b><span>no-shows</span></div></div>
@@ -1165,6 +1269,10 @@ function modalHtml(){
     return sheet(backB(m)+'How did it go?',`<div class="sb">
       <div class="sum">${planThumb(a)}<div style="min-width:0"><div class="t">${esc(a.desc)}</div><div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(placeLine(a))}</span></div></div></div>
       <label>Did everything go OK?</label><div class="opts"><label class="opt"><input type="radio" name="rt_ok" value="yes" ${prev?.ok!=='no'?'checked':''}>Yes, all good</label><label class="opt"><input type="radio" name="rt_ok" value="no" ${prev?.ok==='no'?'checked':''}>Something went wrong</label></div>
+      <div class="wrongbox" id="rt_wrong"${prev?.ok==='no'?'':' hidden'}><b>Are you still in a bad situation?</b>
+        <button class="btn bad" data-a="sos" data-id="${a.id}">${I('alert-triangle',16)} Yes, I need help now</button>
+        <p class="small" style="margin:10px 0 6px">It already happened? Report what happened, and we'll follow up. A person on our team reads every report.</p>
+        <div class="row" style="flex-wrap:wrap;gap:6px">${ppl.filter(u=>u!=='?'&&USERS[u]).map(u=>`<button class="btn sm ghost" data-a="report" data-id="${u}">${I('flag',13)} Report ${esc(uname(u))}</button>`).join('')}<a class="btn sm ghost" href="mailto:${esc(CFG.CONTACT_EMAIL||'admin@overhere.social')}?subject=${encodeURIComponent('Something went wrong at a plan')}">${I('mail',13)} Email us</a></div></div>
       <label>How much did you enjoy it?</label><div class="rstars" role="radiogroup" aria-label="How much you enjoyed it">${[5,4,3,2,1].map(n=>`<label title="${n} star${n>1?'s':''}"><input type="radio" name="rt_star" value="${n}" aria-label="${n} star${n>1?'s':''}" ${prev?.stars===n?'checked':''}><span>★</span></label>`).join('')}</div>
       <label>Who showed up?</label>
       ${ppl.map(u=>{const v=prev?.people?.[u]||'show';return `<div class="rp">${av(u,'sm')}<button class="hlink" data-a="user" data-id="${u}">${esc(uname(u))}</button><span class="rpo"><label class="opt"><input type="radio" name="rt_${u}" value="show" ${v==='show'?'checked':''}>Came</label><label class="opt"><input type="radio" name="rt_${u}" value="noshow" ${v==='noshow'?'checked':''}>No-show</label></span></div>`}).join('')}
@@ -1250,10 +1358,13 @@ function modalHtml(){
   if(m.type==='editprofile'){
     const me=S.me,cur=m.emo||me.emo||defEmo(me.gender),photo=!!me.photo&&!m.emo;
     return sheet('Edit profile',`<div class="sb">
-      <h3 style="margin-top:0">Profile picture</h3>
+      <h3 style="margin-top:0">Your photos</h3>
+      <p class="small mute" style="margin:0 0 10px">Photo 1 is your profile picture. The face check needs both and matches your live face against each.</p>
+      <div id="ep_photos">${photoPair()}</div>
+      ${photo?`<button class="btn sm bad" data-a="rmphoto">${I('trash',14)} Remove photos</button>`:''}
+      <h3>Or an emoji</h3>
       <div class="epav"><span id="ep_av">${photo?av('me','lg'):`<span class="av emo lg" style="background:${PASTEL[0]}" aria-hidden="true">${esc(cur)}</span>`}</span>
-        <div><p class="small mute" style="margin:0 0 8px">${photo?'You are using a photo. Pick an emoji below to switch back.':'Pick the emoji that feels like you.'}</p>
-        <div class="row" style="gap:8px"><button class="btn sm ghost" data-a="pickphoto">${I('camera',14)} Upload a photo</button>${photo?`<button class="btn sm bad" data-a="rmphoto">${I('trash',14)} Remove photo</button>`:''}</div></div></div>
+        <p class="small mute" style="margin:0">${photo?`Picking an emoji removes your photos${me.face?' and means redoing your face check':''}.`:'Other people see this next to your name until you add photos.'}</p></div>
       <div class="emogrid" role="radiogroup" aria-label="Emoji">${EMOJIS.map(e=>`<button role="radio" aria-checked="${!photo&&e===cur}" class="${!photo&&e===cur?'on':''}" data-a="pickemo" data-e="${esc(e)}" aria-label="${esc(e)}">${esc(e)}</button>`).join('')}</div>
       <h3>About you</h3>
       <label for="p_name" style="margin-top:0">Name</label><input id="p_name" maxlength="40" value="${esc(me.name)}">
@@ -1280,7 +1391,7 @@ function modalHtml(){
   }
   if(m.type==='chat'){
     const a=actOf(m.id);if(!a)return '';
-    const muted=!!S.muted[a.id],msgs=(S.chats[a.id]||[]).map((x,i)=>msgHtml(a,x,i)).join('');
+    const muted=!!S.muted[a.id],closed=chatClosed(a),msgs=(S.chats[a.id]||[]).map((x,i)=>msgHtml(a,x,i)).join('');
     const tips=S.tips[a.id]?'':`<div class="tips"><b>${I('shield-check',15)} Meeting new people? A few tips</b><ul><li>Meet in a busy public place and make your own way there.</li><li>Tell someone you trust where you'll be. <button class="lnk" data-a="share" data-k="trust" data-id="${a.id}">Share plan</button></li><li>Leave whenever you like. Tap SOS if you ever feel unsafe.</li><li>Tap ${I('flag',11)} next to a name to report a message.</li></ul><button class="btn sm sec" data-a="tipsok" data-id="${a.id}">Got it</button></div>`;
     return `<div class="ov"><div class="sheet full chat"><div class="sh"><h2 style="font-size:15px">${esc(a.desc.slice(0,34))}</h2>
       <button class="ib" data-a="members" data-id="${a.id}" title="Members" aria-label="Members">${I('users',17)}</button>
@@ -1288,7 +1399,7 @@ function modalHtml(){
       <button class="sosb" data-a="sos" data-id="${a.id}" aria-label="SOS: get help now">SOS</button>
       <button class="ib" data-a="close" title="Close">${I('x',18)}</button></div>
       <p class="small mute" style="padding:8px 18px;margin:0">Members: ${esc([a.host,...a.members].map(uname).join(', '))} · full history visible to everyone${muted?' · notifications muted':''}${isSample(a.host)?' · <b>Sample plan: the host\'s messages are pre-written and nobody will be there</b>':''}</p>
-      <div class="msgs" id="msgs">${tips}${msgs}</div><div class="cin"><button class="ib" data-a="newpoll" data-id="${a.id}" title="Create a poll" aria-label="Create a poll">${I('bar-chart',18)}</button><input id="c_in" placeholder="Message the group" autocomplete="off" aria-label="Message the group"><button class="btn sm" data-a="send" data-id="${a.id}" aria-label="Send">${I('send',15)}</button></div></div></div>`;
+      <div class="msgs" id="msgs">${closed?'':tips}${msgs}</div>${closed?`<div class="cin closed" role="status">${I('lock',15)}<span>This chat closed ${CHAT_OPEN_H} hours after the plan started. You can still read it.</span></div>`:`<div class="cin"><button class="ib" data-a="newpoll" data-id="${a.id}" title="Create a poll" aria-label="Create a poll">${I('bar-chart',18)}</button><input id="c_in" placeholder="Message the group" autocomplete="off" aria-label="Message the group"><button class="btn sm" data-a="send" data-id="${a.id}" aria-label="Send">${I('send',15)}</button></div>`}</div></div>`;
   }
   if(m.type==='members'){
     const a=actOf(m.id);if(!a)return '';
@@ -1341,6 +1452,15 @@ function modalHtml(){
       <p class="small mute" style="margin-top:12px">No answer within 30 minutes? We'll remind you and offer to alert ${S.me.trusted?esc(S.me.trusted.name):'your trusted contact'}.</p></div>`);
   }
   return '';
+}
+
+/* After the last try: email the team to get the check done by hand (CONTACT_EMAIL in config.js). The account id goes
+   in the email so the team can find it in /addmin; it's not secret. */
+function reviewMail(kind){
+  const to=CFG.CONTACT_EMAIL||'admin@overhere.social',what=kind==='face'?'face check':'ID check';
+  const href=`mailto:${to}?subject=${encodeURIComponent('Manual '+what+' for '+(S.me?.name||'my account'))}&body=${encodeURIComponent(`Hi Overhere team,\n\nMy ${what} didn't pass after ${VER[kind]?.max||5} tries. Please check it by hand.\n\nAccount: ${ME}\nSigned in with: ${MYPHONE?'+91 '+MYPHONE:'email'}\n`)}`;
+  return `<p class="small" style="text-align:center;margin:14px 0 8px">Want it sorted sooner? Email us and we'll verify you by hand.</p>
+    <a class="btn sec" href="${esc(href)}">${I('mail',16)} Email ${esc(to)}</a>`;
 }
 
 /* ---------- render: sign-in and onboarding ---------- */
@@ -1416,6 +1536,23 @@ function authHtml(){
       :'New here? <button class="lnk" data-a="authmode" data-k="up">Create an account</button>'}</p>
     <p class="small mute" style="text-align:center;margin-top:10px"><a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> · <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a> · <a href="copyright.html" target="_blank" rel="noopener" style="color:inherit">Copyright</a> · <a href="credits.html" target="_blank" rel="noopener" style="color:inherit">Credits</a></p></div></div>`;
 }
+/* Phone accounts also need a confirmed email: add it, then type the code Supabase emails ("Change email address"
+   template, supabase/templates/change-email.html). Comes before onboarding, and once for older phone accounts. */
+function emailStepHtml(){
+  if(ui.auth.mode==='ecode'){
+    const left=Math.ceil(((ui.auth.sent||0)+RESEND_MS-Date.now())/1000),box=inboxOf(ui.auth.email||'');
+    return `<div class="ob">${LOGO}<div class="mailic">${I('mail',30)}</div><h1 class="pt">Enter the code</h1><p class="sub">We sent a 6-digit code to <b>${esc(ui.auth.email)}</b>. <button class="lnk" style="padding:0" data-a="emailstep">Edit</button> It can take a minute, and sometimes lands in spam.</p>
+    <form id="a_form" data-submit="checkecode" novalidate><label for="a_code">Code from the email</label>
+    <div class="otp"><input id="a_code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" spellcheck="false" aria-describedby="a_code_err"><div class="otpc" aria-hidden="true">${'<span></span>'.repeat(6)}</div></div>
+    <p class="ferr" id="a_code_err" aria-live="polite"></p>
+    <div style="height:18px"></div>${ERRBOX}${goBtn('Confirm email')}</form>
+    ${box?`<div style="height:8px"></div><a class="btn ghost" href="${box[1]}" target="_blank" rel="noopener">${I('mail',16)} Open ${box[0]}</a>`:''}
+    <p class="small" style="text-align:center;margin-top:14px">Didn't get it? <button class="lnk" id="a_resend" data-a="resendecode"${left>0?' disabled':''}>${left>0?`Resend code in ${left}s`:'Resend code'}</button> · <button class="lnk" data-a="emailstep">Use a different email</button></p></div>`;
+  }
+  return `<div class="ob">${LOGO}<div class="mailic">${I('mail',30)}</div><h1 class="pt">Add your email</h1><p class="sub">Your phone number is confirmed. Now add your email and confirm it with a code. It's for account emails only, and nobody else sees it.</p>
+    <form id="a_form" data-submit="addemail" novalidate>${emailField()}<div style="height:16px"></div>${ERRBOX}${goBtn('Send code')}</form>
+    <p class="small mute" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p></div>`;
+}
 function onboardHtml(){
   let body;
   if(!S.me){
@@ -1434,7 +1571,11 @@ function onboardHtml(){
     <label class="chk top" style="margin-top:10px"><input type="checkbox" id="o_usage"> <span><b>Optional:</b> share usage statistics (which features I use, never my messages) to help improve the beta. You can turn this off any time in <i>Profile</i>.</span></label>
     <div style="height:18px"></div><button class="btn" data-a="ob2">Continue</button>
     <p class="small" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p>`;
-  }else if(!S.me.face&&!ui.faceSkip)body=`<h1 class="pt">Quick face check</h1><p class="sub">Confirms your account belongs to a real person. You can browse without it, but you need it to post a plan or ask to join one.</p><div class="scan">${I('scan-face',56)}</div><button class="btn" data-a="obface">Start face check</button>
+  }else if(!S.me.face&&!ui.faceSkip&&!twoPhotos())body=`<h1 class="pt">Add two photos of you</h1><p class="sub">Photo 1 is your profile picture, and both show on your profile. The face check matches your live face against both.</p>${photoPair()}
+    <div style="height:8px"></div><button class="btn sec" data-a="obfaceskip">Skip for now</button>
+    <p class="small mute" style="text-align:center;margin-top:10px">Without photos you can browse, and other people see your emoji. Posting and joining plans need both photos and the face check.</p>
+    <p class="small" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p>`;
+  else if(!S.me.face&&!ui.faceSkip)body=`<h1 class="pt">Quick face check</h1><p class="sub">Confirms you're a real person, and the person in your two photos. You can browse without it, but you need it to post a plan or ask to join one.</p><div class="ob-av">${av('me','lg')}</div><button class="btn" data-a="obface">Start face check</button>
     <div style="height:8px"></div><button class="btn sec" data-a="obfaceskip">Skip for now</button>
     <p class="small" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p>`;
   else body=`<h1 class="pt">Tell us more (optional)</h1><p class="sub">You can skip this and add it later.</p>
@@ -1447,8 +1588,7 @@ function onboardHtml(){
 async function gone18(){GONE18=true;ui.modal=null;try{localStorage.removeItem(photoKey())}catch(e){}try{await SB.auth.signOut({scope:'local'})}catch(e){}render()}
 /* ---------- profile photo: pick -> crop -> resize + compress -> stored on this device only ---------- */
 const PHOTO_OUT=400,PHOTO_MAX_BYTES=60*1024,PHOTO_MAX_FILE=20*1024*1024,PHOTO_MIN_SIDE=200,PHOTO_MAX_ZOOM=4,PHOTO_WORK=3000;
-const PHOTO_RE=/^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/;
-let crop=null,cropRaf=0;
+let crop=null,cropRaf=0,cropSlot=1;   // which photo (1 or 2) the cropper is for
 
 async function decodeImage(file){
   // createImageBitmap applies the EXIF orientation, so phone photos come out upright
@@ -1487,11 +1627,11 @@ function paintCrop(){
     document.getElementById('cr_z').value=crop.z;
   });
 }
+/* JPEG, not WebP: the face check compares the live face with this photo, and AWS only reads JPEG and PNG. */
 async function compressPhoto(canvas){
-  const enc=(t,q)=>new Promise(r=>canvas.toBlob(r,t,q));
-  let type='image/webp',q=.85,b=await enc(type,q);
-  if(!b||b.type!==type){type='image/jpeg';b=await enc(type,q)} // older Safari cannot encode WebP
-  while(b.size>PHOTO_MAX_BYTES&&q>.5){q-=.1;b=await enc(type,q)}
+  const enc=q=>new Promise(r=>canvas.toBlob(r,'image/jpeg',q));
+  let q=.85,b=await enc(q);
+  while(b.size>PHOTO_MAX_BYTES&&q>.5){q-=.1;b=await enc(q)}
   return b;
 }
 async function openCropper(file){
@@ -1510,12 +1650,13 @@ function closeCropper(){crop=null;document.getElementById('cr_ov')?.remove()}
 function showCropper(){
   document.getElementById('cr_ov')?.remove();
   const ov=document.createElement('div');ov.className='ov';ov.id='cr_ov';
-  ov.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cr_t"><div class="sh"><h2 id="cr_t">Crop your photo</h2><button class="ib" id="cr_x" title="Close">${I('x',18)}</button></div>
+  ov.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cr_t"><div class="sh"><h2 id="cr_t">Crop photo ${cropSlot} of 2</h2><button class="ib" id="cr_x" title="Close">${I('x',18)}</button></div>
   <div class="sb"><div class="crop" id="cr_box" tabindex="0" aria-label="Crop area. Drag or use arrow keys to move, plus and minus to zoom."><canvas id="cr_cv"></canvas></div>
   <p class="small mute" style="text-align:center;margin:0">Drag to reposition. Pinch, scroll or use the slider to zoom.</p>
   <div class="cz">${I('zoom-out',16)}<input type="range" id="cr_z" min="1" max="${PHOTO_MAX_ZOOM}" step="0.01" value="1" aria-label="Zoom">${I('zoom-in',16)}<button class="ib" id="cr_rot" title="Rotate">${I('rotate-cw',18)}</button></div>
   <div class="row"><button class="btn ghost" id="cr_pick">Choose another</button><button class="btn" id="cr_ok">Use photo</button></div>
-  <p class="small mute" style="text-align:center;margin:12px 0 0">Saved at ${PHOTO_OUT}×${PHOTO_OUT}, compressed, and kept only in this browser. Other people see your emoji.</p></div></div>`;
+  <p class="small mute" style="text-align:center;margin:12px 0 0">Your face must be clearly visible: just you, facing the camera, in good light. No filters, sunglasses or mirror selfies. Your face check is matched against it. Saved small (${PHOTO_OUT}×${PHOTO_OUT}) and shown on your profile.</p>
+  ${S.me.face?'<p class="small" style="text-align:center;margin:8px 0 0;color:var(--warn)">You\'re verified. A new photo means doing the face check again, so it matches.</p>':''}</div></div>`;
   document.getElementById('shell').appendChild(ov);
   const box=document.getElementById('cr_box'),$$=id=>document.getElementById(id);
   const scale=()=>box.clientWidth/Math.min(crop.img.width,crop.img.height)*crop.z; // CSS px per image px
@@ -1539,7 +1680,7 @@ function showCropper(){
   };
   $$('cr_z').oninput=e=>{crop.z=+e.target.value;paintCrop()};
   $$('cr_rot').onclick=()=>{const img=toCanvas(crop.img,PHOTO_WORK,true);Object.assign(crop,{img,z:1,cx:img.width/2,cy:img.height/2});paintCrop()};
-  $$('cr_pick').onclick=()=>$$('p_photo')?.click();
+  $$('cr_pick').onclick=()=>(document.getElementById('p_photo')||photoInput()).click();
   $$('cr_x').onclick=closeCropper;
   $$('cr_ok').onclick=commitCrop;
   ov.onclick=e=>{if(e.target===ov)closeCropper()};
@@ -1551,12 +1692,21 @@ async function commitCrop(){
   const c=document.createElement('canvas');c.width=c.height=PHOTO_OUT;
   clampCrop();drawCrop(c.getContext('2d'),PHOTO_OUT);
   const blob=await compressPhoto(c);
-  const url=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(blob)});
-  if(!savePhoto(url)){btn.disabled=false;btn.textContent='Use photo';return toast('This browser is out of storage space, so the photo could not be saved')}
-  S.me.photo=url;
-  closeCropper();refreshMyPhoto();
-  const pv=document.getElementById('ep_av');if(pv){pv.innerHTML=av('me','lg');if(ui.modal)delete ui.modal.emo;document.querySelectorAll('[data-a=pickemo]').forEach(b=>{b.classList.remove('on');b.setAttribute('aria-checked','false')})}
-  toast(`Photo updated (${Math.max(1,Math.round(blob.size/1024))} KB)`);
+  const rnd=Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>'0123456789abcdefghijklmnopqrstuvwxyz'[b%36]).join('');
+  const path=`${ME}/${rnd}.jpg`;
+  const {error}=await SB.storage.from('avatars').upload(path,blob,{contentType:'image/jpeg',upsert:false,cacheControl:'31536000'});
+  if(error){btn.disabled=false;btn.textContent='Use photo';return toast(friendly(error))}
+  if(!await setPhoto(path,cropSlot)){SB.storage.from('avatars').remove([path]).catch(()=>{});btn.disabled=false;btn.textContent='Use photo';return}
+  track('avatar_photo');
+  closeCropper();
+  /* the edit sheet is swapped in place so typed changes are kept; anywhere else (sign-up steps, the face check
+     sheet, Profile) re-renders, which moves on to the face check once both photos are there */
+  if(ui.modal?.type==='editprofile'){
+    refreshMyPhoto();
+    const pp=document.getElementById('ep_photos');if(pp)pp.innerHTML=photoPair();
+    const pv=document.getElementById('ep_av');if(pv){pv.innerHTML=av('me','lg');delete ui.modal.emo;document.querySelectorAll('[data-a=pickemo]').forEach(b=>{b.classList.remove('on');b.setAttribute('aria-checked','false')})}
+  }else render();
+  toast(cropSlot===1&&!S.me.photo2?'Photo 1 saved. Now add photo 2.':`Photo ${cropSlot} saved (${Math.max(1,Math.round(blob.size/1024))} KB)`);
 }
 /* Swap my avatars in place so unsaved edits in the profile form are kept. */
 function refreshMyPhoto(){
@@ -1566,7 +1716,7 @@ function refreshMyPhoto(){
 function photoInput(){const i=document.createElement('input');i.type='file';i.id='p_photo';i.accept='image/jpeg,image/png,image/webp,image/*';i.hidden=true;document.getElementById('screen').appendChild(i);return i}
 function photoMenu(open){
   const mn=document.getElementById('p_menu'),pe=document.getElementById('p_pe');if(!mn)return;
-  if(open)mn.innerHTML=`<button role="menuitem" data-a="emojipick">${I('user',15)} Choose emoji</button><button role="menuitem" data-a="pickphoto">${I('camera',15)} Upload a photo</button>${S.me.photo?`<button role="menuitem" class="bad" data-a="rmphoto">${I('trash',15)} Remove photo</button>`:''}`;
+  if(open)mn.innerHTML=`<button role="menuitem" data-a="emojipick">${I('user',15)} Choose emoji</button><button role="menuitem" data-a="pickphoto" data-k="1">${I('camera',15)} ${S.me.photo?'Change photo 1':'Add photo 1'}</button>${S.me.photo?`<button role="menuitem" data-a="pickphoto" data-k="2">${I('camera',15)} ${S.me.photo2?'Change photo 2':'Add photo 2'}</button><button role="menuitem" class="bad" data-a="rmphoto">${I('trash',15)} Remove photos</button>`:''}`;
   mn.hidden=!open;pe?.setAttribute('aria-expanded',String(open));
   if(open)mn.querySelector('button')?.focus();
 }
@@ -1587,6 +1737,7 @@ function render(){
   const scr=document.getElementById('screen'),restore=keepScroll();
   if(GONE18){scr.innerHTML=`<div class="ob">${LOGO}<h1 class="pt">Sorry, Overhere is for adults</h1><p class="sub">Overhere is only for people aged 18 and over, so we didn't create your account. We've deleted the sign-in details you gave us and kept nothing.</p><p class="small mute">If you entered your date of birth by mistake, you can sign up again.</p><button class="btn sec" data-a="gone18">Back to the start</button></div>`;return}
   if(!ONLINE||!ME||!loaded){scr.innerHTML=authHtml();restore();return}
+  if(AUTHU.phone&&!AUTHU.email){scr.innerHTML=emailStepHtml();restore();return}
   if(!S.me||!S.me.obDone){scr.innerHTML=onboardHtml()+modalHtml();restore();afterRender();return}
   if(!S.me.terms&&ui.modal?.type!=='terms')ui.modal={type:'terms'};   // accounts made before the terms: agree once
   const unread=S.notes.filter(n=>!n.read).length;
@@ -1633,8 +1784,8 @@ const RESEND_MS=60000;let resendT=0;
 function resendTimer(){
   clearInterval(resendT);
   resendT=setInterval(()=>{
-    const b=document.getElementById('a_resend'),left=Math.ceil((ui.auth.sent+RESEND_MS-Date.now())/1000),what=ui.auth.mode==='code'?'code':'email';
-    if(!b||!['code','check'].includes(ui.auth.mode)){clearInterval(resendT);return}
+    const b=document.getElementById('a_resend'),left=Math.ceil((ui.auth.sent+RESEND_MS-Date.now())/1000),what=['code','ecode'].includes(ui.auth.mode)?'code':'email';
+    if(!b||!['code','check','ecode'].includes(ui.auth.mode)){clearInterval(resendT);return}
     b.disabled=left>0;b.textContent=left>0?`Resend ${what} in ${left}s`:`Resend ${what}`;
     if(left<=0)clearInterval(resendT);
   },1000);
@@ -1946,6 +2097,33 @@ const A={
     otpAbort?.abort();track('phone_signed_in');
     return true;   // signed in: onAuthStateChange takes it from here
   }),
+  /* the email step for phone accounts (emailStepHtml) */
+  emailstep:()=>{ui.auth={mode:'eadd',email:ui.auth.email};render();document.getElementById('a_email')?.focus()},
+  addemail:()=>working(async()=>{
+    const email=val('a_email');
+    if(!email||!EMAIL_RE.test(email)){fieldMsg('a_email',!email?'Enter your email':'Enter a valid email, like name@example.com');document.getElementById('a_email')?.focus();return}
+    const {error}=await SB.auth.updateUser({email});
+    if(error)throw error;
+    track('email_code_sent');
+    ui.auth={mode:'ecode',email,sent:Date.now()};render();resendTimer();document.getElementById('a_code')?.focus();return true;
+  }),
+  resendecode:async()=>{
+    const wait=Math.ceil(((ui.auth.sent||0)+RESEND_MS-Date.now())/1000);
+    if(wait>0)return toast(`Please wait ${wait}s before asking for a new code`);
+    const {error}=await SB.auth.resend({type:'email_change',email:ui.auth.email});
+    if(error)return toast(friendly(error));
+    ui.auth.sent=Date.now();render();resendTimer();toast('Sent again. Check your inbox.');
+  },
+  checkecode:()=>working(async()=>{
+    const i=document.getElementById('a_code'),token=(i?.value||'').replace(/\D/g,'');
+    if(token.length!==6){fieldMsg('a_code',token?'Enter all 6 digits':'Enter the code from the email');i?.focus();return}
+    const {error}=await SB.auth.verifyOtp({email:ui.auth.email,token,type:'email_change'});
+    if(error)return codeWrong(friendly(error));
+    const {data}=await SB.auth.getUser();
+    AUTHU.email=!!data?.user?.email_confirmed_at;
+    if(!AUTHU.email)return codeWrong('That code didn\'t confirm your email. Ask for a new one.');
+    track('email_confirmed');ui.auth={mode:'in'};render();toast('Email confirmed');return true;
+  }),
   google:async()=>{
     return;   // Google sign-in is switched off for now (the button is greyed out); remove this line to bring it back
     if(!ageOk(false))return;   // on Create account; Google sign-ups are also checked at the date of birth step
@@ -2098,6 +2276,10 @@ const A={
   block:async d=>{if(await run('block_user',{p_user:d.id})===undefined)return;track('block');toast(`Blocked ${uname(d.id)}. You won't see their activities and they can't request yours.`);render()},
   unblock:async d=>{if(await run('unblock_user',{p_user:d.id})!==undefined)toast(`Unblocked ${uname(d.id)}`)},
   share:d=>{track('share_opened',{kind:d.k});ui.modal={type:'share',id:d.id,k:d.k,back:ui.modal};render()},
+  mapfit:()=>{mapPreview(null);mapFit(true)},
+  maphome:()=>{mapPreview(null);liveMap?.flyTo(kmBetween(homeLL(),viewLL())<=NEAR_KM?homeLL():viewLL(),14,{duration:.5})},
+  mapclose:()=>mapPreview(null),
+  save:d=>{const on=isSaved(d.id);S.saved=on?S.saved.filter(x=>x!==d.id):[...S.saved,d.id].slice(-100);save();track(on?'unsave':'save_plan');toast(on?'Removed from saved':'Saved. Find it under Requests.');render()},
   follow:d=>{const on=S.following.includes(d.id);S.following=on?S.following.filter(x=>x!==d.id):[...S.following,d.id];save();track(on?'unfollow':'follow');toast(on?`Unfollowed ${uname(d.id)}`:`Following ${uname(d.id)}. You'll hear when they post.`);render()},
   acceptterms:async(d,e)=>{e.target.closest('button').disabled=true;if(await run('accept_terms')===undefined){e.target.closest('button').disabled=false;return}track('terms_accepted');ui.modal=null;render()},
   safetyok:()=>{const nx=ui.modal?.next;S.tips.safety1=true;save();track('safety_seen');ui.modal=null;if(nx)nx();else render()},
@@ -2115,6 +2297,9 @@ const A={
     if(val('del_ok').toUpperCase()!=='DELETE')return toast('Type DELETE to confirm');
     e.target.closest('button').disabled=true;
     try{await call('delete_my_account')}catch(err){e.target.closest('button').disabled=false;return}
+    /* the database can't remove files: delete the photos with this login's token, which works until it expires */
+    const mine=[S.me.photoPath,S.me.photo2Path].filter(Boolean);
+    if(mine.length)await SB.storage.from('avatars').remove(mine).catch(()=>{});
     track('account_deleted');
     /* the login no longer exists, so only clear this device */
     try{await SB.auth.signOut({scope:'local'})}catch(err){}
@@ -2125,7 +2310,7 @@ const A={
   /* chat */
   newpoll:d=>{ui.modal={type:'poll',id:d.id,back:ui.modal};render()},
   dopoll:async d=>{
-    const q=val('pl_q'),opts=[0,1,2,3].map(i=>val('pl_o'+i)).filter(Boolean);
+    const q=tidyWhen(val('pl_q')).slice(0,80),opts=[0,1,2,3].map(i=>tidyWhen(val('pl_o'+i)).slice(0,40)).filter(Boolean);
     if(!q||opts.length<2)return toast('Add a question and at least 2 options');
     if(await run('send_message',{p_act:d.id,p_body:null,p_poll:{q,opts}})===undefined)return;
     track('poll_created',{options:opts.length});ui.modal=ui.modal?.back||{type:'chat',id:d.id};render();
@@ -2190,7 +2375,7 @@ const A={
     if(ui.modal?.emo)p.emo=ui.modal.emo;
     S.me.trusted=tn?{name:tn.slice(0,40),phone:tp.slice(0,20)}:null;save();
     if(await run('save_profile',{p})===undefined)return;
-    if(p.emo){savePhoto('');S.me.photo=''}
+    if(p.emo&&S.me.photoPath&&!await setPhoto(null))return;   // picking an emoji replaces the photos
     track('profile_saved');ui.modal=null;toast('Profile saved');render();
   },
   editprofile:d=>{ui.modal={type:'editprofile'};render();if(d.k==='safety')document.getElementById('ep_safety')?.scrollIntoView({block:'start'})},
@@ -2201,11 +2386,11 @@ const A={
     const pv=document.getElementById('ep_av');if(pv)pv.innerHTML=`<span class="av emo lg" style="background:${PASTEL[0]}" aria-hidden="true">${esc(d.e)}</span>`;
   },
   emojipick:()=>{photoMenu(false);ui.modal={type:'emoji'};render()},
-  setemo:async d=>{if(await run('save_profile',{p:{emo:d.e}})===undefined)return;savePhoto('');S.me.photo='';track('avatar_emoji');ui.modal=null;toast('Emoji updated');render()},
+  setemo:async d=>{if(await run('save_profile',{p:{emo:d.e}})===undefined)return;if(S.me.photoPath&&!await setPhoto(null))return;track('avatar_emoji');ui.modal=null;toast('Emoji updated');render()},
   /* No photo yet: go straight to the picker. Otherwise offer change/remove. */
   photo:()=>{photoMenu(document.getElementById('p_menu')?.hidden)},
-  pickphoto:()=>{photoMenu(false);(document.getElementById('p_photo')||photoInput()).click()},
-  rmphoto:()=>{photoMenu(false);savePhoto('');S.me.photo='';toast('Photo removed. Showing your emoji.');if(ui.modal?.type==='editprofile')render();else refreshMyPhoto()},
+  pickphoto:d=>{photoMenu(false);cropSlot=d.k==='2'&&S.me.photo?2:1;(document.getElementById('p_photo')||photoInput()).click()},
+  rmphoto:async()=>{photoMenu(false);if(!await setPhoto(null))return;if(!S.me.face)toast('Photos removed. Showing your emoji.');if(ui.modal?.type==='editprofile')render();else refreshMyPhoto()},
   /* onboarding */
   ob2:async(d,e)=>{
     const p={name:val('o_name'),dob:val('o_dob'),gender:val('o_gender'),hood:val('o_hood'),ints:many('o_int'),avail:many('o_avail')};
@@ -2260,7 +2445,7 @@ document.addEventListener('input',e=>{
   if(e.target.id==='a_code'){
     const i=e.target,v=i.value.replace(/\D/g,'').slice(0,6);if(i.value!==v)i.value=v;
     if(v&&i.getAttribute('aria-invalid'))fieldMsg('a_code','');
-    otpDraw();if(v.length===6)A.checkcode();  // typed, pasted, or filled in from the SMS
+    otpDraw();if(v.length===6)(ui.auth.mode==='ecode'?A.checkecode:A.checkcode)();  // typed, pasted, or filled in from the SMS
   }
   if(e.target.id==='a_phone'){
     const i=e.target,atEnd=i.selectionStart===i.value.length,n=phoneDigits(i.value);
@@ -2287,6 +2472,7 @@ document.addEventListener('keyup',e=>{if(e.target.classList?.contains('pwi'))cap
 document.addEventListener('mousedown',e=>{if(e.target.closest('.vopt'))e.preventDefault()});
 document.addEventListener('focusout',e=>{const id=e.target.id,box=PF[id]&&e.target.closest('.vbox');if(box)setTimeout(()=>{if(!box.contains(document.activeElement))placeList(id,false)},200)});
 document.addEventListener('change',e=>{
+  if(e.target.name==='rt_ok'){const w=document.getElementById('rt_wrong');if(w)w.hidden=e.target.value!=='no'}   // "Something went wrong": still in danger, or report it
   if(e.target.id==='d_from'||e.target.id==='d_to'){
     const f=ui.f;f[e.target.id==='d_from'?'dfrom':'dto']=e.target.value;
     if(f.dfrom&&f.dto&&f.dfrom>f.dto)[f.dfrom,f.dto]=[f.dto,f.dfrom];
@@ -2354,19 +2540,31 @@ document.addEventListener('visibilitychange',async()=>{
   const t=await appTag();
   if(t&&t!==appTag0&&!ui.modal&&!saveT)location.reload();
 });
+/* What the welcome page's sign-up box passed on (site.js): read once, and only if it's from the last 10 minutes. */
+function handoff(){
+  let h=null;
+  try{h=JSON.parse(sessionStorage.getItem('overhere_handoff'));sessionStorage.removeItem('overhere_handoff')}catch(e){}
+  if(!h||!['up','in'].includes(h.mode)||!(Date.now()-h.at<6e5))return null;
+  if(h.via==='phone'&&CFG.PHONE_LOGIN&&/^\+91[6-9]\d{9}$/.test(h.phone||''))return {mode:'phone',was:h.mode,phone:h.phone};
+  if(h.via==='email'&&typeof h.email==='string'&&h.email.length<=120)return {mode:h.mode,email:h.email};
+  return null;
+}
 /* You've been here: from now on the landing page sends you straight to the app (head.js). */
 try{localStorage.setItem('overhere_seen','1')}catch(e){}
 if(!ONLINE)render();
 else{
   /* Opened from a password-reset email: ask for the new password before anything else. */
   if(/type=recovery/.test(location.hash))ui.auth={mode:'newpw'};
-  /* "Join the beta" on the landing page opens here with ?join: start on "Create your account". */
-  else if(/[?&]join(&|$)/.test(location.search)){ui.auth={mode:'up'};history.replaceState(null,'',here()+location.hash)}
+  /* The welcome page's sign-up box opens here with ?join or ?signin, and leaves the phone number or email it
+     checked in sessionStorage: start on that step with it filled in. */
+  else if(/[?&](join|signin)(&|$)/.test(location.search)){ui.auth=handoff()||{mode:/[?&]join(&|$)/.test(location.search)?'up':'in'};history.replaceState(null,'',here()+location.hash)}
   SB.auth.onAuthStateChange((ev,session)=>{
     /* don't call Supabase from inside this callback: do it just after */
     setTimeout(()=>{
       if(ev==='PASSWORD_RECOVERY'){ui.auth={mode:'newpw'};ME=null;render();return}
       if(ev==='SIGNED_OUT'){ME=null;MYPHONE='';AUTHU={};S=blank();USERS={};loaded=false;ui=freshUi();render();return}
+      /* phone accounts start on the "Add your email" step (emailStepHtml) */
+      if(session&&session.user.id!==ME&&ui.auth.mode==='code')ui.auth={mode:'eadd'};
       if(session&&session.user.id!==ME&&ui.auth.mode!=='newpw')start();
       else if(!session&&ev==='INITIAL_SESSION')render();
     },0);

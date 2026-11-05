@@ -2,11 +2,13 @@ import type { Session } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import { api, friendly } from './api';
-import { toModel, type Model } from './model';
+import { askedFrom, type Asked, type MicroKey } from './feedback';
+import { saved, toModel, type Model } from './model';
 import { forgetPush } from './push';
 import { supabase } from './supabase';
 
 const EVERYONE = '00000000-0000-0000-0000-000000000000';
+type Priv = Record<string, unknown>;
 
 type Store = {
   ready: boolean;                 // the saved login has been read
@@ -18,8 +20,15 @@ type Store = {
   refresh: () => Promise<void>;
   /* Run an action, then read everything again. Returns the answer, or undefined if it failed (already shown). */
   run: <T>(fn: () => Promise<T>) => Promise<T | true | undefined>;
-  /* Change private settings (profiles.state). The whole object is saved, so other keys are kept. */
-  savePriv: (patch: Record<string, unknown>) => void;
+  /* Change private settings (profiles.state). The whole object is saved, so other keys are kept. Pass a function to
+     build the change from the latest settings, so two quick changes don't undo each other. */
+  savePriv: (patch: Priv | ((priv: Priv) => Priv)) => void;
+  /* What has been asked for feedback (profiles.state.asked, lib/feedback.ts), changed from its latest value. */
+  saveAsked: (f: (a: Asked) => Asked) => void;
+  /* The quick question after a key moment, shown over the tabs (MicroAsk), once per moment. */
+  micro: MicroKey | null;
+  askMicro: (k: MicroKey) => void;
+  endMicro: () => void;
   signOut: () => Promise<void>;
 };
 
@@ -66,8 +75,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [refresh, toast]);
 
   const saveT = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const savePriv = useCallback((patch: Record<string, unknown>) => {
-    setModel(m => (m ? { ...m, priv: { ...m.priv, ...patch } } : m));
+  const savePriv = useCallback((patch: Priv | ((priv: Priv) => Priv)) => {
+    setModel(m => (m ? { ...m, priv: { ...m.priv, ...(typeof patch === 'function' ? patch(m.priv) : patch) } } : m));
     clearTimeout(saveT.current);
     saveT.current = setTimeout(async () => {
       const m = modelRef.current;
@@ -75,6 +84,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       try { await api.saveState(m.priv); } catch { toast("Couldn't save your settings. Check your connection."); }
     }, 700);
   }, [toast]);
+  const saveAsked = useCallback((f: (a: Asked) => Asked) =>
+    savePriv(p => ({ asked: { ...askedFrom(p), ...f(askedFrom(p)) } })), [savePriv]);
+
+  const [micro, setMicro] = useState<MicroKey | null>(null);
+  const askMicro = useCallback((k: MicroKey) => {
+    const m = modelRef.current;
+    if (m && !askedFrom(m.priv)[k]) setMicro(k);
+  }, []);
+  const endMicro = useCallback(() => setMicro(null), []);
 
   const signOut = useCallback(async () => {
     await forgetPush();
@@ -106,8 +124,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => { clearTimeout(t); supabase.removeChannel(ch); sub.remove(); };
   }, [uid, refresh]);
 
-  const value = useMemo<Store>(() => ({ ready, session, model, error, toastMsg, toast, refresh, run, savePriv, signOut }),
-    [ready, session, model, error, toastMsg, toast, refresh, run, savePriv, signOut]);
+  const value = useMemo<Store>(() => ({ ready, session, model, error, toastMsg, toast, refresh, run, savePriv, saveAsked, micro, askMicro, endMicro, signOut }),
+    [ready, session, model, error, toastMsg, toast, refresh, run, savePriv, saveAsked, micro, askMicro, endMicro, signOut]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
@@ -122,4 +140,14 @@ export function useModel(): Model {
   const m = useStore().model;
   if (!m) throw new Error('useModel before the state loaded');
   return m;
+}
+
+/* Save a plan for later, or take it off the list (kept in profiles.state.saved, like the website). */
+export function useToggleSave() {
+  const { model, savePriv, toast } = useStore();
+  return (id: string) => {
+    const l = model ? saved(model) : [], on = l.includes(id);
+    savePriv({ saved: on ? l.filter(x => x !== id) : [...l, id].slice(-100) });
+    toast(on ? 'Removed from saved' : 'Saved. Find it in My plans.');
+  };
 }

@@ -7,14 +7,19 @@ import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-na
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
+import { DECK } from '@/lib/layout';
 import { kmAway, placeLine, spotTxt, tags, uname, whenStr, type Model, type Plan } from '@/lib/model';
 import { photoOf } from '@/lib/photos';
+import { sharePlan } from '@/lib/share';
 import { R, useTheme } from '@/lib/theme';
 import { CatPill, Icon } from './ui';
 
 /* The top card follows your finger on the UI thread (Reanimated), so it stays smooth on budget phones.
-   Past a third of the screen it flies off: right asks to join, left skips. */
-export function SwipeDeck({ m, cards, onSwipe }: { m: Model; cards: Plan[]; onSwipe: (a: Plan, dir: 'left' | 'right') => void }) {
+   Past a third of the screen it flies off: right asks to join, left skips. With holdLeft (your first skip asks "are you
+   sure?") a skip comes back like a request does, and the card goes once you say OK. */
+export function SwipeDeck({ m, cards, onSwipe, holdLeft }: {
+  m: Model; cards: Plan[]; onSwipe: (a: Plan, dir: 'left' | 'right') => void; holdLeft?: boolean;
+}) {
   const t = useTheme();
   const { width } = useWindowDimensions();
   const x = useSharedValue(0);
@@ -37,10 +42,10 @@ export function SwipeDeck({ m, cards, onSwipe }: { m: Model; cards: Plan[]; onSw
       'worklet';
       const fling = Math.abs(e.velocityX) > 900;
       if (Math.abs(e.translationX) > limit || fling) {
-        if ((fling ? e.velocityX : e.translationX) > 0) {
-          /* a request opens its own sheet, so the card comes back */
+        if ((fling ? e.velocityX : e.translationX) > 0 || holdLeft) {
+          /* a request (or the first skip) opens its own sheet, so the card comes back */
           x.set(withSpring(0)); y.set(withSpring(0));
-          scheduleOnRN(done, 'right' as const);
+          scheduleOnRN(done, (fling ? e.velocityX : e.translationX) > 0 ? 'right' as const : 'left' as const);
         } else {
           /* the card is removed once it has flown off */
           x.set(withTiming(-width * 1.4, { duration: 220 }, () => { scheduleOnRN(done, 'left' as const); }));
@@ -61,12 +66,13 @@ export function SwipeDeck({ m, cards, onSwipe }: { m: Model; cards: Plan[]; onSw
   if (!top) return null;
   const next = cards[1];
   const tap = (dir: 'left' | 'right') => {
-    if (dir === 'left') x.set(withTiming(-width * 1.4, { duration: 220 }, () => { scheduleOnRN(done, 'left' as const); }));
-    else done('right');
+    if (dir === 'left' && !holdLeft) x.set(withTiming(-width * 1.4, { duration: 220 }, () => { scheduleOnRN(done, 'left' as const); }));
+    else done(dir);
   };
 
+  /* on a tablet the card stays card-sized in the middle (lib/layout.ts) */
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, width: '100%', maxWidth: DECK, alignSelf: 'center' }}>
       <View style={{ flex: 1 }}>
         {next ? <Animated.View style={[StyleSheet.absoluteFill, nextStyle]}><DeckCard m={m} a={next} /></Animated.View> : null}
         <GestureDetector gesture={pan}>
@@ -99,6 +105,11 @@ function DeckCard({ m, a, onOpen }: { m: Model; a: Plan; onOpen?: () => void }) 
     <Pressable onPress={onOpen} accessibilityRole="button" accessibilityLabel={`${a.desc}, ${whenStr(a.when)}`} style={s.card}>
       <Image source={photoOf(a)} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
       <LinearGradient colors={['transparent', 'rgba(0,0,0,.25)', 'rgba(0,0,0,.85)']} locations={[0.35, 0.55, 1]} style={StyleSheet.absoluteFill} />
+      {onOpen && a.host !== m.me ? (
+        <Pressable accessibilityRole="button" accessibilityLabel="Share this plan" hitSlop={8} onPress={() => sharePlan(a)} style={s.share}>
+          <Icon name="share" size={18} color="#fff" />
+        </Pressable>
+      ) : null}
       <View style={s.body}>
         <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
           <View style={s.pillBg}><CatPill cat={a.cat} light /></View>
@@ -121,6 +132,7 @@ const s = StyleSheet.create({
   pillBg: { backgroundColor: 'rgba(255,255,255,.92)', borderRadius: 99 },
   tag: { backgroundColor: 'rgba(0,0,0,.35)', borderRadius: 99, paddingHorizontal: 9, paddingVertical: 3 },
   tagT: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  share: { position: 'absolute', top: 14, right: 14, width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(20,16,12,.45)', alignItems: 'center', justifyContent: 'center' },
   stamp: { position: 'absolute', top: 28, borderWidth: 3, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: 'rgba(255,255,255,.85)' },
   stampT: { fontSize: 22, fontWeight: '900', letterSpacing: 2 },
   btns: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 22, paddingVertical: 14 },

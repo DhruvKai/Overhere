@@ -1,10 +1,26 @@
-// Finishes a face check: asks AWS for the liveness result and records pass or fail in the database.
-// The browser only sends the session id; the decision is made here, from AWS's answer.
-import { GetFaceLivenessSessionResultsCommand } from 'npm:@aws-sdk/client-rekognition@3';
+// Finishes a face check: asks AWS for the liveness result, compares the live face with both of the person's photos,
+// and records pass or fail in the database. The browser only sends the session id; the decision is made here.
+import { CompareFacesCommand, GetFaceLivenessSessionResultsCommand } from 'npm:@aws-sdk/client-rekognition@3';
 import { admin, caller, corsHeaders, guard, json, rekognition, smallJson } from '../_shared/common.ts';
 
 // Confidence (0-100) that it was a live person. AWS suggests starting around 80; raise it to be stricter.
 const MIN_CONFIDENCE = Number(Deno.env.get('FACE_MIN_CONFIDENCE') ?? '80');
+// Similarity (0-100) between the live face and each photo for it to count as the same person.
+const MIN_MATCH = Number(Deno.env.get('FACE_MIN_MATCH') ?? '90');
+
+/** How similar the live face is to a photo (0-100), or null when either image has no usable face. */
+async function matchScore(live: Uint8Array, photo: Uint8Array): Promise<number | null> {
+  try {
+    const r = await rekognition().send(new CompareFacesCommand({
+      SourceImage: { Bytes: live }, TargetImage: { Bytes: photo }, SimilarityThreshold: 0, QualityFilter: 'AUTO',
+    }));
+    return Math.max(0, ...(r.FaceMatches ?? []).map((m) => m.Similarity ?? 0));   // 0: faces found, not the same
+  } catch (e) {
+    // InvalidParameterException: no face found in one of the images
+    console.warn('face-result compare', (e as Error).name);
+    return null;
+  }
+}
 
 Deno.serve(async (req) => {
   const early = guard(req);
@@ -23,16 +39,46 @@ Deno.serve(async (req) => {
       return json({ error: 'Still checking. Please try again in a moment.' }, 409, h);
     }
     const score = typeof res.Confidence === 'number' ? res.Confidence : 0;
-    const passed = res.Status === 'SUCCEEDED' && score >= MIN_CONFIDENCE;
+    const live = res.Status === 'SUCCEEDED' && score >= MIN_CONFIDENCE;
+
+    // Same person as both photos? The reference image is the frame AWS picked from the video. It and the photos are
+    // only compared here and never stored; only the similarity scores are recorded. Both have to match, so neither
+    // photo can be of someone else. `which` says which photo failed (1 or 2), so the message can name it.
+    const match: (number | null)[] = [];
+    let reason = live ? '' : 'not_live', which = 0;
+    if (live) {
+      const db = admin();
+      const { data: prof } = await db.from('profiles').select('photo, photo2').eq('id', user.id).maybeSingle();
+      const ref = res.ReferenceImage?.Bytes;
+      if (!prof?.photo || !prof?.photo2) reason = 'no_photo';
+      else if (!ref) reason = 'no_reference';
+      else {
+        for (const [i, path] of [prof.photo, prof.photo2].entries()) {
+          const file = await db.storage.from('avatars').download(path);
+          if (file.error || !file.data) { reason = 'photo_missing'; which = i + 1; break; }
+          const m = await matchScore(ref, new Uint8Array(await file.data.arrayBuffer()));
+          match.push(m === null ? null : Math.round(m * 10) / 10);
+          if (m === null || m < MIN_MATCH) { reason = m === null ? 'no_face' : 'no_match'; which = i + 1; break; }
+        }
+      }
+    }
+    const passed = live && reason === '';
 
     // Checks the session belongs to this person, was started in the last 30 minutes and wasn't used before.
-    // Only the outcome is stored: no images (the reference image AWS returns is dropped here).
     const { data: status, error } = await admin().rpc('verify_finish_service', {
       p_user: user.id, p_kind: 'face', p_session: sessionId, p_passed: passed,
-      p_score: Math.round(score * 100) / 100, p_detail: { aws_status: res.Status },
+      p_score: Math.round(score * 100) / 100,
+      p_detail: { aws_status: res.Status, match, photo: which || null, reason: reason || null },
     });
     if (error) return json({ error: error.message }, 400, h);
-    return json({ status }, 200, h);
+    // Tell the person why, so a retry can fix it (better light, or a clearer photo), naming the photo at fault.
+    const nth = which === 2 ? 'second photo' : 'first photo';
+    const why = { not_live: "We couldn't confirm it was a live person. Try again in good light, facing the camera.",
+      no_photo: 'Add two photos of your face first.', photo_missing: `Upload your ${nth} again, then retry.`,
+      no_reference: 'The check could not finish. Please try again.',
+      no_face: `We couldn't see a face clearly in your ${nth}. Replace it with a clear, front-facing photo.`,
+      no_match: `Your face didn't match your ${nth}. Replace it with a recent, clear photo of yourself.` }[reason];
+    return json({ status, reason: reason || null, message: passed ? null : why }, 200, h);
   } catch (e) {
     console.error('face-result', e);
     return json({ error: 'The face check could not finish. Please try again.' }, 500, h);

@@ -4,13 +4,13 @@
     "slug": "overhere",
     "scheme": "overhere",
     "version": "0.1.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#F5F0E6",
     "ios": {
       "bundleIdentifier": "social.overhere.app",
-      "supportsTablet": false,
+      "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "Overhere uses the camera for the face check, which shows other people you're a real person."
       }
@@ -22,7 +22,9 @@
         "backgroundColor": "#3F7D4E"
       },
       "predictiveBackGestureEnabled": false,
-      "permissions": ["android.permission.CAMERA"]
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -47,10 +49,23 @@
       "@react-native-community/datetimepicker",
       "expo-font",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Overhere uses your photos so you can choose a profile picture.",
+          "microphonePermission": false
+        }
+      ],
+      [
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",
           "color": "#3F7D4E"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Overhere uses your location only when you ask: to add where you are to an SOS message, or to find your area."
         }
       ]
     ],

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com 'wasm-unsafe-eval'; frame-src 'self' https://challenges.cloudflare.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://tile.openstreetmap.org; media-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://*.amazonaws.com wss://*.amazonaws.com https://photon.komoot.io; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com 'wasm-unsafe-eval'; frame-src 'self' https://challenges.cloudflare.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://tile.openstreetmap.org https://*.supabase.co; media-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://*.amazonaws.com wss://*.amazonaws.com https://photon.komoot.io; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Overhere</title>
@@ -15,9 +15,9 @@
 <script src="head.js" data-manifest="manifest.webmanifest"></script>
 <link rel="stylesheet" href="fonts/fonts.css">
 <style>
-:root{--bg:#F5F0E6;--card:#FFFDF8;--ink:#1A1A1A;--mute:#6B6B6B;--line:#E7DFCF;--field:#EFE8DA;--acc:#3F7D4E;--acch:#336842;--acc2:#E7F0E1;--accink:#2E6139;--ok:#15803D;--okbg:#DCFCE7;--bad:#B91C1C;--badbg:#FEE2E2;--warn:#A16207;--warnbg:#FEF3C7;--info:#1D4ED8;--infobg:#DBEAFE;--grey:#EFE8DA;--shadow:0 2px 14px rgba(26,26,26,.06);--r:20px;--page:#E8E0CF;--chip:#fff;--lineh:#D6CCB8;--ph:#A8A08E;--acc2h:#D8E8CF;--badh:#FECACA;--okh:#BBF7D0;--greyh:#E6DECE;--wbg:#FFFBEB;--wline:#FDE68A;--wink:#92400E;--hover:#FAF6EE;--newbg:#F4F8F0;--ink2:#3F3F3F;--okline:#A7F3D0;--mapbg:#E9E3D6;color-scheme:light}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15130F;--card:#201D18;--ink:#F2EDE4;--mute:#A39C8E;--line:#34302A;--field:#2A2620;--acc:#4A8F5B;--acch:#5AA06B;--acc2:#1F3325;--accink:#9FD3AA;--ok:#4ADE80;--okbg:#14301F;--bad:#F87171;--badbg:#3A1717;--warn:#FBBF24;--warnbg:#3A2E10;--info:#93C5FD;--infobg:#172A45;--grey:#2A2620;--shadow:0 2px 14px rgba(0,0,0,.35);--page:#0C0B09;--chip:#26221C;--lineh:#4A443A;--ph:#6F685C;--acc2h:#28432F;--badh:#4A1D1D;--okh:#1B3F28;--greyh:#332E27;--wbg:#33280E;--wline:#5C4812;--wink:#FCD34D;--hover:#27231D;--newbg:#1C2A1F;--ink2:#CFC8BB;--okline:#1F5134;--mapbg:#1E1B16;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#15130F;--card:#201D18;--ink:#F2EDE4;--mute:#A39C8E;--line:#34302A;--field:#2A2620;--acc:#4A8F5B;--acch:#5AA06B;--acc2:#1F3325;--accink:#9FD3AA;--ok:#4ADE80;--okbg:#14301F;--bad:#F87171;--badbg:#3A1717;--warn:#FBBF24;--warnbg:#3A2E10;--info:#93C5FD;--infobg:#172A45;--grey:#2A2620;--shadow:0 2px 14px rgba(0,0,0,.35);--page:#0C0B09;--chip:#26221C;--lineh:#4A443A;--ph:#6F685C;--acc2h:#28432F;--badh:#4A1D1D;--okh:#1B3F28;--greyh:#332E27;--wbg:#33280E;--wline:#5C4812;--wink:#FCD34D;--hover:#27231D;--newbg:#1C2A1F;--ink2:#CFC8BB;--okline:#1F5134;--mapbg:#1E1B16;color-scheme:dark}
+:root{--bg:#F5F0E6;--card:#FFFDF8;--ink:#1A1A1A;--mute:#6B6B6B;--line:#E7DFCF;--field:#EFE8DA;--acc:#3F7D4E;--acch:#336842;--acc2:#E7F0E1;--accink:#2E6139;--ok:#15803D;--okbg:#DCFCE7;--bad:#B91C1C;--badbg:#FEE2E2;--warn:#A16207;--warnbg:#FEF3C7;--info:#1D4ED8;--infobg:#DBEAFE;--grey:#EFE8DA;--shadow:0 2px 14px rgba(26,26,26,.06);--r:20px;--page:#E8E0CF;--chip:#fff;--lineh:#D6CCB8;--ph:#A8A08E;--acc2h:#D8E8CF;--badh:#FECACA;--okh:#BBF7D0;--greyh:#E6DECE;--wbg:#FFFBEB;--wline:#FDE68A;--wink:#92400E;--hover:#FAF6EE;--newbg:#F4F8F0;--ink2:#3F3F3F;--okline:#A7F3D0;--mapbg:#E9E3D6;--btn:#3F7D4E;--btnh:#336842;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15130F;--card:#201D18;--ink:#F2EDE4;--mute:#A39C8E;--line:#34302A;--field:#2A2620;--acc:#4A8F5B;--acch:#5AA06B;--acc2:#1F3325;--accink:#9FD3AA;--ok:#4ADE80;--okbg:#14301F;--bad:#F87171;--badbg:#3A1717;--warn:#FBBF24;--warnbg:#3A2E10;--info:#93C5FD;--infobg:#172A45;--grey:#2A2620;--shadow:0 2px 14px rgba(0,0,0,.35);--page:#0C0B09;--chip:#26221C;--lineh:#4A443A;--ph:#6F685C;--acc2h:#28432F;--badh:#4A1D1D;--okh:#1B3F28;--greyh:#332E27;--wbg:#33280E;--wline:#5C4812;--wink:#FCD34D;--hover:#27231D;--newbg:#1C2A1F;--ink2:#CFC8BB;--okline:#1F5134;--mapbg:#1E1B16;--btn:#3F7D4E;--btnh:#336842;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15130F;--card:#201D18;--ink:#F2EDE4;--mute:#A39C8E;--line:#34302A;--field:#2A2620;--acc:#4A8F5B;--acch:#5AA06B;--acc2:#1F3325;--accink:#9FD3AA;--ok:#4ADE80;--okbg:#14301F;--bad:#F87171;--badbg:#3A1717;--warn:#FBBF24;--warnbg:#3A2E10;--info:#93C5FD;--infobg:#172A45;--grey:#2A2620;--shadow:0 2px 14px rgba(0,0,0,.35);--page:#0C0B09;--chip:#26221C;--lineh:#4A443A;--ph:#6F685C;--acc2h:#28432F;--badh:#4A1D1D;--okh:#1B3F28;--greyh:#332E27;--wbg:#33280E;--wline:#5C4812;--wink:#FCD34D;--hover:#27231D;--newbg:#1C2A1F;--ink2:#CFC8BB;--okline:#1F5134;--mapbg:#1E1B16;--btn:#3F7D4E;--btnh:#336842;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%}
 body{font:14.5px/1.45 "Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--page);display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased}
@@ -94,8 +94,9 @@ p{margin:0 0 6px}
 .hd .btn{flex:0 0 auto}
 
 /* buttons */
-.btn{border:0;background:var(--acc);color:#fff;font-weight:600;padding:13px 18px;border-radius:99px;font-size:14.5px;cursor:pointer;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:background .15s,transform .1s}
-.btn:hover{background:var(--acch)}.btn:active{transform:scale(.98)}
+/* --btn rather than --acc: the dark-mode accent is too light behind white text (4.5:1) */
+.btn{border:0;background:var(--btn);color:#fff;font-weight:600;padding:13px 18px;border-radius:99px;font-size:14.5px;cursor:pointer;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:background .15s,transform .1s}
+.btn:hover{background:var(--btnh)}.btn:active{transform:scale(.98)}
 .btn.sec{background:var(--acc2);color:var(--accink)}.btn.sec:hover{background:var(--acc2h)}
 .btn.bad{background:var(--badbg);color:var(--bad)}.btn.bad:hover{background:var(--badh)}
 .btn.ok{background:var(--okbg);color:var(--ok)}.btn.ok:hover{background:var(--okh)}
@@ -240,6 +241,14 @@ input[aria-invalid=true],input[aria-invalid=true]:focus{border-color:var(--bad)}
 .card .art{position:absolute;inset:0;display:flex;justify-content:center;padding-top:22%;color:rgba(255,255,255,.13)}
 .card .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 28%,rgba(0,0,0,.5) 52%,rgba(12,9,6,.93) 100%)}
 .card .cp{position:absolute;top:14px;left:14px}
+/* save (Discover cards) and share (Swipe card): round buttons on the photo */
+.svb,.shb{position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:50%;border:0;background:rgba(20,16,12,.45);color:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:transform .12s,background .15s}
+.svb:hover,.shb:hover{background:rgba(20,16,12,.65)}.svb:active,.shb:active{transform:scale(.92)}
+.svb.on{background:#fff;color:var(--acc)}.svb.on .i{fill:currentColor}
+.shb{top:12px;right:12px}
+.sech{display:flex;align-items:center;gap:6px;margin:18px 0 10px}
+.ob-av{display:flex;justify-content:center;margin:18px 0}.ob-av .av{width:120px;height:120px;font-size:56px}
+.wrongbox{background:var(--badbg,#FEE2E2);border-radius:16px;padding:14px;margin:10px 0 4px}.wrongbox>b{display:block;margin-bottom:10px}.wrongbox[hidden]{display:none}
 .card .body{position:absolute;left:0;right:0;bottom:0;padding:18px 18px 20px}
 .card .who{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin-bottom:8px}
 .card .vf{color:#A7D7A0}
@@ -358,6 +367,24 @@ a.btn{text-decoration:none}
 .alchip.sf .lnk{display:inline-flex;align-items:center;gap:4px;padding:0;color:inherit;font-weight:600;font-size:12.5px;text-decoration:none;border-radius:0}
 .map{position:relative;z-index:0;height:400px;border-radius:var(--r);overflow:hidden;background:var(--mapbg);box-shadow:var(--shadow);font:inherit}
 @media(min-width:900px){.map{height:500px}}
+/* the map fills most of a phone screen; buttons top right, the preview card at the bottom */
+@media(max-width:899px){.map{height:min(68dvh,560px)}}
+.mapw{position:relative}
+.mctl{position:absolute;top:10px;right:10px;z-index:500;display:flex;flex-direction:column;gap:6px}
+.mcb{width:40px;height:40px;border-radius:12px;border:0;background:var(--card);color:var(--ink);box-shadow:var(--shadow);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.mcb:active{transform:scale(.94)}
+.lclu{display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--acc);color:#fff;font-weight:800;font-size:14px;border:3px solid #fff;box-shadow:0 0 0 6px rgba(63,125,78,.25),0 4px 10px rgba(0,0,0,.25);cursor:pointer;transition:transform .12s}
+.lclu:hover{transform:scale(1.08)}
+.mprev{position:absolute;left:10px;right:10px;bottom:10px;z-index:600;background:var(--card);border-radius:18px;padding:14px;box-shadow:0 12px 32px rgba(0,0,0,.25);animation:mpin .25s cubic-bezier(.16,1,.3,1)}
+.mprev[hidden]{display:none}
+@keyframes mpin{from{opacity:0;transform:translateY(12px)}}
+@media(prefers-reduced-motion:reduce){.mprev{animation:none}}
+.mpx{position:absolute;top:8px;right:8px}
+.mp1{display:flex;gap:12px;align-items:center;cursor:pointer;padding-right:30px}.mp1 .thumb{width:72px;height:72px;flex:0 0 auto}
+.mp1 .t{font-weight:700;margin:4px 0 2px;line-height:1.3}
+.mpl{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow:auto;padding-right:30px}
+.mpr{display:flex;gap:10px;align-items:center;border:0;background:var(--field);border-radius:12px;padding:6px;text-align:left;cursor:pointer;color:var(--ink);font:inherit}
+.mpr .thumb{width:44px;height:44px;flex:0 0 auto}.mpr b{display:block;font-size:14px}.mpr small{color:var(--mute)}
 .vbox{position:relative}
 .vlist{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.18);max-height:264px;overflow-y:auto;padding:4px}
 .vopt{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 12px;border-radius:10px;cursor:pointer;color:var(--ink);font:inherit}
@@ -426,7 +453,7 @@ a.btn{text-decoration:none}
 
 /* notifications */
 .nh{display:flex;align-items:center;gap:12px;margin-bottom:6px}
-.lnk{white-space:nowrap;border:0;background:none;color:var(--acc);font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:6px}
+.lnk{white-space:nowrap;border:0;background:none;color:var(--accink);font-size:12.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:6px}
 .lnk.m{color:var(--mute);font-weight:500}
 .nsh{font-size:13px;font-weight:600;color:var(--mute);margin:18px 2px 8px;display:flex;align-items:center;gap:6px}
 .nsh b{background:var(--acc);color:#fff;border-radius:99px;padding:0 7px;font-size:11px;line-height:18px}
@@ -471,6 +498,20 @@ a.btn{text-decoration:none}
 .phw .pe{position:absolute;right:-6px;bottom:-6px;width:30px;height:30px;border-radius:50%;border:2px solid var(--card);background:var(--acc);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .phw .pe:hover{background:var(--acch)}
 .phw>.av{cursor:pointer}
+/* the two photos the face check is matched against: two slots side by side, then what makes a photo pass */
+.ppair{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:360px;margin:14px auto 12px}
+.pslot{position:relative;aspect-ratio:1;border:2px dashed var(--lineh);border-radius:18px;background:var(--chip);color:var(--mute);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;overflow:hidden;padding:0;font:inherit;font-size:13.5px;font-weight:600}
+.pslot:hover:not(:disabled){border-color:var(--acc);color:var(--acc)}
+.pslot:disabled{opacity:.5;cursor:not-allowed}
+.pslot.on{border:0}
+.pslot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pslot.on span{position:absolute;left:8px;bottom:8px;padding:4px 10px;border-radius:99px;background:rgba(20,16,12,.6);color:#fff;font-size:12px}
+.ptips{list-style:none;margin:0 auto 14px;padding:0;max-width:360px;display:grid;gap:8px;font-size:13.5px;color:var(--mute)}
+.ptips li{display:flex;gap:9px;align-items:flex-start}.ptips .i{flex:0 0 auto;margin-top:2px;color:var(--acc)}
+/* someone's two photos on their profile, swiped sideways */
+.gal{display:flex;align-items:flex-start;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 0 16px;border-radius:20px;scrollbar-width:none}
+.gal::-webkit-scrollbar{display:none}
+.gal img{flex:0 0 80%;width:80%;min-width:0;height:auto;aspect-ratio:4/5;object-fit:cover;border-radius:20px;scroll-snap-align:start;background:var(--field)}
 .pmenu{position:absolute;left:0;top:calc(100% + 10px);z-index:20;min-width:170px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(26,26,26,.14);padding:6px;display:flex;flex-direction:column}
 .pmenu[hidden]{display:none}
 .pmenu button{border:0;background:none;display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:9px;font:inherit;font-size:13.5px;color:var(--ink);cursor:pointer;text-align:left}
@@ -490,6 +531,7 @@ a.btn{text-decoration:none}
 .msg .who{font-size:11px;font-weight:700;color:var(--acch)}
 .msg.sys{margin:8px auto;background:none;box-shadow:none;font-size:12px;color:var(--mute);text-align:center;max-width:100%}
 .cin{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--line)}
+.cin.closed{align-items:center;color:var(--mute);font-size:13.5px;background:var(--field)}.cin.closed .i{flex:0 0 auto}
 .cin input{flex:1}.cin button{width:auto}
 #toast{position:absolute;left:14px;right:14px;top:14px;z-index:50;background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:14px;font-size:13.5px;opacity:0;transform:translateY(-12px);transition:.25s;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.2)}
 #toast.show{opacity:1;transform:none}

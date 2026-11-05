@@ -231,6 +231,33 @@ alter table participants add column if not exists user_id uuid;
 -- Usage statistics are opt-in: nothing is logged unless the person ticks "Share usage statistics" (onboarding or Profile).
 alter table profiles add column if not exists usage_ok boolean not null default false;
 
+-- Profile photos (optional; the emoji shows when there are none). Files in the Storage bucket "avatars" at
+-- <user id>/<16 random characters>.jpg, set only through set_photo. photo is the profile picture, photo2 a second
+-- photo shown on the profile. The face check needs both and compares the live face with each.
+alter table profiles add column if not exists photo text;
+alter table profiles drop constraint if exists profiles_photo_check;
+alter table profiles add constraint profiles_photo_check check (photo is null or photo ~ '^[0-9a-f-]{36}/[0-9a-z]{16}\.jpg$');
+alter table profiles add column if not exists photo2 text;
+alter table profiles drop constraint if exists profiles_photo2_check;
+alter table profiles add constraint profiles_photo2_check check (photo2 is null or photo2 ~ '^[0-9a-f-]{36}/[0-9a-z]{16}\.jpg$');
+-- The bucket: readable by link (the paths are only sent to signed-in people, in app_state), at most 200 KB a file
+-- (the apps upload about 50 KB), JPEG only. People can add and delete files in their own folder only, never change
+-- them: a new photo is a new file. The apps delete the old file after set_photo, and the photos on "Delete my account".
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('avatars', 'avatars', true, 204800, array['image/jpeg'])
+on conflict (id) do nothing;
+drop policy if exists avatars_insert_own on storage.objects;
+create policy avatars_insert_own on storage.objects for insert to authenticated
+  with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text
+              and name ~ '^[0-9a-f-]{36}/[0-9a-z]{16}\.jpg$');
+-- Storage only deletes files a person can also list, so they may list their own folder (everyone else reads by link).
+drop policy if exists avatars_select_own on storage.objects;
+create policy avatars_select_own on storage.objects for select to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists avatars_delete_own on storage.objects;
+create policy avatars_delete_own on storage.objects for delete to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+
 alter table profiles        enable row level security;
 alter table activities      enable row level security;
 alter table requests        enable row level security;
@@ -528,7 +555,8 @@ begin
   if (_verify_state(p_user) -> p_kind ->> 'review')::boolean then return; end if;
   insert into verifications (user_id, kind, status, provider) values (p_user, p_kind, 'review', left(p_provider, 30));
   perform _note(p_user, 'update', 'Sent for review', case when p_kind = 'face' then 'Face check' else 'ID check' end, 'warn', null,
-    format('That was %s tries, so a person on our team will now check it by hand. We will send you a notification when it is done.', _verify_max()));
+    format('That was %s tries, so a person on our team will now check it by hand. We will send you a notification when it is done. '
+           || 'To have it sorted sooner, email %s.', _verify_max(), 'admin@overhere.social'));
   perform _ping(array[p_user]);
 end $$;
 
@@ -564,11 +592,44 @@ begin
   if not _simulated(p_kind) then raise exception 'This check is live now. Please use the real check.'; end if;
   if not coalesce(p_consent, false) then raise exception 'Please tick the box to agree first'; end if;
   if not exists (select 1 from profiles where id = u) then raise exception 'Finish your profile first'; end if;
+  if p_kind = 'face' and exists (select 1 from profiles where id = u and (photo is null or photo2 is null)) then
+    raise exception 'Add two photos of your face first';
+  end if;
   if (select count(*) from verifications where user_id = u and created_at > now() - interval '1 hour') >= 30 then
     raise exception 'Too many attempts. Please try again in an hour.';
   end if;
   st := _verify_record(u, p_kind, coalesce(p_pass, true), 'simulated', null, null, jsonb_build_object('consent', true));
   return jsonb_build_object('status', st, 'verify', _verify_state(u));
+end $$;
+
+-- Set or clear (null) one of your two photos, after uploading the file to your folder in "avatars": slot 1 is the
+-- profile picture, slot 2 the second photo. Clearing slot 1 clears both (you're back to your emoji), and slot 2 can
+-- only be set once there is a slot 1. A passed face check was matched against the old photos, so any change clears
+-- the check (it has to be done again). The verification history is kept. Returns the old paths, which the app then
+-- deletes from Storage.
+drop function if exists set_photo(text);
+create or replace function set_photo(p_path text, p_slot int default 1) returns jsonb language plpgsql security definer set search_path = public as $$
+declare u uuid := _uid(); old text; old2 text; was_face boolean;
+begin
+  if p_slot not in (1, 2) then raise exception 'Unknown photo'; end if;
+  if p_path is not null and (p_path !~ ('^' || u::text || '/[0-9a-z]{16}\.jpg$')
+                             or not exists (select 1 from storage.objects where bucket_id = 'avatars' and name = p_path)) then
+    raise exception 'Upload the photo again, then save it';
+  end if;
+  select photo, photo2, face into old, old2, was_face from profiles where id = u for update;
+  if not found then raise exception 'Finish your profile first'; end if;
+  if p_slot = 1 then
+    if old is not distinct from p_path then return jsonb_build_object('old', null, 'old2', null, 'face_reset', false); end if;
+    if p_path is null then update profiles set photo = null, photo2 = null, face = false where id = u;
+    else update profiles set photo = p_path, face = false where id = u; old2 := null; end if;
+  else
+    if old2 is not distinct from p_path then return jsonb_build_object('old', null, 'old2', null, 'face_reset', false); end if;
+    if p_path is not null and old is null then raise exception 'Add your first photo before the second one'; end if;
+    update profiles set photo2 = p_path, face = false where id = u;
+    old := null;
+  end if;
+  perform _ping(array[u]);
+  return jsonb_build_object('old', old, 'old2', old2, 'face_reset', was_face);
 end $$;
 
 -- Called only by the Edge Functions (service role), never by the browser. See supabase/functions.
@@ -583,6 +644,10 @@ begin
   if p_kind not in ('face', 'kyc') then raise exception 'Unknown check'; end if;
   if _simulated(p_kind) then raise exception 'This check is set to simulated in app_config'; end if;
   if not exists (select 1 from profiles where id = p_user) then raise exception 'Finish your profile first'; end if;
+  -- the live face is compared with both photos (face-result), so there have to be two
+  if p_kind = 'face' and exists (select 1 from profiles where id = p_user and (photo is null or photo2 is null)) then
+    raise exception 'Add two photos of your face first';
+  end if;
   vs := _verify_state(p_user);
   if not (vs -> p_kind ->> 'review')::boolean and (vs -> p_kind ->> 'attempts')::int >= _verify_max() then
     perform _verify_to_review(p_user, p_kind, 'limit');
@@ -739,7 +804,7 @@ begin
 
   select coalesce(jsonb_agg(jsonb_build_object(
       'id', p.id, 'name', p.name, 'gender', p.gender, 'age', date_part('year', age(p.dob))::int, 'job', p.job, 'bio', p.bio,
-      'emo', p.emo, 'kyc', p.kyc, 'face', p.face, 'sample', p.is_sample, 'ints', p.ints, 'avail', p.avail, 'hist', p.hist,
+      'emo', p.emo, 'photo', p.photo, 'photo2', p.photo2, 'kyc', p.kyc, 'face', p.face, 'sample', p.is_sample, 'ints', p.ints, 'avail', p.avail, 'hist', p.hist,
       'met', p.trust_met + coalesce(t.met, 0), 'shows', p.trust_shows + coalesce(t.shows, 0))), '[]')
   into j_people from profiles p
   left join lateral (
@@ -1007,11 +1072,17 @@ begin
   perform _ping(array[u, p_user] || _members(p_act));
 end $$;
 
+-- A group chat becomes read-only 3 hours after its plan starts: the meetup is over, so no more messages or votes
+-- (the apps show the history with a note). Change the hours here and in CHAT_OPEN_H in web/app.js and the app.
+create or replace function _chat_closed(a activities) returns boolean language sql stable as $$
+  select a.starts_at < now() - interval '3 hours' $$;
+
 create or replace function send_message(p_act uuid, p_body text, p_poll jsonb default null) returns void language plpgsql security definer set search_path = public as $$
 declare u uuid := _uid(); a activities; body text := trim(coalesce(p_body, '')); poll jsonb;
 begin
   select * into a from activities where id = p_act;
   if not found or not (a.host = u or u = any (_members(p_act))) then raise exception 'Only members can message this group'; end if;
+  if _chat_closed(a) then raise exception 'This chat closed 3 hours after the plan started'; end if;
   if p_poll is not null then
     if jsonb_typeof(p_poll -> 'opts') <> 'array' or jsonb_array_length(p_poll -> 'opts') not between 2 and 4
        or char_length(coalesce(p_poll ->> 'q', '')) not between 1 and 80 then raise exception 'Add a question and 2 to 4 options'; end if;
@@ -1034,6 +1105,7 @@ begin
   if not found or m.poll is null then raise exception 'That poll is gone'; end if;
   select * into a from activities where id = m.act;
   if not (a.host = u or u = any (_members(a.id))) then raise exception 'Only members can vote'; end if;
+  if _chat_closed(a) then raise exception 'This chat closed 3 hours after the plan started'; end if;
   if p_opt < 0 or p_opt >= jsonb_array_length(m.poll -> 'opts') then raise exception 'Pick an option'; end if;
   if exists (select 1 from poll_votes where msg = p_msg and user_id = u and opt = p_opt) then
     delete from poll_votes where msg = p_msg and user_id = u;
@@ -1205,7 +1277,8 @@ declare e text := _admin_err(pass);
 begin
   if e is not null then return jsonb_build_object('error', e); end if;
   -- tries, failures and the best provider score (0-100) since the last decision, to help judge "real person, bad light"
-  return (select coalesce(jsonb_agg(jsonb_build_object('user', p.id, 'name', p.name, 'kind', k.kind, 'since', _ms(v.created_at),
+  -- photo, photo2: the two photos the face check is matched against, to compare by eye (paths in the "avatars" bucket)
+  return (select coalesce(jsonb_agg(jsonb_build_object('user', p.id, 'name', p.name, 'kind', k.kind, 'since', _ms(v.created_at), 'photo', p.photo, 'photo2', p.photo2,
                                       'attempts', (s -> k.kind ->> 'attempts')::int, 'fails', (s -> k.kind ->> 'fails')::int,
                                       'best', (select max(w.score) from verifications w where w.user_id = p.id and w.kind = k.kind
                                                and w.score is not null and w.seq > coalesce((select max(x.seq) from verifications x
@@ -1308,7 +1381,7 @@ do $$ declare f record; begin
   for f in select p.oid::regprocedure sig, p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
            where n.nspname = 'public' and (p.proname like '\_%' or p.proname in ('app_state','save_profile','save_state','post_activity',
              'edit_activity','cancel_activity','request_join','withdraw_request','decide_request','leave_activity','remove_member','send_message','vote',
-             'rate_activity','report','block_user','unblock_user','add_notification','read_notifications','verify_simulated',
+             'rate_activity','report','block_user','unblock_user','add_notification','read_notifications','verify_simulated','set_photo',
              'verify_precheck_service','verify_start_service','verify_finish_service','admin_reviews','admin_decide_review',
              'admin_stats','log_event','send_feedback','delete_my_account','accept_terms','invite_info'))
   loop

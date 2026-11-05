@@ -6,6 +6,24 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { FaceLivenessDetectorCore } from '@aws-amplify/ui-react-liveness';
 import '@aws-amplify/ui-react/styles.css';
+import './theme.css';
+
+// Plainer wording than AWS's defaults, in the app's voice
+const TEXT = {
+  startScreenBeginCheckText: 'Start face check',
+  photosensitivityWarningHeadingText: 'Before you start',
+  photosensitivityWarningBodyText: 'The screen flashes a few colours during the check.',
+  photosensitivityWarningInfoText: 'If flashing light affects you, ask someone to help, or email admin@overhere.social for a manual check.',
+  hintMoveFaceFrontOfCameraText: 'Look at the camera',
+  hintCenterFaceText: 'Centre your face',
+  hintTooFarText: 'Move a little closer',
+  hintTooCloseText: 'Move back a little',
+  hintHoldFaceForFreshnessText: 'Hold still',
+  hintConnectingText: 'Connecting…',
+  hintVerifyingText: 'Checking…',
+  hintCheckCompleteText: 'Done',
+  cancelLivenessCheckText: 'Cancel',
+};
 
 window.OverhereFaceWidget = {
   run(el, { sessionId, region, credentials }) {
@@ -15,10 +33,12 @@ window.OverhereFaceWidget = {
       let settled = false;
       const finish = (fn, v) => { if (settled) return; settled = true; setTimeout(() => root.unmount(), 0); fn(v); };
       root.render(
+        <div className="ovh-face">
         <FaceLivenessDetectorCore
           sessionId={sessionId}
           region={region}
           disableStartScreen={false}
+          displayText={TEXT}
           config={{
             // temporary credentials from face-start: they can only stream video to a liveness session
             credentialProvider: async () => ({
@@ -34,7 +54,8 @@ window.OverhereFaceWidget = {
             e?.state === 'CAMERA_ACCESS_ERROR' ? 'Please allow camera access and try again.'
               : e?.state === 'TIMEOUT' ? 'That took too long. Please try again.'
               : 'The face check stopped. Please try again, in good light.'))}
-        />,
+        />
+        </div>,
       );
     });
   },

@@ -4,7 +4,9 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } fro
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCaptcha } from '@/components/Captcha';
 import { Btn, Field, H, Icon, P } from '@/components/ui';
+import Welcome from '@/components/Welcome';
 import { friendly } from '@/lib/api';
+import { column } from '@/lib/layout';
 import { useStore } from '@/lib/store';
 import { SITE, supabase } from '@/lib/supabase';
 import { useTheme } from '@/lib/theme';
@@ -13,11 +15,15 @@ type Mode = 'phone' | 'code' | 'email' | 'reset' | 'resetSent';
 const RESEND_MS = 30000;
 const phoneDigits = (s: string) => { const d = s.replace(/\D/g, ''); return (d.length > 10 ? d.replace(/^(91|0)(?=\d{10}$)/, '') : d).slice(0, 10); };
 const phoneProblem = (n: string) => (!n ? 'Enter your mobile number' : n.length < 10 ? 'Enter all 10 digits' : !/^[6-9]/.test(n) ? 'Indian mobile numbers start with 6, 7, 8 or 9' : '');
+/* The welcome pages show until someone taps "Create account" or "I already have an account". */
+const SEEN = 'overhere_welcome_seen';
+const seenWelcome = () => { try { return localStorage.getItem(SEEN) === '1'; } catch { return false; } };
 
 export default function SignIn() {
   const t = useTheme();
   const { toast } = useStore();
   const { node: captcha, getToken } = useCaptcha();
+  const [intro, setIntro] = useState(() => !seenWelcome());
   const [mode, setMode] = useState<Mode>('phone');
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
@@ -103,20 +109,25 @@ export default function SignIn() {
     </Pressable>
   );
 
+  if (intro) {
+    return <Welcome onDone={up => { try { localStorage.setItem(SEEN, '1'); } catch { /* shows again next time */ } setSignUp(up); setIntro(false); }} />;
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
       {captcha}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 48 }} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={[{ padding: 24, paddingTop: 48 }, column]} keyboardShouldPersistTaps="handled">
           <View style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: t.acc, alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
             <Icon name="map-pin" size={28} color={t.onAcc} />
           </View>
-          <H size={30}>Overhere</H>
-          <P mute style={{ marginTop: 6, marginBottom: 28 }}>Find people near you for movies, food and concerts.</P>
+          <H size={30}>{signUp ? 'Create your account' : 'Welcome back'}</H>
+          <P mute style={{ marginTop: 6, marginBottom: 28 }}>{signUp ? 'Free, and it takes about a minute.' : 'Sign in to see plans near you.'}</P>
 
           {mode === 'phone' && (<>
             <Field label="Mobile number" value={phone} onChangeText={v => setPhone(phoneDigits(v))} keyboardType="phone-pad"
-              placeholder="98765 43210" textContentType="telephoneNumber" autoComplete="tel" hint="+91 · we'll text you a 6-digit code" />
+              placeholder="98765 43210" textContentType="telephoneNumber" autoComplete="tel"
+              hint={signUp ? "+91 · we'll text you a 6-digit code. Then you'll add your email and confirm it with a code too." : "+91 · we'll text you a 6-digit code"} />
             {Check}
             <Btn title="Send code" onPress={() => sendCode()} busy={busy} />
           </>)}

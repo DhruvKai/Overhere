@@ -1,4 +1,4 @@
-"""Puts the email templates in supabase/templates/ into the live Supabase project (Confirm signup and Reset password).
+"""Puts the email templates in supabase/templates/ into the live Supabase project (Confirm signup, Reset password and Change email address).
 
 Run it from the web folder:
     python tools/push-email-templates.py           # shows what would change, changes nothing
@@ -6,7 +6,7 @@ Run it from the web folder:
 
 It needs a Supabase personal access token in SUPABASE_ACCESS_TOKEN, either set in the shell or in web/.env (which
 .gitignore keeps out of the public repository). The token only needs Auth config read and write on this project.
-It changes the two subjects and two email bodies and nothing else in the auth settings. The old ones are saved to
+It changes the three subjects and three email bodies and nothing else in the auth settings. The old ones are saved to
 supabase/.temp/ (also ignored by git) before anything is changed, so they can be put back.
 """
 import json, os, re, sys, time, urllib.error, urllib.request
@@ -19,6 +19,7 @@ UA = 'OverhereBeta/1.0 (email templates)'
 FIELDS = {
     'confirmation': ('Confirm your Overhere account', 'confirm-signup.html'),
     'recovery': ('Reset your Overhere password', 'reset-password.html'),
+    'email_change': ('Your Overhere email code', 'change-email.html'),
 }
 
 

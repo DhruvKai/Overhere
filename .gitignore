@@ -11,3 +11,6 @@ client_secret_*.json
 *.pem
 .env
 .env.*
+
+# Local test logins (test database only)
+TEST-ACCOUNTS.txt
