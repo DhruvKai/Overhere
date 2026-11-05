@@ -1953,6 +1953,9 @@ async function withCaptcha(fn){
 }
 const phoneDigits=s=>{const d=s.replace(/\D/g,'');return (d.length>10?d.replace(/^(91|0)(?=\d{10}$)/,''):d).slice(0,10)};
 const fmtPhone=d=>d.length>5?d.slice(0,5)+' '+d.slice(5):d;
+/* OTP_GUARD: phone codes go through the otp-verify Edge Function (5 wrong codes pause the number for an hour and
+   email the team). Off until that function is deployed on live: then codes go straight to Supabase, as before. */
+const OTP_GUARD=false;
 const otpPaused=until=>`Too many wrong codes for this number, so phone sign-in is paused until ${new Date(until).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}. Please try again then, or use email.`;
 function phoneProblem(n){return !n?'Enter your mobile number':n.length<10?'Enter all 10 digits':!/^[6-9]/.test(n)?'Indian mobile numbers start with 6, 7, 8 or 9':''}
 async function sendCode(again){
@@ -1961,7 +1964,7 @@ async function sendCode(again){
   const wait=again?Math.ceil((ui.auth.sent+RESEND_MS-Date.now())/1000):0;
   if(wait>0)return toast(`Please wait ${wait}s before asking for a new code`);
   /* paused after 5 wrong codes (otp-verify): don't send a code that can't be used. If the check fails, send anyway. */
-  const p=await edge('otp-verify',{phone:'+91'+n,check:true}).catch(()=>({}));
+  const p=OTP_GUARD?await edge('otp-verify',{phone:'+91'+n,check:true}).catch(()=>({})):{};
   if(p?.until)return again?toast(otpPaused(p.until)):formErr(otpPaused(p.until));
   const {error}=await withCaptcha(t=>SB.auth.signInWithOtp({phone:'+91'+n,options:{captchaToken:t,data:{age_18:true}}}));
   if(error)return again?toast(friendly(error)):formErr(friendly(error));
@@ -2097,8 +2100,11 @@ const A={
     const i=document.getElementById('a_code'),token=(i?.value||'').replace(/\D/g,'');
     if(token.length!==6){fieldMsg('a_code',token?'Enter all 6 digits':'Enter the code from the SMS');i?.focus();return}
     /* checked by the otp-verify Edge Function, which pauses a number for an hour after 5 wrong codes and hands back the session */
-    let r;try{r=await edge('otp-verify',{phone:ui.auth.phone,token})}catch(e){return codeWrong(friendly(e))}
-    const {error}=await SB.auth.setSession(r.session);
+    let error;
+    if(OTP_GUARD){
+      let r;try{r=await edge('otp-verify',{phone:ui.auth.phone,token})}catch(e){return codeWrong(friendly(e))}
+      ({error}=await SB.auth.setSession(r.session));
+    }else ({error}=await SB.auth.verifyOtp({phone:ui.auth.phone,token,type:'sms'}));
     if(error)return codeWrong(friendly(error));
     otpAbort?.abort();track('phone_signed_in');
     return true;   // signed in: onAuthStateChange takes it from here

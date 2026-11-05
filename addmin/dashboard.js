@@ -49,6 +49,9 @@ async function rpc(fn,body){
 async function fetchReviews(){if(!REMOTE)return null;try{return await rpc('admin_reviews',{pass:PASS})}catch(e){return null}}
 /* The face-review Edge Function: frames from failed face scans (private, signed links for an hour), and decisions,
    which also delete that person's frames. The password is checked by the database, as for rpc(). */
+/* FACE_REVIEW_FN: off until the face-review Edge Function is deployed on live. While off, there are no scan frames
+   and face decisions go straight to the database (admin_decide_review), as before. */
+const FACE_REVIEW_FN=false;
 async function faceReview(body){
   const h={apikey:CFG.SUPABASE_ANON_KEY,'Content-Type':'application/json'};
   if(CFG.SUPABASE_ANON_KEY.startsWith('eyJ'))h.Authorization='Bearer '+CFG.SUPABASE_ANON_KEY;
@@ -57,7 +60,7 @@ async function faceReview(body){
   if(!r.ok||j.error)throw new Error(j.error||'Could not reach the face-review function ('+r.status+')');
   return j;
 }
-async function fetchFrames(rv){if(!rv||!rv.some(x=>x.kind==='face'))return {};try{return (await faceReview({action:'frames'})).frames||{}}catch(e){console.warn(e);return null}}
+async function fetchFrames(rv){if(!FACE_REVIEW_FN||!rv||!rv.some(x=>x.kind==='face'))return {};try{return (await faceReview({action:'frames'})).frames||{}}catch(e){console.warn(e);return null}}
 const SIGNED=/^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/sign\/face-review\//;
 const when=ms=>new Date(ms).toLocaleString([], {day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
 function reviewPanel(rv,fr){
@@ -146,7 +149,7 @@ function view(st,rv,fr){
     try{
       const ok=b.dataset.ok==='1';
       /* a face decision goes through face-review so the scan frames are deleted with it */
-      if(b.dataset.k==='face')await faceReview({action:'decide',user:b.dataset.rv,kind:'face',approve:ok});
+      if(b.dataset.k==='face'&&FACE_REVIEW_FN)await faceReview({action:'decide',user:b.dataset.rv,kind:'face',approve:ok});
       else await rpc('admin_decide_review',{pass:PASS,p_user:b.dataset.rv,p_kind:b.dataset.k,p_approve:ok});
       load();
     }

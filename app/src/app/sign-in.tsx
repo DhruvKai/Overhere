@@ -14,6 +14,9 @@ import { useTheme } from '@/lib/theme';
 type Mode = 'phone' | 'code' | 'email' | 'reset' | 'resetSent';
 const RESEND_MS = 30000;
 const phoneDigits = (s: string) => { const d = s.replace(/\D/g, ''); return (d.length > 10 ? d.replace(/^(91|0)(?=\d{10}$)/, '') : d).slice(0, 10); };
+/* OTP_GUARD: codes go through the otp-verify Edge Function (5 wrong codes pause the number for an hour and email the
+   team). Off until that function is deployed on live; then codes go straight to Supabase, as before. Same as web/app.js. */
+const OTP_GUARD = false;
 const pausedText = (until: number) => `Too many wrong codes for this number, so phone sign-in is paused until ${new Date(until).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}. Please try again then, or use email.`;
 const phoneProblem = (n: string) => (!n ? 'Enter your mobile number' : n.length < 10 ? 'Enter all 10 digits' : !/^[6-9]/.test(n) ? 'Indian mobile numbers start with 6, 7, 8 or 9' : '');
 /* The welcome pages show until someone taps "Create account" or "I already have an account". */
@@ -58,7 +61,7 @@ export default function SignIn() {
     setBusy(true);
     try {
       /* paused after too many wrong codes: don't send one that can't be used. If the check itself fails, send anyway. */
-      const p = await api.otpPaused('+91' + n).catch(() => ({} as { until?: number }));
+      const p = OTP_GUARD ? await api.otpPaused('+91' + n).catch(() => ({} as { until?: number })) : {} as { until?: number };
       if (p.until) throw new Error(pausedText(p.until));
       const captchaToken = await getToken();
       const { error } = await supabase.auth.signInWithOtp({ phone: '+91' + n, options: { captchaToken, data: { age_18: true } } });
@@ -75,8 +78,10 @@ export default function SignIn() {
     if (!/^\d{6}$/.test(code)) return setErr('Enter the 6-digit code');
     setBusy(true);
     try {
-      const { session } = await api.otpVerify('+91' + phoneDigits(phone), code);
-      const { error } = await supabase.auth.setSession(session);
+      const ph = '+91' + phoneDigits(phone);
+      const { error } = OTP_GUARD
+        ? await supabase.auth.setSession((await api.otpVerify(ph, code)).session)
+        : await supabase.auth.verifyOtp({ phone: ph, token: code, type: 'sms' });
       if (error) throw error;   // signed in: the root layout takes it from here
     } catch (e) { setErr(friendly(e)); }
     setBusy(false);
