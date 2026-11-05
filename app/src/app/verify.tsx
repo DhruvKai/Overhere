@@ -27,7 +27,7 @@ export default function Verify() {
   if (m.profile?.face) {
     return <Empty icon="check-circle" title="You're verified" text="Your face check is done. You can post plans and ask to join."><Btn title="Done" onPress={() => router.back()} /></Empty>;
   }
-  if (v.review || v.fails >= v.max) {
+  if (v.review) {
     /* the same email as reviewMail in web/app.js: the account id helps the team find it in /addmin */
     const mail = `mailto:${CONTACT}?subject=${encodeURIComponent(`Manual face check for ${m.profile?.name || 'my account'}`)}&body=${encodeURIComponent(`Hi Overhere team,
 
@@ -35,8 +35,9 @@ My face check didn't pass after ${v.max} tries. Please check it by hand.
 
 Account: ${m.me}
 `)}`;
+    const when = v.until ? new Date(v.until).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : null;
     return (
-      <Empty icon="clock" title="A person is checking" text={`You've used all ${v.max} tries, so our team will look at it. We'll let you know in Updates. Want it sorted sooner? Email us and we'll verify you by hand.`}>
+      <Empty icon="clock" title="Check paused for 24 hours" text={`You've used all ${v.max} tries, so the check is paused${when ? ` until ${when}` : ''}. Then you get ${v.max} new tries. A person on our team will also look at it, and if they approve it you'll hear in Updates. Want it sorted sooner? Email us.`}>
         <Btn title={`Email ${CONTACT}`} icon="mail" kind="soft" onPress={() => Linking.openURL(mail).catch(() => toast(`Email us at ${CONTACT}`))} />
       </Empty>
     );
@@ -97,7 +98,7 @@ Account: ${m.me}
         <View style={{ width: 24, height: 24, borderRadius: 7, borderWidth: 2, marginTop: 2, borderColor: agree ? t.acc : t.line, backgroundColor: agree ? t.acc : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
           {agree ? <Icon name="check" size={16} color={t.onAcc} /> : null}
         </View>
-        <P style={{ flex: 1 }}>I agree to a face scan. The video goes only to our verification provider to check that I am a real person and match my two photos, and is not kept. Overhere stores only whether it passed and the provider&apos;s scores.</P>
+        <P style={{ flex: 1 }}>I agree to a face scan. The video goes only to our verification provider to check that I am a real person and match my two photos, and is not kept. Overhere stores whether it passed and the provider&apos;s scores. If a scan fails, one still frame from it is kept privately so our team can compare it with my photos, and deleted once they have reviewed it or I pass.</P>
       </Pressable>
       {live ? null : <P small mute>Beta: the check is simulated for now, so it always passes.</P>}
       <Btn title="Start face check" icon="camera" onPress={start} busy={busy} />

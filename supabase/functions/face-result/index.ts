@@ -2,6 +2,7 @@
 // and records pass or fail in the database. The browser only sends the session id; the decision is made here.
 import { CompareFacesCommand, GetFaceLivenessSessionResultsCommand } from 'npm:@aws-sdk/client-rekognition@3';
 import { admin, caller, corsHeaders, guard, json, rekognition, smallJson } from '../_shared/common.ts';
+import { deleteFrames, faceAlert, saveFrame } from '../_shared/frames.ts';
 
 // Confidence (0-100) that it was a live person. AWS suggests starting around 80; raise it to be stricter.
 const MIN_CONFIDENCE = Number(Deno.env.get('FACE_MIN_CONFIDENCE') ?? '80');
@@ -41,9 +42,9 @@ Deno.serve(async (req) => {
     const score = typeof res.Confidence === 'number' ? res.Confidence : 0;
     const live = res.Status === 'SUCCEEDED' && score >= MIN_CONFIDENCE;
 
-    // Same person as both photos? The reference image is the frame AWS picked from the video. It and the photos are
-    // only compared here and never stored; only the similarity scores are recorded. Both have to match, so neither
-    // photo can be of someone else. `which` says which photo failed (1 or 2), so the message can name it.
+    // Same person as both photos? The reference image is the frame AWS picked from the video. A passing frame is
+    // never stored; a failing one is kept for the reviewers only if the person agreed to that (keepFrame, below).
+    // Both photos have to match, so neither can be of someone else. `which` says which photo failed (1 or 2).
     const match: (number | null)[] = [];
     let reason = live ? '' : 'not_live', which = 0;
     if (live) {
@@ -64,13 +65,26 @@ Deno.serve(async (req) => {
     }
     const passed = live && reason === '';
 
+    // Did the person agree, when starting this scan, that a frame from a failed scan is kept for review? (face-start)
+    const db = admin();
+    const { data: started } = await db.from('verifications').select('detail')
+      .eq('user_id', user.id).eq('session_id', sessionId).eq('status', 'started').maybeSingle();
+    const keepFrame = started?.detail?.frames === true;
+
     // Checks the session belongs to this person, was started in the last 30 minutes and wasn't used before.
-    const { data: status, error } = await admin().rpc('verify_finish_service', {
+    const { data: status, error } = await db.rpc('verify_finish_service', {
       p_user: user.id, p_kind: 'face', p_session: sessionId, p_passed: passed,
       p_score: Math.round(score * 100) / 100,
-      p_detail: { aws_status: res.Status, match, photo: which || null, reason: reason || null },
+      p_detail: { aws_status: res.Status, match, photo: which || null, reason: reason || null, frame: !passed && keepFrame && !!res.ReferenceImage?.Bytes },
     });
     if (error) return json({ error: error.message }, 400, h);
+
+    if (passed) await deleteFrames(db, user.id);   // verified: nothing left to review
+    else {
+      const ref = res.ReferenceImage?.Bytes;
+      if (keepFrame && ref) await saveFrame(db, user.id, ref);
+      if (status === 'review') await faceAlert(db, user.id);   // that was the last try: paused, tell the team
+    }
     // Tell the person why, so a retry can fix it (better light, or a clearer photo), naming the photo at fault.
     const nth = which === 2 ? 'second photo' : 'first photo';
     const why = { not_live: "We couldn't confirm it was a live person. Try again in good light, facing the camera.",

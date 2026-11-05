@@ -47,11 +47,24 @@ async function rpc(fn,body){
   return j;
 }
 async function fetchReviews(){if(!REMOTE)return null;try{return await rpc('admin_reviews',{pass:PASS})}catch(e){return null}}
-function reviewPanel(rv){
+/* The face-review Edge Function: frames from failed face scans (private, signed links for an hour), and decisions,
+   which also delete that person's frames. The password is checked by the database, as for rpc(). */
+async function faceReview(body){
+  const h={apikey:CFG.SUPABASE_ANON_KEY,'Content-Type':'application/json'};
+  if(CFG.SUPABASE_ANON_KEY.startsWith('eyJ'))h.Authorization='Bearer '+CFG.SUPABASE_ANON_KEY;
+  const r=await fetch(BASE+'/functions/v1/face-review',{method:'POST',headers:h,body:JSON.stringify({pass:PASS,...body})});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok||j.error)throw new Error(j.error||'Could not reach the face-review function ('+r.status+')');
+  return j;
+}
+async function fetchFrames(rv){if(!rv||!rv.some(x=>x.kind==='face'))return {};try{return (await faceReview({action:'frames'})).frames||{}}catch(e){console.warn(e);return null}}
+const SIGNED=/^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/sign\/face-review\//;
+const when=ms=>new Date(ms).toLocaleString([], {day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
+function reviewPanel(rv,fr){
   if(!rv)return '';
   const KIND={face:'Face check',kyc:'ID check'};
-  return panel('Needs human review',rv.length?rv.length+' waiting':'nobody waiting',rv.length?`<p class="small mute">These people used all 5 tries at a check, so they can't try again until you decide. Tries include cancelled or broken scans; the best score is the provider's confidence (0–100, 80 passes) that it was a live person. Approve if you are sure it is a real person (for example after a video call), or ask them to try again. For a face check, the two photos are the ones their face had to match: compare them on the video call. People may also email admin@overhere.social about it.</p>`
-    +rv.map(x=>`<div class="rv">${x.kind==='face'?[x.photo,x.photo2].map((ph,i)=>/^[0-9a-f-]{36}\/[0-9a-z]{16}\.jpg$/.test(ph||'')?`<img class="rvp" src="${esc(BASE+'/storage/v1/object/public/avatars/'+ph)}" alt="Photo ${i+1} of ${esc(x.name)}" width="56" height="56">`:`<span class="rvp none" title="No photo ${i+1}">?</span>`).join(''):''}<span class="who"><b>${esc(x.name)}</b> · ${esc(KIND[x.kind]||x.kind)} · since ${esc(new Date(x.since).toLocaleString([], {day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}))}${x.attempts!=null?` · ${+x.attempts} tries, ${+x.fails} failed${x.best!=null?`, best score ${Math.round(x.best)}`:''}`:''}</span>
+  return panel('Needs human review',rv.length?rv.length+' waiting':'nobody waiting',rv.length?`<p class="small mute">These people used all 5 tries at a check. Each time, the check is paused for 24 hours; after that they get 5 new tries, but they stay here until you decide. Tries include cancelled or broken scans; the best score is the provider's confidence (0–100, 80 passes) that it was a live person. For a face check, the first two pictures are their profile photos (what their face had to match), and the smaller ones are frames from their failed scans: compare them. Approve if you are sure it is the same real person, or ask them to try again (they get 5 new tries straight away). Deciding deletes the scan frames. People may also email admin@overhere.social about it.</p>${fr===null?'<div class="err">The scan frames could not load. Is the face-review Edge Function deployed?</div>':''}`
+    +rv.map(x=>`<div class="rv">${x.kind==='face'?[x.photo,x.photo2].map((ph,i)=>/^[0-9a-f-]{36}\/[0-9a-z]{16}\.jpg$/.test(ph||'')?`<img class="rvp" src="${esc(BASE+'/storage/v1/object/public/avatars/'+ph)}" alt="Photo ${i+1} of ${esc(x.name)}" width="56" height="56">`:`<span class="rvp none" title="No photo ${i+1}">?</span>`).join(''):''}${x.kind==='face'?((fr&&fr[x.user])||[]).filter(f=>SIGNED.test(f.url)).map(f=>`<a href="${esc(f.url)}" target="_blank" rel="noopener" title="Failed scan, ${esc(when(f.at))}"><img class="rvf" src="${esc(f.url)}" alt="Frame from a failed scan by ${esc(x.name)}, ${esc(when(f.at))}" width="44" height="44"></a>`).join(''):''}<span class="who"><b>${esc(x.name)}</b> · ${esc(KIND[x.kind]||x.kind)} · since ${esc(when(x.since))}${x.attempts!=null?` · ${+x.attempts} tries, ${+x.fails} failed${x.best!=null?`, best score ${Math.round(x.best)}`:''}`:''}${x.rounds>1?` · used up their tries ${+x.rounds} times`:''} · ${x.until?`paused until ${esc(when(x.until))}`:'can try again now'}</span>
       <button class="btn sec" data-rv="${esc(x.user)}" data-k="${esc(x.kind)}" data-ok="0">Ask to try again</button><button class="btn" data-rv="${esc(x.user)}" data-k="${esc(x.kind)}" data-ok="1">Approve</button></div>`).join('')
     :'<p class="empty">No one is waiting for review.</p>')+'<div style="height:16px"></div>';
 }
@@ -89,7 +102,7 @@ function dayChart(byDay){
     +table(['Day','Sign-ups'],days.map((d,i)=>[lab(d),vals[i]]).filter(r=>r[1]));
 }
 
-function view(st,rv){
+function view(st,rv,fr){
   last=new Date();
   const P=Number(st.participants||0),T=Number(st.tried||0),F=Number(st.feedback||0),wu=st.would_use||{},wuN=sum(wu);
   const avg=st.avg_rating==null?null:Number(st.avg_rating),rated=st.rated==null?F:Number(st.rated);   // rated: the dashboard from before schema-app.sql was re-run
@@ -103,7 +116,7 @@ function view(st,rv){
   $('#main').innerHTML=`${REMOTE?'':'<div class="note">Supabase is not connected, so this shows data saved in this browser only.</div>'}
   <div class="top"><div><h1>How the beta is going</h1><p class="small mute" style="margin:0">Totals only: no names or emails. Feedback text appears only where people agreed to be quoted. Updated ${last.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}.</p></div>
     <div style="display:flex;gap:8px"><button class="btn sec" id="refresh">Refresh</button>${REMOTE?'<button class="btn sec" id="lock">Lock</button>':''}</div></div>
-  ${reviewPanel(rv)}
+  ${reviewPanel(rv,fr)}
   <div class="kpis">
     <div class="panel kpi hero"><div class="l">Sign-ups</div><div class="v">${num(P)}</div><div class="s">${num(st.sessions_30d||0)} app sessions in the last 30 days</div></div>
     <div class="panel kpi"><div class="l">Posted or joined a plan</div><div class="v">${num(T)}</div><div class="s">${P?pct(T,P)+'% of sign-ups':'–'}</div></div>
@@ -130,7 +143,13 @@ function view(st,rv){
   $('#refresh').onclick=load;
   document.querySelectorAll('[data-rv]').forEach(b=>b.onclick=async()=>{
     b.disabled=true;
-    try{await rpc('admin_decide_review',{pass:PASS,p_user:b.dataset.rv,p_kind:b.dataset.k,p_approve:b.dataset.ok==='1'});load()}
+    try{
+      const ok=b.dataset.ok==='1';
+      /* a face decision goes through face-review so the scan frames are deleted with it */
+      if(b.dataset.k==='face')await faceReview({action:'decide',user:b.dataset.rv,kind:'face',approve:ok});
+      else await rpc('admin_decide_review',{pass:PASS,p_user:b.dataset.rv,p_kind:b.dataset.k,p_approve:ok});
+      load();
+    }
     catch(e){b.disabled=false;alert(e.message)}
   });
   const lk=$('#lock');if(lk)lk.onclick=()=>{PASS='';login()};
@@ -144,7 +163,7 @@ function login(err){
 }
 async function load(){
   const b=document.querySelector('#f button,#refresh');if(b){b.disabled=true;b.textContent='Loading…'}
-  try{const st=await fetchStats();view(st,await fetchReviews())}catch(e){REMOTE?login(e.message):($('#main').innerHTML=`<div class="err">${esc(e.message)}</div>`)}
+  try{const st=await fetchStats(),rv=await fetchReviews();view(st,rv,await fetchFrames(rv))}catch(e){REMOTE?login(e.message):($('#main').innerHTML=`<div class="err">${esc(e.message)}</div>`)}
 }
 /* One tooltip for every bar and column: follows the pointer, or sits above the focused mark. */
 const tip=$('#tip');

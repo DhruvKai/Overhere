@@ -534,29 +534,40 @@ create or replace function _may_prefill() returns boolean language sql stable as
 -- it starts (so cancelled, abandoned or broken scans count too), a simulated one when it fails.
 create or replace function _verify_max() returns int language sql immutable as $$ select 5 $$;
 
--- Per check, since the last pass / reviewer decision: failed attempts, all attempts, and whether it waits for review.
+-- How long the check is paused after the last allowed try. The person also goes to the /addmin review queue; if
+-- nobody has decided by then, they get _verify_max() fresh tries (and stay in the queue until someone decides).
+create or replace function _verify_block() returns interval language sql immutable as $$ select interval '24 hours' $$;
+
+-- Per check:
+--   attempts, fails: tries and failures since the last pass, reviewer decision or pause (a pause that has run out
+--                    gives fresh tries)
+--   review:          paused right now (the last allowed try was less than _verify_block() ago); until: when it ends
+--   pending:         waiting in the /addmin review queue (paused at least once since the last pass or decision)
 create or replace function _verify_state(p_user uuid) returns jsonb language sql volatile as $$
   select jsonb_object_agg(k, jsonb_build_object(
-    'fails', (select count(*) from verifications v where v.user_id = p_user and v.kind = k and v.status = 'failed'
-              and v.seq > coalesce((select max(w.seq) from verifications w
-                                    where w.user_id = p_user and w.kind = k and w.status in ('passed','approved','rejected')), 0)),
+    'fails', (select count(*) from verifications v where v.user_id = p_user and v.kind = k and v.status = 'failed' and v.seq > b.reset),
     'attempts', (select count(*) from verifications v where v.user_id = p_user and v.kind = k
-                 and (v.status = 'started' or (v.status = 'failed' and v.provider = 'simulated'))
-                 and v.seq > coalesce((select max(w.seq) from verifications w
-                                       where w.user_id = p_user and w.kind = k and w.status in ('passed','approved','rejected')), 0)),
+                 and (v.status = 'started' or (v.status = 'failed' and v.provider = 'simulated')) and v.seq > b.reset),
     'max', _verify_max(),
-    'review', coalesce((select v.status = 'review' from verifications v where v.user_id = p_user and v.kind = k and v.status <> 'started'
-                        order by v.seq desc limit 1), false)))
-  from unnest(array['face','kyc']) k $$;
+    'review', coalesce(b.paused_at > now() - _verify_block(), false),
+    'until', case when b.paused_at > now() - _verify_block() then _ms(b.paused_at + _verify_block()) end,
+    'pending', b.paused_at is not null))
+  from unnest(array['face','kyc']) k
+  cross join lateral (select coalesce(max(w.seq) filter (where w.status in ('passed','approved','rejected')), 0) dec
+                      from verifications w where w.user_id = p_user and w.kind = k) d
+  cross join lateral (select greatest(d.dec, coalesce(max(w.seq), 0)) reset, max(w.created_at) paused_at
+                      from verifications w where w.user_id = p_user and w.kind = k and w.status = 'review' and w.seq > d.dec) b $$;
 
--- Block further tries and put the person in the /addmin review queue (once), telling them what happens next.
+-- Pause further tries for _verify_block() and put the person in the /addmin review queue, telling them what happens
+-- next. The face-start / face-result Edge Functions then email the team (verify_alert_claim_service).
 create or replace function _verify_to_review(p_user uuid, p_kind text, p_provider text) returns void language plpgsql as $$
 begin
   if (_verify_state(p_user) -> p_kind ->> 'review')::boolean then return; end if;
   insert into verifications (user_id, kind, status, provider) values (p_user, p_kind, 'review', left(p_provider, 30));
-  perform _note(p_user, 'update', 'Sent for review', case when p_kind = 'face' then 'Face check' else 'ID check' end, 'warn', null,
-    format('That was %s tries, so a person on our team will now check it by hand. We will send you a notification when it is done. '
-           || 'To have it sorted sooner, email %s.', _verify_max(), 'admin@overhere.social'));
+  perform _note(p_user, 'update', 'Check paused for 24 hours', case when p_kind = 'face' then 'Face check' else 'ID check' end, 'warn', null,
+    format('That was %s tries, so the check is paused until %s. A person on our team will also look at it by hand, and we will '
+           || 'send you a notification if they approve it. To have it sorted sooner, email %s.',
+           _verify_max(), _when(now() + _verify_block()), 'admin@overhere.social'));
   perform _ping(array[p_user]);
 end $$;
 
@@ -1277,18 +1288,25 @@ declare e text := _admin_err(pass);
 begin
   if e is not null then return jsonb_build_object('error', e); end if;
   -- tries, failures and the best provider score (0-100) since the last decision, to help judge "real person, bad light"
-  -- photo, photo2: the two photos the face check is matched against, to compare by eye (paths in the "avatars" bucket)
-  return (select coalesce(jsonb_agg(jsonb_build_object('user', p.id, 'name', p.name, 'kind', k.kind, 'since', _ms(v.created_at), 'photo', p.photo, 'photo2', p.photo2,
-                                      'attempts', (s -> k.kind ->> 'attempts')::int, 'fails', (s -> k.kind ->> 'fails')::int,
-                                      'best', (select max(w.score) from verifications w where w.user_id = p.id and w.kind = k.kind
-                                               and w.score is not null and w.seq > coalesce((select max(x.seq) from verifications x
-                                                 where x.user_id = p.id and x.kind = k.kind and x.status in ('passed','approved','rejected')), 0)))
-                                    order by v.created_at), '[]')
+  -- photo, photo2: the two photos the face check is matched against, to compare by eye (paths in the "avatars" bucket).
+  -- The frames from their failed face scans come from the face-review Edge Function (private bucket).
+  -- since: first pause since the last decision; rounds: how many times they used up their tries; until: end of the
+  -- current pause (null once it has run out and they can try again)
+  return (select coalesce(jsonb_agg(jsonb_build_object('user', p.id, 'name', p.name, 'kind', k.kind, 'since', _ms(c.first_at), 'photo', p.photo, 'photo2', p.photo2,
+                                      'attempts', c.attempts, 'fails', c.fails, 'best', c.best, 'rounds', c.rounds,
+                                      'until', (s -> k.kind -> 'until'))
+                                    order by c.first_at), '[]')
           from profiles p cross join unnest(array['face','kyc']) k(kind)
           cross join lateral (select _verify_state(p.id) s) st
-          join lateral (select created_at from verifications w where w.user_id = p.id and w.kind = k.kind and w.status = 'review'
-                        order by w.seq desc limit 1) v on true
-          where not p.is_sample and (s -> k.kind ->> 'review')::boolean);
+          cross join lateral (select coalesce(max(x.seq), 0) dec from verifications x
+                              where x.user_id = p.id and x.kind = k.kind and x.status in ('passed','approved','rejected')) d
+          cross join lateral (select min(w.created_at) filter (where w.status = 'review') first_at,
+                                     count(*) filter (where w.status = 'review') rounds,
+                                     count(*) filter (where w.status = 'started' or (w.status = 'failed' and w.provider = 'simulated')) attempts,
+                                     count(*) filter (where w.status = 'failed') fails,
+                                     max(w.score) best
+                              from verifications w where w.user_id = p.id and w.kind = k.kind and w.seq > d.dec) c
+          where not p.is_sample and (s -> k.kind ->> 'pending')::boolean);
 end $$;
 
 drop function if exists admin_decide_review(text, uuid, text, boolean);
@@ -1297,7 +1315,7 @@ language plpgsql security definer set search_path = public as $$
 declare e text := _admin_err(pass);
 begin
   if e is not null then return jsonb_build_object('error', e); end if;
-  if p_kind not in ('face', 'kyc') or not coalesce((_verify_state(p_user) -> p_kind ->> 'review')::boolean, false) then
+  if p_kind not in ('face', 'kyc') or not coalesce((_verify_state(p_user) -> p_kind ->> 'pending')::boolean, false) then
     raise exception 'Nothing to review';
   end if;
   insert into verifications (user_id, kind, status, provider)
@@ -1309,9 +1327,89 @@ begin
   perform _note(p_user, 'update', case when p_approve then 'Verification approved' else 'Please try the check again' end,
     case when p_kind = 'face' then 'Face check' else 'ID check' end, case when p_approve then 'ok' else 'warn' end, null,
     case when p_approve then 'A person on our team reviewed your check and approved it.'
-         else 'A person on our team reviewed your check. Please try it again, in good light.' end);
+         else format('A person on our team reviewed your check. You have %s new tries: please try again in good light, facing the camera.', _verify_max()) end);
   return jsonb_build_object('ok', true);
 end $$;
+
+-- ---------- face check alerts and scan frames (Edge Functions only) ----------
+
+-- Called by face-start / face-result after a check was paused: claims the email to the team for that pause, so
+-- it goes out once however many functions see it. Returns what the email needs, or {claim: false}.
+create or replace function verify_alert_claim_service(p_user uuid, p_kind text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare r verifications; vs jsonb := _verify_state(p_user);
+begin
+  if not coalesce((vs -> p_kind ->> 'review')::boolean, false) then return jsonb_build_object('claim', false); end if;
+  select * into r from verifications where user_id = p_user and kind = p_kind and status = 'review' order by seq desc limit 1 for update;
+  if r.id is null or coalesce((r.detail ->> 'emailed')::boolean, false) then return jsonb_build_object('claim', false); end if;
+  update verifications set detail = detail || '{"emailed": true}' where id = r.id;
+  return jsonb_build_object('claim', true, 'name', _name(p_user), 'until', _when(r.created_at + _verify_block()),
+    'rounds', (select count(*) from verifications w where w.user_id = p_user and w.kind = p_kind and w.status = 'review'
+               and w.seq > coalesce((select max(x.seq) from verifications x where x.user_id = p_user and x.kind = p_kind
+                                     and x.status in ('passed','approved','rejected')), 0)));
+end $$;
+
+-- People whose face scan frames must be kept: they have failed a live face check since their last pass or reviewer
+-- decision (so a reviewer may still need the frames). Frames of everyone else (passed, decided, deleted accounts)
+-- are removed by the Edge Functions: Storage files can't be deleted from SQL.
+create or replace function face_frames_keep_service() returns uuid[]
+language sql security definer set search_path = public as $$
+  select coalesce(array_agg(distinct v.user_id), '{}') from verifications v
+  where v.kind = 'face' and v.status = 'failed' and v.provider <> 'simulated'
+    and v.seq > coalesce((select max(x.seq) from verifications x where x.user_id = v.user_id and x.kind = 'face'
+                          and x.status in ('passed','approved','rejected')), 0) $$;
+
+-- The private bucket for those frames: only the Edge Functions (service role) read or write it, so no policies.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('face-review', 'face-review', false, 2097152, array['image/jpeg'])
+on conflict (id) do update set public = false, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
+
+-- ---------- phone code lockout (otp-verify Edge Function only) ----------
+
+-- Wrong sign-in codes per phone number (stored as a SHA-256 hash, never the number). 5 wrong codes within an hour
+-- pause that number for an hour, and the team gets an email. Only counters: no account data.
+create table if not exists otp_guard (
+  phone_hash    text primary key check (phone_hash ~ '^[0-9a-f]{64}$'),
+  fails         int not null default 0,
+  window_start  timestamptz,
+  blocked_until timestamptz,
+  updated_at    timestamptz not null default now()
+);
+alter table otp_guard enable row level security;
+revoke all on table otp_guard from anon, authenticated;
+
+create or replace function _otp_max() returns int language sql immutable as $$ select 5 $$;
+create or replace function _otp_block() returns interval language sql immutable as $$ select interval '1 hour' $$;
+
+-- Paused right now? Returns the end of the pause in ms, or null.
+create or replace function otp_guard_check_service(p_hash text) returns bigint
+language sql security definer set search_path = public as $$
+  select _ms(blocked_until) from otp_guard where phone_hash = p_hash and blocked_until > now() $$;
+
+-- One wrong code. Returns {blocked, until, fresh}: fresh is true only for the wrong code that started the pause, so
+-- the email goes out once.
+create or replace function otp_guard_fail_service(p_hash text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare g otp_guard;
+begin
+  if p_hash !~ '^[0-9a-f]{64}$' then raise exception 'Bad request'; end if;
+  insert into otp_guard (phone_hash) values (p_hash) on conflict (phone_hash) do nothing;
+  select * into g from otp_guard where phone_hash = p_hash for update;
+  if g.blocked_until > now() then return jsonb_build_object('blocked', true, 'until', _ms(g.blocked_until), 'fresh', false); end if;
+  if g.window_start is null or g.window_start < now() - _otp_block() then g.fails := 0; g.window_start := now(); end if;
+  g.fails := g.fails + 1;
+  if g.fails >= _otp_max() then
+    update otp_guard set fails = 0, window_start = null, blocked_until = now() + _otp_block(), updated_at = now() where phone_hash = p_hash;
+    return jsonb_build_object('blocked', true, 'until', _ms(now() + _otp_block()), 'fresh', true);
+  end if;
+  update otp_guard set fails = g.fails, window_start = g.window_start, updated_at = now() where phone_hash = p_hash;
+  return jsonb_build_object('blocked', false, 'left', _otp_max() - g.fails, 'fresh', false);
+end $$;
+
+-- A right code: start counting again.
+create or replace function otp_guard_ok_service(p_hash text) returns void
+language sql security definer set search_path = public as $$
+  update otp_guard set fails = 0, window_start = null, updated_at = now() where phone_hash = p_hash $$;
 
 -- Usage events (button taps, never content). Who sent it comes from the login, not the browser, and one session,
 -- one person, and signed-out visitors together can only send so many, so nobody can flood the table.
@@ -1383,11 +1481,13 @@ do $$ declare f record; begin
              'edit_activity','cancel_activity','request_join','withdraw_request','decide_request','leave_activity','remove_member','send_message','vote',
              'rate_activity','report','block_user','unblock_user','add_notification','read_notifications','verify_simulated','set_photo',
              'verify_precheck_service','verify_start_service','verify_finish_service','admin_reviews','admin_decide_review',
-             'admin_stats','log_event','send_feedback','delete_my_account','accept_terms','invite_info'))
+             'admin_stats','log_event','send_feedback','delete_my_account','accept_terms','invite_info',
+             'verify_alert_claim_service','face_frames_keep_service','otp_guard_check_service','otp_guard_fail_service','otp_guard_ok_service'))
   loop
     execute format('revoke all on function %s from public, anon, authenticated', f.sig);
     execute format('alter function %s set search_path = public', f.sig);
-    if f.proname in ('verify_precheck_service', 'verify_start_service', 'verify_finish_service') then
+    if f.proname in ('verify_precheck_service', 'verify_start_service', 'verify_finish_service', 'verify_alert_claim_service',
+                     'face_frames_keep_service', 'otp_guard_check_service', 'otp_guard_fail_service', 'otp_guard_ok_service') then
       execute format('grant execute on function %s to service_role', f.sig);       -- Edge Functions only
     elsif f.proname in ('admin_reviews', 'admin_decide_review', 'admin_stats') then
       execute format('grant execute on function %s to anon, authenticated', f.sig); -- password checked inside

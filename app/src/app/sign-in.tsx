@@ -1,11 +1,11 @@
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCaptcha } from '@/components/Captcha';
 import { Btn, Field, H, Icon, P } from '@/components/ui';
 import Welcome from '@/components/Welcome';
-import { friendly } from '@/lib/api';
+import { api, friendly } from '@/lib/api';
 import { column } from '@/lib/layout';
 import { useStore } from '@/lib/store';
 import { SITE, supabase } from '@/lib/supabase';
@@ -14,6 +14,7 @@ import { useTheme } from '@/lib/theme';
 type Mode = 'phone' | 'code' | 'email' | 'reset' | 'resetSent';
 const RESEND_MS = 30000;
 const phoneDigits = (s: string) => { const d = s.replace(/\D/g, ''); return (d.length > 10 ? d.replace(/^(91|0)(?=\d{10}$)/, '') : d).slice(0, 10); };
+const pausedText = (until: number) => `Too many wrong codes for this number, so phone sign-in is paused until ${new Date(until).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}. Please try again then, or use email.`;
 const phoneProblem = (n: string) => (!n ? 'Enter your mobile number' : n.length < 10 ? 'Enter all 10 digits' : !/^[6-9]/.test(n) ? 'Indian mobile numbers start with 6, 7, 8 or 9' : '');
 /* The welcome pages show until someone taps "Create account" or "I already have an account". */
 const SEEN = 'overhere_welcome_seen';
@@ -38,14 +39,27 @@ export default function SignIn() {
   /* Phone and email sign-ups must carry "I'm 18 or older": the database refuses the login otherwise (_before_user_created). */
   const need18 = () => { if (!is18) { setErr("Please confirm you're 18 or older"); return false; } return true; };
 
-  async function sendCode(again?: boolean) {
+  /* A typo here sends the code to a stranger, so the first send asks "is this your number?" first. Resending
+     goes to the number already confirmed. */
+  function sendCode(again?: boolean) {
     const n = phoneDigits(phone), m = phoneProblem(n);
     setErr(m);
     if (m || (!again && !need18())) return;
+    if (again) return send(n, true);
+    Alert.alert('Is this your number?', `+91 ${n.slice(0, 5)} ${n.slice(5)}\n\nWe'll text a 6-digit code to this number. Please check it's right.`, [
+      { text: 'Edit number', style: 'cancel' },
+      { text: 'Yes, send code', onPress: () => send(n) },
+    ], { cancelable: true });
+  }
+
+  async function send(n: string, again?: boolean) {
     const wait = again ? Math.ceil((sent + RESEND_MS - Date.now()) / 1000) : 0;
     if (wait > 0) return toast(`Please wait ${wait}s before asking for a new code`);
     setBusy(true);
     try {
+      /* paused after too many wrong codes: don't send one that can't be used. If the check itself fails, send anyway. */
+      const p = await api.otpPaused('+91' + n).catch(() => ({} as { until?: number }));
+      if (p.until) throw new Error(pausedText(p.until));
       const captchaToken = await getToken();
       const { error } = await supabase.auth.signInWithOtp({ phone: '+91' + n, options: { captchaToken, data: { age_18: true } } });
       if (error) throw error;
@@ -55,12 +69,17 @@ export default function SignIn() {
     setBusy(false);
   }
 
+  /* Checked by the otp-verify Edge Function (it pauses a number for an hour after 5 wrong codes), which hands back
+     the session. */
   async function checkCode() {
     if (!/^\d{6}$/.test(code)) return setErr('Enter the 6-digit code');
     setBusy(true);
-    const { error } = await supabase.auth.verifyOtp({ phone: '+91' + phoneDigits(phone), token: code, type: 'sms' });
+    try {
+      const { session } = await api.otpVerify('+91' + phoneDigits(phone), code);
+      const { error } = await supabase.auth.setSession(session);
+      if (error) throw error;   // signed in: the root layout takes it from here
+    } catch (e) { setErr(friendly(e)); }
     setBusy(false);
-    if (error) setErr(friendly(error));   // signed in: the root layout takes it from here
   }
 
   async function emailGo() {

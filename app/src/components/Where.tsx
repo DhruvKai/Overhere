@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { api } from '@/lib/api';
 import { homeLL, homeName, kmBetween, NEAR_KM, viewCity, viewName } from '@/lib/model';
@@ -63,15 +63,43 @@ function CitySheet({ onClose }: { onClose: () => void }) {
   );
 }
 
-/* Plans limited to some groups (e.g. women-only) only reach people whose face check passed: say how many are waiting. */
+/* Plans limited to some groups (e.g. women-only) only reach people whose face check passed: say how many are waiting.
+   It takes a lot of room above the deck, so it shows once per install: the first time there are locked plans, it
+   hides itself after a few seconds or when closed, and is never shown again (on Swipe or Discover). */
+const LOCKED_SEEN = 'overhere.lockedNoteSeen';
+const LOCKED_SHOW_MS = 12000;
+const lockedSeen = () => { try { return localStorage.getItem(LOCKED_SEEN) === '1'; } catch { return false; } };
+
 export function LockedNote() {
   const t = useTheme();
   const m = useModel();
-  if (!m.locked || m.profile?.face) return null;
+  const due = !!m.locked && !m.profile?.face;
+  /* 'wait' until there's something to say, then 'show' once, then 'gone' */
+  const [phase, setPhase] = useState<'wait' | 'show' | 'gone'>(() => lockedSeen() ? 'gone' : 'wait');
+  const claimed = useRef(false); // this one marked it seen (so a re-run of the effect still shows it)
+  useEffect(() => {
+    if (phase === 'gone' || !due) return;
+    if (phase === 'wait') {
+      if (!claimed.current && lockedSeen()) { const id = setTimeout(() => setPhase('gone'), 0); return () => clearTimeout(id); } // the other tab showed it
+      claimed.current = true;
+      try { localStorage.setItem(LOCKED_SEEN, '1'); } catch { /* shows again next launch */ }
+      const id = setTimeout(() => setPhase('show'), 0);
+      return () => clearTimeout(id);
+    }
+    const id = setTimeout(() => setPhase('gone'), LOCKED_SHOW_MS);
+    return () => clearTimeout(id);
+  }, [phase, due]);
+  if (phase !== 'show' || !due) return null;
   return (
-    <Note icon="shield" tone="info">
-      {m.locked} {m.locked === 1 ? 'plan near you is' : 'plans near you are'} only open to certain groups, like women-only plans.{' '}
-      <Text onPress={() => router.push('/verify')} style={{ fontWeight: '700', color: t.info, textDecorationLine: 'underline' }}>Do the face check to see {m.locked === 1 ? 'it' : 'them'}</Text>
-    </Note>
+    <View>
+      <Note icon="shield" tone="info" style={{ paddingRight: 36 }}>
+        {m.locked} {m.locked === 1 ? 'plan near you is' : 'plans near you are'} only open to certain groups, like women-only plans.{' '}
+        <Text onPress={() => router.push('/verify')} style={{ fontWeight: '700', color: t.info, textDecorationLine: 'underline' }}>Do the face check to see {m.locked === 1 ? 'it' : 'them'}</Text>
+      </Note>
+      <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setPhase('gone')} hitSlop={10}
+        style={{ position: 'absolute', top: 6, right: 6, width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name="x" size={16} color={t.info} />
+      </Pressable>
+    </View>
   );
 }

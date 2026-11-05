@@ -6,6 +6,7 @@
 import { CreateFaceLivenessSessionCommand } from 'npm:@aws-sdk/client-rekognition@3';
 import { AssumeRoleCommand, STSClient } from 'npm:@aws-sdk/client-sts@3';
 import { admin, awsCreds, caller, corsHeaders, env, guard, json, rekognition, smallJson } from '../_shared/common.ts';
+import { faceAlert, sweepFrames } from '../_shared/frames.ts';
 
 Deno.serve(async (req) => {
   const early = guard(req);
@@ -20,8 +21,12 @@ Deno.serve(async (req) => {
     // Limits and review status are checked before AWS is asked for anything, so refused attempts cost nothing.
     const pre = await admin().rpc('verify_precheck_service', { p_user: user.id, p_kind: 'face' });
     if (pre.error) return json({ error: pre.error.message }, 400, h);
-    // Out of tries (or already waiting): blocked until a person reviews it. No AWS session is created.
-    if (pre.data?.status === 'review') return json({ status: 'review', verify: pre.data.verify }, 200, h);
+    // Out of tries: paused for 24 hours and in the review queue. No AWS session is created. If the pause started
+    // just now (the last try was abandoned, so face-result never ran), this is where the team hears about it.
+    if (pre.data?.status === 'review') {
+      await faceAlert(admin(), user.id);
+      return json({ status: 'review', verify: pre.data.verify }, 200, h);
+    }
 
     const region = env('AWS_REGION');
     const created = await rekognition().send(new CreateFaceLivenessSessionCommand({
@@ -37,6 +42,12 @@ Deno.serve(async (req) => {
       p_user: user.id, p_kind: 'face', p_provider: 'aws', p_session: sessionId,
     });
     if (error) return json({ error: error.message }, 400, h);
+    // consent_v 2: the person agreed to the wording that says a frame from a failed scan is kept for review. Older
+    // app versions show the old wording ("not kept"), so face-result keeps nothing for their scans.
+    if (body.consent_v === 2) {
+      await admin().from('verifications').update({ detail: { consent: true, frames: true } })
+        .eq('user_id', user.id).eq('session_id', sessionId).eq('status', 'started');
+    }
 
     const sts = new STSClient({ region, credentials: awsCreds() });
     const role = await sts.send(new AssumeRoleCommand({
@@ -51,6 +62,11 @@ Deno.serve(async (req) => {
     }));
     const c = role.Credentials;
     if (!c) throw new Error('No credentials from AWS');
+
+    // In the background: delete scan frames nobody needs any more (deleted accounts, people who passed or were
+    // decided), so they don't wait for someone to open /addmin.
+    const sweep = sweepFrames(admin()).catch((e) => console.error('frame sweep', e));
+    (globalThis as { EdgeRuntime?: { waitUntil(p: Promise<unknown>): void } }).EdgeRuntime?.waitUntil(sweep);
 
     return json({
       sessionId,

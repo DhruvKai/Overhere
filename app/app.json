@@ -19,7 +19,7 @@
       "package": "social.overhere.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundColor": "#3F7D4E"
+        "backgroundColor": "#F5F0E6"
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [

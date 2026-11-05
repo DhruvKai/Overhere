@@ -66,7 +66,12 @@ export const api = {
   forgetPushToken: (token: string) => call('forget_push_token', { p_token: token }),
   verifySimulated: (kind: 'face' | 'kyc') => call('verify_simulated', { p_kind: kind, p_pass: true, p_consent: true }),
   /* the live face check, the same steps as CHECKS.live in web/app.js */
-  faceStart: () => edge<FaceSession | { status: 'review' }>('face-start', { consent: true }),
+  /* consent_v 2: the wording that says a frame from a failed scan is kept for the team to review (verify.tsx) */
+  faceStart: () => edge<FaceSession | { status: 'review' }>('face-start', { consent: true, consent_v: 2 }),
+  /* phone sign-in codes go through otp-verify, which pauses a number for an hour after 5 wrong codes */
+  otpPaused: (phone: string) => edge<{ until?: number }>('otp-verify', { phone, check: true }),
+  otpVerify: (phone: string, token: string) =>
+    edge<{ session: { access_token: string; refresh_token: string } }>('otp-verify', { phone, token }),
   faceResult: (sessionId: string) => edge<{ status: 'passed' | 'failed' | 'review'; reason: string | null; message: string | null }>('face-result', { sessionId }),
   /* photo 1 (the profile picture) or 2: a path in the avatars bucket, or null to clear it; clearing photo 1 clears both
      and shows the emoji (set_photo in web/schema-app.sql) */

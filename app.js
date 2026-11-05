@@ -774,7 +774,7 @@ const CHECKS={
   async simulated(kind){await new Promise(r=>setTimeout(r,1300));return call('verify_simulated',{p_kind:kind,p_pass:true,p_consent:true},true)},
   async live(kind){
     if(kind!=='face')throw new Error('The ID check is not connected yet. Please try again later.');
-    const ses=await edge('face-start',{consent:true});
+    const ses=await edge('face-start',{consent:true,consent_v:2});   // 2: the wording that says a failed scan's frame is kept for review
     if(ses?.status==='review')return ses;   // out of tries: blocked until a person reviews it, no camera
     await loadScript('face-widget.js');
     if(!window.OverhereFaceWidget)throw new Error('The face check is not available yet. Please try again later.');
@@ -1126,18 +1126,18 @@ function modalHtml(){
   if(m.type==='verify'){
     const face=m.kind==='face',v=VER[m.kind]||{fails:0,attempts:0,max:5},left=Math.max(0,(v.max||5)-(v.attempts||0)),ic=face?'scan-face':'id-card',live=MODE[m.kind]==='live';
     let inner;
-    if(m.state==='flagged'||v.review)inner=`<div class="scan">${I('shield-check',56)}</div><p style="text-align:center"><strong>Sent for human review</strong></p><p class="mute" style="text-align:center">You have used all ${v.max||5} tries, so the check is paused. A person on our team will check it by hand and you will get a notification. You are not locked out permanently.</p>
+    if(m.state==='flagged'||v.review)inner=`<div class="scan">${I('shield-check',56)}</div><p style="text-align:center"><strong>Check paused for 24 hours</strong></p><p class="mute" style="text-align:center">You have used all ${v.max||5} tries, so the check is paused${v.until?' until '+esc(new Date(v.until).toLocaleString([], {weekday:'short',hour:'numeric',minute:'2-digit'})):''}. Then you get ${v.max||5} new tries. A person on our team will also look at it, and you will get a notification if they approve it.</p>
       ${reviewMail(m.kind)}`;
     else if(face&&!twoPhotos())inner=`<p style="text-align:center;margin-top:0"><strong>First, add two photos of you</strong></p>
       <p class="mute" style="text-align:center">The face check compares your live face with both, so people know your photos are really you. Photo 1 is your profile picture; both show on your profile.</p>
       ${photoPair()}`;
     else if(m.state==='scanning')inner=(live&&face?'<div id="face_box" class="facebox"></div>':`<div class="scan go">${I(ic,56)}</div>`)+`<p style="text-align:center" class="mute">${face?'Checking liveness…':'Reading your ID…'}</p>`;
-    else if(!left)inner=`<div class="scan">${I('shield-check',56)}</div><p style="text-align:center"><strong>No tries left</strong></p><p class="mute" style="text-align:center">You have used all ${v.max||5} tries. A person on our team will check it by hand and send you a notification.</p>
+    else if(!left)inner=`<div class="scan">${I('shield-check',56)}</div><p style="text-align:center"><strong>No tries left</strong></p><p class="mute" style="text-align:center">You have used all ${v.max||5} tries. The check is now paused for 24 hours, and a person on our team will look at it.</p>
       <button class="btn" data-a="scan">Send for review</button>`;
     else inner=`<div class="scan">${I(ic,56)}</div>
       <p style="text-align:center" class="mute">${face?'A few seconds of video selfie confirm you are a real person, and the person in your two photos. You need it to post a plan or ask to join one.':'Government ID check. Needed once, the first time you post or request. It unlocks both.'}</p>
       ${m.state==='fail'?`<p style="text-align:center;color:var(--bad)"><strong>${esc(m.err||'Verification failed.')}</strong> Please try again.</p>`:''}
-      <label class="chk top"><input type="checkbox" id="v_ok"> <span>${face?'I agree to a face scan. The video goes only to our verification provider to check that I am a real person and match my two photos, and is not kept. Overhere stores only whether it passed and the provider\'s scores.':'I agree to an ID check. Overhere stores only whether it passed, never my ID number or ID photo.'}</span></label>
+      <label class="chk top"><input type="checkbox" id="v_ok"> <span>${face?'I agree to a face scan. The video goes only to our verification provider to check that I am a real person and match my two photos, and is not kept. Overhere stores whether it passed and the provider\'s scores. If a scan fails, one still frame from it is kept privately so our team can compare it with my photos, and deleted once they have reviewed it or I pass.':'I agree to an ID check. Overhere stores only whether it passed, never my ID number or ID photo.'}</span></label>
       ${live?'':'<div class="dn">Demo: this check is simulated. No camera or ID is used.</div>'}
       <button class="btn" data-a="scan">${m.state==='fail'?'Try again':(face?'Start face check':'Start ID check')}</button>`;
     return sheet(face?'Face verification':'Identity verification',`<div class="sb">${inner}</div>`);
@@ -1953,12 +1953,16 @@ async function withCaptcha(fn){
 }
 const phoneDigits=s=>{const d=s.replace(/\D/g,'');return (d.length>10?d.replace(/^(91|0)(?=\d{10}$)/,''):d).slice(0,10)};
 const fmtPhone=d=>d.length>5?d.slice(0,5)+' '+d.slice(5):d;
+const otpPaused=until=>`Too many wrong codes for this number, so phone sign-in is paused until ${new Date(until).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}. Please try again then, or use email.`;
 function phoneProblem(n){return !n?'Enter your mobile number':n.length<10?'Enter all 10 digits':!/^[6-9]/.test(n)?'Indian mobile numbers start with 6, 7, 8 or 9':''}
 async function sendCode(again){
   const n=again?ui.auth.phone.slice(3):phoneDigits(val('a_phone'));
   if(!again){const m=phoneProblem(n);fieldMsg('a_phone',m);if(m){document.getElementById('a_phone')?.focus();return}if(!ageOk(true))return}
   const wait=again?Math.ceil((ui.auth.sent+RESEND_MS-Date.now())/1000):0;
   if(wait>0)return toast(`Please wait ${wait}s before asking for a new code`);
+  /* paused after 5 wrong codes (otp-verify): don't send a code that can't be used. If the check fails, send anyway. */
+  const p=await edge('otp-verify',{phone:'+91'+n,check:true}).catch(()=>({}));
+  if(p?.until)return again?toast(otpPaused(p.until)):formErr(otpPaused(p.until));
   const {error}=await withCaptcha(t=>SB.auth.signInWithOtp({phone:'+91'+n,options:{captchaToken:t,data:{age_18:true}}}));
   if(error)return again?toast(friendly(error)):formErr(friendly(error));
   track('phone_code_sent',{again,signup:ui.auth.was==='up'});
@@ -2092,7 +2096,9 @@ const A={
   checkcode:()=>working(async()=>{
     const i=document.getElementById('a_code'),token=(i?.value||'').replace(/\D/g,'');
     if(token.length!==6){fieldMsg('a_code',token?'Enter all 6 digits':'Enter the code from the SMS');i?.focus();return}
-    const {error}=await SB.auth.verifyOtp({phone:ui.auth.phone,token,type:'sms'});
+    /* checked by the otp-verify Edge Function, which pauses a number for an hour after 5 wrong codes and hands back the session */
+    let r;try{r=await edge('otp-verify',{phone:ui.auth.phone,token})}catch(e){return codeWrong(friendly(e))}
+    const {error}=await SB.auth.setSession(r.session);
     if(error)return codeWrong(friendly(error));
     otpAbort?.abort();track('phone_signed_in');
     return true;   // signed in: onAuthStateChange takes it from here

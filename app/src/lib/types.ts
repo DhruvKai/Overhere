@@ -34,7 +34,9 @@ export type RawNote = {
   text: string; flags: string[]; read: boolean; key: string | null; at: number;
 };
 
-export type VerifyKind = { fails: number; attempts: number; max: number; review: boolean };
+/* review: paused right now after the last allowed try, until `until` (ms); pending: in the team's review queue.
+   until/pending are missing on a database from before the 24-hour pause. */
+export type VerifyKind = { fails: number; attempts: number; max: number; review: boolean; until?: number | null; pending?: boolean };
 
 export type AppStateResponse = {
   me: string; email: string; now: number;

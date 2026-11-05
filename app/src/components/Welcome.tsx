@@ -16,6 +16,9 @@ const PAGES: { photo: keyof typeof PHOTOS; icon: IconName; title: string; text: 
   { photo: 'sukhna', icon: 'shield', title: 'Safe by design', text: 'Hosts approve every request. Face check, show-up records, a trusted contact and SOS in every chat. Not a dating app.' },
 ];
 
+/* a soft shadow under the header text, for photos that stay bright even under the gradient */
+const shadow = { textShadowColor: 'rgba(0,0,0,0.55)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 };
+
 export default function Welcome({ onDone }: { onDone: (signUp: boolean) => void }) {
   const t = useTheme();
   const { width, height } = useWindowDimensions();
@@ -37,22 +40,23 @@ export default function Welcome({ onDone }: { onDone: (signUp: boolean) => void 
         {PAGES.map((p, i) => (
           <View key={p.photo} style={{ width, height }} accessible accessibilityLabel={`${p.title}. ${p.text}`} accessibilityHint={`Page ${i + 1} of ${PAGES.length}`}>
             <Image source={PHOTOS[p.photo]} style={{ position: 'absolute', width, height }} contentFit="cover" transition={200} />
-            <LinearGradient colors={['rgba(10,8,5,0.15)', 'rgba(10,8,5,0.25)', 'rgba(10,8,5,0.92)']} locations={[0, 0.4, 0.78]} style={{ position: 'absolute', width, height }} />
+            {/* dark at the top too, so the logo and Skip stay readable on bright photos */}
+            <LinearGradient colors={['rgba(10,8,5,0.72)', 'rgba(10,8,5,0.2)', 'rgba(10,8,5,0.25)', 'rgba(10,8,5,0.92)']} locations={[0, 0.24, 0.4, 0.78]} style={{ position: 'absolute', width, height }} />
           </View>
         ))}
       </ScrollView>
 
       <SafeAreaView pointerEvents="box-none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'space-between' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 8 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <View style={{ flexDirection: 'row', gap: 2 }}>
-              {[0, 1].map(k => <View key={k} style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: '#F2EDE4', borderWidth: 3, borderColor: t.acc }} />)}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }} accessible accessibilityRole="header" accessibilityLabel="Overhere">
+            <View style={{ flexDirection: 'row', gap: 3 }}>
+              {[0, 1].map(k => <View key={k} style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: '#fff', borderWidth: 4, borderColor: t.acc }} />)}
             </View>
-            <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800', letterSpacing: -0.4 }}>Overhere</Text>
+            <Text style={{ color: '#fff', fontSize: 24, fontWeight: '800', letterSpacing: -0.5, ...shadow }}>Overhere</Text>
           </View>
           {!last ? (
             <Pressable accessibilityRole="button" onPress={() => go(PAGES.length - 1)} hitSlop={12}>
-              <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 15, fontWeight: '700' }}>Skip</Text>
+              <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700', ...shadow }}>Skip</Text>
             </Pressable>
           ) : null}
         </View>
