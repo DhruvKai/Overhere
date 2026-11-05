@@ -281,7 +281,7 @@ authDraw();
    open the app instead. A saved login counts even if its short-lived token has expired, since the app renews it. */
 const signedIn=(()=>{try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^sb-.+-auth-token$/.test(k)&&JSON.parse(localStorage.getItem(k))?.refresh_token)return true}}catch(e){}return false})();
 if(signedIn){
-  document.querySelectorAll('a[href="#join"]').forEach(a=>{a.href='app.html';a.removeAttribute('data-mode');a.textContent='Open the app'});
+  document.querySelectorAll('a[href="#join"]').forEach(a=>{a.href='app.html';a.removeAttribute('data-mode');a.textContent='Go to site'});
   $('#au_box').classList.add('hide');$('#au_in').classList.remove('hide');
 }
 
