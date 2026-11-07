@@ -1,6 +1,15 @@
 "use strict";
 /* ---------- icons (Lucide, ISC licence) ---------- */
 const IC={
+  dumbbell:'<path d="M17.6 12.8a2 2 0 1 0 2.8-2.9l-1.7-1.7a2 2 0 0 0 2.8-2.8l-2.8-2.8a2 2 0 0 0-2.9 2.8l-1.7-1.8a2 2 0 1 0-2.9 2.9z"/><path d="m2.5 21.5 1.4-1.4"/><path d="m20.1 3.9 1.4-1.4"/><path d="M5.3 21.5a2 2 0 1 0 2.9-2.9l1.7 1.8a2 2 0 1 0 2.9-2.9l-6.4-6.3a2 2 0 1 0-2.8 2.8l1.7 1.8a2 2 0 0 0-2.8 2.8z"/><path d="m9.6 14.4 4.8-4.8"/>',
+  drama:'<path d="M10 11h.01"/><path d="M14 6h.01"/><path d="M18 6h.01"/><path d="M6.5 13.1h.01"/><path d="M22 5c0 9-4 12-6 12s-6-3-6-12c0-2 2-3 6-3s6 1 6 3"/><path d="M17.4 9.9c-.8.8-2 .8-2.8 0"/><path d="M10.1 7.1C9 7.2 7.7 7.7 6 8.6c-3.5 2-4.7 3.9-3.7 5.6 4.5 7.8 9.5 8.4 11.2 7.4.9-.5 1.9-2.1 1.9-4.7"/><path d="M9.1 16.5c.3-1.1 1.4-1.7 2.4-1.4"/>',
+  mic:'<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>',
+  mountain:'<path d="m8 3 4 8 5-5 5 15H2L8 3z"/>',
+  trees:'<path d="M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z"/><path d="M7 16v6"/><path d="M13 19v3"/><path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.5"/>',
+  'shopping-bag':'<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>',
+  'book-open':'<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+  leaf:'<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>',
+  moon:'<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
   'arrow-up-down':'<path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/>',
   check:'<path d="M20 6 9 17l-5-5"/>',
   'log-out':'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
@@ -71,43 +80,60 @@ const I=(n,s=16)=>`<svg class="i" width="${s}" height="${s}" viewBox="0 0 24 24"
 
 /* ---------- constants ---------- */
 const GENDERS=['Woman','Man','Non-binary'];
-const INTERESTS=['Movies','Cafe / Food','Concerts'];
+/* The 13 categories of the 7 Nov 2026 spec, in its order (keys and checks in schema-app.sql). movies, cafe and concerts
+   keep their old keys and interest names, so existing plans and profiles stay as they are. */
+const INTERESTS=['Fitness and sport','Movies','Theatre','Stand-up comedy','Concerts','Hangout','Cafe / Food','Adventure','Outdoor leisure','Chores and errands','Work and study','Self care','Nightlife'];
 const TIMES=['Weekday evenings','Weekend days','Weekend evenings','Late nights'];
 const CATS={
-  movies:{label:'Movies',icon:'film',fg:'#7C3AED',bg:'#EDE9FE',g:'radial-gradient(120% 70% at 50% 115%,rgba(234,88,12,.55),transparent 60%),radial-gradient(60% 40% at 50% 35%,rgba(148,163,255,.22),transparent 70%),linear-gradient(180deg,#0f0d1a,#1c1530 60%,#120e0b)'},
-  cafe:{label:'Cafe/Food',icon:'coffee',fg:'#15803D',bg:'#DCFCE7',g:'radial-gradient(80% 60% at 70% 20%,rgba(253,186,116,.85),transparent 60%),linear-gradient(160deg,#b45309,#7c2d12 55%,#2a1206)'},
-  concerts:{label:'Concerts',icon:'music',fg:'#DB2777',bg:'#FCE7F3',g:'radial-gradient(70% 55% at 30% 25%,rgba(244,114,182,.6),transparent 60%),radial-gradient(60% 50% at 80% 80%,rgba(250,204,21,.35),transparent 60%),linear-gradient(160deg,#4a0d2e,#1a0a1f)'}
+  fitness:{label:'Fitness and sport',icon:'dumbbell',fg:'#B45309',bg:'#FEF3C7',g:'radial-gradient(80% 60% at 70% 20%,rgba(251,191,36,.6),transparent 60%),linear-gradient(160deg,#92400e,#2a1606)'},
+  movies:{label:'Movie',icon:'film',fg:'#7C3AED',bg:'#EDE9FE',g:'radial-gradient(120% 70% at 50% 115%,rgba(234,88,12,.55),transparent 60%),radial-gradient(60% 40% at 50% 35%,rgba(148,163,255,.22),transparent 70%),linear-gradient(180deg,#0f0d1a,#1c1530 60%,#120e0b)'},
+  theatre:{label:'Theatre',icon:'drama',fg:'#9F1239',bg:'#FFE4E6',g:'radial-gradient(80% 60% at 70% 20%,rgba(251,113,133,.55),transparent 60%),linear-gradient(160deg,#4c0519,#1a0509)'},
+  comedy:{label:'Stand-up comedy',icon:'mic',fg:'#C2410C',bg:'#FFEDD5',g:'radial-gradient(80% 60% at 70% 20%,rgba(253,186,116,.6),transparent 60%),linear-gradient(160deg,#7c2d12,#1c0a04)'},
+  concerts:{label:'Concert',icon:'music',fg:'#DB2777',bg:'#FCE7F3',g:'radial-gradient(70% 55% at 30% 25%,rgba(244,114,182,.6),transparent 60%),radial-gradient(60% 50% at 80% 80%,rgba(250,204,21,.35),transparent 60%),linear-gradient(160deg,#4a0d2e,#1a0a1f)'},
+  hangout:{label:'Hangout',icon:'users',fg:'#0E7490',bg:'#CFFAFE',g:'radial-gradient(80% 60% at 70% 20%,rgba(103,232,249,.5),transparent 60%),linear-gradient(160deg,#155e75,#06222b)'},
+  cafe:{label:'Food',icon:'coffee',fg:'#15803D',bg:'#DCFCE7',g:'radial-gradient(80% 60% at 70% 20%,rgba(253,186,116,.85),transparent 60%),linear-gradient(160deg,#b45309,#7c2d12 55%,#2a1206)'},
+  adventure:{label:'Adventure',icon:'mountain',fg:'#4D7C0F',bg:'#ECFCCB',g:'radial-gradient(80% 60% at 70% 20%,rgba(190,242,100,.45),transparent 60%),linear-gradient(160deg,#365314,#0f1a05)'},
+  outdoor:{label:'Outdoor leisure',icon:'trees',fg:'#047857',bg:'#D1FAE5',g:'radial-gradient(80% 60% at 70% 20%,rgba(110,231,183,.5),transparent 60%),linear-gradient(160deg,#065f46,#03231a)'},
+  errands:{label:'Chores and errands',icon:'shopping-bag',fg:'#475569',bg:'#E2E8F0',g:'radial-gradient(80% 60% at 70% 20%,rgba(203,213,225,.5),transparent 60%),linear-gradient(160deg,#334155,#0f172a)'},
+  work:{label:'Work and study',icon:'book-open',fg:'#1D4ED8',bg:'#DBEAFE',g:'radial-gradient(80% 60% at 70% 20%,rgba(147,197,253,.5),transparent 60%),linear-gradient(160deg,#1e3a8a,#0b1330)'},
+  selfcare:{label:'Self care',icon:'leaf',fg:'#0F766E',bg:'#CCFBF1',g:'radial-gradient(80% 60% at 70% 20%,rgba(153,246,228,.5),transparent 60%),linear-gradient(160deg,#115e59,#04201e)'},
+  nightlife:{label:'Nightlife',icon:'moon',fg:'#6D28D9',bg:'#EDE9FE',g:'radial-gradient(80% 60% at 70% 20%,rgba(196,181,253,.45),transparent 60%),linear-gradient(160deg,#3b0764,#0d0418)'}
 };
 const COST={split:'Split equally',own:'Everyone pays their own way',host:'Host is covering everyone'};
 const COST_S={split:'Equal Split',own:'Go Dutch',host:'Host Pays'};
-/* Swipe shows today and tomorrow; Discover starts the day after, so the two never show the same plan. */
-const swipeEnd=()=>{const d=new Date(now());d.setHours(0,0,0,0);d.setDate(d.getDate()+2);return d.getTime()};
-/* Plans in Discover (after Swipe's days) can be saved for later; Swipe plans can be shared, not saved. */
-const canSave=a=>a.when>=swipeEnd()&&a.status!=='past'&&a.host!=='me',isSaved=id=>S.saved.includes(id);
+/* Swipe shows plans starting in the next 7 days (today and the 6 days after). Discover shows every upcoming plan,
+   Swipe's included. SWIPE_DAYS here and in app/src/lib/model.ts. */
+const SWIPE_DAYS=7;
+const dayStart=()=>{const d=new Date(now());d.setHours(0,0,0,0);return d};
+const swipeEnd=()=>{const d=dayStart();d.setDate(d.getDate()+SWIPE_DAYS);return d.getTime()};
+/* Upcoming plans can be saved for later: Discover's cards have the button, Swipe's cards have Share instead. */
+const canSave=a=>a.when>now()&&a.status!=='past'&&a.host!=='me',isSaved=id=>S.saved.includes(id);
 const saveBtn=(a,cls='svb')=>canSave(a)?`<button class="${cls}${isSaved(a.id)?' on':''}" data-a="save" data-id="${a.id}" aria-pressed="${isSaved(a.id)}" title="${isSaved(a.id)?'Saved':'Save for later'}" aria-label="${isSaved(a.id)?'Saved. Tap to remove':'Save for later'}">${I('bookmark',16)}</button>`:'';
 
 /* ---------- plan photos ---------- */
-/* Real, freely licensed photos from Wikimedia Commons, stored in img/plans (credits.html names each one).
-   A plan gets, in order: a photo of what it clearly is (karaoke, ramen...), else of its place if that's a
-   Chandigarh landmark, else a looser match within its category, else one of its category's photos. */
-const PHOTO_WHAT=[[/outdoor movie|movie on the lawn/,'outdoorfilm'],[/jazz/,'jazz'],[/karaoke/,'karaoke'],[/sufi|qawwali/,'sufi'],
-  [/carnatic|classical/,'classical'],[/dhol|bhangra|folk/,'dhol'],[/open.?mic|songwriting|poetry/,'openmic'],[/techno|nightclub|\bdj\b|\bedm\b/,'club'],
-  [/vinyl|record store/,'vinyl'],[/ramen/,'ramen'],[/momo/,'momos'],[/paratha|parantha/,'parantha'],[/chole|bhature/,'cholebhature'],
-  [/dessert|sweets|mithai/,'dessert'],[/cook.?along|cooking/,'cooking'],[/tea (tasting|room|flight)/,'tea'],
-  [/board ?game|pictionary|catan/,'boardgames'],[/book (swap|club|exchange)/,'books'],[/maggi|dhaba/,'dhaba'],[/crossword|filter coffee/,'coffee']];
-const PHOTO_PLACE=[[/sukhna/,'sukhna'],[/rock garden/,'rockgarden'],[/rose garden/,'rosegarden'],[/sector 17 (plaza|architecture)|plaza fountain/,'plaza17'],
-  [/capitol|le corbusier/,'capitol'],[/leisure valley/,'leisure'],[/museum/,'museum'],[/panjab university/,'pu'],[/elante/,'elante']];
-const PHOTO_LOOSE={cafe:[[/brunch|pancake|breakfast/,'brunch'],[/chai/,'chai'],[/picnic/,'picnic']],
-  concerts:[[/sitar|recital|raga/,'classical'],[/band|gig|live music|acoustic|rock/,'liveband']],
-  movies:[[/classic|re-?run|re-?release|\b90s\b|matinee|satyajit|retro/,'classicfilm']]};
-const PHOTO_CAT={movies:['cinema','classicfilm'],cafe:['coffee','brunch','chai'],concerts:['concert','liveband']};
-function photoOf(a){
-  const t=(a.venue+' '+a.desc).toLowerCase(),hit=l=>(l.find(([re])=>re.test(t))||[])[1];
-  const k=hit(PHOTO_WHAT)||hit(PHOTO_PLACE)||hit(PHOTO_LOOSE[a.cat]||[]);
-  if(k)return 'img/plans/'+k+'.webp';
-  const pool=PHOTO_CAT[a.cat]||PHOTO_CAT.cafe;let h=0;for(const ch of String(a.id))h=(h*31+ch.charCodeAt(0))>>>0;
-  return 'img/plans/'+pool[h%pool.length]+'.webp';
+/* Each category has a bank of freely licensed photos (img/plans/bank.json, from Wikimedia Commons: CC0, CC BY or CC BY-SA,
+   no identifiable people). A plan gets the photo from its category's bank whose tags best match its description and venue,
+   else the category's default photo. The host never uploads or picks it, and the activity view says it's illustrative and
+   credits it (photoCredit). photoFor in app/src/lib/photos.ts does the same. */
+/* PHOTO_BANK start: generated by tools/plan-photos.py from img/plans/bank.json */
+const PHOTO_BANK=[["outdoorfilm",["movies","outdoor"],["outdoor movie","movie on the lawn","open air screening","drive in"],[],"Drive-in cinema","Michael Kilgore","CC BY 2.0","https://creativecommons.org/licenses/by/2.0","https://commons.wikimedia.org/wiki/File:Skyline_Drive-In_Theater,_Barstow,_California_(47073564334).jpg"],["jazz",["concerts","nightlife"],["jazz","blues"],[],"Jazz club stage","Pelajanela","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:The_stage_of_Blues_Alley_%26_Jazz_in_Georgetown_(Washington,_D.C.).jpg"],["karaoke",["concerts","nightlife","comedy"],["karaoke","sing","singing","mic"],[],"Microphone","Derek Gavey from Medicine Hat, Canada","CC BY 2.0","https://creativecommons.org/licenses/by/2.0","https://commons.wikimedia.org/wiki/File:Karaoke_Star!_(4917447111).jpg"],["sufi",["concerts"],["sufi","qawwali","ghazal"],[],"Harmonium","David Estes","CC BY-SA 3.0","https://creativecommons.org/licenses/by-sa/3.0","https://commons.wikimedia.org/wiki/File:Pakistani_Qawwali_Harmonium.jpg"],["classical",["concerts"],["carnatic","classical","sitar","recital","raga","veena"],[],"Sitar","The Metropolitan Museum of Art","CC0","https://creativecommons.org/publicdomain/zero/1.0/deed.en","https://commons.wikimedia.org/wiki/File:Sitar_MET_C10563_1994.63.jpg"],["dhol",["concerts","nightlife"],["dhol","bhangra","folk","garba"],[],"Dhol","Suyash Dwivedi","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Dhol_Rathaava_Community_Gujrat.jpg"],["openmic",["concerts","comedy"],["open mic","openmic","songwriting","poetry","standup","stand up","comedy","comic","jokes","roast","spoken word"],["comedy"],"Open mic","Carsten Stiller","CC BY 2.0","https://creativecommons.org/licenses/by/2.0","https://commons.wikimedia.org/wiki/File:2013-09-28_Jena_Waiting_2_(10001985445).jpg"],["club",["nightlife","concerts"],["techno","nightclub","dj","edm","rave","house music"],[],"DJ booth","Arnold Jaeger Werner","CC BY 2.0","https://creativecommons.org/licenses/by/2.0","https://commons.wikimedia.org/wiki/File:DJ_booth_with_DJ-Mixer,_two_turntables_and_two_CDJ-players_in_former_Bob_Beaman_nightclub_in_Munich.jpg"],["vinyl",["concerts","hangout","errands"],["vinyl","record store","records","thrift"],[],"Record store","Mr Cup / Fabien Barral iammrcup","CC0","https://creativecommons.org/publicdomain/zero/1.0/deed.en","https://commons.wikimedia.org/wiki/File:Vinyl_collection_at_a_record_store_(Unsplash).jpg"],["ramen",["cafe"],["ramen","noodles","japanese"],[],"Ramen","Shisma","CC BY 4.0","https://creativecommons.org/licenses/by/4.0","https://commons.wikimedia.org/wiki/File:Ramen_Bowl_2.jpg"],["momos",["cafe"],["momo","momos","dumpling"],[],"Momos","Andy Li","CC0","https://creativecommons.org/publicdomain/zero/1.0/deed.en","https://commons.wikimedia.org/wiki/File:Vegetable_Momos_-_Yak_Yeti_Yak_2025-07-23.jpg"],["parantha",["cafe"],["paratha","parantha","parathe"],[],"Aloo paratha","AjayDas","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Aloo_paratha_served_with_daal,_curd_and_achar.jpg"],["cholebhature",["cafe"],["chole","bhature","chhole"],[],"Chole bhature","Sutapa Pal","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Chole_Bhature-Noida-UP-SP002.jpg"],["dessert",["cafe"],["dessert","sweets","mithai","cake","ice cream"],[],"Indian sweets","Laura","CC BY-SA 2.0","https://creativecommons.org/licenses/by-sa/2.0","https://commons.wikimedia.org/wiki/File:Sweets_Mithai_for_Diwali_and_other_Festivals_of_India.jpg"],["cooking",["cafe","hangout"],["cook along","cooking","cook","potluck","dinner"],[],"Butter chicken","Amar Nath Adak","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:CreamyButterChicken.jpg"],["tea",["cafe","selfcare"],["tea tasting","tea room","tea flight","green tea"],[],"Tea tasting","Difference engine","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Two_small_tasting_cups_of_Lapsang_Souchong.jpg"],["boardgames",["hangout","cafe"],["board game","boardgame","pictionary","catan","ludo","chess","cards","games night"],[],"Board game","Tetzemann","CC0","https://creativecommons.org/publicdomain/zero/1.0/deed.en","https://commons.wikimedia.org/wiki/File:Brettspiel_Mensch_%C3%A4rger_dich_nicht.jpg"],["books",["hangout","work"],["book swap","book club","book exchange","books","novel"],[],"Book swap","Elitre","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Wikimania_2016_-_Book_swapping_05.jpg"],["dhaba",["cafe"],["maggi","dhaba","thali","rajma","lunch","biryani","street food","food walk","vada pav","pav bhaji","pizza"],[],"Dal and roti","Billjones94","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Roti,_tadka,_and_onion.jpg"],["coffee",["cafe","hangout","work"],["crossword","filter coffee","coffee","cafe","latte","cappuccino"],["cafe"],"Filter coffee","K.Sreeram 2603","CC0","https://creativecommons.org/publicdomain/zero/1.0/deed.en","https://commons.wikimedia.org/wiki/File:Memorable_Coffee.jpg"],["brunch",["cafe"],["brunch","pancake","pancakes","breakfast","waffles"],[],"Pancakes","Bernard DUPONT","CC BY-SA 2.0","https://creativecommons.org/licenses/by-sa/2.0","https://commons.wikimedia.org/wiki/File:Pancakes_for_Breakfast_-_Oxkutzkab_Yucatan.jpg"],["chai",["cafe","hangout"],["chai","samosa","pakora","snacks"],[],"Chai and samosa","Sarkar Sayantan","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Samosa_with_cutting_chai_-_1.jpg"],["picnic",["cafe","outdoor","hangout"],["picnic"],[],"Picnic","Personal Creations","CC BY 2.0","https://creativecommons.org/licenses/by/2.0","https://commons.wikimedia.org/wiki/File:Wine_glasses_on_a_box_cutting_board_with_cheese_fruit_and_bread_chalkboard_and_personalized_pillows_on_a_picnic_blanket_(19924590745).jpg"],["liveband",["concerts","nightlife"],["band","gig","live music","acoustic","rock","indie","jam"],[],"Band gear on stage","Kuba Bożanowski from Warsaw, Poland","CC BY 2.0","https://creativecommons.org/licenses/by/2.0","https://commons.wikimedia.org/wiki/File:Tonys_amp_(2941807248).jpg"],["concert",["concerts"],["concert","show","festival","tour"],["concerts"],"Concert stage","Kinglevel","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Meshuggah_Stage_Design_2022,_Ancienne_Belgique,_Belgium._06.jpg"],["classicfilm",["movies"],["classic","rerun","re run","re release","rerelease","90s","matinee","satyajit","retro"],[],"Classic cinema","Rob Chandler","CC BY 2.0","https://creativecommons.org/licenses/by/2.0","https://commons.wikimedia.org/wiki/File:Piccadilly_Cinema_screen,_Perth.jpg"],["cinema",["movies"],["movie","film","cinema","pvr","inox","screening","premiere","imax"],["movies"],"Cinema hall","Mojmir Churavy","CC0","https://creativecommons.org/publicdomain/zero/1.0/deed.en","https://commons.wikimedia.org/wiki/File:Kino_Atlas_Interier_J.jpg"],["sukhna",["outdoor","fitness","hangout","adventure"],["sukhna"],[],"Sukhna Lake","Unpetitprole","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Sunrise_over_Sukhna.jpg"],["rockgarden",["outdoor","hangout"],["rock garden"],[],"Rock Garden","Anilsahu84","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Men_at_rock_garden_chandigarh.jpg"],["rosegarden",["outdoor","hangout","selfcare"],["rose garden"],[],"Zakir Hussain Rose Garden","Vengolis","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Zakir_Hussain_Rose_Garden_20180907_154724.jpg"],["plaza17",["hangout","cafe","outdoor","nightlife","errands"],["sector 17 plaza","sector 17 architecture","plaza fountain"],[],"Musical fountain, Sector 17","Rhythm Kataria","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Musical_Fountain,_Sector_17,_Chandigarh.jpg"],["capitol",["outdoor","hangout"],["capitol","le corbusier"],[],"Capitol Complex","Nicholas.iyadurai","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Chandigarh_Capitol_Complex_-_Le_Corbusier_-_Hall_of_Shadows_ramp.jpg"],["leisure",["outdoor","fitness","hangout"],["leisure valley"],[],"Leisure Valley","RIDH-1","CC0","https://creativecommons.org/publicdomain/zero/1.0/deed.en","https://commons.wikimedia.org/wiki/File:Leisurevalleymarch2026.jpg"],["museum",["hangout","outdoor","work"],["museum","art gallery","exhibition"],[],"Government Museum and Art Gallery","UnpetitproleX","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Chandigarh_Museum_and_Art_Gallery.jpg"],["pu",["work","hangout","fitness"],["panjab university"],[],"Gandhi Bhawan, Panjab University","UnpetitproleX","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Gandhi_Bhawan,_Chandigarh.jpg"],["elante",["errands","hangout","movies","cafe"],["elante"],[],"Elante Mall","Barthateslisa","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Elante_Mall,_Chandigarh.jpg"],["gym",["fitness","selfcare"],["gym","workout","weights","lifting","strength","dumbbell","training","crossfit"],["fitness"],"Dumbbells in a gym","Shixart1985","CC BY 2.0","https://creativecommons.org/licenses/by/2.0","https://commons.wikimedia.org/wiki/File:Fitness_dumbbell_marked_with_a_green_logo_resting_on_a_gym_rack.jpg"],["badminton",["fitness"],["badminton","shuttle","racket","racquet"],[],"Badminton racket and shuttlecock","Vladimir Maftei, http://www.enciclopedie.info/","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Rachet%C4%83_de_badminton_%C5%9Fi_flutura%C5%9F.jpg"],["cricket",["fitness","outdoor"],["cricket","nets","wicket","match"],[],"Cricket pitch","Acabashi","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Church_Times_Cricket_Cup_final_2019,_Wicket_3.jpg"],["running",["fitness"],["run","running","jog","jogging","marathon","sprint","track","5k","10k"],[],"Running track","Petewarrior","CC BY 4.0","https://creativecommons.org/licenses/by/4.0","https://commons.wikimedia.org/wiki/File:Brillia_Running_Stadium_track.jpg"],["swim",["fitness","selfcare"],["swim","swimming","pool","laps"],[],"Swimming pool lanes","Xander from Yellowknife, NT, Canada","CC BY 2.0","https://creativecommons.org/licenses/by/2.0","https://commons.wikimedia.org/wiki/File:Swimming_pool_with_lane_ropes_in_place_cropped.jpg"],["theatre",["theatre"],["play","drama","theatre","theater","musical","opera","natak"],["theatre"],"Theatre auditorium and curtain","OlenaMuzychenko (WMUA)","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:The_auditorium_of_the_Odessa_Opera_House_02.jpg"],["stage",["theatre"],["shakespeare","classic","rehearsal","workshop","acting","improv"],[],"Empty theatre stage","Didier Descouens","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Interior_of_Teatro_Olimpico_(Vicenza)_scena_.jpg"],["lounge",["hangout","cafe"],["hang","chill","chat","lounge","catch up","meet new people"],["hangout"],"Café lounge chairs","Andy Li","CC0","http://creativecommons.org/publicdomain/zero/1.0/deed.en","https://commons.wikimedia.org/wiki/File:Seats_in_Cafe_%26_Laundrette,_East_Reach,_Taunton_2025-07-26.jpg"],["terrace",["hangout","nightlife","cafe"],["rooftop","terrace","fairy lights","balcony"],[],"Terrace seating with lights","PattayaPatrol","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:DZ6_2632_A_cozy_outdoor_corner_at_night_a_wicker_chair_beside_a_small_table_potted_plants_a_glowing_candle_and_twinkling_string_lights_welcoming_passersby.jpg"],["trek",["adventure","outdoor"],["trek","trekking","hike","hiking","mountain","himalaya","trail","triund","kasauli"],["adventure"],"Himalayan valley trail","Жанна Сорокина","CC0","http://creativecommons.org/publicdomain/zero/1.0/deed.en","https://commons.wikimedia.org/wiki/File:%D0%9D%D0%B5%D0%BF%D0%B0%D0%BB_%D0%93%D0%B8%D0%BC%D0%B0%D0%BB%D0%B0%D0%B8_(211503667).jpeg"],["climbing",["adventure","fitness"],["climb","climbing","bouldering","wall"],[],"Climbing wall","Ka23 13","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:ClimbingHolds_20211103_145113.jpg"],["camping",["adventure","outdoor"],["camp","camping","tent","overnight","bonfire","stargazing"],[],"Tents in a pine forest","Ditsakul","CC BY-SA 3.0","https://creativecommons.org/licenses/by-sa/3.0","https://commons.wikimedia.org/wiki/File:Camping_Tent_at_Doi_Angkhang_Mountain,_Chiangmai,_Thailand.jpg"],["rafting",["adventure"],["raft","rafting","kayak","river","rishikesh"],[],"River rafting","Sumita Roy Dutta","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:River_rafting_at_Rishikesh_Photographed_By_Sumita_Roy.jpg"],["parkwalk",["outdoor","hangout","fitness","cafe"],["park","walk","stroll","bench","evening walk","morning walk","sunrise walk","heritage walk","lake walk"],["outdoor"],"Park path and bench","Humoyun Mehridinov","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Tashkent_Botanical_Garden_trees_and_a_path_03.jpg"],["boating",["outdoor","hangout"],["boat","boating","lake","paddle","pedal"],[],"Swan pedal boats on a lake","Paul Harrop","CC BY-SA 2.0","https://creativecommons.org/licenses/by-sa/2.0","https://commons.wikimedia.org/wiki/File:Pedal_boats,_East_Park,_Hull_-_geograph.org.uk_-_5889388.jpg"],["fountain",["outdoor"],["fountain","garden","botanical","flowers"],[],"Garden fountain","Ruth Sharville","CC BY-SA 2.0","https://creativecommons.org/licenses/by-sa/2.0","https://commons.wikimedia.org/wiki/File:Fountain_at_path_junction,_Cambridge_University_Botanical_Garden_-_geograph.org.uk_-_6691018.jpg"],["market",["errands","cafe"],["market","sabzi","vegetables","veggies","groceries","mandi","bazaar"],["errands"],"Vegetable market","Timothy A. Gonsalves","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Onions_Veg_Stall_Ooty_Market_Nilgiris_Aug25_A7CR_07102.jpg"],["supermarket",["errands"],["supermarket","grocery","shopping","store","mall","dmart"],[],"Supermarket aisle","Wilfredor","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Aisle_in_L_Intermarche_supermarket_in_Quebec_City.jpg"],["laundry",["errands"],["laundry","laundromat","washing","clothes","dry clean"],[],"Laundromat","ArtOfHappiness","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Laundromat_Washing_Machines_%26_Laundry_Equipment.jpg"],["laptop",["work"],["work","laptop","cowork","coworking","coding","freelance","wfh","startup","hackathon"],["work"],"Laptop and coffee on a desk","Lauren Mancke","CC0","http://creativecommons.org/publicdomain/zero/1.0/deed.en","https://commons.wikimedia.org/wiki/File:Laptop_and_coffee_on_a_desk.jpg"],["library",["work"],["study","library","exam","reading","revision","upsc","notes","assignment"],[],"Library study tables","MB-one","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Reading_room,_Ground_floor,_VW_Library,_Berlin.jpg"],["bar",["nightlife"],["bar","lounge","club","clubbing","night out","party","dance","dancing"],["nightlife"],"Bar with neon lights","PattayaPatrol","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:DSC_7093_A_cozy_dimly_lit_cocktail_bar_with_purple_and_blue_mood_lighting_a_glassware-studded_ceiling_and_a_row_of_plush_bar_stools_lining_a_glossy_counter.jpg"],["cocktail",["nightlife"],["cocktail","cocktails","drinks","mixology","happy hour","wine"],[],"Cocktails","Shixart1985","CC BY 2.0","https://creativecommons.org/licenses/by/2.0","https://commons.wikimedia.org/wiki/File:Refreshing_cocktail_served_in_a_glass_with_a_slice_of_citrus_and_ice_on_a_vibrant_bar_background.jpg"],["pub",["nightlife"],["pub","beer","brewery","brewpub","craft","pint","tap"],[],"Beer taps in a pub","JIP","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Beer_taps_at_restaurant_P%C3%B5rgu,_Tallinn.jpg"],["spa",["selfcare"],["spa","pamper","relax","facial","salon","self care","selfcare"],["selfcare"],"Towels and orchids","Tim Reckmann from Hamm, Deutschland","CC BY 2.0","https://creativecommons.org/licenses/by/2.0","https://commons.wikimedia.org/wiki/File:Handt%C3%BCcher_im_Spa_(53404561087).jpg"],["yoga",["selfcare","fitness"],["yoga","stretch","stretching","pilates","mat"],[],"Rolled yoga mats","Sha89sha","CC0","http://creativecommons.org/publicdomain/zero/1.0/deed.en","https://commons.wikimedia.org/wiki/File:Cotton_Yoga_Mats.png"],["aroma",["selfcare"],["aroma","aromatherapy","oils","massage","wellness","meditation","meditate"],[],"Essential oils and flowers","Alek866215","CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0","https://commons.wikimedia.org/wiki/File:Aromatherapie.jpg"]].map(([k,cats,tags,def,title,by,lic,licUrl,src])=>({k,cats,tags,def,title,by,lic,licUrl,src}));
+/* PHOTO_BANK end */
+const photoWords=s=>' '+String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim()+' ';
+function photoFor(a){
+  const d=photoWords(a.desc),v=photoWords(a.venue),has=(t,w)=>t.includes(' '+w+' ')||t.includes(' '+w+'s ')||t.includes(' '+w+'es ');
+  let best=null,bs=0;
+  for(const p of PHOTO_BANK){
+    if(!p.cats.includes(a.cat))continue;
+    /* whole words or phrases, plurals too ("momo" matches "momos", but "bar" doesn't match "barbecue"). The description
+       decides first; the venue's name (which often just says "café") only breaks ties, then the more specific match wins
+       ("board games" over "coffee"). */
+    let n=0,m=0,l=0;for(const g of new Set(p.tags.map(g=>photoWords(g).trim()))){const hd=has(d,g),hv=has(v,g);n+=hd;m+=hv;if(hd||hv)l+=g.length}
+    const sc=n*1e6+m*1e3+l;if(sc>bs){bs=sc;best=p}
+  }
+  return best||PHOTO_BANK.find(p=>p.def.includes(a.cat))||PHOTO_BANK.find(p=>p.def.includes('cafe'));
 }
+function photoOf(a){return 'img/plans/'+photoFor(a).k+'.webp'}
+const photoCredit=a=>{const p=photoFor(a);return `<p class="small mute" style="margin:6px 2px 0">${I('camera',12)} Illustrative photo, not the actual venue · <a href="${esc(p.src)}" target="_blank" rel="noopener" style="color:inherit">${esc(p.title)}</a> by ${esc(p.by)}, <a href="${esc(p.licUrl)}" target="_blank" rel="license noopener" style="color:inherit">${esc(p.lic)}</a></p>`};
 /* The photo over the category's colours (shown while it loads), and the category icon only when there's no photo. */
 const planBg=a=>{const c=CATS[a.cat]||CATS.cafe,p=photoOf(a);return p?`url('${p}') center/cover no-repeat,${c.g}`:c.g};
 const planThumb=a=>`<div class="thumb" style="background:${planBg(a)}"></div>`;
@@ -123,7 +149,8 @@ const defEmo=g=>g==='Woman'?'👩':g==='Man'?'👨':'🧑';
 const EMOJIS=['👩🏻','👩🏽','👩🏿','👨🏻','👨🏽','👨🏿','🧑🏼','🧑🏾','👩🏽‍🦱','👨🏻‍🦱','👩🏾‍🦳','🧔🏽','👱🏻‍♀️','👳🏽‍♂️','🧕🏽','👩🏽‍💻','👨🏾‍💻','👩🏻‍🎨','👨🏽‍🍳','🧑🏽‍🎤','👩🏾‍🏫','👨🏻‍🎓','👩🏽‍🔬','🧑🏻‍🚀','😀','😎','🤓','🥳','🦊','🐼','🐯','🐨','🦉','🌻','🎧','🎬','☕','🎸'];
 /* Other people, filled in from the database: name, gender, age, job, bio, emoji, verified, show-up record, past plans, likes. */
 let USERS={};
-const CAT_INT={movies:'Movies',cafe:'Cafe / Food',concerts:'Concerts'};
+const CAT_INT={fitness:'Fitness and sport',movies:'Movies',theatre:'Theatre',comedy:'Stand-up comedy',concerts:'Concerts',hangout:'Hangout',cafe:'Cafe / Food',
+  adventure:'Adventure',outdoor:'Outdoor leisure',errands:'Chores and errands',work:'Work and study',selfcare:'Self care',nightlife:'Nightlife'};
 const CHAT_REASONS=['Harassment or threats','Sexual or unwanted messages','Spam or scam','Hate speech','Copyright infringement','Something else'];
 const MICRO={swipe:'Was swiping an easy way to find plans?',request:'How easy was it to ask to join?',post:'How easy was posting your plan?',rating:'Was rating the meetup quick enough?'};
 /* The feedback sheet: the consent wording version (same as the landing page's form) and its five faces. */
@@ -141,10 +168,10 @@ const SB_URL=(CFG.SUPABASE_URL||'').replace(/\/+$/,'').replace(/\/rest\/v1$/,'')
 const ONLINE=!!(SB_URL&&CFG.SUPABASE_ANON_KEY&&/^https?:$/.test(location.protocol)&&window.supabase);
 const SB=ONLINE?window.supabase.createClient(SB_URL,CFG.SUPABASE_ANON_KEY):null;
 const EVERYONE='00000000-0000-0000-0000-000000000000';
-let ME=null,MYPHONE='',AUTHU={},MODE={face:'simulated',kyc:'simulated'},VER={face:{fails:0,attempts:0,max:5,review:false},kyc:{fails:0,attempts:0,max:5,review:false}},skew=0,loaded=false,DRAFT=null,LOCKED=0,CITIES=[],VIEW={city:null,auto:false};
+let DUE=[],ME=null,MYPHONE='',AUTHU={},MODE={face:'simulated',kyc:'simulated'},VER={face:{fails:0,attempts:0,max:5,review:false},kyc:{fails:0,attempts:0,max:5,review:false}},skew=0,loaded=false,DRAFT=null,LOCKED=0,CITIES=[],VIEW={city:null,auto:false};
 const isUuid=x=>typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(x);
 /* Your private settings, saved to your account. ACT_FLAGS remember which reminders an activity already gave you. */
-const PRIV=['dismissed','following','alerts','muted','tips','asked','actf','seenPost','savedF','city','saved'];
+const PRIV=['dismissed','following','alerts','muted','tips','asked','actf','seenPost','savedF','city','saved','taste'];
 /* The consent version that includes the Terms and community guidelines (terms.html). The database says which one is
    current (app_state's terms_v), so the app only asks once the database can record the answer. */
 let TERMS_V=null,GONE18=false;
@@ -161,7 +188,7 @@ const sid=id=>id==='me'?ME:id;   // back to a database id
 /* Turn the database's answer into the shapes the screens use. */
 function applyState(st){
   ME=st.me;MODE=st.mode||MODE;VER=st.verify||VER;skew=(st.now||Date.now())-Date.now();DRAFT=null;   // the profile form starts empty: nothing pre-filled, not even from the old beta sign-up
-  LOCKED=st.locked||0;TERMS_V=st.terms_v||null;
+  LOCKED=st.locked||0;TERMS_V=st.terms_v||null;DUE=Array.isArray(st.due)?st.due:[];
   CITIES=Array.isArray(st.cities)?st.cities:[];VIEW={city:st.city||null,auto:!!st.city_auto};
   const mid=id=>id===ME?'me':id,p=st.profile,first=!loaded,known=new Set(S.notes.map(n=>n.id));
   const keepLocal=dirty?Object.fromEntries(PRIV.map(k=>[k,S[k]])):null,keepTrusted=dirty?S.me?.trusted:undefined;
@@ -170,7 +197,7 @@ function applyState(st){
   const priv=p.state||{};
   USERS={};let mine={};
   (st.people||[]).forEach(x=>{
-    const u={name:x.name,gender:x.gender,age:x.age,job:x.job||'',bio:x.bio||'',emo:x.emo||defEmo(x.gender),photo:avatarUrl(x.photo),photo2:avatarUrl(x.photo2),verified:!!x.face,trust:[x.met||0,x.shows||0],hist:x.hist||[],ints:x.ints||[],avail:x.avail||[],sample:!!x.sample};
+    const u={name:x.name,gender:x.gender,age:x.age,job:x.job||'',bio:x.bio||'',emo:x.emo||defEmo(x.gender),photo:avatarUrl(x.photo),photo2:avatarUrl(x.photo2),verified:!!x.face,trust:[x.met||0,x.shows||0,x.noshows??Math.max(0,(x.met||0)-(x.shows||0))],hist:x.hist||[],ints:x.ints||[],avail:x.avail||[],sample:!!x.sample};
     if(x.id===ME)mine=u;else USERS[x.id]=u;
   });
   S=blank();
@@ -178,7 +205,7 @@ function applyState(st){
   if(keepLocal)Object.assign(S,keepLocal);   // settings you changed a moment ago and are still being saved
   S.following=(Array.isArray(S.following)?S.following:[]).filter(isUuid);S.dismissed=(Array.isArray(S.dismissed)?S.dismissed:[]).filter(isUuid);S.saved=(Array.isArray(S.saved)?S.saved:[]).filter(isUuid).slice(-100);
   if(typeof S.city!=='string'||S.city.length>8)S.city=null;
-  ['muted','tips','asked','actf'].forEach(k=>{if(!S[k]||typeof S[k]!=='object'||Array.isArray(S[k]))S[k]={}});if(typeof S.seenPost!=='number')S.seenPost=0;
+  ['muted','tips','asked','actf','taste'].forEach(k=>{if(!S[k]||typeof S[k]!=='object'||Array.isArray(S[k]))S[k]={}});if(typeof S.seenPost!=='number')S.seenPost=0;
   S.savedF=(Array.isArray(S.savedF)?S.savedF:[]).filter(x=>x&&/^sf[0-9a-z]+$/.test(x.id)&&typeof x.label==='string'&&x.f&&typeof x.f==='object').slice(0,10);
   S.alerts=(Array.isArray(S.alerts)?S.alerts:[]).filter(x=>x&&/^al[0-9a-z]+$/.test(x.id)&&typeof x.label==='string');
   S.me={name:p.name,dob:p.dob,gender:p.gender,hood:p.hood,ll:p.lat!=null?[p.lat,p.lng]:null,job:p.job||'',bio:p.bio||'',ints:p.ints||[],avail:p.avail||[],emo:p.emo||defEmo(p.gender),
@@ -189,14 +216,17 @@ function applyState(st){
     const mem=(a.members||[]).map(mid);
     return {id:a.id,host:mid(a.host),cat:a.cat,desc:a.desc,cap:a.cap,when:a.when,aud:a.aud&&a.aud.length?a.aud:'everyone',venue:a.venue,cost:a.cost,
       ...(a.total?{total:a.total}:{}),...(a.repeat?{repeat:a.repeat}:{}),...(a.lat!=null?{ll:[a.lat,a.lng]}:{}),hood:a.hood,status:a.when<=t?'past':a.status,created:a.created,
-      members:mem.length===a.mcount?mem:Array.from({length:a.mcount},()=>'?'),wl:a.wl||0,mypos:a.mypos||0,...flagsOf(a.id)};
+      members:mem.length===a.mcount?mem:Array.from({length:a.mcount},()=>'?'),dur:a.dur||2,relist:a.relist||0,attDone:!!a.att_done,
+      myAtt:a.my_att||null,myReply:!!a.my_reply,...flagsOf(a.id)};
   });
   /* your home area and your own venues are known places, so the profile and edit forms accept them as they are */
   if(S.me.ll)PLACE_AT[S.me.hood.toLowerCase()]=S.me.ll;
   S.acts.forEach(a=>{if(a.host==='me'&&a.ll)PLACE_AT[a.venue.toLowerCase()]=a.ll});
   const pastIds=new Set(S.acts.filter(a=>a.status==='past').map(a=>a.id));
+  /* A rejection is silent (the 7 Nov spec): your own rejected requests show as Closed, the same as requests closed
+     when a plan filled up. Old waitlist entries are closed too. */
   S.reqs=(st.reqs||[]).sort((x,y)=>x.at-y.at).map(r=>({id:r.id,act:r.act,user:mid(r.user),note:r.note||'',
-    status:pastIds.has(r.act)&&(r.status==='pending'||r.status==='waitlist')?'no_action':r.status}));
+    status:pastIds.has(r.act)&&r.status==='pending'?'no_action':r.status==='waitlist'||(r.status==='rejected'&&r.user===ME)?'closed':r.status}));
   (st.reported||[]).forEach(m=>{S.reported[m]=true});
   (st.msgs||[]).forEach(m=>{(S.chats[m.act]=S.chats[m.act]||[]).push({id:m.id,from:m.sys?'sys':m.from?mid(m.from):'?',text:m.text,at:m.at,reported:!!S.reported[m.id],
     ...(m.poll?{poll:{q:m.poll.q,opts:m.poll.opts.map((o,j)=>({t:o,v:(m.votes||[]).filter(v=>v.o===j).map(v=>mid(v.u))}))}}:{})})});
@@ -257,7 +287,9 @@ async function pushState(){
 /* ---------- helpers ---------- */
 const now=()=>Date.now()+skew;
 /* A group chat is read-only from 3 hours after its plan starts (_chat_closed in schema-app.sql decides). */
-const CHAT_OPEN_H=3,chatClosed=a=>a.when+CHAT_OPEN_H*3600e3<now();
+/* A plan ends its duration after it starts (the host picks 1 to 24 hours); the chat closes CHAT_OPEN_H after that. */
+const durTxt=h=>h+' hour'+(h===1?'':'s'),endOf=a=>a.when+(a.dur||2)*3600e3,hasEnded=a=>endOf(a)<=now();
+const CHAT_OPEN_H=3,chatClosed=a=>endOf(a)+CHAT_OPEN_H*3600e3<now();
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uname=id=>id==='me'?'You':(USERS[id]?.name||'Someone');
 /* Host name + age; opens their profile unless it's you. */
@@ -299,6 +331,54 @@ const spotTxt=a=>spots(a)<=0?'Full':spots(a)+' spot'+(spots(a)===1?'':'s')+' ope
 const tags=a=>[COST_S[a.cost],...(a.aud==='everyone'?[]:[a.aud.join(' / ')+' only']),...(a.repeat?[REPEAT[a.repeat]]:[])];
 const actOf=id=>S.acts.find(a=>a.id===id);
 const myReq=id=>S.reqs.find(r=>r.act===id&&r.user==='me');
+/* What's left to do after a plan, if anything: 'host' (rate it and record attendance), 'member' (the host marked you
+   as there: rate the plan and the host) or 'noshow' (marked as not there: say what happened). */
+function needRate(a){
+  if(!a)return null;
+  if(a.host==='me')return a.members.length&&hasEnded(a)&&!a.attDone?'host':null;
+  if(a.myAtt==='show'&&!S.ratings[a.id])return 'member';
+  if(a.myAtt==='noshow'&&!a.myReply)return 'noshow';
+  return null;
+}
+/* Reasons for leaving a plan and for removing someone (the 7 Nov spec). "Other" asks for the person's own words. */
+const OPT_OUT=['Plans changed',"Running late and can't make it",'Travel or transport problem','Work or study commitment','Personal or family reason',
+  'Cost is more than expected',"The plan isn't what I expected",'Feel uncomfortable with the group','Feel unsafe','Other'];
+/* Words a plan's description can't contain. The database decides (blocked_terms and _bad_word in schema-app.sql, where
+   the team can add more); this copy of the starting list warns while you type. Same list and matching in
+   app/src/lib/words.ts. A trailing * also matches longer words. Matching ignores case, look-alike characters, letters
+   stretched out or spaced out, and only matches whole words (so "Sussex" and "cocktail" are fine). */
+const BAD_TERMS=['fuck*','motherfuck*','fck','fuk','shit','shitty','bullshit','bitch*','bastard*','asshole*','ass','arse','dick','dickhead*','cock','cunt*','pussy','wank*','slut*','whore*','boobs','tits','titties','cum','sex','sexy','horny','nudes','porn*','xxx','nsfw','onlyfans','sexting','rape','rapist','escort','escorts','hooker','hookers','prostitute*','nigger*','nigga','niggas','faggot*','retard','retarded','kys','hookup','hookups','fwb','cocaine','heroin','mdma','lsd','meth','ganja','charas','chutiya','chutiye','chutia','chut','bhenchod','behenchod','bhanchod','benchod','madarchod','maderchod','madarjaat','bsdk','bhosdi*','bhosda','gandu','gaand','lund','lauda','lavda','loda','lodu','jhatu','jhaant','chodu','randi','randwa','harami','haramkhor','kutiya','escort service','call girl','call girls','hook up','one night stand','friends with benefits','no strings attached','sugar daddy','sugar baby','sugar mommy','casual sex','looking for girlfriend','looking for a girlfriend','looking for boyfriend','looking for a boyfriend','body massage','kill yourself','ecstasy pills'];
+const LOOK={'@':'a','4':'a','0':'o','1':'i','3':'e','5':'s','$':'s','7':'t','!':'i','|':'l'};
+const normWords=t=>' '+String(t||'').toLowerCase().replace(/[@40135$7!|]/g,c=>LOOK[c]).replace(/[^a-z]+/g,' ').replace(/([a-z])\1{2,}/g,'$1')
+  .replace(/\b([a-z]) (?=[a-z]\b)/g,'$1').trim()+' ';
+function badWord(t){
+  const n=normWords(t);
+  for(const term of BAD_TERMS){const w=normWords(term.replace(/\*$/,'')).trim();if(w&&n.includes(term.endsWith('*')?' '+w:' '+w+' '))return w}
+  return '';
+}
+function descWarn(){const w=badWord(val('f_desc'));fieldMsg('f_desc',w?`"${w}" isn't allowed in a plan. Please reword it so it's friendly for everyone.`:'')}
+const RM_REASONS=['They asked to be removed','Harassment or unwelcome messages','Unsafe or inappropriate conduct','Repeatedly late','Spam or promotion','Other'];
+const reasonList=(k,list)=>list.map(r=>`<label class="chk"><input type="radio" name="${k}_r" value="${esc(r)}"> ${esc(r)}</label>`).join('')
+  +`<input id="${k}_other" maxlength="150" placeholder="If Other: say why in your own words" aria-label="Other reason" style="margin-top:6px">`;
+function pickedReason(k){
+  const r=document.querySelector(`input[name=${k}_r]:checked`)?.value;if(!r){toast('Pick a reason');return ''}
+  if(r!=='Other')return r;
+  const t=val(k+'_other');if(!t){toast('Say why in your own words');document.getElementById(k+'_other')?.focus();return ''}
+  return t;
+}
+/* The host's form after a plan: was it OK, a rating, and everyone marked as there or a no-show. */
+function attendForm(a){
+  const prev=S.ratings[a.id];
+  return `<div class="sum">${planThumb(a)}<div style="min-width:0"><div class="t">${esc(a.desc)}</div><div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(placeLine(a))}</span></div></div></div>
+    <label>Did everything go OK?</label><div class="opts"><label class="opt"><input type="radio" name="rt_ok" value="yes" ${prev?.ok!=='no'?'checked':''}>Yes, all good</label><label class="opt"><input type="radio" name="rt_ok" value="no" ${prev?.ok==='no'?'checked':''}>Something went wrong</label></div>
+    <div class="wrongbox" id="rt_wrong"${prev?.ok==='no'?'':' hidden'}><b>Are you still in a bad situation?</b><button class="btn bad" data-a="sos" data-id="${a.id}">${I('alert-triangle',16)} Yes, I need help now</button>
+      <p class="small" style="margin:10px 0 6px">It already happened? Tap a name below to report someone, or email us. A person on our team reads every report.</p></div>
+    <label>How did the plan go overall?</label><div class="rstars" role="radiogroup" aria-label="How the plan went">${[5,4,3,2,1].map(n=>`<label title="${n} star${n>1?'s':''}"><input type="radio" name="at_star" value="${n}" aria-label="${n} star${n>1?'s':''}" ${prev?.stars===n?'checked':''}><span>★</span></label>`).join('')}</div>
+    <label>Who came?</label>
+    ${a.members.filter(u=>u!=='?').map(u=>{const v=prev?.people?.[sid(u)];return `<div class="rp">${av(u,'sm')}<button class="hlink" data-a="user" data-id="${u}">${esc(uname(u))}</button><span class="rpo"><label class="opt"><input type="radio" name="at_${u}" value="show" ${v==='show'?'checked':''}>Showed up</label><label class="opt"><input type="radio" name="at_${u}" value="noshow" ${v==='noshow'?'checked':''}>No-show</label></span></div>`}).join('')}
+    <p class="small mute">This updates each person's reliability record. People you mark as a no-show are asked what happened, and can tell us if it's wrong.</p>
+    <div style="height:6px"></div><button class="btn" data-a="doattend" data-id="${a.id}">Save</button>`;
+}
 /* the trusted contact has to be someone else, not the number this account signed in with */
 const ownPhone=p=>!!MYPHONE&&p.replace(/\D/g,'').slice(-10)===MYPHONE;
 const audOK=a=>a.aud==='everyone'||a.aud.includes(S.me.gender);
@@ -308,17 +388,19 @@ const isVer=id=>MODE.face==='live'&&(id==='me'?!!S.me.face:!!USERS[id]?.verified
 /* Sample hosts keep the app from looking empty; they are always labelled so nobody mistakes them for real people. */
 const sampleTag=id=>USERS[id]?.sample?'<span class="smp" title="A sample host that shows how Overhere works. Nobody will actually be there.">Sample</span>':'';
 const vf=(id,long)=>isVer(id)?`<span class="vf">${long?I('badge-check',14)+' Verified':'✓'}</span>`:'';
-/* Hosts see the whole waitlist; everyone else only its length and their own place in it. */
-const waitlist=id=>{const a=actOf(id);if(a&&a.host!=='me')return Array.from({length:a.wl||0},(_,i)=>({user:i+1===a.mypos?'me':'?'}));return S.reqs.filter(r=>r.act===id&&r.status==='waitlist')};
+/* There's no waitlist any more (the 7 Nov spec): a full plan leaves discovery and its waiting requests close. */
+const waitlist=()=>[];
 const isPast=a=>a.status==='past'||a.when<=now();
 const attended=a=>a.host==='me'||a.members.includes('me');
 const actLink=a=>location.href.split('#')[0].split('?')[0]+'#act='+a.id;
-/* Show-up record, counted by the database from everyone's check-ins after meetups. */
+/* Reliability, counted by the database: meetups (plans that have ended), and how often the host marked them there
+   or a no-show. No formula: hosts see the counts. rate is only for the warning chip, from the marked ones. */
 function trust(id){
-  const [met,shows]=(id==='me'?S.me.trustv:USERS[id]?.trust)||[0,0];
-  return {met,shows,rate:met?Math.round(shows/met*100):null};
+  const [met,shows,noshows]=(id==='me'?S.me.trustv:USERS[id]?.trust)||[0,0,0];
+  const marked=shows+(noshows||0);
+  return {met,shows,noshows:noshows||0,rate:marked?Math.round(shows/marked*100):null};
 }
-const trustTxt=id=>{const t=trust(id);return t.met?`Showed up ${t.shows} · No-show ${t.met-t.shows}`:'New to meetups'};
+const trustTxt=id=>{const t=trust(id);return t.met?`${t.met} meetup${t.met===1?'':'s'} · Showed up ${t.shows} · No-show ${t.noshows}`:'New to meetups'};
 /* Past activities for a profile: history from before the app plus real ones. */
 function pastList(id){
   const real=S.acts.filter(a=>a.status==='past'&&(a.host===id||a.members.includes(id))&&(id==='me'||S.ratings[a.id]))
@@ -329,7 +411,7 @@ function pastList(id){
 function pastHtml(list,none){
   if(!list.length)return `<p class="small mute">${none}</p>`;
   return `<div class="past">${list.slice(0,6).map(x=>{const a=x.act&&actOf(x.act);
-    const rate=a&&attended(a)&&a.members.length&&!S.ratings[a.id]?`<button class="btn xs" data-a="rate" data-id="${a.id}">Rate</button>`:'';
+    const nr=a&&needRate(a),rate=nr?`<button class="btn xs" data-a="rate" data-id="${a.id}">${nr==='noshow'?'Reply':'Rate'}</button>`:'';
     return `<div class="pi"><div class="pth" style="background:${planBg(a||{id:x.t,cat:x.cat,venue:'',desc:x.t})}"></div><div class="pm"><div class="t">${esc(x.t)}</div><div class="small mute">${esc(x.role)} · ${ago(x.at)}</div></div>${rate}</div>`}).join('')}</div>`;
 }
 /* ---- recommendations, distance, cost, host signals ---- */
@@ -341,7 +423,11 @@ function reasons(a){
   if(s&&(S.me.avail||[]).includes(s))r.push(['Fits your '+s.toLowerCase(),1]);
   return r;
 }
-const score=a=>reasons(a).reduce((n,x)=>n+x[1],0);
+/* taste: per category, +1 for a right swipe or a request, +0.5 for a save, -0.5 for a skip; kept between -3 and 6 and
+   stored with your private settings (profiles.state), so it follows you to the app. Worth half a point each. */
+const tasteOf=c=>Math.max(-3,Math.min(6,+(S.taste?.[c])||0));
+function learn(c,d){if(!CATS[c])return;S.taste=S.taste&&typeof S.taste==='object'?S.taste:{};S.taste[c]=Math.max(-3,Math.min(6,tasteOf(c)+d));save()}
+const score=a=>reasons(a).reduce((n,x)=>n+x[1],0)+tasteOf(a.cat)*0.5;
 /* Approximate spot for the map and distance, stable per activity, within ~4 km of your neighbourhood centre. */
 /* ---------- where plans are ---------- */
 /* Real coordinates from OpenStreetMap, looked up once. A plan is pinned at its landmark, else at the centre of the
@@ -525,7 +611,7 @@ function signals(u){
   const ints=USERS[u]?.ints||[],av=USERS[u]?.avail||[],t=trust(u),met=metWith(u);
   const chips=[...ints.filter(x=>(S.me.ints||[]).includes(x)).map(x=>'Both like '+x),...av.filter(x=>(S.me.avail||[]).includes(x)).map(x=>'Both free '+x.toLowerCase())].map(x=>`<span class="chip acc">${esc(x)}</span>`);
   if(met)chips.push(`<span class="chip ok">${I('users',11)} Met you ${met}× before</span>`);
-  if(t.met>=3&&t.rate<90)chips.push(`<span class="chip warn">${I('alert-triangle',11)} Missed ${t.met-t.shows} of ${t.met} meetups</span>`);
+  if(t.shows+t.noshows>=3&&t.rate<90)chips.push(`<span class="chip warn">${I('alert-triangle',11)} Missed ${t.noshows} of ${t.shows+t.noshows} meetups</span>`);
   return `<div class="sig">${chips.length?chips.join(''):'<span class="small mute">Nothing in common yet</span>'}</div>`;
 }
 function matchF(a,f){return (f.cat==='all'||a.cat===f.cat)&&(!f.dfrom||dayKey(a.when)>=f.dfrom)&&(!f.dto||dayKey(a.when)<=f.dto)&&(f.tod==='any'||tod(a.when)===f.tod)&&(!f.dist||kmAway(a)<=f.dist)}
@@ -657,16 +743,19 @@ function notify(text,o={}){
 }
 
 /* ---------- domain logic ---------- */
-/* visible: listed in Discover (full ones too, for the waitlist). eligible: can be requested right now. */
+/* visible: listed in Discover (open plans only: a full one leaves discovery). eligible: can be requested right now. */
 /* the server sends plans within NEAR_KM of your home area and of the city you browse; Distance narrows that down */
-function visible(a){return (a.status==='open'||a.status==='full')&&a.host!=='me'&&audOK(a)&&!isBlocked(a.host)&&a.when>now()&&inView(a)}
+function visible(a){return a.status==='open'&&a.host!=='me'&&audOK(a)&&!isBlocked(a.host)&&a.when>now()&&inView(a)}
 function eligible(a){return visible(a)&&a.status==='open'&&spots(a)>0&&!S.dismissed.includes(a.id)}
-/* Real people's plans come before the sample hosts' ones, so a new post isn't buried behind them. */
+/* Swipe's order (the 7 Nov spec's "algorithm"): real people's plans first, so a new post isn't buried behind the sample
+   hosts' ones; then by score(): what your profile says (interests, usual availability, people you follow) plus what
+   you do in the app (taste: categories you swipe right on, ask to join or save go up, ones you skip go down); then
+   the soonest first. */
 const isSample=id=>!!USERS[id]?.sample;
-const deck=()=>S.acts.filter(a=>eligible(a)&&!myReq(a.id)&&a.when<swipeEnd()).sort((a,b)=>isSample(a.host)-isSample(b.host)||a.when-b.when);
-/* Discover lists plans from the day after tomorrow on; today and tomorrow are Swipe's.
+const deck=()=>S.acts.filter(a=>eligible(a)&&!myReq(a.id)&&a.when<swipeEnd()).sort((a,b)=>isSample(a.host)-isSample(b.host)||score(b)-score(a)||a.when-b.when);
+/* Discover lists every upcoming plan, including the ones in Swipe.
    Plans that declined you drop out of Discover; they stay in Requests (where you can still share them). */
-const feed=()=>S.acts.filter(a=>visible(a)&&!myReq(a.id)&&a.when>=swipeEnd()).sort((a,b)=>a.when-b.when);
+const feed=()=>S.acts.filter(a=>visible(a)&&!myReq(a.id)).sort((a,b)=>a.when-b.when);
 
 /* ---------- talking to the database ---------- */
 /* A plan opened from an invite link is sent even when it's further away than the plans you'd normally see. */
@@ -745,11 +834,8 @@ function tick(){
         notify(`"${short(a.desc)}" is ${whenStr(a.when).replace(/^(Today|Tomorrow)/,w=>w.toLowerCase())} at ${a.venue}.`,{kind:'remind',title:'Coming up',tag:'Within 24h',tone:'warn',act:a.id,key:'remind24:'+a.id});
       }
     }
-    /* Check in about 3 hours after the start, once it has surely ended (only for recent ones). */
-    if(a.status==='past'&&!a.checkin&&mine&&a.members.length&&now()-a.when>=3*3600e3&&now()-a.when<3*864e5&&!S.ratings[a.id]){
-      a.checkin=true;ch=true;
-      notify(`"${short(a.desc)}" has ended. Let us know it went OK and who showed up.`,{kind:'remind',title:'How did it go?',tag:'Check in',tone:'warn',act:a.id,check:true,key:'checkin:'+a.id});
-    }
+    /* After the plan, the database asks: the host to record attendance when it ends (and reminds them daily), and the
+       people the host marked to rate it or say what happened. */
   });
   if(ch)save();return ch;
 }
@@ -820,7 +906,7 @@ function swipe(dir){
   if(dir==='right'){if(el)el.style.transform='';ui.modal={type:'confirm',id:a.id};render();return}
   if(el){el.style.transition='transform .25s';el.style.transform='translateX(-600px) rotate(-25deg)'}
   setTimeout(()=>{
-    S.dismissed.push(a.id);askMicro('swipe');save();
+    S.dismissed.push(a.id);learn(a.cat,-0.5);askMicro('swipe');save();
     if(!deck().length){ui.tab='discover';toast("You've seen everything nearby. Here's Discover.")}
     render();
   },230);
@@ -854,7 +940,7 @@ function cardHtml(a,cls){
   <div class="meta"><span>${I('calendar',14)}${whenStr(a.when)}</span><span>${I('map-pin',14)}${esc(placeLine(a))}</span><span>${I('users',14)}${spotTxt(a)}</span></div>
   <div class="tags">${tags(a).map(t=>`<span>${esc(t)}</span>`).join('')}</div></div></div>`;
 }
-const REQ_LBL={pending:'Requested',accepted:'Accepted',rejected:'Declined',waitlist:'Waitlisted',left:'Left',removed:'Removed',no_action:'No response'};
+const REQ_LBL={closed:'Closed',pending:'Requested',accepted:'Accepted',rejected:'Declined',waitlist:'Waitlisted',left:'Left',removed:'Removed',no_action:'No response'};
 const REQ_TONE={pending:'acc',accepted:'ok',rejected:'bad',waitlist:'info'};
 function acCard(a){
   const rq=myReq(a.id),full=spots(a)<=0;
@@ -864,7 +950,7 @@ function acCard(a){
   <div class="tg"><span>${I('users',12)}${spotTxt(a)}</span>${tags(a).map(t=>`<span>${esc(t)}</span>`).join('')}</div>
   <div class="ft"><div class="hn">${av(a.host,'sm')}${hostName(a.host)} ${vf(a.host)}</div>
   ${rq?`<span class="chip ${REQ_TONE[rq.status]||''}">${REQ_LBL[rq.status]||esc(rq.status)}</span>`
-    :full?`<button class="btn xs sec" data-a="askreq" data-id="${a.id}">Join waitlist</button>`
+    :full?'<span class="chip acc">Full</span>'
     :`<button class="btn xs" data-a="askreq" data-id="${a.id}">Request ${I('chevron-right',13)}</button>`}</div></div></div>`;
 }
 function liHtml(a,act,meta,chips,right){
@@ -872,7 +958,7 @@ function liHtml(a,act,meta,chips,right){
   <div style="flex:1;min-width:0"><div class="t">${esc(a.desc)}</div><div class="meta2" style="margin:4px 0 8px">${meta}</div>${chips}</div>${right||`<span class="mute">${I('chevron-right',18)}</span>`}</div>`;
 }
 // host=true renders from the poster's side (e.g. "Left" instead of "You left")
-const statusChip=(s,host)=>({pending:'<span class="chip warn">Pending</span>',accepted:'<span class="chip ok">Accepted</span>',rejected:'<span class="chip bad">Declined</span>',no_action:`<span class="chip">${host?'No response':'No action from poster'}</span>`,waitlist:'<span class="chip info">Waitlisted</span>',left:`<span class="chip">${host?'Left':'You left'}</span>`,removed:`<span class="chip bad">${host?'Removed':'Removed by host'}</span>`}[s]);
+const statusChip=(s,host)=>({closed:'<span class="chip">Closed</span>',pending:'<span class="chip warn">Pending</span>',accepted:'<span class="chip ok">Accepted</span>',rejected:'<span class="chip bad">Declined</span>',no_action:`<span class="chip">${host?'No response':'No action from poster'}</span>`,waitlist:'<span class="chip info">Waitlisted</span>',left:`<span class="chip">${host?'Left':'You left'}</span>`,removed:`<span class="chip bad">${host?'Removed':'Removed by host'}</span>`}[s]);
 const actChip=s=>({open:'<span class="chip ok">Open</span>',full:'<span class="chip acc">Full</span>',past:'<span class="chip">Past</span>'}[s]);
 const empty=(ic,t,sub,btn)=>`<div class="empty"><div class="big">${I(ic,30)}</div><h2>${t}</h2><p>${sub}</p>${btn||''}</div>`;
 
@@ -883,8 +969,8 @@ const whereBar=()=>`<div class="wbar"><button class="where" data-a="citymenu" ar
   ${VIEW.auto&&viewCity()?`<div class="dn" style="margin:0 0 14px;text-align:left">${I('compass',14)} Overhere is new in ${esc(homeName())}, so you're seeing plans in ${esc(viewName())} (${Math.round(kmBetween(homeLL(),viewLL()))} km away) too. Anything posted near you shows here first. <button class="lnk" data-a="citymenu">Pick another city</button></div>`:''}`;
 function tabSwipe(){
   const d=deck();
-  if(!d.length)return whereBar()+fbCard()+lockedNote()+empty('compass','Nothing new right now',`You have gone through all plans happening soon ${esc(whereTxt())}. Check Discover for plans further out, or pick another city.`,'<button class="btn" data-a="tab" data-t="discover">Go to Discover</button>');
-  return `<div class="deck">${whereBar()}${fbCard()}<h1 class="pt">What's happening tonight?</h1><p class="sub">Activities today and tomorrow · Tap a card for details</p>${lockedNote()}
+  if(!d.length)return whereBar()+fbCard()+lockedNote()+empty('compass','Nothing new right now',`You have gone through all plans in the next 7 days ${esc(whereTxt())}. Check Discover for plans further out, or pick another city.`,'<button class="btn" data-a="tab" data-t="discover">Go to Discover</button>');
+  return `<div class="deck">${whereBar()}${fbCard()}<h1 class="pt">What's happening this week?</h1><p class="sub">Activities in the next 7 days · Tap a card for details</p>${lockedNote()}
   <div class="stack">${d[1]?cardHtml(d[1],'back'):''}${cardHtml(d[0],'top')}</div>
   <div class="acts"><button class="rb" data-a="swipe" data-d="left" title="Skip">${I('x',24)}</button>
   <div class="cnt">1 of ${d.length}${S.tips.swiped?'':'<br>← dismiss · request →'}</div>
@@ -895,8 +981,8 @@ function tabSwipe(){
 const dLbl=k=>new Date(k+'T12:00:00').toLocaleDateString([], {weekday:'short',day:'numeric',month:'short'});
 const rangeLbl=f=>f.dfrom&&f.dto?(f.dfrom===f.dto?dLbl(f.dfrom):dLbl(f.dfrom)+' – '+dLbl(f.dto)):f.dfrom?'From '+dLbl(f.dfrom):'Until '+dLbl(f.dto);
 function datePresets(){
-  /* today and tomorrow are in Swipe, so every preset starts the day after */
-  const t=new Date(swipeEnd()),k=d=>dayKey(d.getTime()),plus=n=>{const d=new Date(t);d.setDate(d.getDate()+n);return d};
+  /* every preset starts today */
+  const t=dayStart(),k=d=>dayKey(d.getTime()),plus=n=>{const d=new Date(t);d.setDate(d.getDate()+n);return d};
   const dow=t.getDay(),sat=dow===0?-1:6-dow;
   return {weekend:['This weekend',k(plus(Math.max(sat,0))),k(plus(sat+1))],week:['Next 7 days',k(t),k(plus(6))],month:['Next 30 days',k(t),k(plus(29))]};
 }
@@ -915,8 +1001,8 @@ function tabDiscover(){
   if(f.sort==='for')list.sort((a,b)=>score(b)-score(a)||a.when-b.when);
   else if(f.sort==='near')list.sort((a,b)=>kmAway(a)-kmAway(b)||a.when-b.when);
   const alertable=act.some(([k])=>k!=='date'),saved=S.alerts.some(x=>x.label===alertLabel(f));
-  return `${whereBar()}<div class="hd"><div><h1 class="pt">All upcoming plans</h1><p class="sub">${all.length} upcoming ${esc(whereTxt())}, from ${dLbl(dayKey(swipeEnd()))} onwards</p></div><button class="btn sm mobonly" data-a="newpost">${I('plus',15)} Post</button></div>
-  ${lockedNote()}${fbCard()}${(()=>{const n=deck().length;return `<div class="alerts"><button class="alchip tn" data-a="tab" data-t="swipe">${I('flame',13)} Tonight &amp; tomorrow${n?` · ${n}`:''}</button>${S.savedF.map(sf=>`<span class="alchip sf"><button class="lnk" data-a="applyf" data-id="${sf.id}">${I('filter',12)} ${esc(sf.label)}</button><button data-a="rmf" data-id="${sf.id}" aria-label="Remove saved filters ${esc(sf.label)}">${I('x',12)}</button></span>`).join('')}</div>`})()}${S.alerts.length?`<div class="alerts"><span class="small mute" style="display:inline-flex;align-items:center;gap:4px">${I('bell',13)} Your alerts</span>${S.alerts.map(al=>`<span class="alchip">${esc(al.label)}<button data-a="rmalert" data-id="${al.id}" aria-label="Remove alert ${esc(al.label)}">${I('x',12)}</button></span>`).join('')}</div>`:''}
+  return `${whereBar()}<div class="hd"><div><h1 class="pt">All upcoming plans</h1><p class="sub">${all.length} upcoming ${esc(whereTxt())}</p></div><button class="btn sm mobonly" data-a="newpost">${I('plus',15)} Post</button></div>
+  ${lockedNote()}${fbCard()}${(()=>{const n=deck().length;return `<div class="alerts"><button class="alchip tn" data-a="tab" data-t="swipe">${I('flame',13)} Swipe this week${n?` · ${n}`:''}</button>${S.savedF.map(sf=>`<span class="alchip sf"><button class="lnk" data-a="applyf" data-id="${sf.id}">${I('filter',12)} ${esc(sf.label)}</button><button data-a="rmf" data-id="${sf.id}" aria-label="Remove saved filters ${esc(sf.label)}">${I('x',12)}</button></span>`).join('')}</div>`})()}${S.alerts.length?`<div class="alerts"><span class="small mute" style="display:inline-flex;align-items:center;gap:4px">${I('bell',13)} Your alerts</span>${S.alerts.map(al=>`<span class="alchip">${esc(al.label)}<button data-a="rmalert" data-id="${al.id}" aria-label="Remove alert ${esc(al.label)}">${I('x',12)}</button></span>`).join('')}</div>`:''}
   <div class="dtools"><button class="fbtn ${act.length?'on':''}" data-a="filters" aria-haspopup="dialog">${I('filter',14)} Filters${act.length?`<b aria-label="${act.length} active">${act.length}</b>`:''}</button>
   <button class="fbtn" data-a="sortmenu" aria-haspopup="dialog" aria-label="Sort by ${SORTS[f.sort][1]}">${I('arrow-up-down',14)} Sort: ${SORTS[f.sort][1]}</button>
   ${SEG('fview',f.view,[['list',I('list',13)+'<span class="tl">List</span>','List view'],['map',I('map',13)+'<span class="tl">Map</span>','Map view']])}</div>
@@ -1151,9 +1237,12 @@ function modalHtml(){
       ${!e&&past.length?`<label style="margin-top:0" for="f_tpl">Start from a past plan <span class="mute" style="font-weight:400">(optional)</span></label><select id="f_tpl"><option value="">Start fresh</option>${past.map(a=>`<option value="${a.id}" ${t&&t.id===a.id?'selected':''}>${esc(short(a.desc))}</option>`).join('')}</select>`:''}
       <label ${!e&&past.length?'':'style="margin-top:0"'}>Category</label><select id="f_cat">${Object.entries(CATS).map(([k,c])=>`<option value="${k}" ${src&&src.cat===k?'selected':''}>${c.label}</option>`).join('')}</select>
       <label>What is the plan?</label><textarea id="f_desc" maxlength="160" placeholder="Short description of what you are doing">${src?esc(src.desc):''}</textarea>
+      <p class="ferr" id="f_desc_err" aria-live="polite"></p>
       <label id="f_capl">How many people can join you?</label><div class="capg" role="radiogroup" aria-labelledby="f_capl">${[2,3,4,5,6,7,8,9,10].filter(n=>n>=minCap).map(n=>`<label><input type="radio" name="f_cap" value="${n}" ${n===cap0?'checked':''}><span>${n}</span></label>`).join('')}</div>
       <p class="small mute capx" id="f_capx">${capNote(cap0)}</p>
       <label>Date and time</label><input id="f_when" type="datetime-local" min="${mn}" value="${localInput(e?e.when:t?tplWhen:now()+26*3600e3)}">
+      <label for="f_dur">How long does it usually take?</label><select id="f_dur">${Array.from({length:24},(_,i)=>i+1).map(h=>`<option value="${h}" ${h===(src?.dur||2)?'selected':''}>${durTxt(h)}</option>`).join('')}</select>
+      <p class="small mute" style="margin-top:6px">When it's over, we'll ask you who came.</p>
       <label>Repeats</label><select id="f_rep"><option value="">Does not repeat</option>${Object.entries(REPEAT).map(([k,v])=>`<option value="${k}" ${src&&src.repeat===k?'selected':''}>${v}</option>`).join('')}</select>
       <p class="small mute" style="margin-top:6px">The next one is posted automatically when this one ends.</p>
       <label>Who can see and request this?</label>
@@ -1172,7 +1261,7 @@ function modalHtml(){
     const a=actOf(m.id);if(!a)return '';
     const h=profileOf(a.host),rq=myReq(a.id),past=isPast(a),wl=waitlist(a.id).length;
     const open=a.host!=='me'&&!past&&(a.status==='open'||a.status==='full')&&audOK(a)&&!isBlocked(a.host)&&!rq;
-    const can=open&&a.status==='open'&&spots(a)>0,canWait=open&&!can;
+    const can=open&&a.status==='open'&&spots(a)>0,canWait=false;
     const top=`<div class="sum">${planThumb(a)}<div style="min-width:0">${catPill(a.cat,true)}<div class="t">${esc(a.desc)}</div>
       <div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(placeLine(a))}${a.host==='me'?'':` · ${distKm(a)} km`}</span></div>
       <div class="meta2" style="margin-top:3px"><span>${I('users',13)}${a.members.length} going · ${spotTxt(a)}${wl?` · ${wl} on waitlist`:''}</span></div>
@@ -1183,8 +1272,8 @@ function modalHtml(){
     const [day,tm]=whenParts(a.when),n=a.members.length,left=spots(a);
     const tile=(ic,t,sub)=>`<div class="dtile">${I(ic,20)}<div><b>${t}</b>${sub?`<span>${sub}</span>`:''}</div></div>`;
     const extra=[...(a.aud==='everyone'?[]:[esc(a.aud.join(' / '))+' only']),...(a.repeat?[REPEAT[a.repeat]]:[])];
-    const hero=`<div class="dhero" style="background:${planBg(a)}"><div class="shade"></div>${catPill(a.cat,true)}<h3>${esc(a.desc)}</h3></div>
-      <div class="dtiles">${tile('calendar',day,tm)}${tile('map-pin',esc(placeLine(a)),a.host==='me'?'':`${distKm(a)} km away`)}
+    const hero=`<div class="dhero" style="background:${planBg(a)}"><div class="shade"></div>${catPill(a.cat,true)}<h3>${esc(a.desc)}</h3></div>${photoCredit(a)}
+      <div class="dtiles">${tile('calendar',day,tm+' · '+durTxt(a.dur||2))}${tile('map-pin',esc(placeLine(a)),a.host==='me'?'':`${distKm(a)} km away`)}
       ${tile('users',left>0?`${left} of ${a.cap} open`:'Full',(n?`${n} going`:'be the first')+(wl?` · ${wl} on waitlist`:''))}${tile('wallet',COST_S[a.cost],costSub(a))}</div>
       ${extra.length?`<div class="tg" style="margin-top:10px">${extra.map(x=>`<span>${x}</span>`).join('')}</div>`:''}`;
     if(m.type==='confirm'&&(can||canWait))return sheet(can?'Request to Join':'Join the waitlist',`<div class="sb">${top}${hostline}
@@ -1201,10 +1290,10 @@ function modalHtml(){
       ${rq?`<p style="margin-top:14px">Your request: ${statusChip(rq.status)}${pos?` <span class="small mute">#${pos} in line</span>`:''}</p>${rq.note?`<p class="small mute">Your note: ${esc(rq.note)}</p>`:''}`:''}
       ${can?`<div style="height:16px"></div><button class="btn" data-a="askreq" data-id="${a.id}">Request to join</button>`
       :canWait?`<div style="height:16px"></div><button class="btn sec" data-a="askreq" data-id="${a.id}">${I('users',16)} Full · Join waitlist</button>`
-      :(!rq?`<p class="mute" style="margin-top:14px">${a.host==='me'?'This is your activity.':past?'This activity has ended.':'No request available.'}</p>`:'')}
+      :(!rq?`<p class="mute" style="margin-top:14px">${a.host==='me'?'This is your activity.':past?'This activity has ended.':a.status==='full'||spots(a)<=0?'This plan is full.':'No request available.'}</p>`:'')}
       ${acc&&!past?`<div style="height:8px"></div><button class="btn sec" data-a="chat" data-id="${a.id}">${I('message-circle',16)} Open group chat</button>
         <div style="height:8px"></div><button class="btn ghost" data-a="share" data-k="trust" data-id="${a.id}">${I('shield-check',16)} Share plan with trusted contact</button>`:''}
-      ${attended(a)&&past&&a.members.length?(S.ratings[a.id]?`<p class="small mute" style="margin-top:14px">${I('circle-check',14)} You rated this meetup. Thanks!</p>`:`<div style="height:12px"></div><button class="btn" data-a="rate" data-id="${a.id}">${I('star',16)} Rate the meetup</button>`):''}
+      ${needRate(a)?`<div style="height:12px"></div><button class="btn" data-a="rate" data-id="${a.id}">${I('star',16)} ${needRate(a)==='noshow'?'Tell the host what happened':'Rate the meetup'}</button>`:attended(a)&&past&&S.ratings[a.id]?`<p class="small mute" style="margin-top:14px">${I('circle-check',14)} You rated this meetup. Thanks!</p>`:''}
       <div class="dlinks">${canSave(a)?`<button class="lnk" data-a="save" data-id="${a.id}" aria-pressed="${isSaved(a.id)}">${I('bookmark',13)} ${isSaved(a.id)?'Saved':'Save for later'}</button>`:''}${!past&&(a.status==='open'||a.status==='full')?`<button class="lnk" data-a="share" data-k="invite" data-id="${a.id}">${I('share',13)} Share</button>`:''}${rq&&(rq.status==='pending'||rq.status==='waitlist')?`<button class="lnk m" data-a="withdraw" data-id="${a.id}">${I('x',13)} Withdraw request</button>`:''}${acc&&!past?`<button class="lnk m" data-a="leave" data-id="${a.id}">Leave activity</button>`:''}${a.host!=='me'?`<a class="lnk m" href="copyright.html#notice" target="_blank" rel="noopener">Report copyright infringement</a>`:''}</div>
       </div>`);
   }
@@ -1240,7 +1329,7 @@ function modalHtml(){
       ${pics.length>1?`<div class="gal" tabindex="0" aria-label="Photos of ${esc(p.name)}. Swipe for more.">${pics.map((ph,i)=>`<img src="${esc(ph)}" alt="Photo ${i+1} of ${esc(p.name)}" loading="lazy" decoding="async">`).join('')}</div>`:''}
       <div class="pt2">${av(m.id,'lg')}<div><div class="pn">${esc(p.name)} ${vf(m.id,true)}${sampleTag(m.id)}</div><div class="small mute">${esc(p.gender)}, ${p.age}${p.job?' · '+esc(p.job):''}</div></div></div>
       ${p.bio?`<p style="margin:16px 0 0">${esc(p.bio)}</p>`:''}
-      <div class="tstats"><div><b>${t.met}</b><span>meetups</span></div><div><b>${t.shows}</b><span>showed up</span></div><div><b>${t.met-t.shows}</b><span>no-shows</span></div></div>
+      <div class="tstats"><div><b>${t.met}</b><span>meetups</span></div><div><b>${t.shows}</b><span>showed up</span></div><div><b>${t.noshows}</b><span>no-shows</span></div></div>
       ${signals(m.id)}
       <div style="height:12px"></div><button class="btn ${S.following.includes(m.id)?'ghost':'sec'}" data-a="follow" data-id="${m.id}" aria-pressed="${S.following.includes(m.id)}">${S.following.includes(m.id)?I('circle-check',16)+' Following':I('user-plus',16)+' Follow'}</button>
       <p class="small mute" style="margin:6px 0 0;text-align:center">${S.following.includes(m.id)?`You'll hear when ${esc(p.name)} posts a new plan.`:`Get notified when ${esc(p.name)} posts a new plan.`}</p>
@@ -1263,6 +1352,20 @@ function modalHtml(){
       ${isBlocked(m.id)?'':`<label class="chk"><input type="checkbox" id="rp_block" checked> Also block ${esc(p.name)}</label>`}
       <div style="height:12px"></div><button class="btn bad" data-a="dorep" data-id="${m.id}">Send report</button></div>`);
   }
+  if(m.type==='mustrate'){
+    const a=actOf(m.id);if(!a)return '';
+    /* three reminders went unanswered: the app waits for this before anything else (no close button) */
+    return `<div class="ov"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mr_t"><div class="sh"><h2 id="mr_t">Rate your plan to carry on</h2></div><div class="sb">
+      <div class="dn" style="margin-top:0">"${esc(short(a.desc))}" ended ${ago(endOf(a))}, and we've sent three reminders. Marking who came keeps everyone's reliability record fair. It takes a minute.</div>${attendForm(a)}</div></div></div>`;
+  }
+  if(m.type==='rate'&&needRate(actOf(m.id))==='noshow'){
+    const a=actOf(m.id);
+    return sheet(backB(m)+'We missed you',`<div class="sb"><p style="margin-top:0">${esc(uname(a.host))} marked you as not there at <b>"${esc(short(a.desc))}"</b>. That's OK, plans change. If something came up, let them know. If you were there, say so and our team will look into it.</p>
+      <label for="ns_t">What happened? <span class="mute" style="font-weight:400">(${esc(uname(a.host))} sees this)</span></label><textarea id="ns_t" maxlength="300" placeholder="e.g. I got stuck at work and couldn't message in time. Sorry!"></textarea>
+      <label class="chk"><input type="checkbox" id="ns_d"> I was there. This mark isn't right.</label>
+      <div style="height:12px"></div><button class="btn" data-a="donoshow" data-id="${a.id}">Send</button></div>`);
+  }
+  if(m.type==='rate'&&actOf(m.id)?.host==='me')return sheet(backB(m)+'Rate and record attendance',`<div class="sb">${attendForm(actOf(m.id))}</div>`);
   if(m.type==='rate'){
     const a=actOf(m.id);if(!a)return '';
     const ppl=[a.host,...a.members].filter(x=>x!=='me'),prev=S.ratings[a.id];
@@ -1274,9 +1377,8 @@ function modalHtml(){
         <p class="small" style="margin:10px 0 6px">It already happened? Report what happened, and we'll follow up. A person on our team reads every report.</p>
         <div class="row" style="flex-wrap:wrap;gap:6px">${ppl.filter(u=>u!=='?'&&USERS[u]).map(u=>`<button class="btn sm ghost" data-a="report" data-id="${u}">${I('flag',13)} Report ${esc(uname(u))}</button>`).join('')}<a class="btn sm ghost" href="mailto:${esc(CFG.CONTACT_EMAIL||'admin@overhere.social')}?subject=${encodeURIComponent('Something went wrong at a plan')}">${I('mail',13)} Email us</a></div></div>
       <label>How much did you enjoy it?</label><div class="rstars" role="radiogroup" aria-label="How much you enjoyed it">${[5,4,3,2,1].map(n=>`<label title="${n} star${n>1?'s':''}"><input type="radio" name="rt_star" value="${n}" aria-label="${n} star${n>1?'s':''}" ${prev?.stars===n?'checked':''}><span>★</span></label>`).join('')}</div>
-      <label>Who showed up?</label>
-      ${ppl.map(u=>{const v=prev?.people?.[u]||'show';return `<div class="rp">${av(u,'sm')}<button class="hlink" data-a="user" data-id="${u}">${esc(uname(u))}</button><span class="rpo"><label class="opt"><input type="radio" name="rt_${u}" value="show" ${v==='show'?'checked':''}>Came</label><label class="opt"><input type="radio" name="rt_${u}" value="noshow" ${v==='noshow'?'checked':''}>No-show</label></span></div>`}).join('')}
-      <p class="small mute">Show-up rates appear on profiles so everyone can see who is reliable. Tap a name to report someone.</p>
+      <label>How was ${esc(uname(a.host))} as a host?</label><div class="rstars" role="radiogroup" aria-label="How the host was">${[5,4,3,2,1].map(n=>`<label title="${n} star${n>1?'s':''}"><input type="radio" name="rt_host" value="${n}" aria-label="${n} star${n>1?'s':''}" ${prev?.host_stars===n?'checked':''}><span>★</span></label>`).join('')}</div>
+      <p class="small mute">Only our team sees ratings. Tap a name above to report someone.</p>
       <div style="height:6px"></div><button class="btn" data-a="dorate" data-id="${a.id}">Submit</button></div>`);
   }
   if(m.type==='share'){
@@ -1301,8 +1403,10 @@ function modalHtml(){
   }
   if(m.type==='leave'){
     const a=actOf(m.id);if(!a)return '';
-    return sheet(backB(m)+'Leave activity?',`<div class="sb"><div class="warnbox" style="margin-top:0">${I('alert-triangle',16)}<span>You'll leave <b>"${esc(short(a.desc))}"</b> and its group chat. ${esc(uname(a.host))} will be told, your spot goes to the next person on the waitlist, and you can't request this one again.</span></div>
-      <button class="btn bad" data-a="doleave" data-id="${a.id}">Yes, leave</button><div style="height:8px"></div><button class="btn ghost" data-a="close">Stay</button></div>`);
+    return sheet(backB(m)+'Leave this plan?',`<div class="sb"><p style="margin-top:0">You'll leave <b>"${esc(short(a.desc))}"</b> and its group chat, and can't ask to join it again. ${esc(uname(a.host))} and the group see your reason.</p>
+      <label>Why are you leaving?</label>${reasonList('lv',OPT_OUT)}
+      <p class="small mute">"Feel uncomfortable with the group" and "Feel unsafe" stay private: the group only sees that you left, and our team looks at the plan. In danger right now? Call 112.</p>
+      <button class="btn bad" data-a="doleave" data-id="${a.id}">Leave the plan</button><div style="height:8px"></div><button class="btn ghost" data-a="close">Stay</button></div>`);
   }
   if(m.type==='cancelconfirm'){
     const a=actOf(m.id);if(!a)return '';
@@ -1320,8 +1424,10 @@ function modalHtml(){
     return sheet('Manage activity',`<div class="sb"><div class="sum">${planThumb(a)}<div style="min-width:0"><div class="t">${esc(a.desc)}</div><div class="meta2" style="margin-bottom:6px"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(placeLine(a))}</span></div>${actChip(a.status)} <span class="chip">${a.members.length}/${a.cap} accepted</span></div></div>
       <div style="height:12px"></div>
       ${a.members.length?`<button class="btn sec" data-a="chat" data-id="${a.id}">${I('message-circle',16)} Open group chat</button>`:'<p class="small mute">Chat opens when you accept the first member.</p>'}
-      ${past?`<div class="row" style="margin-top:8px"><button class="btn sm ghost" data-a="postagain" data-id="${a.id}">${I('repeat',14)} Post again</button></div>`+(a.members.length?(S.ratings[a.id]?`<p class="small mute">${I('circle-check',14)} You rated this meetup.</p>`:`<div style="height:8px"></div><button class="btn" data-a="rate" data-id="${a.id}">${I('star',16)} Rate the meetup</button>`):'')
+      ${past?`<div class="row" style="margin-top:8px"><button class="btn sm ghost" data-a="postagain" data-id="${a.id}">${I('repeat',14)} Post again</button></div>`+(a.members.length?(a.attDone?`<p class="small mute">${I('circle-check',14)} You recorded attendance. Thanks!</p>`:hasEnded(a)?`<div style="height:8px"></div><button class="btn" data-a="rate" data-id="${a.id}">${I('star',16)} Rate and record attendance</button>`:`<p class="small mute">You can record who came once it ends, ${whenStr(endOf(a)).replace(/^(Today|Tomorrow)/,w=>w.toLowerCase())}.</p>`):'')
         :`<div class="row" style="margin-top:8px"><button class="btn sm ghost" data-a="editact" data-id="${a.id}">${I('pencil',14)} Edit details</button><button class="btn sm ghost" data-a="share" data-k="invite" data-id="${a.id}">${I('send',14)} Invite a friend</button></div>`}
+      ${a.relist&&!past?`<div class="panel" style="background:var(--infobg);box-shadow:none;margin-top:12px"><b>A spot opened up</b><p class="small" style="margin:4px 0 10px">Someone left while the plan was full. Put the spot back up so others can ask to join, or keep the group as it is?</p>
+        <div class="row"><button class="btn sm ghost" data-a="relist" data-id="${a.id}" data-k="no">Keep the group</button><button class="btn sm ok" data-a="relist" data-id="${a.id}" data-k="yes">Relist the spot</button></div></div>`:''}
       <h3>Pending requests (${pend.length})</h3>
       ${pend.length?pend.map(r=>person(r)+`<div class="row" style="margin-top:10px"><button class="btn sm bad" data-a="rej" data-id="${r.id}">Decline</button><button class="btn sm ok" data-a="acc" data-id="${r.id}">Accept</button></div></div>`).join(''):'<p class="mute small">No pending requests yet. Invite a friend to get the word out.</p>'}
       ${wl.length?`<h3>Waitlist (${wl.length})</h3><p class="small mute" style="margin-top:0">They move up to requests automatically, in this order, when a spot opens.</p>`+wl.map((r,i)=>`<div class="panel row" style="padding:12px 16px"><div class="hn">${av(r.user,'sm')}${esc(uname(r.user))}</div><div style="text-align:right"><span class="chip info">#${i+1}</span></div></div>`).join(''):''}
@@ -1349,7 +1455,7 @@ function modalHtml(){
       <div class="sb fsec">
       <h3>Category</h3><div class="fchips">${C('all','All')}${Object.entries(CATS).map(([k,c])=>C(k,c.label)).join('')}</div>
       <h3>Date</h3><div class="fchips"><button class="fc ${!f.dfrom&&!f.dto?'on':''}" data-a="fdate" aria-pressed="${!f.dfrom&&!f.dto}">${I('calendar',13)} Any date</button>${Object.entries(datePresets()).map(([k,[l,a,b]])=>{const on=f.dfrom===a&&f.dto===b;return `<button class="fc ${on?'on':''}" data-a="fdate" data-k="${k}" aria-pressed="${on}">${l}</button>`}).join('')}</div>
-      <div class="row drange"><div><label for="d_from">From</label><input type="date" id="d_from" value="${esc(f.dfrom)}" min="${dayKey(swipeEnd())}" ${f.dto?`max="${f.dto}"`:''}></div><div><label for="d_to">To</label><input type="date" id="d_to" value="${esc(f.dto)}" min="${f.dfrom||dayKey(swipeEnd())}"></div></div>
+      <div class="row drange"><div><label for="d_from">From</label><input type="date" id="d_from" value="${esc(f.dfrom)}" min="${dayKey(now())}" ${f.dto?`max="${f.dto}"`:''}></div><div><label for="d_to">To</label><input type="date" id="d_to" value="${esc(f.dto)}" min="${f.dfrom||dayKey(swipeEnd())}"></div></div>
       <h3>Time of day</h3><div class="fchips">${T('any',I('clock',13)+' Any time')}${T('morning','Morning')}${T('afternoon','Afternoon')}${T('evening','Evening')}${T('night','Night')}</div>
       <h3>Distance</h3><div class="fchips"><button class="fc ${!f.dist?'on':''}" data-a="fdist" data-k="0" aria-pressed="${!f.dist}">${I('map-pin',13)} Any distance</button>${DISTS.map(k=>`<button class="fc ${f.dist===k?'on':''}" data-a="fdist" data-k="${k}" aria-pressed="${f.dist===k}">Within ${k} km</button>`).join('')}</div>
       </div>
@@ -1399,7 +1505,7 @@ function modalHtml(){
       <button class="sosb" data-a="sos" data-id="${a.id}" aria-label="SOS: get help now">SOS</button>
       <button class="ib" data-a="close" title="Close">${I('x',18)}</button></div>
       <p class="small mute" style="padding:8px 18px;margin:0">Members: ${esc([a.host,...a.members].map(uname).join(', '))} · full history visible to everyone${muted?' · notifications muted':''}${isSample(a.host)?' · <b>Sample plan: the host\'s messages are pre-written and nobody will be there</b>':''}</p>
-      <div class="msgs" id="msgs">${closed?'':tips}${msgs}</div>${closed?`<div class="cin closed" role="status">${I('lock',15)}<span>This chat closed ${CHAT_OPEN_H} hours after the plan started. You can still read it.</span></div>`:`<div class="cin"><button class="ib" data-a="newpoll" data-id="${a.id}" title="Create a poll" aria-label="Create a poll">${I('bar-chart',18)}</button><input id="c_in" placeholder="Message the group" autocomplete="off" aria-label="Message the group"><button class="btn sm" data-a="send" data-id="${a.id}" aria-label="Send">${I('send',15)}</button></div>`}</div></div>`;
+      <div class="msgs" id="msgs">${closed?'':tips}${msgs}</div>${closed?`<div class="cin closed" role="status">${I('lock',15)}<span>This chat closed ${CHAT_OPEN_H} hours after the plan ended. You can still read it.</span></div>`:`<div class="cin"><button class="ib" data-a="newpoll" data-id="${a.id}" title="Create a poll" aria-label="Create a poll">${I('bar-chart',18)}</button><input id="c_in" placeholder="Message the group" autocomplete="off" aria-label="Message the group"><button class="btn sm" data-a="send" data-id="${a.id}" aria-label="Send">${I('send',15)}</button></div>`}</div></div>`;
   }
   if(m.type==='members'){
     const a=actOf(m.id);if(!a)return '';
@@ -1408,11 +1514,12 @@ function modalHtml(){
     return sheet(backB(m)+`Members (${a.members.length+1})`,`<div class="sb">
       ${row(a.host,'<span class="chip acc">Host</span>')}
       ${a.members.map(u=>row(u,host&&!past&&u!=='?'?`<button class="btn sm bad" data-a="rmmember" data-id="${a.id}" data-u="${u}">Remove</button>`:'')).join('')}
-      ${!host&&!past&&a.members.includes('me')?`<div style="height:10px"></div><button class="btn bad" data-a="leave" data-id="${a.id}">${I('log-out',16)} Leave chat</button>`:''}</div>`);
+      ${!host&&!past&&a.members.includes('me')?`<div style="height:10px"></div><button class="btn bad" data-a="leave" data-id="${a.id}">${I('log-out',16)} Leave the plan</button>`:''}</div>`);
   }
   if(m.type==='rmmember'){
     const a=actOf(m.id);if(!a)return '';
-    return sheet(backB(m)+'Remove member?',`<div class="sb"><div class="warnbox" style="margin-top:0">${I('alert-triangle',16)}<span><b>${esc(uname(m.u))}</b> will be taken out of <b>"${esc(short(a.desc))}"</b> and its group chat, and told about it. Their spot goes to the next person on the waitlist, and they can't request this one again.</span></div>
+    return sheet(backB(m)+'Remove member?',`<div class="sb"><p style="margin-top:0"><b>${esc(uname(m.u))}</b> will be taken out of <b>"${esc(short(a.desc))}"</b> and its group chat, and can't ask to join it again. They and the group see your reason.</p>
+      <label>Why?</label>${reasonList('rm',RM_REASONS)}
       <button class="btn bad" data-a="doremove" data-id="${a.id}" data-u="${m.u}">Yes, remove</button><div style="height:8px"></div><button class="btn ghost" data-a="close">Keep them</button></div>`);
   }
   if(m.type==='poll'){
@@ -1502,7 +1609,7 @@ function authHtml(){
   /* Phone: one flow for new and returning people. The code signs you in, and makes the account the first time. */
   if(md==='phone'){
     const up=ui.auth.was==='up';
-    return `<div class="ob">${LOGO}<div class="mailic">${I('phone',28)}</div><h1 class="pt">${up?'Sign up with phone':'Continue with phone'}</h1><p class="sub">We'll text you a 6-digit code to confirm it's you. ${up?'No password needed.':'New here? This creates your account.'}</p>
+    return `<div class="ob">${LOGO}<div class="mailic">${I('phone',28)}</div><h1 class="pt">${up?'Sign up with phone':'Continue with phone'}</h1><p class="sub">We'll text you a 6-digit code to confirm it's you. ${up?"Next you'll add your email and a password.":'New here? This creates your account.'}</p>
     <form id="a_form" data-submit="sendcode" novalidate><label for="a_phone">Mobile number</label>
     <div class="fi tel"><span class="cc">${I('phone',16)}+91</span><input id="a_phone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="16" placeholder="98765 43210" value="${esc(ui.auth.phone?fmtPhone(ui.auth.phone.slice(3)):'')}" aria-describedby="a_phone_err a_phone_note"></div>
     <p class="ferr" id="a_phone_err" aria-live="polite"></p><p class="fhint" id="a_phone_note">Indian mobile numbers only.</p>
@@ -1551,6 +1658,15 @@ function emailStepHtml(){
   }
   return `<div class="ob">${LOGO}<div class="mailic">${I('mail',30)}</div><h1 class="pt">Add your email</h1><p class="sub">Your phone number is confirmed. Now add your email and confirm it with a code. It's for account emails only, and nobody else sees it.</p>
     <form id="a_form" data-submit="addemail" novalidate>${emailField()}<div style="height:16px"></div>${ERRBOX}${goBtn('Send code')}</form>
+    <p class="small mute" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p></div>`;
+}
+/* Phone sign-ups, after the email: choose a password. Then they can also sign in with that email and password.
+   Older phone accounts see this once too. */
+function pwStepHtml(){
+  return `<div class="ob">${LOGO}<div class="mailic">${I('lock',30)}</div><h1 class="pt">Create a password</h1><p class="sub">Your email is confirmed. Now choose a password, so you can also sign in with <b>${esc(AUTHU.mail)}</b> and this password.</p>
+    <form id="a_form" data-submit="phonepw" novalidate><input type="email" name="username" autocomplete="username" value="${esc(AUTHU.mail)}" readonly hidden>
+    ${pwField('a_pw','Password','new-password')}${pwMeter()}${pwField('a_pw2','Confirm password','new-password')}
+    <div style="height:16px"></div>${ERRBOX}${goBtn('Save password')}</form>
     <p class="small mute" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p></div>`;
 }
 function onboardHtml(){
@@ -1738,8 +1854,11 @@ function render(){
   if(GONE18){scr.innerHTML=`<div class="ob">${LOGO}<h1 class="pt">Sorry, Overhere is for adults</h1><p class="sub">Overhere is only for people aged 18 and over, so we didn't create your account. We've deleted the sign-in details you gave us and kept nothing.</p><p class="small mute">If you entered your date of birth by mistake, you can sign up again.</p><button class="btn sec" data-a="gone18">Back to the start</button></div>`;return}
   if(!ONLINE||!ME||!loaded){scr.innerHTML=authHtml();restore();return}
   if(AUTHU.phone&&!AUTHU.email){scr.innerHTML=emailStepHtml();restore();return}
+  if(!AUTHU.pw){if(ui.auth.mode!=='pwstep')ui.auth={mode:'pwstep'};scr.innerHTML=pwStepHtml();restore();return}
   if(!S.me||!S.me.obDone){scr.innerHTML=onboardHtml()+modalHtml();restore();afterRender();return}
   if(!S.me.terms&&ui.modal?.type!=='terms')ui.modal={type:'terms'};   // accounts made before the terms: agree once
+  /* a hosted plan whose three attendance reminders went unanswered comes before anything else */
+  else{const due=DUE.find(x=>x.overdue&&actOf(x.act)&&!actOf(x.act).attDone);if(due&&ui.modal?.type!=='verify'&&!(ui.modal?.type==='mustrate'&&ui.modal.id===due.act))ui.modal={type:'mustrate',id:due.act}}
   const unread=S.notes.filter(n=>!n.read).length;
   const view={swipe:tabSwipe,discover:tabDiscover,acts:tabActs,reqs:tabReqs,profile:tabProfile,notes:tabNotes,chats:tabChats}[ui.tab]();
   const pend=S.reqs.filter(r=>r.status==='pending'&&actOf(r.act)?.host==='me').length;
@@ -1778,6 +1897,8 @@ function afterRender(){
 const capNote=n=>`You + <b>${n}</b> = a group of <b>${n+1}</b>. Your card shows ${n} spots open.`;
 const val=id=>document.getElementById(id)?.value?.trim()||'';
 const pw=()=>document.getElementById('a_pw')?.value||'';
+/* the email a new password mustn't contain: the one being typed, or the account's (the phone sign-up password step has no email field) */
+const pwMail=()=>val('a_email')||AUTHU.mail||'';
 const here=()=>location.origin+location.pathname;
 /* Supabase lets a number or an email address ask for a new code or link once a minute; the button counts down to match. */
 const RESEND_MS=60000;let resendT=0;
@@ -1793,7 +1914,7 @@ function resendTimer(){
 
 /* ---------- sign-in form checks ---------- */
 const EMAIL_RE=/^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-const PW_RULES=[['8+ characters',p=>p.length>=8],['Upper and lowercase',p=>/[a-z]/.test(p)&&/[A-Z]/.test(p)],['A number',p=>/\d/.test(p)],['A symbol',p=>/[^A-Za-z0-9]/.test(p)]];
+const PW_RULES=[['8+ characters',p=>p.length>=8],['A letter',p=>/[a-z]/i.test(p)],['A number',p=>/\d/.test(p)],['A symbol (stronger)',p=>/[^A-Za-z0-9]/.test(p)]];
 const COMMON_PW=new Set(['password','password1','password12','password123','passw0rd','12345678','123456789','1234567890','87654321','11111111','00000000',
   'qwerty12','qwerty123','qwertyuiop','asdfghjkl','1q2w3e4r','zaq12wsx','abc12345','abcd1234','iloveyou','letmein1','welcome1','welcome123','admin123',
   'sunshine','princess','football','baseball','superman','monkey123','india123','india@123','overhere','overhere1']);
@@ -1843,8 +1964,13 @@ function pwHint({why,hit}){
     :why==='repeat'?'Repeated characters add little. Mix it up'
     :'Longer is stronger: try three or four random words together';
 }
+/* The hard rules (the spec's): 8+ characters, a letter and a number, no part of your email, not a common password.
+   On top of those, anything the strength score calls weak gets a hint and has to change. Same rules in app/src/lib/password.ts. */
 function pwProblem(p,email){
   if(p.length<8)return 'Use at least 8 characters';
+  if(!/[a-z]/i.test(p)||!/\d/.test(p))return 'Use at least one letter and one number';
+  const lo=p.toLowerCase(),n=[...lo].map(c=>LEET[c]||c).join(''),user=(email.split('@')[0]||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  if(email&&(lo.includes(email.toLowerCase())||user.length>=3&&(lo.replace(/[^a-z0-9]/g,'').includes(user)||n.includes(user))))return 'Leave your email out of your password';
   const r=pwScore(p,email);
   return r.s<2?pwHint(r):'';
 }
@@ -1886,7 +2012,7 @@ function formErr(msg,more=''){
 function authCheck(up){
   const email=val('a_email'),p=pw(),p2=document.getElementById('a_pw2')?.value||'';
   const errs=[['a_email',!email?'Enter your email':!EMAIL_RE.test(email)?'Enter a valid email, like name@example.com':''],
-    ['a_pw',!p?(up?'Choose a password':'Enter your password'):up?pwProblem(p,email):''],
+    ['a_pw',!p?(up?'Choose a password':'Enter your password'):up?pwProblem(p,pwMail()):''],
     ['a_pw2',!p2?'Type your password again':p2!==p?"Passwords don't match":'']].filter(([id])=>document.getElementById(id));
   errs.forEach(([id,m])=>id==='a_pw2'&&!m?fieldMsg(id,'Passwords match',true):fieldMsg(id,m));
   const bad=errs.find(([,m])=>m);
@@ -1895,7 +2021,7 @@ function authCheck(up){
 }
 /* As you type: the strength meter, and whether the two passwords match. Errors only clear here; they appear when you leave a field or submit. */
 function pwLive(){
-  const p=pw(),email=val('a_email'),box=document.getElementById('a_pws'),up=ui.auth.mode!=='in';
+  const p=pw(),email=pwMail(),box=document.getElementById('a_pws'),up=ui.auth.mode!=='in';
   if(box){
     const r=pwScore(p,email),s=r.s,tip=document.getElementById('a_pwtip');
     box.dataset.s=!p?0:p.length<8?1:Math.max(s,1);
@@ -1916,7 +2042,7 @@ function pwLive(){
 function authBlur(e){
   const el=e.target;if(e.relatedTarget?.classList?.contains('pwt'))return;
   if(el.id==='a_email'&&el.value.trim()){fieldMsg('a_email',EMAIL_RE.test(el.value.trim())?'':'Enter a valid email, like name@example.com');mailHint()}
-  if(el.id==='a_pw'&&el.value&&ui.auth.mode!=='in')fieldMsg('a_pw',pwProblem(el.value,val('a_email')));
+  if(el.id==='a_pw'&&el.value&&ui.auth.mode!=='in')fieldMsg('a_pw',pwProblem(el.value,pwMail()));
   if(el.id==='a_pw2'&&el.value){el.dataset.left=1;pwLive()}
   if(el.classList.contains('pwi'))document.getElementById(el.id+'_caps')?.setAttribute('hidden','');
 }
@@ -2017,7 +2143,7 @@ const A={
   /* The chats button toggles the chats tab, like the bell. */
   chats:()=>{if(ui.tab==='chats'&&!ui.modal){ui.tab=ui.prevTab||'swipe';render();return}if(ui.tab!=='chats'&&ui.tab!=='notes')ui.prevTab=ui.tab;ui.tab='chats';ui.modal=null;track('chats_opened');render()},
   close:()=>{ui.modal=ui.modal?.back||null;render()},
-  closebg:(d,e)=>{if(e.target.classList.contains('ov')&&ui.modal?.type!=='verify'&&ui.modal?.type!=='chat'&&ui.modal?.type!=='terms'){ui.modal=ui.modal?.back||null;render()}},
+  closebg:(d,e)=>{if(e.target.classList.contains('ov')&&!['verify','chat','terms','mustrate'].includes(ui.modal?.type)){ui.modal=ui.modal?.back||null;render()}},
   user:d=>{ui.modal={type:'user',id:d.id,back:ui.modal};render()},
   /* The bell opens the notifications, and tapping it again closes them. Opening doesn't mark anything read:
      a notification is read when you open it, or with "Mark all as read". */
@@ -2076,7 +2202,7 @@ const A={
   }),
   signup:()=>working(async()=>{
     if(!authCheck(true)||!ageOk(true))return;
-    const email=val('a_email'),{data,error}=await withCaptcha(t=>SB.auth.signUp({email,password:pw(),options:{emailRedirectTo:here(),captchaToken:t,data:{age_18:true}}}));
+    const email=val('a_email'),{data,error}=await withCaptcha(t=>SB.auth.signUp({email,password:pw(),options:{emailRedirectTo:here(),captchaToken:t,data:{age_18:true,pw_set:true}}}));
     const exists=['You already have an account with this email.',' <button type="button" class="lnk" data-a="authmode" data-k="in">Sign in instead</button>'];
     if(error)return /already (registered|exists)/i.test(error.message)?formErr(...exists):formErr(friendly(error));
     /* With email confirmation on, Supabase answers an address that already has an account with a user that has no identities, not an error. */
@@ -2132,9 +2258,16 @@ const A={
     const {error}=await SB.auth.verifyOtp({email:ui.auth.email,token,type:'email_change'});
     if(error)return codeWrong(friendly(error));
     const {data}=await SB.auth.getUser();
-    AUTHU.email=!!data?.user?.email_confirmed_at;
+    AUTHU.email=!!data?.user?.email_confirmed_at;AUTHU.mail=data?.user?.email||ui.auth.email||'';
     if(!AUTHU.email)return codeWrong('That code didn\'t confirm your email. Ask for a new one.');
     track('email_confirmed');ui.auth={mode:'in'};render();toast('Email confirmed');return true;
+  }),
+  /* the password step for phone accounts (pwStepHtml) */
+  phonepw:()=>working(async()=>{
+    if(!authCheck(true))return;
+    const {data,error}=await SB.auth.updateUser({password:pw(),data:{pw_set:true}});
+    if(error)return formErr(/different from the old/i.test(error.message)?'Choose a password different from your old one.':friendly(error));
+    track('password_created');AUTHU.pw=true;ui.auth={mode:'in'};render();toast('Password saved');welcome(data?.user);return true;
   }),
   google:async()=>{
     return;   // Google sign-in is switched off for now (the button is greyed out); remove this line to bring it back
@@ -2175,7 +2308,7 @@ const A={
     const n=S.notes.find(x=>x.id===d.id);if(!n)return;
     if(!n.read){n.read=true;if(!n.id.startsWith('tmp'))call('read_notifications',{p_ids:[n.id]},true).catch(()=>{})}
     const a=n.act&&actOf(n.act);
-    if(a)ui.modal=n.safe&&a.arrive==='asked'?{type:'safe',id:a.id}:n.chat&&S.chats[a.id]?{type:'chat',id:a.id}:n.check&&!S.ratings[a.id]?{type:'rate',id:a.id}:{type:a.host==='me'?'host':'detail',id:a.id};
+    if(a)ui.modal=n.safe&&a.arrive==='asked'?{type:'safe',id:a.id}:n.chat&&S.chats[a.id]?{type:'chat',id:a.id}:n.check&&needRate(a)?{type:'rate',id:a.id}:{type:a.host==='me'?'host':'detail',id:a.id};
     render();
   },
   viewact:d=>{
@@ -2219,12 +2352,13 @@ const A={
     const gs=[...document.querySelectorAll('.f_g:checked')].map(x=>x.value),all=document.getElementById('f_all').checked||gs.length===GENDERS.length;
     const ed=ui.modal?.id&&actOf(ui.modal.id),cap=+(document.querySelector('[name=f_cap]:checked')?.value||2),rep=val('f_rep');
     if(!desc||!venue)return toast('Add a description and a venue');
+    const bw=badWord(desc);if(bw){descWarn();document.getElementById('f_desc')?.focus();return toast(`"${bw}" isn't allowed in a plan. Please reword it.`)}
     const vll=placeLL(venue,'f_venue');
     if(!vll){askArea();return toast('Pick which area the venue is in, so it shows on the map')}
     if(!(when>now()))return toast('Pick a future date and time');
     if(!all&&!gs.length)return toast('Choose Everyone or at least one identity');
     const tot=Math.max(0,Math.min(1e6,Math.round(+val('f_total')||0)));
-    const p={cat:val('f_cat'),desc,cap,when,aud:all?null:gs,venue,lat:vll[0],lng:vll[1],cost:val('f_cost'),total:tot,repeat:rep};
+    const p={cat:val('f_cat'),desc,cap,when,dur:+val('f_dur')||2,aud:all?null:gs,venue,lat:vll[0],lng:vll[1],cost:val('f_cost'),total:tot,repeat:rep};
     e.target.closest('button').disabled=true;
     if(ed){
       if(await run('edit_activity',{p_act:ed.id,p})===undefined){e.target.closest('button').disabled=false;return}
@@ -2248,6 +2382,7 @@ const A={
       const a=actOf(d.id);
       const st=await run('request_join',{p_act:d.id,p_note:note});
       if(st===undefined)return;
+      if(a)learn(a.cat,1);
       track('request_sent',{waitlist:st==='waitlist',note:!!note});askMicro('request');
       toast(st==='waitlist'?`You're on the waitlist. Your request goes to ${uname(a?.host)} if a spot opens.`:st==='accepted'?`${uname(a?.host)} said yes! Say hi in the group chat.`:'Request sent to '+uname(a?.host)+'. Follow it in Requests.');
       ui.modal=null;
@@ -2260,15 +2395,34 @@ const A={
   leave:d=>{ui.modal={type:'leave',id:d.id,back:ui.modal};render()},
   members:d=>{ui.modal={type:'members',id:d.id,back:ui.modal};render()},
   rmmember:d=>{ui.modal={type:'rmmember',id:d.id,u:d.u,back:ui.modal};render()},
-  doremove:async d=>{const name=uname(d.u);if(await run('remove_member',{p_act:d.id,p_user:sid(d.u)})===undefined)return;track('member_removed');toast(`${name} was removed and has been told.`);ui.modal=ui.modal?.back||null;render()},
-  doleave:async d=>{const a=actOf(d.id);if(await run('leave_activity',{p_act:d.id})===undefined)return;track('left_activity');toast(`You left "${short(a.desc)}". ${uname(a.host)} has been told.`);ui.modal={type:'detail',id:d.id};render()},
+  doremove:async d=>{const name=uname(d.u),why=pickedReason('rm');if(!why)return;if(await run('remove_member',{p_act:d.id,p_user:sid(d.u),p_reason:why})===undefined)return;track('member_removed');toast(`${name} was removed and has been told.`);ui.modal=ui.modal?.back||null;render()},
+  doleave:async d=>{const a=actOf(d.id),why=pickedReason('lv');if(!why)return;if(await run('leave_activity',{p_act:d.id,p_reason:why})===undefined)return;track('left_activity');toast(`You left "${short(a.desc)}". ${uname(a.host)} has been told.`);ui.modal={type:'detail',id:d.id};render()},
   rate:d=>{ui.modal={type:'rate',id:d.id,back:ui.modal};render()},
+  doattend:async d=>{
+    const a=actOf(d.id);if(!a)return;
+    const st=document.querySelector('input[name=at_star]:checked');if(!st)return toast('Tap the stars to rate the plan');
+    const ok=document.querySelector('input[name=rt_ok]:checked')?.value||'yes',people={};
+    for(const u of a.members.filter(x=>x!=='?')){const v=document.querySelector(`input[name="at_${u}"]:checked`)?.value;if(!v)return toast(`Mark whether ${uname(u)} came`);people[sid(u)]=v}
+    if(await run('record_attendance',{p_act:a.id,p_ok:ok,p_stars:+st.value,p_people:people})===undefined)return;
+    track('attendance_recorded',{stars:+st.value,ok,noshows:Object.values(people).filter(v=>v==='noshow').length});
+    ui.modal=null;toast(ok==='no'?'Thanks for telling us. Our safety team will follow up with you.':'Thanks! Everyone you marked as there can now rate the plan.');render();
+  },
+  donoshow:async d=>{
+    const t=val('ns_t'),dis=!!document.getElementById('ns_d')?.checked;
+    if(!t&&!dis)return toast('Say what happened, or tick that you were there');
+    if(await run('noshow_reply',{p_act:d.id,p_reply:t,p_dispute:dis})===undefined)return;
+    track('noshow_replied',{dispute:dis});ui.modal=null;toast(dis?'Thanks. Our team will look into it.':'Thanks, the host has been told.');render();
+  },
+  relist:async d=>{
+    const yes=d.k==='yes';if(await run('relist_spot',{p_act:d.id,p_relist:yes})===undefined)return;
+    track('relist_answered',{relist:yes});toast(yes?'The spot is back up for others to request.':'Got it. The plan stays full with the people going.');
+  },
   dorate:async d=>{
     const a=actOf(d.id);if(!a)return;
     const st=document.querySelector('input[name=rt_star]:checked');if(!st)return toast('Tap the stars to say how much you enjoyed it');
     const ok=document.querySelector('input[name=rt_ok]:checked')?.value||'yes',people={};
-    [a.host,...a.members].filter(x=>x!=='me'&&x!=='?').forEach(u=>{people[u]=document.querySelector(`input[name="rt_${u}"]:checked`)?.value||'show'});
-    if(await run('rate_activity',{p_act:a.id,p_ok:ok,p_stars:+st.value,p_people:people})===undefined)return;
+    const hs=document.querySelector('input[name=rt_host]:checked');if(!hs)return toast('Tap the stars to rate the host too');
+    if(await run('rate_activity',{p_act:a.id,p_ok:ok,p_stars:+st.value,p_people:people,p_host_stars:+hs.value})===undefined)return;
     track('rating_submitted',{stars:+st.value,ok});
     /* the first time, ask about the app as well; after that, just the quick question */
     if(ok!=='no'&&!S.asked.fbSent&&!S.asked.fbMeet){S.asked.fbMeet=true;save();ui.modal={type:'feedback',k:'meetup'};track('feedback_opened',{from:'meetup'});render();return}
@@ -2291,7 +2445,7 @@ const A={
   mapfit:()=>{mapPreview(null);mapFit(true)},
   maphome:()=>{mapPreview(null);liveMap?.flyTo(kmBetween(homeLL(),viewLL())<=NEAR_KM?homeLL():viewLL(),14,{duration:.5})},
   mapclose:()=>mapPreview(null),
-  save:d=>{const on=isSaved(d.id);S.saved=on?S.saved.filter(x=>x!==d.id):[...S.saved,d.id].slice(-100);save();track(on?'unsave':'save_plan');toast(on?'Removed from saved':'Saved. Find it under Requests.');render()},
+  save:d=>{const on=isSaved(d.id);if(!on)learn(actOf(d.id)?.cat,0.5);S.saved=on?S.saved.filter(x=>x!==d.id):[...S.saved,d.id].slice(-100);save();track(on?'unsave':'save_plan');toast(on?'Removed from saved':'Saved. Find it under Requests.');render()},
   follow:d=>{const on=S.following.includes(d.id);S.following=on?S.following.filter(x=>x!==d.id):[...S.following,d.id];save();track(on?'unfollow':'follow');toast(on?`Unfollowed ${uname(d.id)}`:`Following ${uname(d.id)}. You'll hear when they post.`);render()},
   acceptterms:async(d,e)=>{e.target.closest('button').disabled=true;if(await run('accept_terms')===undefined){e.target.closest('button').disabled=false;return}track('terms_accepted');ui.modal=null;render()},
   safetyok:()=>{const nx=ui.modal?.next;S.tips.safety1=true;save();track('safety_seen');ui.modal=null;if(nx)nx();else render()},
@@ -2470,6 +2624,7 @@ document.addEventListener('input',e=>{
     if(e.target.getAttribute('aria-invalid')&&EMAIL_RE.test(e.target.value.trim()))fieldMsg('a_email','');
   }
   if(/^a_(email|pw2?)$/.test(e.target.id))pwLive();
+  if(e.target.id==='f_desc')descWarn();
 });
 /* Sign-in forms: Enter, or the main button, runs the form's action. */
 document.addEventListener('submit',e=>{const f=e.target.closest?.('form[data-submit]');if(!f)return;e.preventDefault();A[f.dataset.submit]?.(f.dataset,e)});
@@ -2501,7 +2656,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&pm&&!pm.hidden){photoMenu(false);document.getElementById('p_pe')?.focus();return}
   if(e.key==='Enter'&&e.target.matches('[role=button][data-a]')){e.target.click();return}
   if(e.key==='Enter'&&e.target.id==='c_in'){const b=document.querySelector('[data-a=send]');if(b)b.click();return}
-  if(e.key==='Escape'&&ui.modal&&ui.modal.type!=='verify'){ui.modal=ui.modal.back||null;render();return}
+  if(e.key==='Escape'&&ui.modal&&ui.modal.type!=='verify'&&ui.modal.type!=='mustrate'){ui.modal=ui.modal.back||null;render();return}
   if(ui.modal||ui.tab!=='swipe'||!S.me?.obDone||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
   if(e.key==='ArrowLeft')swipe('left');
   else if(e.key==='ArrowRight')swipe('right');
@@ -2524,13 +2679,28 @@ window.addEventListener('hashchange',async()=>{
   const id=inviteId();if(!id||id===INVITE||!ME||!loaded)return;
   INVITE=id;await refresh();openInvite();
 });
+/* What sign-up still needs. Phone sign-ups add and confirm an email (emailStepHtml), then create a password
+   (pwStepHtml): user_metadata.pw_set records that. Email sign-ups chose their password when they signed up. */
+function authOf(u){
+  const phone=!!(u.phone&&u.phone_confirmed_at);
+  return {phone,email:!!u.email_confirmed_at,mail:u.email||'',pw:!phone||u.user_metadata?.pw_set===true};
+}
+/* WELCOME_FN: the welcome-email Edge Function sends "Welcome to Overhere" once a new account is complete. Off until
+   that function is deployed on live with RESEND_API_KEY set. It sends once per account (it checks), so calling it on
+   every start is fine. */
+const WELCOME_FN=false;
+function welcome(u){
+  if(!WELCOME_FN||u?.app_metadata?.welcomed_at||!AUTHU.email||!AUTHU.pw)return;
+  edge('welcome-email',{}).catch(e=>console.warn('welcome email',e));
+}
 async function start(){
   if(starting)return starting;
   starting=(async()=>{
     const {data}=await SB.auth.getUser();
     if(!data?.user){ME=null;starting=null;render();return}
     ME=data.user.id;MYPHONE=(data.user.phone||'').replace(/\D/g,'').slice(-10);
-    AUTHU={phone:!!(data.user.phone&&data.user.phone_confirmed_at),email:!!data.user.email_confirmed_at};loaded=false;render();
+    AUTHU=authOf(data.user);loaded=false;render();
+    welcome(data.user);
     await refresh();
     loadPlaces();
     listen();

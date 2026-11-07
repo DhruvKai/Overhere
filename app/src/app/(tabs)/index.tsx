@@ -9,10 +9,10 @@ import { SwipeDeck } from '@/components/SwipeDeck';
 import { Btn, Empty, P } from '@/components/ui';
 import { LockedNote, WhereBar } from '@/components/Where';
 import { tipsOf } from '@/lib/feedback';
-import { deck, dismissed, type Plan } from '@/lib/model';
+import { deck, dismissed, learnTaste, type Plan } from '@/lib/model';
 import { useModel, useStore } from '@/lib/store';
 
-/* Today and tomorrow, one card at a time. */
+/* Plans in the next 7 days, one card at a time. */
 export default function Swipe() {
   const m = useModel();
   const { savePriv, askMicro } = useStore();
@@ -23,7 +23,7 @@ export default function Swipe() {
   const sure = !!tipsOf(m).swipe_left;
 
   const skip = (a: Plan, first?: boolean) => {
-    savePriv(p => ({ dismissed: [...dismissed({ ...m, priv: p }), a.id], ...(first ? { tips: { ...(p.tips as object), swipe_left: true } } : {}) }));
+    savePriv(p => ({ dismissed: [...dismissed({ ...m, priv: p }), a.id], ...learnTaste(p, a.cat, -0.5), ...(first ? { tips: { ...(p.tips as object), swipe_left: true } } : {}) }));
     askMicro('swipe');
   };
   const onSwipe = (a: Plan, dir: 'left' | 'right') => {
@@ -34,14 +34,14 @@ export default function Swipe() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Header title="Today & tomorrow" />
+      <Header title="This week" />
       <View style={{ paddingHorizontal: 16 }}><WhereBar /><LockedNote /><FeedbackCard /></View>
       {cards.length ? (
         <View style={{ flex: 1, paddingHorizontal: 16 }}>
           <SwipeDeck m={m} cards={cards} onSwipe={onSwipe} holdLeft={!sure} />
         </View>
       ) : (
-        <Empty icon="sun" title="You've seen everything nearby" text="Nothing else is on today or tomorrow. Discover has plans for later this week, or post your own.">
+        <Empty icon="sun" title="You've seen everything nearby" text="Nothing else is on in the next 7 days. Discover has plans further out, or post your own.">
           <Btn title="Open Discover" onPress={() => router.navigate('/discover')} />
           <View style={{ height: 10 }} />
           <Btn title="Post a plan" kind="ghost" icon="plus" onPress={() => router.push('/post')} />

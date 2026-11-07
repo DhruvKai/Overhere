@@ -12,7 +12,7 @@ import { Btn, Chip, Empty, Icon, P, PlanRow, SaveToggle, type IconName } from '@
 import { LockedNote, WhereBar } from '@/components/Where';
 import {
   alertLabel, alertsOf, canSave, CATS, datePresets, dayKey, deck, DISTS, feed, filterLabels, kmAway, matchF, myReq, NO_FILTERS, reasons, saved,
-  savedFOf, score, spots, swipeEnd, whereTxt, type Filters, type Plan, type Sort, type Tod,
+  nowOf, savedFOf, score, spots, whereTxt, type Filters, type Plan, type Sort, type Tod,
 } from '@/lib/model';
 import { useModel, useStore, useToggleSave } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
@@ -28,7 +28,7 @@ const TODS: [Tod, string][] = [['any', 'Any time'], ['morning', 'Morning'], ['af
 const newId = (p: string) => p + Date.now().toString(36);
 const dShow = (k: string) => new Date(k + 'T12:00:00').toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' });
 
-/* Plans from the day after tomorrow on (today and tomorrow are Swipe's), with the website's filters, sorting, saved
+/* Every upcoming plan (Swipe's next 7 days included), with the website's filters, sorting, saved
    filters and alerts (tabDiscover in web/app.js). */
 export default function Discover() {
   const t = useTheme();
@@ -99,11 +99,11 @@ export default function Discover() {
   const head = (
     <View>
       <WhereBar />
-      <P small mute style={{ marginBottom: 10 }}>{all.length} upcoming {whereTxt(m)}, from {dShow(dayKey(swipeEnd(m)))} onwards</P>
+      <P small mute style={{ marginBottom: 10 }}>{all.length} upcoming {whereTxt(m)}</P>
       <LockedNote />
       <FeedbackCard />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-        <Chip icon="zap" label={`Tonight & tomorrow${nDeck ? ` · ${nDeck}` : ''}`} onPress={() => router.navigate('/')} />
+        <Chip icon="zap" label={`Swipe this week${nDeck ? ` · ${nDeck}` : ''}`} onPress={() => router.navigate('/')} />
         {sf.map(x => removable(x.label, () => rm('savedF', x.id), () => applyF(x.id), 'filter'))}
       </View>
       {al.length ? (
@@ -154,7 +154,7 @@ export default function Discover() {
                     {!rq ? (
                       <Pressable accessibilityRole="button" onPress={() => setAsking(item)}
                         style={{ backgroundColor: spots(item) <= 0 ? t.acc2 : t.acc, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6 }}>
-                        <Text style={{ color: spots(item) <= 0 ? t.accink : t.onAcc, fontWeight: '700', fontSize: 12 }}>{spots(item) <= 0 ? 'Waitlist' : 'Request'}</Text>
+                        <Text style={{ color: spots(item) <= 0 ? t.accink : t.onAcc, fontWeight: '700', fontSize: 12 }}>{spots(item) <= 0 ? 'Full' : 'Request'}</Text>
                       </Pressable>
                     ) : null}
                   </View>
@@ -198,7 +198,7 @@ function H3({ children }: { children: string }) {
 
 function FiltersSheet({ f, setF, count, onClose }: { f: Filters; setF: (f: Filters) => void; count: number; onClose: () => void }) {
   const m = useModel();
-  const presets = datePresets(m), first = dayKey(swipeEnd(m));
+  const presets = datePresets(m), first = dayKey(nowOf(m));
   const [iosPick, setIosPick] = useState<'dfrom' | 'dto' | null>(null);
   const set = (p: Partial<Filters>) => setF({ ...f, ...p });
   const toDate = (k: string) => new Date((k || first) + 'T12:00:00');

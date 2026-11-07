@@ -29,6 +29,7 @@ export type FaceSession = {
 export type NewPlan = {
   cat: Cat; desc: string; cap: number; when: number; aud: Gender[] | null; venue: string;
   cost: Cost; total?: number | null; lat?: number | null; lng?: number | null; repeat?: string | null;
+  dur?: number;   // hours, 1 to 24
 };
 
 export type ProfileInput = {
@@ -45,16 +46,24 @@ export const api = {
   postActivity: (p: NewPlan) => call<string>('post_activity', { p }),
   editActivity: (act: string, p: NewPlan) => call('edit_activity', { p_act: act, p }),
   cancelActivity: (act: string) => call('cancel_activity', { p_act: act }),
-  requestJoin: (act: string, note: string) => call<'pending' | 'waitlist' | 'accepted'>('request_join', { p_act: act, p_note: note }),
+  requestJoin: (act: string, note: string) => call<'pending' | 'accepted'>('request_join', { p_act: act, p_note: note }),
   withdrawRequest: (act: string) => call('withdraw_request', { p_act: act }),
   decideRequest: (req: string, accept: boolean) => call('decide_request', { p_req: req, p_accept: accept }),
-  leaveActivity: (act: string) => call('leave_activity', { p_act: act }),
-  removeMember: (act: string, user: string) => call('remove_member', { p_act: act, p_user: user }),
+  leaveActivity: (act: string, reason: string) => call('leave_activity', { p_act: act, p_reason: reason }),
+  removeMember: (act: string, user: string, reason: string) => call('remove_member', { p_act: act, p_user: user, p_reason: reason }),
+  /* the host's answer to "relist the spot?" after someone left a full plan */
+  relistSpot: (act: string, relist: boolean) => call('relist_spot', { p_act: act, p_relist: relist }),
   sendMessage: (act: string, body: string | null, poll?: { q: string; opts: string[] }) =>
     call('send_message', { p_act: act, p_body: body, p_poll: poll ?? null }),
   vote: (msg: number, opt: number) => call('vote', { p_msg: msg, p_opt: opt }),
-  rateActivity: (act: string, ok: 'yes' | 'no', stars: number, people: Record<string, 'show' | 'noshow'>) =>
-    call('rate_activity', { p_act: act, p_ok: ok, p_stars: stars, p_people: people }),
+  /* a member the host marked as there: the plan and the host */
+  rateActivity: (act: string, ok: 'yes' | 'no', stars: number, hostStars: number) =>
+    call('rate_activity', { p_act: act, p_ok: ok, p_stars: stars, p_people: null, p_host_stars: hostStars }),
+  /* the host, after the plan: a rating, and everyone marked as there or a no-show */
+  recordAttendance: (act: string, ok: 'yes' | 'no', stars: number, people: Record<string, 'show' | 'noshow'>) =>
+    call('record_attendance', { p_act: act, p_ok: ok, p_stars: stars, p_people: people }),
+  /* marked a no-show: what happened, or that it's wrong */
+  noshowReply: (act: string, reply: string, dispute: boolean) => call('noshow_reply', { p_act: act, p_reply: reply, p_dispute: dispute }),
   report: (o: { target?: string | null; act?: string | null; msg?: number | null; reason: string; note?: string }) =>
     call('report', { p_target: o.target ?? null, p_act: o.act ?? null, p_msg: o.msg ?? null, p_reason: o.reason, p_note: o.note ?? '' }),
   blockUser: (user: string) => call('block_user', { p_user: user }),
@@ -72,6 +81,8 @@ export const api = {
   otpPaused: (phone: string) => edge<{ until?: number }>('otp-verify', { phone, check: true }),
   otpVerify: (phone: string, token: string) =>
     edge<{ session: { access_token: string; refresh_token: string } }>('otp-verify', { phone, token }),
+  /* the one-time welcome email (supabase/functions/welcome-email); it checks itself whether to send */
+  welcome: () => edge<{ sent: boolean; why?: string }>('welcome-email', {}),
   faceResult: (sessionId: string) => edge<{ status: 'passed' | 'failed' | 'review'; reason: string | null; message: string | null }>('face-result', { sessionId }),
   /* photo 1 (the profile picture) or 2: a path in the avatars bucket, or null to clear it; clearing photo 1 clears both
      and shows the emoji (set_photo in web/schema-app.sql) */

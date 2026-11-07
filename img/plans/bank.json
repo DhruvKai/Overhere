@@ -1,0 +1,1288 @@
+{
+ "note": "Plan photos: generated into web/app.js and app/src/lib/photoFiles.ts by tools/plan-photos.py. Every photo is CC0, CC BY or CC BY-SA, shows no identifiable person, and is labelled illustrative in the apps.",
+ "photos": [
+  {
+   "k": "outdoorfilm",
+   "cats": [
+    "movies",
+    "outdoor"
+   ],
+   "tags": [
+    "outdoor movie",
+    "movie on the lawn",
+    "open air screening",
+    "drive in"
+   ],
+   "def": [],
+   "title": "Drive-in cinema",
+   "by": "Michael Kilgore",
+   "lic": "CC BY 2.0",
+   "licUrl": "https://creativecommons.org/licenses/by/2.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Skyline_Drive-In_Theater,_Barstow,_California_(47073564334).jpg"
+  },
+  {
+   "k": "jazz",
+   "cats": [
+    "concerts",
+    "nightlife"
+   ],
+   "tags": [
+    "jazz",
+    "blues"
+   ],
+   "def": [],
+   "title": "Jazz club stage",
+   "by": "Pelajanela",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:The_stage_of_Blues_Alley_%26_Jazz_in_Georgetown_(Washington,_D.C.).jpg"
+  },
+  {
+   "k": "karaoke",
+   "cats": [
+    "concerts",
+    "nightlife",
+    "comedy"
+   ],
+   "tags": [
+    "karaoke",
+    "sing",
+    "singing",
+    "mic"
+   ],
+   "def": [],
+   "title": "Microphone",
+   "by": "Derek Gavey from Medicine Hat, Canada",
+   "lic": "CC BY 2.0",
+   "licUrl": "https://creativecommons.org/licenses/by/2.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Karaoke_Star!_(4917447111).jpg"
+  },
+  {
+   "k": "sufi",
+   "cats": [
+    "concerts"
+   ],
+   "tags": [
+    "sufi",
+    "qawwali",
+    "ghazal"
+   ],
+   "def": [],
+   "title": "Harmonium",
+   "by": "David Estes",
+   "lic": "CC BY-SA 3.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Pakistani_Qawwali_Harmonium.jpg"
+  },
+  {
+   "k": "classical",
+   "cats": [
+    "concerts"
+   ],
+   "tags": [
+    "carnatic",
+    "classical",
+    "sitar",
+    "recital",
+    "raga",
+    "veena"
+   ],
+   "def": [],
+   "title": "Sitar",
+   "by": "The Metropolitan Museum of Art",
+   "lic": "CC0",
+   "licUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "src": "https://commons.wikimedia.org/wiki/File:Sitar_MET_C10563_1994.63.jpg"
+  },
+  {
+   "k": "dhol",
+   "cats": [
+    "concerts",
+    "nightlife"
+   ],
+   "tags": [
+    "dhol",
+    "bhangra",
+    "folk",
+    "garba"
+   ],
+   "def": [],
+   "title": "Dhol",
+   "by": "Suyash Dwivedi",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Dhol_Rathaava_Community_Gujrat.jpg"
+  },
+  {
+   "k": "openmic",
+   "cats": [
+    "concerts",
+    "comedy"
+   ],
+   "tags": [
+    "open mic",
+    "openmic",
+    "songwriting",
+    "poetry",
+    "standup",
+    "stand up",
+    "comedy",
+    "comic",
+    "jokes",
+    "roast",
+    "spoken word"
+   ],
+   "def": [
+    "comedy"
+   ],
+   "title": "Open mic",
+   "by": "Carsten Stiller",
+   "lic": "CC BY 2.0",
+   "licUrl": "https://creativecommons.org/licenses/by/2.0",
+   "src": "https://commons.wikimedia.org/wiki/File:2013-09-28_Jena_Waiting_2_(10001985445).jpg"
+  },
+  {
+   "k": "club",
+   "cats": [
+    "nightlife",
+    "concerts"
+   ],
+   "tags": [
+    "techno",
+    "nightclub",
+    "dj",
+    "edm",
+    "rave",
+    "house music"
+   ],
+   "def": [],
+   "title": "DJ booth",
+   "by": "Arnold Jaeger Werner",
+   "lic": "CC BY 2.0",
+   "licUrl": "https://creativecommons.org/licenses/by/2.0",
+   "src": "https://commons.wikimedia.org/wiki/File:DJ_booth_with_DJ-Mixer,_two_turntables_and_two_CDJ-players_in_former_Bob_Beaman_nightclub_in_Munich.jpg"
+  },
+  {
+   "k": "vinyl",
+   "cats": [
+    "concerts",
+    "hangout",
+    "errands"
+   ],
+   "tags": [
+    "vinyl",
+    "record store",
+    "records",
+    "thrift"
+   ],
+   "def": [],
+   "title": "Record store",
+   "by": "Mr Cup / Fabien Barral iammrcup",
+   "lic": "CC0",
+   "licUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "src": "https://commons.wikimedia.org/wiki/File:Vinyl_collection_at_a_record_store_(Unsplash).jpg"
+  },
+  {
+   "k": "ramen",
+   "cats": [
+    "cafe"
+   ],
+   "tags": [
+    "ramen",
+    "noodles",
+    "japanese"
+   ],
+   "def": [],
+   "title": "Ramen",
+   "by": "Shisma",
+   "lic": "CC BY 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Ramen_Bowl_2.jpg"
+  },
+  {
+   "k": "momos",
+   "cats": [
+    "cafe"
+   ],
+   "tags": [
+    "momo",
+    "momos",
+    "dumpling"
+   ],
+   "def": [],
+   "title": "Momos",
+   "by": "Andy Li",
+   "lic": "CC0",
+   "licUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "src": "https://commons.wikimedia.org/wiki/File:Vegetable_Momos_-_Yak_Yeti_Yak_2025-07-23.jpg"
+  },
+  {
+   "k": "parantha",
+   "cats": [
+    "cafe"
+   ],
+   "tags": [
+    "paratha",
+    "parantha",
+    "parathe"
+   ],
+   "def": [],
+   "title": "Aloo paratha",
+   "by": "AjayDas",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Aloo_paratha_served_with_daal,_curd_and_achar.jpg"
+  },
+  {
+   "k": "cholebhature",
+   "cats": [
+    "cafe"
+   ],
+   "tags": [
+    "chole",
+    "bhature",
+    "chhole"
+   ],
+   "def": [],
+   "title": "Chole bhature",
+   "by": "Sutapa Pal",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Chole_Bhature-Noida-UP-SP002.jpg"
+  },
+  {
+   "k": "dessert",
+   "cats": [
+    "cafe"
+   ],
+   "tags": [
+    "dessert",
+    "sweets",
+    "mithai",
+    "cake",
+    "ice cream"
+   ],
+   "def": [],
+   "title": "Indian sweets",
+   "by": "Laura",
+   "lic": "CC BY-SA 2.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Sweets_Mithai_for_Diwali_and_other_Festivals_of_India.jpg"
+  },
+  {
+   "k": "cooking",
+   "cats": [
+    "cafe",
+    "hangout"
+   ],
+   "tags": [
+    "cook along",
+    "cooking",
+    "cook",
+    "potluck",
+    "dinner"
+   ],
+   "def": [],
+   "title": "Butter chicken",
+   "by": "Amar Nath Adak",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:CreamyButterChicken.jpg"
+  },
+  {
+   "k": "tea",
+   "cats": [
+    "cafe",
+    "selfcare"
+   ],
+   "tags": [
+    "tea tasting",
+    "tea room",
+    "tea flight",
+    "green tea"
+   ],
+   "def": [],
+   "title": "Tea tasting",
+   "by": "Difference engine",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Two_small_tasting_cups_of_Lapsang_Souchong.jpg"
+  },
+  {
+   "k": "boardgames",
+   "cats": [
+    "hangout",
+    "cafe"
+   ],
+   "tags": [
+    "board game",
+    "boardgame",
+    "pictionary",
+    "catan",
+    "ludo",
+    "chess",
+    "cards",
+    "games night"
+   ],
+   "def": [],
+   "title": "Board game",
+   "by": "Tetzemann",
+   "lic": "CC0",
+   "licUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "src": "https://commons.wikimedia.org/wiki/File:Brettspiel_Mensch_%C3%A4rger_dich_nicht.jpg"
+  },
+  {
+   "k": "books",
+   "cats": [
+    "hangout",
+    "work"
+   ],
+   "tags": [
+    "book swap",
+    "book club",
+    "book exchange",
+    "books",
+    "novel"
+   ],
+   "def": [],
+   "title": "Book swap",
+   "by": "Elitre",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Wikimania_2016_-_Book_swapping_05.jpg"
+  },
+  {
+   "k": "dhaba",
+   "cats": [
+    "cafe"
+   ],
+   "tags": [
+    "maggi",
+    "dhaba",
+    "thali",
+    "rajma",
+    "lunch",
+    "biryani",
+    "street food",
+    "food walk",
+    "vada pav",
+    "pav bhaji",
+    "pizza"
+   ],
+   "def": [],
+   "title": "Dal and roti",
+   "by": "Billjones94",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Roti,_tadka,_and_onion.jpg"
+  },
+  {
+   "k": "coffee",
+   "cats": [
+    "cafe",
+    "hangout",
+    "work"
+   ],
+   "tags": [
+    "crossword",
+    "filter coffee",
+    "coffee",
+    "cafe",
+    "latte",
+    "cappuccino"
+   ],
+   "def": [
+    "cafe"
+   ],
+   "title": "Filter coffee",
+   "by": "K.Sreeram 2603",
+   "lic": "CC0",
+   "licUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "src": "https://commons.wikimedia.org/wiki/File:Memorable_Coffee.jpg"
+  },
+  {
+   "k": "brunch",
+   "cats": [
+    "cafe"
+   ],
+   "tags": [
+    "brunch",
+    "pancake",
+    "pancakes",
+    "breakfast",
+    "waffles"
+   ],
+   "def": [],
+   "title": "Pancakes",
+   "by": "Bernard DUPONT",
+   "lic": "CC BY-SA 2.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Pancakes_for_Breakfast_-_Oxkutzkab_Yucatan.jpg"
+  },
+  {
+   "k": "chai",
+   "cats": [
+    "cafe",
+    "hangout"
+   ],
+   "tags": [
+    "chai",
+    "samosa",
+    "pakora",
+    "snacks"
+   ],
+   "def": [],
+   "title": "Chai and samosa",
+   "by": "Sarkar Sayantan",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Samosa_with_cutting_chai_-_1.jpg"
+  },
+  {
+   "k": "picnic",
+   "cats": [
+    "cafe",
+    "outdoor",
+    "hangout"
+   ],
+   "tags": [
+    "picnic"
+   ],
+   "def": [],
+   "title": "Picnic",
+   "by": "Personal Creations",
+   "lic": "CC BY 2.0",
+   "licUrl": "https://creativecommons.org/licenses/by/2.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Wine_glasses_on_a_box_cutting_board_with_cheese_fruit_and_bread_chalkboard_and_personalized_pillows_on_a_picnic_blanket_(19924590745).jpg"
+  },
+  {
+   "k": "liveband",
+   "cats": [
+    "concerts",
+    "nightlife"
+   ],
+   "tags": [
+    "band",
+    "gig",
+    "live music",
+    "acoustic",
+    "rock",
+    "indie",
+    "jam"
+   ],
+   "def": [],
+   "title": "Band gear on stage",
+   "by": "Kuba Bożanowski from Warsaw, Poland",
+   "lic": "CC BY 2.0",
+   "licUrl": "https://creativecommons.org/licenses/by/2.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Tonys_amp_(2941807248).jpg"
+  },
+  {
+   "k": "concert",
+   "cats": [
+    "concerts"
+   ],
+   "tags": [
+    "concert",
+    "show",
+    "festival",
+    "tour"
+   ],
+   "def": [
+    "concerts"
+   ],
+   "title": "Concert stage",
+   "by": "Kinglevel",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Meshuggah_Stage_Design_2022,_Ancienne_Belgique,_Belgium._06.jpg"
+  },
+  {
+   "k": "classicfilm",
+   "cats": [
+    "movies"
+   ],
+   "tags": [
+    "classic",
+    "rerun",
+    "re run",
+    "re release",
+    "rerelease",
+    "90s",
+    "matinee",
+    "satyajit",
+    "retro"
+   ],
+   "def": [],
+   "title": "Classic cinema",
+   "by": "Rob Chandler",
+   "lic": "CC BY 2.0",
+   "licUrl": "https://creativecommons.org/licenses/by/2.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Piccadilly_Cinema_screen,_Perth.jpg"
+  },
+  {
+   "k": "cinema",
+   "cats": [
+    "movies"
+   ],
+   "tags": [
+    "movie",
+    "film",
+    "cinema",
+    "pvr",
+    "inox",
+    "screening",
+    "premiere",
+    "imax"
+   ],
+   "def": [
+    "movies"
+   ],
+   "title": "Cinema hall",
+   "by": "Mojmir Churavy",
+   "lic": "CC0",
+   "licUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "src": "https://commons.wikimedia.org/wiki/File:Kino_Atlas_Interier_J.jpg"
+  },
+  {
+   "k": "sukhna",
+   "cats": [
+    "outdoor",
+    "fitness",
+    "hangout",
+    "adventure"
+   ],
+   "tags": [
+    "sukhna"
+   ],
+   "def": [],
+   "title": "Sukhna Lake",
+   "by": "Unpetitprole",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Sunrise_over_Sukhna.jpg"
+  },
+  {
+   "k": "rockgarden",
+   "cats": [
+    "outdoor",
+    "hangout"
+   ],
+   "tags": [
+    "rock garden"
+   ],
+   "def": [],
+   "title": "Rock Garden",
+   "by": "Anilsahu84",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Men_at_rock_garden_chandigarh.jpg"
+  },
+  {
+   "k": "rosegarden",
+   "cats": [
+    "outdoor",
+    "hangout",
+    "selfcare"
+   ],
+   "tags": [
+    "rose garden"
+   ],
+   "def": [],
+   "title": "Zakir Hussain Rose Garden",
+   "by": "Vengolis",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Zakir_Hussain_Rose_Garden_20180907_154724.jpg"
+  },
+  {
+   "k": "plaza17",
+   "cats": [
+    "hangout",
+    "cafe",
+    "outdoor",
+    "nightlife",
+    "errands"
+   ],
+   "tags": [
+    "sector 17 plaza",
+    "sector 17 architecture",
+    "plaza fountain"
+   ],
+   "def": [],
+   "title": "Musical fountain, Sector 17",
+   "by": "Rhythm Kataria",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Musical_Fountain,_Sector_17,_Chandigarh.jpg"
+  },
+  {
+   "k": "capitol",
+   "cats": [
+    "outdoor",
+    "hangout"
+   ],
+   "tags": [
+    "capitol",
+    "le corbusier"
+   ],
+   "def": [],
+   "title": "Capitol Complex",
+   "by": "Nicholas.iyadurai",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Chandigarh_Capitol_Complex_-_Le_Corbusier_-_Hall_of_Shadows_ramp.jpg"
+  },
+  {
+   "k": "leisure",
+   "cats": [
+    "outdoor",
+    "fitness",
+    "hangout"
+   ],
+   "tags": [
+    "leisure valley"
+   ],
+   "def": [],
+   "title": "Leisure Valley",
+   "by": "RIDH-1",
+   "lic": "CC0",
+   "licUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "src": "https://commons.wikimedia.org/wiki/File:Leisurevalleymarch2026.jpg"
+  },
+  {
+   "k": "museum",
+   "cats": [
+    "hangout",
+    "outdoor",
+    "work"
+   ],
+   "tags": [
+    "museum",
+    "art gallery",
+    "exhibition"
+   ],
+   "def": [],
+   "title": "Government Museum and Art Gallery",
+   "by": "UnpetitproleX",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Chandigarh_Museum_and_Art_Gallery.jpg"
+  },
+  {
+   "k": "pu",
+   "cats": [
+    "work",
+    "hangout",
+    "fitness"
+   ],
+   "tags": [
+    "panjab university"
+   ],
+   "def": [],
+   "title": "Gandhi Bhawan, Panjab University",
+   "by": "UnpetitproleX",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Gandhi_Bhawan,_Chandigarh.jpg"
+  },
+  {
+   "k": "elante",
+   "cats": [
+    "errands",
+    "hangout",
+    "movies",
+    "cafe"
+   ],
+   "tags": [
+    "elante"
+   ],
+   "def": [],
+   "title": "Elante Mall",
+   "by": "Barthateslisa",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Elante_Mall,_Chandigarh.jpg"
+  },
+  {
+   "k": "gym",
+   "cats": [
+    "fitness",
+    "selfcare"
+   ],
+   "tags": [
+    "gym",
+    "workout",
+    "weights",
+    "lifting",
+    "strength",
+    "dumbbell",
+    "training",
+    "crossfit"
+   ],
+   "def": [
+    "fitness"
+   ],
+   "title": "Dumbbells in a gym",
+   "by": "Shixart1985",
+   "lic": "CC BY 2.0",
+   "licUrl": "https://creativecommons.org/licenses/by/2.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Fitness_dumbbell_marked_with_a_green_logo_resting_on_a_gym_rack.jpg"
+  },
+  {
+   "k": "badminton",
+   "cats": [
+    "fitness"
+   ],
+   "tags": [
+    "badminton",
+    "shuttle",
+    "racket",
+    "racquet"
+   ],
+   "def": [],
+   "title": "Badminton racket and shuttlecock",
+   "by": "Vladimir Maftei, http://www.enciclopedie.info/",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Rachet%C4%83_de_badminton_%C5%9Fi_flutura%C5%9F.jpg"
+  },
+  {
+   "k": "cricket",
+   "cats": [
+    "fitness",
+    "outdoor"
+   ],
+   "tags": [
+    "cricket",
+    "nets",
+    "wicket",
+    "match"
+   ],
+   "def": [],
+   "title": "Cricket pitch",
+   "by": "Acabashi",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Church_Times_Cricket_Cup_final_2019,_Wicket_3.jpg"
+  },
+  {
+   "k": "running",
+   "cats": [
+    "fitness"
+   ],
+   "tags": [
+    "run",
+    "running",
+    "jog",
+    "jogging",
+    "marathon",
+    "sprint",
+    "track",
+    "5k",
+    "10k"
+   ],
+   "def": [],
+   "title": "Running track",
+   "by": "Petewarrior",
+   "lic": "CC BY 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Brillia_Running_Stadium_track.jpg"
+  },
+  {
+   "k": "swim",
+   "cats": [
+    "fitness",
+    "selfcare"
+   ],
+   "tags": [
+    "swim",
+    "swimming",
+    "pool",
+    "laps"
+   ],
+   "def": [],
+   "title": "Swimming pool lanes",
+   "by": "Xander from Yellowknife, NT, Canada",
+   "lic": "CC BY 2.0",
+   "licUrl": "https://creativecommons.org/licenses/by/2.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Swimming_pool_with_lane_ropes_in_place_cropped.jpg"
+  },
+  {
+   "k": "theatre",
+   "cats": [
+    "theatre"
+   ],
+   "tags": [
+    "play",
+    "drama",
+    "theatre",
+    "theater",
+    "musical",
+    "opera",
+    "natak"
+   ],
+   "def": [
+    "theatre"
+   ],
+   "title": "Theatre auditorium and curtain",
+   "by": "OlenaMuzychenko (WMUA)",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:The_auditorium_of_the_Odessa_Opera_House_02.jpg"
+  },
+  {
+   "k": "stage",
+   "cats": [
+    "theatre"
+   ],
+   "tags": [
+    "shakespeare",
+    "classic",
+    "rehearsal",
+    "workshop",
+    "acting",
+    "improv"
+   ],
+   "def": [],
+   "title": "Empty theatre stage",
+   "by": "Didier Descouens",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Interior_of_Teatro_Olimpico_(Vicenza)_scena_.jpg"
+  },
+  {
+   "k": "lounge",
+   "cats": [
+    "hangout",
+    "cafe"
+   ],
+   "tags": [
+    "hang",
+    "chill",
+    "chat",
+    "lounge",
+    "catch up",
+    "meet new people"
+   ],
+   "def": [
+    "hangout"
+   ],
+   "title": "Café lounge chairs",
+   "by": "Andy Li",
+   "lic": "CC0",
+   "licUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "src": "https://commons.wikimedia.org/wiki/File:Seats_in_Cafe_%26_Laundrette,_East_Reach,_Taunton_2025-07-26.jpg"
+  },
+  {
+   "k": "terrace",
+   "cats": [
+    "hangout",
+    "nightlife",
+    "cafe"
+   ],
+   "tags": [
+    "rooftop",
+    "terrace",
+    "fairy lights",
+    "balcony"
+   ],
+   "def": [],
+   "title": "Terrace seating with lights",
+   "by": "PattayaPatrol",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:DZ6_2632_A_cozy_outdoor_corner_at_night_a_wicker_chair_beside_a_small_table_potted_plants_a_glowing_candle_and_twinkling_string_lights_welcoming_passersby.jpg"
+  },
+  {
+   "k": "trek",
+   "cats": [
+    "adventure",
+    "outdoor"
+   ],
+   "tags": [
+    "trek",
+    "trekking",
+    "hike",
+    "hiking",
+    "mountain",
+    "himalaya",
+    "trail",
+    "triund",
+    "kasauli"
+   ],
+   "def": [
+    "adventure"
+   ],
+   "title": "Himalayan valley trail",
+   "by": "Жанна Сорокина",
+   "lic": "CC0",
+   "licUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "src": "https://commons.wikimedia.org/wiki/File:%D0%9D%D0%B5%D0%BF%D0%B0%D0%BB_%D0%93%D0%B8%D0%BC%D0%B0%D0%BB%D0%B0%D0%B8_(211503667).jpeg"
+  },
+  {
+   "k": "climbing",
+   "cats": [
+    "adventure",
+    "fitness"
+   ],
+   "tags": [
+    "climb",
+    "climbing",
+    "bouldering",
+    "wall"
+   ],
+   "def": [],
+   "title": "Climbing wall",
+   "by": "Ka23 13",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:ClimbingHolds_20211103_145113.jpg"
+  },
+  {
+   "k": "camping",
+   "cats": [
+    "adventure",
+    "outdoor"
+   ],
+   "tags": [
+    "camp",
+    "camping",
+    "tent",
+    "overnight",
+    "bonfire",
+    "stargazing"
+   ],
+   "def": [],
+   "title": "Tents in a pine forest",
+   "by": "Ditsakul",
+   "lic": "CC BY-SA 3.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Camping_Tent_at_Doi_Angkhang_Mountain,_Chiangmai,_Thailand.jpg"
+  },
+  {
+   "k": "rafting",
+   "cats": [
+    "adventure"
+   ],
+   "tags": [
+    "raft",
+    "rafting",
+    "kayak",
+    "river",
+    "rishikesh"
+   ],
+   "def": [],
+   "title": "River rafting",
+   "by": "Sumita Roy Dutta",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:River_rafting_at_Rishikesh_Photographed_By_Sumita_Roy.jpg"
+  },
+  {
+   "k": "parkwalk",
+   "cats": [
+    "outdoor",
+    "hangout",
+    "fitness",
+    "cafe"
+   ],
+   "tags": [
+    "park",
+    "walk",
+    "stroll",
+    "bench",
+    "evening walk",
+    "morning walk",
+    "sunrise walk",
+    "heritage walk",
+    "lake walk"
+   ],
+   "def": [
+    "outdoor"
+   ],
+   "title": "Park path and bench",
+   "by": "Humoyun Mehridinov",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Tashkent_Botanical_Garden_trees_and_a_path_03.jpg"
+  },
+  {
+   "k": "boating",
+   "cats": [
+    "outdoor",
+    "hangout"
+   ],
+   "tags": [
+    "boat",
+    "boating",
+    "lake",
+    "paddle",
+    "pedal"
+   ],
+   "def": [],
+   "title": "Swan pedal boats on a lake",
+   "by": "Paul Harrop",
+   "lic": "CC BY-SA 2.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Pedal_boats,_East_Park,_Hull_-_geograph.org.uk_-_5889388.jpg"
+  },
+  {
+   "k": "fountain",
+   "cats": [
+    "outdoor"
+   ],
+   "tags": [
+    "fountain",
+    "garden",
+    "botanical",
+    "flowers"
+   ],
+   "def": [],
+   "title": "Garden fountain",
+   "by": "Ruth Sharville",
+   "lic": "CC BY-SA 2.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Fountain_at_path_junction,_Cambridge_University_Botanical_Garden_-_geograph.org.uk_-_6691018.jpg"
+  },
+  {
+   "k": "market",
+   "cats": [
+    "errands",
+    "cafe"
+   ],
+   "tags": [
+    "market",
+    "sabzi",
+    "vegetables",
+    "veggies",
+    "groceries",
+    "mandi",
+    "bazaar"
+   ],
+   "def": [
+    "errands"
+   ],
+   "title": "Vegetable market",
+   "by": "Timothy A. Gonsalves",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Onions_Veg_Stall_Ooty_Market_Nilgiris_Aug25_A7CR_07102.jpg"
+  },
+  {
+   "k": "supermarket",
+   "cats": [
+    "errands"
+   ],
+   "tags": [
+    "supermarket",
+    "grocery",
+    "shopping",
+    "store",
+    "mall",
+    "dmart"
+   ],
+   "def": [],
+   "title": "Supermarket aisle",
+   "by": "Wilfredor",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Aisle_in_L_Intermarche_supermarket_in_Quebec_City.jpg"
+  },
+  {
+   "k": "laundry",
+   "cats": [
+    "errands"
+   ],
+   "tags": [
+    "laundry",
+    "laundromat",
+    "washing",
+    "clothes",
+    "dry clean"
+   ],
+   "def": [],
+   "title": "Laundromat",
+   "by": "ArtOfHappiness",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Laundromat_Washing_Machines_%26_Laundry_Equipment.jpg"
+  },
+  {
+   "k": "laptop",
+   "cats": [
+    "work"
+   ],
+   "tags": [
+    "work",
+    "laptop",
+    "cowork",
+    "coworking",
+    "coding",
+    "freelance",
+    "wfh",
+    "startup",
+    "hackathon"
+   ],
+   "def": [
+    "work"
+   ],
+   "title": "Laptop and coffee on a desk",
+   "by": "Lauren Mancke",
+   "lic": "CC0",
+   "licUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "src": "https://commons.wikimedia.org/wiki/File:Laptop_and_coffee_on_a_desk.jpg"
+  },
+  {
+   "k": "library",
+   "cats": [
+    "work"
+   ],
+   "tags": [
+    "study",
+    "library",
+    "exam",
+    "reading",
+    "revision",
+    "upsc",
+    "notes",
+    "assignment"
+   ],
+   "def": [],
+   "title": "Library study tables",
+   "by": "MB-one",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Reading_room,_Ground_floor,_VW_Library,_Berlin.jpg"
+  },
+  {
+   "k": "bar",
+   "cats": [
+    "nightlife"
+   ],
+   "tags": [
+    "bar",
+    "lounge",
+    "club",
+    "clubbing",
+    "night out",
+    "party",
+    "dance",
+    "dancing"
+   ],
+   "def": [
+    "nightlife"
+   ],
+   "title": "Bar with neon lights",
+   "by": "PattayaPatrol",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:DSC_7093_A_cozy_dimly_lit_cocktail_bar_with_purple_and_blue_mood_lighting_a_glassware-studded_ceiling_and_a_row_of_plush_bar_stools_lining_a_glossy_counter.jpg"
+  },
+  {
+   "k": "cocktail",
+   "cats": [
+    "nightlife"
+   ],
+   "tags": [
+    "cocktail",
+    "cocktails",
+    "drinks",
+    "mixology",
+    "happy hour",
+    "wine"
+   ],
+   "def": [],
+   "title": "Cocktails",
+   "by": "Shixart1985",
+   "lic": "CC BY 2.0",
+   "licUrl": "https://creativecommons.org/licenses/by/2.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Refreshing_cocktail_served_in_a_glass_with_a_slice_of_citrus_and_ice_on_a_vibrant_bar_background.jpg"
+  },
+  {
+   "k": "pub",
+   "cats": [
+    "nightlife"
+   ],
+   "tags": [
+    "pub",
+    "beer",
+    "brewery",
+    "brewpub",
+    "craft",
+    "pint",
+    "tap"
+   ],
+   "def": [],
+   "title": "Beer taps in a pub",
+   "by": "JIP",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Beer_taps_at_restaurant_P%C3%B5rgu,_Tallinn.jpg"
+  },
+  {
+   "k": "spa",
+   "cats": [
+    "selfcare"
+   ],
+   "tags": [
+    "spa",
+    "pamper",
+    "relax",
+    "facial",
+    "salon",
+    "self care",
+    "selfcare"
+   ],
+   "def": [
+    "selfcare"
+   ],
+   "title": "Towels and orchids",
+   "by": "Tim Reckmann from Hamm, Deutschland",
+   "lic": "CC BY 2.0",
+   "licUrl": "https://creativecommons.org/licenses/by/2.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Handt%C3%BCcher_im_Spa_(53404561087).jpg"
+  },
+  {
+   "k": "yoga",
+   "cats": [
+    "selfcare",
+    "fitness"
+   ],
+   "tags": [
+    "yoga",
+    "stretch",
+    "stretching",
+    "pilates",
+    "mat"
+   ],
+   "def": [],
+   "title": "Rolled yoga mats",
+   "by": "Sha89sha",
+   "lic": "CC0",
+   "licUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+   "src": "https://commons.wikimedia.org/wiki/File:Cotton_Yoga_Mats.png"
+  },
+  {
+   "k": "aroma",
+   "cats": [
+    "selfcare"
+   ],
+   "tags": [
+    "aroma",
+    "aromatherapy",
+    "oils",
+    "massage",
+    "wellness",
+    "meditation",
+    "meditate"
+   ],
+   "def": [],
+   "title": "Essential oils and flowers",
+   "by": "Alek866215",
+   "lic": "CC BY-SA 4.0",
+   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+   "src": "https://commons.wikimedia.org/wiki/File:Aromatherapie.jpg"
+  }
+ ]
+}

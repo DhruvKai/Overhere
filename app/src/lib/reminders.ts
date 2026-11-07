@@ -39,12 +39,8 @@ function due(m: Model): { notes: Note[]; actf: Record<string, Flags>; seenPost?:
           body: `"${d}" is ${whenStr(a.when).replace(/^(Today|Tomorrow)/, w => w.toLowerCase())} at ${a.venue}.` });
       }
     }
-    /* check in about 3 hours after the start, once it has surely ended (only for recent ones) */
-    if (left <= 0 && !f.checkin && mine && a.members.length && now - a.when >= 3 * 3600e3 && now - a.when < 3 * 864e5 && !m.ratings[a.id]) {
-      set(a.id, { checkin: true });
-      out.push({ kind: 'remind', title: 'How did it go?', tag: 'Check in', tone: 'warn', act: a.id, flags: ['check'], key: 'checkin:' + a.id,
-        body: `"${d}" has ended. Let us know it went OK and who showed up.` });
-    }
+    /* After the plan the database asks: the host to record attendance (and reminds them daily), and the people the host
+       marked to rate it or say what happened. */
   });
 
   /* new plans since you last looked, from people you follow or matching an alert */

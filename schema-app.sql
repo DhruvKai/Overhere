@@ -99,6 +99,91 @@ update activities set hood = hood || ', Chandigarh' where hood in ('Sector 17','
 -- A home area named with its city twice ("Sector 17, Chandigarh, Chandigarh"): keep it once.
 update profiles set hood = regexp_replace(hood, ', ([^,]+), \1$', ', \1') where hood ~ ', ([^,]+), \1$';
 
+-- ---------- the 7 Nov 2026 spec ----------
+-- 13 categories. The first three keep their old keys: movies is Movie, cafe is Food, concerts is Concert.
+-- Keep this list the same as CATS in web/app.js and app/src/lib/model.ts.
+alter table activities drop constraint if exists activities_cat_check;
+alter table activities add constraint activities_cat_check check (cat in ('fitness','movies','theatre','comedy','concerts','hangout',
+  'cafe','adventure','outdoor','errands','work','selfcare','nightlife'));
+-- Interests follow the categories (the three old ones keep their wording, so nobody's interests change).
+alter table profiles drop constraint if exists profiles_ints_check;
+alter table profiles add constraint profiles_ints_check check (ints <@ array['Fitness and sport','Movies','Theatre','Stand-up comedy',
+  'Concerts','Hangout','Cafe / Food','Adventure','Outdoor leisure','Chores and errands','Work and study','Self care','Nightlife']);
+-- How long the plan takes, in hours (1 to 24). It sets when the host is asked to record attendance (_plan_end).
+-- Plans from before get 2 hours.
+alter table activities add column if not exists duration_h int not null default 2;
+alter table activities drop constraint if exists activities_duration_check;
+alter table activities add constraint activities_duration_check check (duration_h between 1 and 24);
+-- Every plan is platonic. The field is there so the data model says so; nothing else is allowed at launch.
+alter table activities add column if not exists intent text not null default 'platonic';
+alter table activities drop constraint if exists activities_intent_check;
+alter table activities add constraint activities_intent_check check (intent in ('platonic'));
+
+-- Every time someone leaves a group: opting out (with their reason), removed by the host (with the host's reason),
+-- or marked a no-show after the plan.
+create table if not exists exit_events (
+  id         uuid primary key default gen_random_uuid(),
+  act        uuid not null references activities(id) on delete cascade,
+  user_id    uuid not null references profiles(id) on delete cascade,
+  kind       text not null check (kind in ('opt-out','removed','no-show')),
+  reason     text not null default '' check (char_length(reason) <= 200),
+  by_user    uuid references profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index if not exists exit_events_act_idx on exit_events (act);
+
+-- Someone left a plan that was full: the host is asked whether to put the spot back in discovery ('yes') or keep the
+-- group as it is ('no': capacity drops to the people still going). Unanswered, the plan stays full.
+create table if not exists relist_prompts (
+  id          uuid primary key default gen_random_uuid(),
+  act         uuid not null references activities(id) on delete cascade,
+  exit_id     uuid references exit_events(id) on delete cascade,
+  was_full    boolean not null default true,
+  answer      text check (answer in ('yes','no')),
+  answered_at timestamptz,
+  created_at  timestamptz not null default now()
+);
+create index if not exists relist_prompts_act_idx on relist_prompts (act);
+
+-- Attendance, recorded by the host after the plan: 'show' or 'noshow' per member. Someone marked a no-show can say
+-- what happened (reply) or dispute it (disputed, which also goes to the reports queue).
+create table if not exists attendance (
+  act        uuid not null references activities(id) on delete cascade,
+  user_id    uuid not null references profiles(id) on delete cascade,
+  status     text not null check (status in ('show','noshow')),
+  reply      text check (char_length(reply) <= 300),
+  disputed   boolean not null default false,
+  marked_at  timestamptz not null default now(),
+  replied_at timestamptz,
+  primary key (act, user_id)
+);
+create index if not exists attendance_user_idx on attendance (user_id);
+
+-- Words and phrases a plan's description can't contain (_bad_word). Add more in the SQL editor:
+--   insert into blocked_terms (term) values ('some phrase');
+-- A term ending in * also matches longer words that start with it ("fuck*" catches "fucking"). Matching ignores case,
+-- look-alike characters (@ for a, 0 for o...), letters stretched out ("fuuuck") and letters spaced out ("s e x"), and
+-- only matches whole words, so "Sussex" or "cocktail" are fine. The apps have a copy of the starting list
+-- (BAD_TERMS in web/app.js and app/src/lib/words.ts) to warn while typing; this table is what decides.
+create table if not exists blocked_terms (
+  term     text primary key check (char_length(term) between 2 and 60),
+  added_at timestamptz not null default now()
+);
+insert into blocked_terms (term) values
+  ('fuck*'),('motherfuck*'),('fck'),('fuk'),('shit'),('shitty'),('bullshit'),('bitch*'),('bastard*'),('asshole*'),('ass'),('arse'),
+  ('dick'),('dickhead*'),('cock'),('cunt*'),('pussy'),('wank*'),('slut*'),('whore*'),('boobs'),('tits'),('titties'),('cum'),
+  ('sex'),('sexy'),('horny'),('nudes'),('porn*'),('xxx'),('nsfw'),('onlyfans'),('sexting'),
+  ('rape'),('rapist'),('escort'),('escorts'),('escort service'),('hooker'),('hookers'),('prostitute*'),('call girl'),('call girls'),
+  ('hook up'),('hookup'),('hookups'),('one night stand'),('friends with benefits'),('fwb'),('no strings attached'),
+  ('sugar daddy'),('sugar baby'),('sugar mommy'),('casual sex'),('looking for girlfriend'),('looking for a girlfriend'),
+  ('looking for boyfriend'),('looking for a boyfriend'),('body massage'),
+  ('nigger*'),('nigga'),('niggas'),('faggot*'),('retard'),('retarded'),('kill yourself'),('kys'),
+  ('cocaine'),('heroin'),('mdma'),('ecstasy pills'),('lsd'),('meth'),('ganja'),('charas'),
+  ('chutiya'),('chutiye'),('chutia'),('chut'),('bhenchod'),('behenchod'),('bhanchod'),('benchod'),('madarchod'),('maderchod'),
+  ('madarjaat'),('bsdk'),('bhosdi*'),('bhosda'),('gandu'),('gaand'),('lund'),('lauda'),('lavda'),('loda'),('lodu'),('jhatu'),
+  ('jhaant'),('chodu'),('randi'),('randwa'),('harami'),('haramkhor'),('kutiya')
+on conflict (term) do nothing;
+
 create table if not exists messages (
   id         bigint generated always as identity primary key,
   act        uuid not null references activities(id) on delete cascade,
@@ -154,6 +239,10 @@ create table if not exists ratings (
   created_at timestamptz not null default now(),
   primary key (act, rater)
 );
+-- After the plan, people the host marked as there rate the host as well as the plan.
+alter table ratings add column if not exists host_stars int;
+alter table ratings drop constraint if exists ratings_host_stars_check;
+alter table ratings add constraint ratings_host_stars_check check (host_stars is null or host_stars between 1 and 5);
 
 create table if not exists reports (
   id         uuid primary key default gen_random_uuid(),
@@ -273,11 +362,16 @@ alter table app_meta        enable row level security;
 alter table app_config      enable row level security;
 alter table verifications   enable row level security;
 alter table push_tokens     enable row level security;
+alter table exit_events     enable row level security;
+alter table relist_prompts  enable row level security;
+alter table attendance      enable row level security;
+alter table blocked_terms   enable row level security;
 
 -- Belt and braces: the browser roles get no table rights at all (reading pings is the one exception,
 -- for Realtime). Without this, Supabase's default grants would rely on row level security alone.
 revoke all on table profiles, activities, requests, messages, poll_votes, notifications, ratings, reports, blocks,
-  profile_presets, pings, app_meta, app_config, verifications, push_tokens from anon, authenticated;
+  profile_presets, pings, app_meta, app_config, verifications, push_tokens, exit_events, relist_prompts, attendance,
+  blocked_terms from anon, authenticated;
 grant select on table pings to authenticated;
 
 drop policy if exists "see your own pings" on pings;
@@ -386,13 +480,56 @@ create or replace function _fill_up(p_act uuid) returns void language plpgsql as
 declare a activities; r record;
 begin
   select * into a from activities where id = p_act;
+  -- full: the plan leaves discovery, and requests still waiting are closed (nobody waits for a spot)
   update activities set status = 'full' where id = p_act;
-  for r in select * from requests where act = p_act and status = 'pending' loop
-    update requests set status = 'waitlist' where id = r.id;
-    perform _note(r.user_id, 'req', 'Moved to waitlist', 'Waitlist', 'info', p_act,
-      format('"%s" filled up before your request was accepted. You''re on the waitlist and move up if a spot opens.', _short(a.description)));
+  for r in select * from requests where act = p_act and status in ('pending', 'waitlist') loop
+    update requests set status = 'rejected' where id = r.id;
+    perform _note(r.user_id, 'req', 'Plan filled up', 'Closed', 'info', p_act,
+      format('"%s" filled up before your request was answered. Take a look at other plans nearby.', _short(a.description)));
   end loop;
   perform _note(a.host, 'update', 'Activity full', 'Full', 'acc', p_act, format('Your activity "%s" is now full.', _short(a.description)));
+end $$;
+
+-- When a plan ends: its start plus how long the host said it takes.
+create or replace function _plan_end(a activities) returns timestamptz language sql immutable as $$
+  select a.starts_at + make_interval(hours => a.duration_h) $$;
+
+-- Attendance reminders only for plans that end after this feature arrived, so older plans never block anyone.
+insert into app_meta (k, v) values ('attendance_since', now()) on conflict (k) do nothing;
+create or replace function _attendance_since() returns timestamptz language sql stable as $$
+  select coalesce((select v from app_meta where k = 'attendance_since'), now()) $$;
+
+-- Text reduced to plain words for _bad_word: lower case, look-alike characters swapped back (@ -> a, 0 -> o, 1 -> i,
+-- 3 -> e, 5 and $ -> s, 7 -> t, ! -> i, | -> l), everything else a space, a letter repeated 3+ times kept once
+-- ("fuuuck"), and letters spaced out one by one joined up ("s e x"). Wrapped in spaces for whole-word matching.
+-- normWords in web/app.js and app/src/lib/words.ts do the same.
+create or replace function _norm_words(t text) returns text language sql immutable as $$
+  select ' ' || btrim(regexp_replace(regexp_replace(regexp_replace(
+           translate(lower(coalesce(t, '')), '@40135$7!|', 'aaoiesstil'),
+           '[^a-z]+', ' ', 'g'),
+           '([a-z])\1{2,}', '\1', 'g'),
+           '\m([a-z]) (?=[a-z]\M)', '\1', 'g')) || ' ' $$;
+
+-- The first blocked term (blocked_terms) in a text, or null when it's clean.
+create or replace function _bad_word(t text) returns text language plpgsql stable as $$
+declare n text := _norm_words(t); b record; w text;
+begin
+  for b in select term from blocked_terms loop
+    w := btrim(_norm_words(rtrim(b.term, '*')));
+    continue when w = '';
+    if right(b.term, 1) = '*' then
+      if n ~ (' ' || w) then return w; end if;
+    elsif position(' ' || w || ' ' in n) > 0 then return w; end if;
+  end loop;
+  return null;
+end $$;
+
+create or replace function _check_words(t text) returns void language plpgsql stable as $$
+declare w text := _bad_word(t);
+begin
+  if w is not null then
+    raise exception '"%" isn''t allowed in a plan. Please reword it so it''s friendly for everyone.', w;
+  end if;
 end $$;
 
 create or replace function _accept(p_req uuid) returns void language plpgsql as $$
@@ -411,25 +548,34 @@ begin
   perform _ping(array[a.host] || _members(a.id));
 end $$;
 
--- A spot freed up: reopen the activity and move waitlisted people up, oldest first.
+-- The host made room (edit_activity): reopen a full plan, unless a "relist the spot?" question is still open.
 create or replace function _spot_opened(p_act uuid) returns void language plpgsql as $$
-declare a activities; free int; r record;
 begin
-  select * into a from activities where id = p_act;
-  if a.status = 'full' and _spots(p_act) > 0 then
-    update activities set status = 'open' where id = p_act;
-    a.status := 'open';
+  update activities a set status = 'open'
+  where a.id = p_act and a.status = 'full' and a.starts_at > now() and _spots(p_act) > 0
+    and not exists (select 1 from relist_prompts p where p.act = p_act and p.answer is null);
+end $$;
+
+-- Someone leaves a group, by opting out or being removed. If the plan was full, the host is asked whether to relist
+-- the spot (relist_prompts, answered with relist_spot); until then it stays full. Sample hosts relist straight away.
+create or replace function _exit(p_act uuid, p_user uuid, p_kind text, p_reason text, p_by uuid) returns void language plpgsql as $$
+declare a activities; eid uuid; was_full boolean;
+begin
+  select * into a from activities where id = p_act for update;
+  was_full := a.status = 'full';
+  update requests set status = case when p_kind = 'removed' then 'removed' else 'left' end
+  where act = p_act and user_id = p_user and status = 'accepted';
+  insert into exit_events (act, user_id, kind, reason, by_user) values (p_act, p_user, p_kind, left(p_reason, 200), p_by)
+  returning id into eid;
+  if was_full and a.starts_at > now() then
+    if _is_sample(a.host) then
+      update activities set status = 'open' where id = p_act;
+    else
+      insert into relist_prompts (act, exit_id) values (p_act, eid);
+      perform _note(a.host, 'update', 'Relist the spot?', 'Spot free', 'warn', p_act,
+        format('A spot opened up in "%s", which was full. Open the plan to put the spot back up, or keep the group as it is.', _short(a.description)));
+    end if;
   end if;
-  if a.status <> 'open' or a.starts_at <= now() then return; end if;
-  free := greatest(0, _spots(p_act) - (select count(*)::int from requests where act = p_act and status = 'pending'));
-  for r in select * from requests where act = p_act and status = 'waitlist' order by created_at limit free loop
-    update requests set status = 'pending' where id = r.id;
-    perform _note(r.user_id, 'req', 'Off the waitlist', 'Pending', 'warn', p_act,
-      format('A spot opened up in "%s". Your request is off the waitlist and now with %s.', _short(a.description), _name(a.host)));
-    perform _note(a.host, 'req', 'New join request', 'Pending', 'warn', p_act,
-      format('%s moved up from the waitlist for "%s".', _name(r.user_id), _short(a.description)));
-    if _is_sample(a.host) then perform _accept(r.id); end if;
-  end loop;
 end $$;
 
 -- One chat notification per chat per person: it is updated (and marked unread) instead of piling up.
@@ -460,7 +606,7 @@ create or replace function _t_at(d int, hr int, mi int default 0) returns timest
 --  * sample plans move forward so the app never runs empty; if real people joined one, it stays in
 --    their history and a fresh copy is posted instead
 create or replace function _housekeeping() returns void language plpgsql as $$
-declare a activities; nid uuid; nxt timestamptz; step interval; n_step int;
+declare a activities; nid uuid; nxt timestamptz; step interval; n_step int; n_rem int;
 begin
   if not pg_try_advisory_xact_lock(4242) then return; end if;
   if exists (select 1 from app_meta where k = 'housekeeping' and v > now() - interval '2 minutes') then return; end if;
@@ -471,8 +617,8 @@ begin
     -- months differ in length, so step from the first date (the 31st stays the 31st or the month's last day)
     n_step := greatest(1, floor(extract(epoch from now() - a.starts_at) / extract(epoch from step))::int - 1);
     loop nxt := a.starts_at + step * n_step; exit when nxt > now(); n_step := n_step + 1; end loop;
-    insert into activities (host, cat, description, cap, starts_at, audience, venue, cost, total, hood, lat, lng, repeat)
-    values (a.host, a.cat, a.description, a.cap, nxt, a.audience, a.venue, a.cost, a.total, a.hood, a.lat, a.lng, a.repeat)
+    insert into activities (host, cat, description, cap, starts_at, audience, venue, cost, total, hood, lat, lng, repeat, duration_h)
+    values (a.host, a.cat, a.description, a.cap, nxt, a.audience, a.venue, a.cost, a.total, a.hood, a.lat, a.lng, a.repeat, a.duration_h)
     returning id into nid;
     update activities set next_id = nid where id = a.id;
     perform _note(a.host, 'update', 'Repeat posted', case a.repeat when 'monthly' then 'Every month' when 'biweekly' then 'Every 2 weeks' else 'Every week' end, 'info', nid,
@@ -482,8 +628,8 @@ begin
   for a in select * from activities where sample_period is not null and starts_at <= now() loop
     nxt := a.starts_at + a.sample_period * (floor(extract(epoch from now() - a.starts_at) / extract(epoch from a.sample_period)) + 1);
     if exists (select 1 from requests r join profiles p on p.id = r.user_id where r.act = a.id and not p.is_sample) then
-      insert into activities (host, cat, description, cap, starts_at, audience, venue, cost, total, hood, lat, lng, repeat, sample_period)
-      values (a.host, a.cat, a.description, a.cap, nxt, a.audience, a.venue, a.cost, a.total, a.hood, a.lat, a.lng, a.repeat, a.sample_period)
+      insert into activities (host, cat, description, cap, starts_at, audience, venue, cost, total, hood, lat, lng, repeat, sample_period, duration_h)
+      values (a.host, a.cat, a.description, a.cap, nxt, a.audience, a.venue, a.cost, a.total, a.hood, a.lat, a.lng, a.repeat, a.sample_period, a.duration_h)
       returning id into nid;
       insert into requests (act, user_id, status, created_at)
       select nid, r.user_id, 'accepted', r.created_at from requests r join profiles p on p.id = r.user_id
@@ -494,6 +640,20 @@ begin
     else
       update activities set starts_at = nxt where id = a.id;
     end if;
+  end loop;
+
+  -- After the plan: the host is asked to rate it and record attendance once it ends, then reminded every 24 hours,
+  -- three times (keys close:<plan>:0 to 3). Three reminders on, the apps block until it's done (app_state 'due').
+  for a in select x.* from activities x
+           where x.starts_at > now() - interval '32 days' and x.starts_at <= now()
+             and _plan_end(x) <= now() and _plan_end(x) >= _attendance_since() and not _is_sample(x.host)
+             and exists (select 1 from requests r where r.act = x.id and r.status = 'accepted')
+             and not exists (select 1 from ratings g where g.act = x.id and g.rater = x.host) loop
+    n_rem := least(3, floor(extract(epoch from now() - _plan_end(a)) / 86400)::int);
+    perform _note(a.host, 'remind', case n_rem when 0 then 'How did it go?' else 'Reminder: record attendance' end, 'Check in', 'warn', a.id,
+      format(case n_rem when 0 then '"%s" has ended. Rate it and mark who showed up.'
+                    else '"%s" still needs your rating and attendance. Everyone''s reliability record waits for it.' end, _short(a.description)),
+      '{check}', 'close:' || a.id || ':' || n_rem);
   end loop;
 
   -- Logins that never finished sign-up (no profile after 7 days, for example someone under 18 who stopped at the
@@ -724,7 +884,7 @@ declare
   em text := lower(coalesce(auth.jwt() ->> 'email', ''));
   prof profiles; pre jsonb; draft jsonb;
   act_ids uuid[]; chat_ids uuid[]; pids uuid[];
-  j_acts jsonb; j_people jsonb; j_reqs jsonb; j_msgs jsonb; j_notes jsonb; j_rat jsonb; j_rep jsonb; j_blk jsonb; n_locked int;
+  j_acts jsonb; j_people jsonb; j_reqs jsonb; j_msgs jsonb; j_notes jsonb; j_rat jsonb; j_rep jsonb; j_blk jsonb; j_due jsonb; n_locked int;
   pick text; v_city text; v_auto boolean := false; v_lat float8; v_lng float8;
 begin
   perform _housekeeping();
@@ -781,7 +941,13 @@ begin
   select coalesce(jsonb_agg(jsonb_build_object(
       'id', a.id, 'host', a.host, 'cat', a.cat, 'desc', a.description, 'cap', a.cap, 'when', _ms(a.starts_at),
       'aud', a.audience, 'venue', a.venue, 'cost', a.cost, 'total', a.total, 'hood', a.hood, 'lat', a.lat, 'lng', a.lng, 'repeat', a.repeat,
-      'status', a.status, 'created', _ms(a.created_at), 'mcount', cardinality(m.ms),
+      'status', a.status, 'created', _ms(a.created_at), 'mcount', cardinality(m.ms), 'dur', a.duration_h,
+      -- the host: open "relist the spot?" questions, and whether attendance is recorded
+      'relist', case when a.host = u then (select count(*) from relist_prompts p where p.act = a.id and p.answer is null) else 0 end,
+      'att_done', exists (select 1 from ratings g where g.act = a.id and g.rater = a.host),
+      -- a member: how the host marked them ('show' / 'noshow'), and whether a no-show already replied
+      'my_att', (select t.status from attendance t where t.act = a.id and t.user_id = u),
+      'my_reply', exists (select 1 from attendance t where t.act = a.id and t.user_id = u and t.replied_at is not null),
       'members', case when a.id = any (chat_ids) then to_jsonb(m.ms) else '[]'::jsonb end,
       'wl', (select count(*) from requests r where r.act = a.id and r.status = 'waitlist'),
       'mypos', (select w.pos from (select r.user_id, row_number() over (order by r.created_at) pos
@@ -816,22 +982,39 @@ begin
   select coalesce(jsonb_agg(jsonb_build_object(
       'id', p.id, 'name', p.name, 'gender', p.gender, 'age', date_part('year', age(p.dob))::int, 'job', p.job, 'bio', p.bio,
       'emo', p.emo, 'photo', p.photo, 'photo2', p.photo2, 'kyc', p.kyc, 'face', p.face, 'sample', p.is_sample, 'ints', p.ints, 'avail', p.avail, 'hist', p.hist,
-      'met', p.trust_met + coalesce(t.met, 0), 'shows', p.trust_shows + coalesce(t.shows, 0))), '[]')
+      'met', p.trust_met + coalesce(t.met, 0), 'shows', p.trust_shows + coalesce(t.shows, 0),
+      'noshows', greatest(p.trust_met - p.trust_shows, 0) + coalesce(t.noshows, 0))), '[]')
   into j_people from profiles p
   left join lateral (
-    -- show-ups from ratings: per meetup, the majority of the people who rated decides
-    select count(*)::int met, count(*) filter (where s >= n)::int shows
-    from (select r.act, count(*) filter (where e.value = 'show') s, count(*) filter (where e.value = 'noshow') n
-          from ratings r cross join lateral jsonb_each_text(r.people) e
-          where e.key = p.id::text group by r.act) x) t on true
+    -- Reliability, no formula: meetups (plans that have ended where they were an accepted member, or the host with
+    -- people going), and how often the host marked them there or a no-show. Meetups count as soon as the plan ends;
+    -- the other two once the host records attendance. Plans from before attendance existed count by the old check-ins,
+    -- where the majority of the people who rated decided.
+    select (select count(*)::int from requests r join activities x on x.id = r.act
+             where r.user_id = p.id and r.status = 'accepted' and _plan_end(x) <= now())
+         + (select count(*)::int from activities x where x.host = p.id and _plan_end(x) <= now()
+             and exists (select 1 from requests r where r.act = x.id and r.status = 'accepted')) met,
+           (select count(*)::int from attendance d where d.user_id = p.id and d.status = 'show') + coalesce(l.shows, 0) shows,
+           (select count(*)::int from attendance d where d.user_id = p.id and d.status = 'noshow') + coalesce(l.noshows, 0) noshows
+    from (select count(*) filter (where s >= n)::int shows, count(*) filter (where s < n)::int noshows
+          from (select r.act, count(*) filter (where e.value = 'show') s, count(*) filter (where e.value = 'noshow') n
+                from ratings r cross join lateral jsonb_each_text(r.people) e
+                where e.key = p.id::text and not exists (select 1 from attendance d where d.act = r.act) group by r.act) x) l) t on true
   where p.id = any (pids) and (p.id = u or not exists (select 1 from blocks b where b.blocker = p.id and b.blocked = u));
 
   select coalesce(jsonb_agg(jsonb_build_object('id', n.id, 'kind', n.kind, 'title', n.title, 'tag', n.tag, 'tone', n.tone, 'act', n.act,
       'text', n.body, 'flags', n.flags, 'read', n.read, 'key', n.key, 'at', _ms(n.created_at)) order by n.created_at desc), '[]')
   into j_notes from (select * from notifications where user_id = u order by created_at desc limit 100) n;
 
-  select coalesce(jsonb_agg(jsonb_build_object('act', act, 'ok', ok, 'stars', stars, 'people', people, 'at', _ms(created_at))), '[]')
+  select coalesce(jsonb_agg(jsonb_build_object('act', act, 'ok', ok, 'stars', stars, 'host_stars', host_stars, 'people', people, 'at', _ms(created_at))), '[]')
   into j_rat from ratings where rater = u;
+  -- Plans this person hosted that ended and still need a rating and attendance. overdue: three reminders have gone
+  -- (one a day) with no answer, so the apps ask for it before anything else.
+  select coalesce(jsonb_agg(jsonb_build_object('act', x.id, 'overdue', now() >= _plan_end(x) + interval '96 hours')), '[]') into j_due
+  from activities x
+  where x.host = u and x.starts_at > now() - interval '90 days' and _plan_end(x) <= now() and _plan_end(x) >= _attendance_since()
+    and exists (select 1 from requests r where r.act = x.id and r.status = 'accepted')
+    and not exists (select 1 from ratings g where g.act = x.id and g.rater = u);
   -- how many audience-limited plans unlock after the face check (the app says so, without showing them)
   select count(*) into n_locked from activities a
   where not prof.face and a.audience is not null and prof.gender = any (a.audience) and a.starts_at > now()
@@ -843,7 +1026,7 @@ begin
     'verify', _verify_state(u), 'mode', _modes(),
     'profile', to_jsonb(prof) - 'email' - 'trust_met' - 'trust_shows' - 'hist',
     'people', j_people, 'acts', j_acts, 'reqs', j_reqs, 'msgs', j_msgs, 'notes', j_notes,
-    'ratings', j_rat, 'reported', j_rep, 'blocked', j_blk, 'locked', n_locked,
+    'ratings', j_rat, 'reported', j_rep, 'blocked', j_blk, 'locked', n_locked, 'due', j_due,
     'cities', (select jsonb_agg(jsonb_build_array(c.k, c.name, c.lat, c.lng)) from _cities() c), 'city', v_city, 'city_auto', v_auto,
     'terms_v', 'app-v2');   -- the Terms version the app asks people to agree to (see accept_terms)
 end $$;
@@ -931,7 +1114,7 @@ begin
 end $$;
 
 create or replace function post_activity(p jsonb) returns uuid language plpgsql security definer set search_path = public as $$
-declare u uuid := _uid(); me profiles; st timestamptz; nid uuid;
+declare u uuid := _uid(); me profiles; st timestamptz; nid uuid; v_cap int; v_dur int;
 begin
   select * into me from profiles where id = u;
   if not found then raise exception 'Finish your profile first'; end if;
@@ -942,21 +1125,28 @@ begin
   st := to_timestamp((p->>'when')::double precision / 1000);
   if st <= now() then raise exception 'Pick a future date and time'; end if;
   if st > now() + interval '1 year' then raise exception 'Pick a date within the next year'; end if;
-  insert into activities (host, cat, description, cap, starts_at, audience, venue, cost, total, hood, lat, lng, repeat)
-  values (u, p->>'cat', trim(p->>'desc'), (p->>'cap')::int, st,
+  -- capacity counts guests only (the host comes on top): 2 to 10
+  v_cap := (p->>'cap')::int;
+  if v_cap is null or v_cap not between 2 and 10 then raise exception 'Pick between 2 and 10 people'; end if;
+  -- older apps don't send a duration: 2 hours
+  v_dur := coalesce(nullif(p->>'dur', '')::int, 2);
+  if v_dur not between 1 and 24 then raise exception 'Pick a duration between 1 and 24 hours'; end if;
+  perform _check_words(p->>'desc');
+  insert into activities (host, cat, description, cap, starts_at, audience, venue, cost, total, hood, lat, lng, repeat, duration_h)
+  values (u, p->>'cat', trim(p->>'desc'), v_cap, st,
           case when jsonb_typeof(p->'aud') = 'array' then array(select jsonb_array_elements_text(p->'aud')) end,
           -- no venue spot (an app still open from before venues had one): pin it at the host's home area
           trim(p->>'venue'), p->>'cost', nullif((p->>'total')::int, 0), me.hood,
           case when p->>'lat' is null or p->>'lng' is null then me.lat else (p->>'lat')::float8 end,
           case when p->>'lat' is null or p->>'lng' is null then me.lng else (p->>'lng')::float8 end,
-          nullif(p->>'repeat', ''))
+          nullif(p->>'repeat', ''), v_dur)
   returning id into nid;
   perform _ping(array['00000000-0000-0000-0000-000000000000'::uuid]);
   return nid;
 end $$;
 
 create or replace function edit_activity(p_act uuid, p jsonb) returns void language plpgsql security definer set search_path = public as $$
-declare u uuid := _uid(); a activities; st timestamptz; moved boolean; ms uuid[]; m uuid;
+declare u uuid := _uid(); a activities; st timestamptz; moved boolean; ms uuid[]; m uuid; v_cap int; v_dur int;
 begin
   select * into a from activities where id = p_act for update;
   if not found or a.host <> u then raise exception 'Only the host can edit this activity'; end if;
@@ -965,12 +1155,18 @@ begin
   if st <= now() then raise exception 'Pick a future date and time'; end if;
   if st > now() + interval '1 year' then raise exception 'Pick a date within the next year'; end if;
   ms := _members(p_act);
-  if (p->>'cap')::int < cardinality(ms) then raise exception 'Capacity can''t be less than the people already going'; end if;
+  v_cap := (p->>'cap')::int;
+  -- 2 to 10, or what it already is (keeping the group as it was can leave a plan with fewer than 2)
+  if v_cap is null or (v_cap not between 2 and 10 and v_cap <> a.cap) then raise exception 'Pick between 2 and 10 people'; end if;
+  if v_cap < cardinality(ms) then raise exception 'Capacity can''t be less than the people already going'; end if;
+  v_dur := coalesce(nullif(p->>'dur', '')::int, a.duration_h);
+  if v_dur not between 1 and 24 then raise exception 'Pick a duration between 1 and 24 hours'; end if;
+  perform _check_words(p->>'desc');
   moved := st <> a.starts_at or trim(p->>'venue') <> a.venue;
-  update activities set cat = p->>'cat', description = trim(p->>'desc'), cap = (p->>'cap')::int, starts_at = st,
+  update activities set cat = p->>'cat', description = trim(p->>'desc'), cap = v_cap, starts_at = st,
     audience = case when jsonb_typeof(p->'aud') = 'array' then array(select jsonb_array_elements_text(p->'aud')) end,
     venue = trim(p->>'venue'), cost = p->>'cost', total = nullif((p->>'total')::int, 0), repeat = nullif(p->>'repeat', ''),
-    lat = coalesce((p->>'lat')::float8, lat), lng = coalesce((p->>'lng')::float8, lng)
+    lat = coalesce((p->>'lat')::float8, lat), lng = coalesce((p->>'lng')::float8, lng), duration_h = v_dur
   where id = p_act;
   if cardinality(ms) > 0 then
     perform _sys(p_act, 'The host updated the details' || case when moved then ': now ' || _when(st) || ' at ' || trim(p->>'venue') else '' end);
@@ -982,6 +1178,8 @@ begin
   if _spots(p_act) <= 0 then
     if a.status = 'open' then perform _fill_up(p_act); end if;
   else
+    -- making room answers any open "relist the spot?" question with yes
+    update relist_prompts set answer = 'yes', answered_at = now() where act = p_act and answer is null;
     perform _spot_opened(p_act);
   end if;
   perform _ping(array['00000000-0000-0000-0000-000000000000'::uuid]);
@@ -1003,9 +1201,9 @@ begin
   perform _ping(others || '00000000-0000-0000-0000-000000000000'::uuid);
 end $$;
 
--- Ask to join. Returns 'pending', 'waitlist', or 'accepted' (sample hosts say yes straight away).
+-- Ask to join. Returns 'pending', or 'accepted' (sample hosts say yes straight away).
 create or replace function request_join(p_act uuid, p_note text) returns text language plpgsql security definer set search_path = public as $$
-declare u uuid := _uid(); me profiles; a activities; st text; rid uuid;
+declare u uuid := _uid(); me profiles; a activities; rid uuid;
 begin
   select * into me from profiles where id = u;
   if not found then raise exception 'Finish your profile first'; end if;
@@ -1018,12 +1216,11 @@ begin
   if a.host = u then raise exception 'This is your own activity'; end if;
   if not _eligible(a, u) then raise exception 'This activity isn''t open to you'; end if;
   if exists (select 1 from requests where act = p_act and user_id = u) then raise exception 'You already asked to join this one'; end if;
-  st := case when a.status = 'full' or _spots(p_act) <= 0 then 'waitlist' else 'pending' end;
-  insert into requests (act, user_id, note, status) values (p_act, u, left(coalesce(p_note, ''), 100), st) returning id into rid;
-  if st = 'pending' then
-    perform _note(a.host, 'req', 'New join request', 'Pending', 'warn', p_act, format('%s wants to join "%s".', me.name, _short(a.description)));
-    if _is_sample(a.host) then perform _accept(rid); end if;
-  end if;
+  -- no waitlist: a full plan isn't in discovery, and can't be asked to join
+  if a.status = 'full' or _spots(p_act) <= 0 then raise exception 'This plan is full'; end if;
+  insert into requests (act, user_id, note, status) values (p_act, u, left(coalesce(p_note, ''), 100), 'pending') returning id into rid;
+  perform _note(a.host, 'req', 'New join request', 'Pending', 'warn', p_act, format('%s wants to join "%s".', me.name, _short(a.description)));
+  if _is_sample(a.host) then perform _accept(rid); end if;
   perform _ping(array[u, a.host]);
   return (select status from requests where id = rid);
 end $$;
@@ -1049,51 +1246,91 @@ begin
     if _spots(a.id) <= 0 then raise exception 'This activity is full'; end if;
     perform _accept(p_req);
   else
+    -- a rejection is silent: the requester gets no message (their app shows the request as closed)
     update requests set status = 'rejected' where id = p_req;
-    perform _note(r.user_id, 'req', 'Request Declined', 'Declined', 'bad', a.id,
-      format('%s declined your join request for "%s". You can browse similar activities.', _name(u), _short(a.description)));
   end if;
   perform _ping(array[u, r.user_id]);
 end $$;
 
-create or replace function leave_activity(p_act uuid) returns void language plpgsql security definer set search_path = public as $$
-declare u uuid := _uid(); a activities;
+-- Opt out, with a reason from the list in the apps or the person's own words. The host and the group chat are told,
+-- with the reason. The two safety reasons are kept private (the group, which may include whoever made them feel that
+-- way, only sees that they left) and flag the plan for review in the reports queue.
+drop function if exists leave_activity(uuid);
+create or replace function leave_activity(p_act uuid, p_reason text default null) returns void language plpgsql security definer set search_path = public as $$
+declare u uuid := _uid(); a activities; why text := left(btrim(coalesce(p_reason, '')), 200); private boolean;
 begin
-  select * into a from activities where id = p_act for update;
-  update requests set status = 'left' where act = p_act and user_id = u and status = 'accepted';
-  if not found then raise exception 'You are not in this activity'; end if;
-  perform _sys(p_act, _name(u) || ' left the chat');
-  perform _note(a.host, 'update', 'Someone left', 'Left', 'info', p_act, format('%s left "%s". A spot is open again.', _name(u), _short(a.description)));
-  perform _spot_opened(p_act);
+  select * into a from activities where id = p_act;
+  if not found or not exists (select 1 from requests where act = p_act and user_id = u and status = 'accepted') then
+    raise exception 'You are not in this activity';
+  end if;
+  if why = '' then why := 'No reason given'; end if;
+  private := why in ('Feel uncomfortable with the group', 'Feel unsafe');
+  perform _exit(p_act, u, 'opt-out', why, u);
+  if private then
+    insert into reports (reporter, act, reason, note)
+    values (u, p_act, left('Opted out: ' || why, 80), 'Review the group chat and the accepted members.');
+  end if;
+  perform _sys(p_act, _name(u) || ' left the plan' || case when private then '' else ': ' || why end);
+  perform _note(a.host, 'update', 'Someone left', 'Left', 'info', p_act,
+    format('%s left "%s"%s.', _name(u), _short(a.description), case when private then '' else ' (' || why || ')' end));
   perform _ping(array[u, a.host] || _members(p_act));
 end $$;
 
--- The host takes someone out of the group. Like leaving, their spot opens up and they can't request this one again.
-create or replace function remove_member(p_act uuid, p_user uuid) returns void language plpgsql security definer set search_path = public as $$
-declare u uuid := _uid(); a activities;
+-- The host takes someone out of the group, with a reason, which the person and the group chat see. They can't ask to
+-- join this plan again. If it was full, the host is asked whether to relist the spot.
+drop function if exists remove_member(uuid, uuid);
+create or replace function remove_member(p_act uuid, p_user uuid, p_reason text default null) returns void language plpgsql security definer set search_path = public as $$
+declare u uuid := _uid(); a activities; why text := left(btrim(coalesce(p_reason, '')), 200);
 begin
-  select * into a from activities where id = p_act for update;
+  select * into a from activities where id = p_act;
   if not found or a.host <> u then raise exception 'Only the host can remove people'; end if;
-  update requests set status = 'removed' where act = p_act and user_id = p_user and status = 'accepted';
-  if not found then raise exception 'They are not in this activity'; end if;
-  perform _sys(p_act, _name(p_user) || ' was removed from the chat');
+  if not exists (select 1 from requests where act = p_act and user_id = p_user and status = 'accepted') then
+    raise exception 'They are not in this activity';
+  end if;
+  if why = '' then why := 'No reason given'; end if;
+  perform _exit(p_act, p_user, 'removed', why, u);
+  if why in ('Harassment or unwelcome messages', 'Unsafe or inappropriate conduct') then
+    insert into reports (reporter, target, act, reason, note) values (u, p_user, p_act, left('Removed: ' || why, 80), 'Removed by the host.');
+  end if;
+  perform _sys(p_act, _name(p_user) || ' was removed by the host: ' || why);
   perform _note(p_user, 'update', 'Removed from activity', 'Removed', 'bad', p_act,
-    format('%s removed you from "%s" and its group chat.', _name(u), _short(a.description)));
-  perform _spot_opened(p_act);
+    format('%s removed you from "%s" and its group chat. Reason: %s', _name(u), _short(a.description), why));
   perform _ping(array[u, p_user] || _members(p_act));
 end $$;
 
--- A group chat becomes read-only 3 hours after its plan starts: the meetup is over, so no more messages or votes
--- (the apps show the history with a note). Change the hours here and in CHAT_OPEN_H in web/app.js and the app.
+-- The host's answer to "Relist the spot?": yes puts the spot back into discovery; no keeps the group as it is, so
+-- capacity drops to the people still going and the plan stays full. Answers every open prompt for the plan.
+create or replace function relist_spot(p_act uuid, p_relist boolean) returns void language plpgsql security definer set search_path = public as $$
+declare u uuid := _uid(); a activities; n int;
+begin
+  select * into a from activities where id = p_act for update;
+  if not found or a.host <> u then raise exception 'Only the host can do this'; end if;
+  if not exists (select 1 from relist_prompts where act = p_act and answer is null) then return; end if;
+  update relist_prompts set answer = case when p_relist then 'yes' else 'no' end, answered_at = now()
+  where act = p_act and answer is null;
+  if p_relist then
+    if a.starts_at > now() and _spots(p_act) > 0 then
+      update activities set status = 'open' where id = p_act;
+      perform _sys(p_act, 'The host opened the free spot again');
+    end if;
+  else
+    n := cardinality(_members(p_act));
+    update activities set cap = greatest(n, 1), status = 'full' where id = p_act;
+  end if;
+  perform _ping(array[u, '00000000-0000-0000-0000-000000000000'::uuid] || _members(p_act));
+end $$;
+
+-- A group chat becomes read-only 3 hours after its plan ends (start + duration): the meetup is over, so no more
+-- messages or votes (the apps show the history with a note). Change the hours here and in CHAT_OPEN_H in web/app.js and the app.
 create or replace function _chat_closed(a activities) returns boolean language sql stable as $$
-  select a.starts_at < now() - interval '3 hours' $$;
+  select _plan_end(a) < now() - interval '3 hours' $$;
 
 create or replace function send_message(p_act uuid, p_body text, p_poll jsonb default null) returns void language plpgsql security definer set search_path = public as $$
 declare u uuid := _uid(); a activities; body text := trim(coalesce(p_body, '')); poll jsonb;
 begin
   select * into a from activities where id = p_act;
   if not found or not (a.host = u or u = any (_members(p_act))) then raise exception 'Only members can message this group'; end if;
-  if _chat_closed(a) then raise exception 'This chat closed 3 hours after the plan started'; end if;
+  if _chat_closed(a) then raise exception 'This chat closed 3 hours after the plan ended'; end if;
   if p_poll is not null then
     if jsonb_typeof(p_poll -> 'opts') <> 'array' or jsonb_array_length(p_poll -> 'opts') not between 2 and 4
        or char_length(coalesce(p_poll ->> 'q', '')) not between 1 and 80 then raise exception 'Add a question and 2 to 4 options'; end if;
@@ -1116,7 +1353,7 @@ begin
   if not found or m.poll is null then raise exception 'That poll is gone'; end if;
   select * into a from activities where id = m.act;
   if not (a.host = u or u = any (_members(a.id))) then raise exception 'Only members can vote'; end if;
-  if _chat_closed(a) then raise exception 'This chat closed 3 hours after the plan started'; end if;
+  if _chat_closed(a) then raise exception 'This chat closed 3 hours after the plan ended'; end if;
   if p_opt < 0 or p_opt >= jsonb_array_length(m.poll -> 'opts') then raise exception 'Pick an option'; end if;
   if exists (select 1 from poll_votes where msg = p_msg and user_id = u and opt = p_opt) then
     delete from poll_votes where msg = p_msg and user_id = u;
@@ -1126,20 +1363,83 @@ begin
   perform _ping(array[a.host] || _members(a.id));
 end $$;
 
-create or replace function rate_activity(p_act uuid, p_ok text, p_stars int, p_people jsonb) returns void language plpgsql security definer set search_path = public as $$
-declare u uuid := _uid(); a activities; ppl jsonb;
+-- After the plan. The host records attendance (record_attendance; older apps send it here). Members the host marked as
+-- there rate the plan and the host.
+drop function if exists rate_activity(uuid, text, int, jsonb);
+create or replace function rate_activity(p_act uuid, p_ok text, p_stars int, p_people jsonb default null, p_host_stars int default null)
+returns void language plpgsql security definer set search_path = public as $$
+declare u uuid := _uid(); a activities;
 begin
   select * into a from activities where id = p_act;
-  if not found or not (a.host = u or u = any (_members(p_act))) then raise exception 'Only people who went can rate this'; end if;
-  if a.starts_at > now() then raise exception 'You can rate it once it has happened'; end if;
-  -- only keep marks for people who were actually in it
-  select coalesce(jsonb_object_agg(e.key, e.value), '{}') into ppl
-  from jsonb_each_text(coalesce(p_people, '{}')) e
-  where e.value in ('show', 'noshow') and e.key ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' and e.key::uuid <> u
-    and (e.key::uuid = a.host or e.key::uuid = any (_members(p_act)));
-  insert into ratings (act, rater, ok, stars, people) values (p_act, u, p_ok, p_stars, ppl)
-  on conflict (act, rater) do update set ok = excluded.ok, stars = excluded.stars, people = excluded.people, created_at = now();
+  if not found then raise exception 'That plan is gone'; end if;
+  if a.host = u then perform record_attendance(p_act, p_ok, p_stars, coalesce(p_people, '{}')); return; end if;
+  if not exists (select 1 from attendance where act = p_act and user_id = u and status = 'show') then
+    raise exception 'You can rate this once the host has recorded who was there';
+  end if;
+  if p_ok is null or p_ok not in ('yes', 'no') or p_stars is null or p_stars not between 1 and 5 then raise exception 'Pick a rating'; end if;
+  if p_host_stars is not null and p_host_stars not between 1 and 5 then raise exception 'Pick a rating for the host'; end if;
+  insert into ratings (act, rater, ok, stars, host_stars, people) values (p_act, u, p_ok, p_stars, p_host_stars, '{}')
+  on conflict (act, rater) do update set ok = excluded.ok, stars = excluded.stars, host_stars = excluded.host_stars, created_at = now();
   if p_ok = 'no' then insert into reports (reporter, act, reason) values (u, p_act, 'Check-in: something went wrong'); end if;
+  update notifications set read = true where user_id = u and key = 'rate:' || p_act;
+  perform _ping(array[u, a.host]);
+end $$;
+
+-- The host, once the plan has ended (_plan_end): an overall rating, and every member marked 'show' or 'noshow' in
+-- p_people ({"<member id>": "show"}). People marked there are asked to rate the host and the plan; people marked a
+-- no-show are asked, kindly, what happened (noshow_reply). It can be changed later; the counts follow.
+create or replace function record_attendance(p_act uuid, p_ok text, p_stars int, p_people jsonb) returns void language plpgsql security definer set search_path = public as $$
+declare u uuid := _uid(); a activities; ms uuid[]; m uuid; st text; first boolean;
+begin
+  select * into a from activities where id = p_act;
+  if not found or a.host <> u then raise exception 'Only the host records attendance'; end if;
+  if _plan_end(a) > now() then raise exception 'You can record attendance once the plan has ended'; end if;
+  if p_ok is null or p_ok not in ('yes', 'no') or p_stars is null or p_stars not between 1 and 5 then raise exception 'Rate the plan first'; end if;
+  ms := _members(p_act);
+  foreach m in array ms loop
+    if coalesce(p_people ->> m::text, '') not in ('show', 'noshow') then raise exception 'Mark everyone as there or a no-show'; end if;
+  end loop;
+  first := not exists (select 1 from ratings where act = p_act and rater = u);
+  insert into ratings (act, rater, ok, stars, people)
+  values (p_act, u, p_ok, p_stars, (select coalesce(jsonb_object_agg(x::text, p_people ->> x::text), '{}') from unnest(ms) x))
+  on conflict (act, rater) do update set ok = excluded.ok, stars = excluded.stars, people = excluded.people, created_at = now();
+  foreach m in array ms loop
+    st := p_people ->> m::text;
+    insert into attendance (act, user_id, status) values (p_act, m, st)
+    on conflict (act, user_id) do update set status = excluded.status, marked_at = now();
+    if st = 'show' then
+      perform _note(m, 'remind', 'How was it?', 'Rate', 'acc', p_act,
+        format('%s marked you as there for "%s". Rate the host and the plan.', _name(u), _short(a.description)), '{check}', 'rate:' || p_act);
+    else
+      insert into exit_events (act, user_id, kind, by_user)
+      select p_act, m, 'no-show', u where not exists (select 1 from exit_events e where e.act = p_act and e.user_id = m and e.kind = 'no-show');
+      perform _note(m, 'remind', 'We missed you', 'Check in', 'warn', p_act,
+        format('%s marked you as not there at "%s". If something came up, tell them what happened, or let us know if that''s not right.',
+               _name(u), _short(a.description)), '{check}', 'noshow:' || p_act);
+    end if;
+  end loop;
+  update notifications set read = true where user_id = u and key like 'close:' || p_act || ':%';
+  if p_ok = 'no' and first then insert into reports (reporter, act, reason) values (u, p_act, 'Check-in: something went wrong'); end if;
+  perform _ping(array[u] || ms);
+end $$;
+
+-- Someone the host marked a no-show says what happened, or disputes it (which also goes to the reports queue).
+create or replace function noshow_reply(p_act uuid, p_reply text, p_dispute boolean default false) returns void language plpgsql security definer set search_path = public as $$
+declare u uuid := _uid(); a activities; why text := left(btrim(coalesce(p_reply, '')), 300); dis boolean := coalesce(p_dispute, false);
+begin
+  select * into a from activities where id = p_act;
+  if not exists (select 1 from attendance where act = p_act and user_id = u and status = 'noshow') then
+    raise exception 'There''s nothing to answer here';
+  end if;
+  if why = '' and not dis then raise exception 'Say what happened'; end if;
+  update attendance set reply = nullif(why, ''), disputed = dis, replied_at = now() where act = p_act and user_id = u;
+  update exit_events set reason = left(why, 200) where act = p_act and user_id = u and kind = 'no-show';
+  if dis then insert into reports (reporter, target, act, reason, note) values (u, a.host, p_act, 'Disputed a no-show', why); end if;
+  perform _note(a.host, 'update', case when dis then 'No-show disputed' else 'About a no-show' end, case when dis then 'Disputed' else 'Reply' end,
+    'info', p_act, format('%s %s "%s"%s', _name(u), case when dis then 'says they were at' else 'explained missing' end,
+    _short(a.description), case when why <> '' then ': ' || why else '.' end));
+  update notifications set read = true where user_id = u and key = 'noshow:' || p_act;
+  perform _ping(array[u, a.host]);
 end $$;
 
 create or replace function report(p_target uuid, p_act uuid, p_msg bigint, p_reason text, p_note text) returns void language plpgsql security definer set search_path = public as $$
@@ -1452,7 +1752,7 @@ begin
   if _is_sample(u) then raise exception 'Sample accounts can''t be deleted here'; end if;
   for a in select id from activities where host = u and starts_at > now() loop perform cancel_activity(a.id); end loop;
   for a in select r.act from requests r join activities x on x.id = r.act where r.user_id = u and r.status = 'accepted' and x.starts_at > now() loop
-    perform leave_activity(a.act);
+    perform leave_activity(a.act, 'Deleted their account');
   end loop;
   -- usage records go too, and feedback is kept without the link to this account
   delete from events where participant_id = u;
@@ -1479,6 +1779,7 @@ do $$ declare f record; begin
   for f in select p.oid::regprocedure sig, p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
            where n.nspname = 'public' and (p.proname like '\_%' or p.proname in ('app_state','save_profile','save_state','post_activity',
              'edit_activity','cancel_activity','request_join','withdraw_request','decide_request','leave_activity','remove_member','send_message','vote',
+             'relist_spot','record_attendance','noshow_reply',
              'rate_activity','report','block_user','unblock_user','add_notification','read_notifications','verify_simulated','set_photo',
              'verify_precheck_service','verify_start_service','verify_finish_service','admin_reviews','admin_decide_review',
              'admin_stats','log_event','send_feedback','delete_my_account','accept_terms','invite_info',

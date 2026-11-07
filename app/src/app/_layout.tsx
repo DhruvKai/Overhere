@@ -1,17 +1,21 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Btn, Empty, Loading } from '@/components/ui';
+import { api } from '@/lib/api';
 import { column, COLUMN, onTablet } from '@/lib/layout';
 import { onPushTap, openFromPush, registerPush } from '@/lib/push';
 import { StoreProvider, useStore } from '@/lib/store';
 import { applyThemePref, useTheme } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync();
+/* WELCOME_FN: ask the welcome-email Edge Function to send "Welcome to Overhere" once sign-up is complete. Off until
+   that function is deployed on live with RESEND_API_KEY set (same switch as WELCOME_FN in web/app.js). */
+const WELCOME_FN = false;
 /* Profile -> Appearance, if it isn't "System" */
 applyThemePref();
 
@@ -50,6 +54,16 @@ function Gate() {
   /* Phone sign-ups add and confirm an email before anything else (add-email.tsx). */
   const user = session?.user;
   const needEmail = signedIn && !!user?.phone_confirmed_at && !user?.email_confirmed_at;
+  /* ...then choose a password (create-password.tsx). Email sign-ups chose theirs when signing up. */
+  const needPw = signedIn && !needEmail && !!user?.phone_confirmed_at && user?.user_metadata?.pw_set !== true;
+  const setUp = signedIn && !needEmail && !needPw;
+  /* The welcome email, once per account and app start (the function itself makes sure it's sent only once). */
+  const welcomed = useRef('');
+  useEffect(() => {
+    if (!WELCOME_FN || !setUp || !user?.email_confirmed_at || user.app_metadata?.welcomed_at || welcomed.current === user.id) return;
+    welcomed.current = user.id;
+    api.welcome().catch(e => console.warn('welcome email', e));
+  }, [setUp, user]);
   useEffect(() => { if (ready && !loading) SplashScreen.hideAsync(); }, [ready, loading]);
   /* Push: register this phone once the profile exists, and open whatever notification was tapped. */
   const pushOn = signedIn && hasProfile;
@@ -80,13 +94,16 @@ function Gate() {
       <Stack.Protected guard={needEmail}>
         <Stack.Screen name="add-email" />
       </Stack.Protected>
-      <Stack.Protected guard={signedIn && !needEmail && !onboarded}>
+      <Stack.Protected guard={needPw}>
+        <Stack.Screen name="create-password" />
+      </Stack.Protected>
+      <Stack.Protected guard={setUp && !onboarded}>
         <Stack.Screen name="onboarding" />
       </Stack.Protected>
-      <Stack.Protected guard={signedIn && !needEmail && hasProfile}>
+      <Stack.Protected guard={setUp && hasProfile}>
         <Stack.Screen name="verify" options={{ presentation: 'modal', headerShown: true, title: 'Face check', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink }} />
       </Stack.Protected>
-      <Stack.Protected guard={signedIn && !needEmail && onboarded}>
+      <Stack.Protected guard={setUp && onboarded}>
         <Stack.Screen name="(tabs)" options={{ contentStyle: { backgroundColor: t.bg } }} />
         <Stack.Screen name="plan/[id]" options={{ headerShown: true, title: '', headerBackTitle: 'Back', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink, headerShadowVisible: false }} />
         <Stack.Screen name="rate/[id]" options={{ presentation: 'modal', headerShown: true, title: 'How did it go?', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink }} />

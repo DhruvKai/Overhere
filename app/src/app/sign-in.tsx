@@ -7,6 +7,7 @@ import { Btn, Field, H, Icon, P } from '@/components/ui';
 import Welcome from '@/components/Welcome';
 import { api, friendly } from '@/lib/api';
 import { column } from '@/lib/layout';
+import { PW_HINT, pwProblem } from '@/lib/password';
 import { useStore } from '@/lib/store';
 import { SITE, supabase } from '@/lib/supabase';
 import { useTheme } from '@/lib/theme';
@@ -89,13 +90,14 @@ export default function SignIn() {
 
   async function emailGo() {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) return setErr('Enter a valid email address');
-    if (pw.length < 8) return setErr('Your password needs at least 8 characters');
+    if (signUp) { const bad = pwProblem(pw, email); if (bad) return setErr(bad); }
+    else if (!pw) return setErr('Enter your password');
     if (signUp && !need18()) return;
     setBusy(true); setErr('');
     try {
       const captchaToken = await getToken();
       if (signUp) {
-        const { data, error } = await supabase.auth.signUp({ email: email.trim(), password: pw, options: { captchaToken, data: { age_18: true }, emailRedirectTo: SITE + '/app.html' } });
+        const { data, error } = await supabase.auth.signUp({ email: email.trim(), password: pw, options: { captchaToken, data: { age_18: true, pw_set: true }, emailRedirectTo: SITE + '/app.html' } });
         if (error) throw error;
         if (!data.session) toast('Check your email to confirm your account, then sign in here.');
       } else {
@@ -151,7 +153,7 @@ export default function SignIn() {
           {mode === 'phone' && (<>
             <Field label="Mobile number" value={phone} onChangeText={v => setPhone(phoneDigits(v))} keyboardType="phone-pad"
               placeholder="98765 43210" textContentType="telephoneNumber" autoComplete="tel"
-              hint={signUp ? "+91 · we'll text you a 6-digit code. Then you'll add your email and confirm it with a code too." : "+91 · we'll text you a 6-digit code"} />
+              hint={signUp ? "+91 · we'll text you a 6-digit code. Then you'll add your email and a password." : "+91 · we'll text you a 6-digit code"} />
             {Check}
             <Btn title="Send code" onPress={() => sendCode()} busy={busy} />
           </>)}
@@ -169,7 +171,7 @@ export default function SignIn() {
 
           {mode === 'email' && (<>
             <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress" />
-            <Field label="Password" value={pw} onChangeText={setPw} secureTextEntry autoComplete={signUp ? 'new-password' : 'current-password'} textContentType={signUp ? 'newPassword' : 'password'} hint={signUp ? 'At least 8 characters' : undefined} />
+            <Field label="Password" value={pw} onChangeText={setPw} secureTextEntry autoComplete={signUp ? 'new-password' : 'current-password'} textContentType={signUp ? 'newPassword' : 'password'} hint={signUp ? PW_HINT : undefined} />
             {signUp ? Check : (
               <Pressable onPress={() => { setMode('reset'); setErr(''); }} style={{ alignSelf: 'flex-end', marginTop: -6, marginBottom: 16 }}>
                 <Text style={{ color: t.accink, fontWeight: '700', fontSize: 15 }}>Forgot password?</Text>

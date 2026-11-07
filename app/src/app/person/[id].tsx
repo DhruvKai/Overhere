@@ -68,7 +68,7 @@ export default function Person() {
         {p.bio ? <P>{p.bio}</P> : null}
 
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          {[[tr.met, 'meetups'], [tr.shows, 'showed up'], [tr.met - tr.shows, 'no-shows']].map(([n, l]) => (
+          {[[tr.met, 'meetups'], [tr.shows, 'showed up'], [tr.noshows, 'no-shows']].map(([n, l]) => (
             <View key={l} style={{ flex: 1, alignItems: 'center', backgroundColor: t.field, borderRadius: 14, paddingVertical: 10 }}>
               <Text style={{ color: t.ink, fontSize: 20, fontWeight: '800' }}>{n}</Text>
               <Text style={{ color: t.mute, fontSize: 12 }}>{l}</Text>

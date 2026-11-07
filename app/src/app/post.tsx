@@ -6,7 +6,8 @@ import { PlacePicker } from '@/components/PlacePicker';
 import { SafetyFirst, safetySeen } from '@/components/SafetyFirst';
 import { Btn, Chip, Empty, Field, Label, Note, P, Wrap } from '@/components/ui';
 import { api } from '@/lib/api';
-import { CATS, COST, GENDERS, homeLL, REPEAT, short, whenStr, type Plan } from '@/lib/model';
+import { CATS, COST, durTxt, GENDERS, homeLL, REPEAT, short, whenStr, type Plan } from '@/lib/model';
+import { badWord, badWordMsg } from '@/lib/words';
 import { useModel, useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 import type { Cat, Cost, Gender } from '@/lib/types';
@@ -40,11 +41,13 @@ export default function Post() {
   const [total, setTotal] = useState(start?.total ? String(start.total) : '');
   const [aud, setAud] = useState<Gender[] | null>(start && start.aud !== 'everyone' ? start.aud : null);
   const [repeat, setRepeat] = useState<keyof typeof REPEAT | null>(start?.repeat ?? null);
+  /* how long it usually takes, 1 to 24 hours: when it's over, the host is asked who came */
+  const [dur, setDur] = useState(start?.dur ?? 2);
   const fill = (a: Plan | null) => {
     setFrom(a?.id ?? '');
     setCat(a?.cat ?? 'cafe'); setDesc(a?.desc ?? ''); setCap(a?.cap ?? 3); setWhen(a ? nextLike(a.when) : firstTime());
     setVenue(a?.venue ?? ''); setLl(a?.ll ?? null); setCost(a?.cost ?? 'own'); setTotal(a?.total ? String(a.total) : '');
-    setAud(a && a.aud !== 'everyone' ? a.aud : null); setRepeat(a?.repeat ?? null);
+    setAud(a && a.aud !== 'everyone' ? a.aud : null); setRepeat(a?.repeat ?? null); setDur(a?.dur ?? 2);
   };
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
@@ -73,13 +76,14 @@ export default function Post() {
 
   async function post() {
     const n = Number(total.replace(/[^\d]/g, ''));
-    const problem = !desc.trim() ? 'Say what the plan is' : !venue.trim() ? 'Add where you\'ll meet'
+    const bw = badWord(desc);
+    const problem = !desc.trim() ? 'Say what the plan is' : bw ? badWordMsg(bw) : !venue.trim() ? 'Add where you\'ll meet'
       : when.getTime() <= Date.now() ? 'Pick a future date and time' : aud && !aud.length ? 'Pick who it\'s for' : '';
     setErr(problem);
     if (problem) return;
     setBusy(true);
     const p = {
-      cat, desc: desc.trim(), cap, when: when.getTime(), aud, venue: venue.trim(), cost,
+      cat, desc: desc.trim(), cap, when: when.getTime(), dur, aud, venue: venue.trim(), cost,
       total: cost !== 'own' && n ? n : null, lat: ll?.[0] ?? null, lng: ll?.[1] ?? null, repeat,
     };
     const r = await run(() => (edit ? api.editActivity(edit.id, p) : api.postActivity(p)));
@@ -107,12 +111,21 @@ export default function Post() {
         ) : null}
         <Label>What kind of plan?</Label>
         <Wrap>{(Object.keys(CATS) as Cat[]).map(k => <Chip key={k} label={CATS[k].label} icon={CATS[k].icon} on={cat === k} onPress={() => setCat(k)} />)}</Wrap>
-        <Field label="What's the plan?" value={desc} onChangeText={setDesc} maxLength={160} multiline placeholder="e.g. Filter coffee and the Sunday crossword" hint={`${desc.length}/160`} />
+        <Field label="What's the plan?" value={desc} onChangeText={setDesc} maxLength={160} multiline placeholder="e.g. Filter coffee and the Sunday crossword"
+          hint={`${desc.length}/160`} error={badWord(desc) ? badWordMsg(badWord(desc)) : undefined} />
 
         <Label>When</Label>
         {Platform.OS === 'ios'
           ? <DateTimePicker value={when} mode="datetime" minimumDate={new Date()} display="compact" onChange={(_e, d) => d && setWhen(d)} style={{ alignSelf: 'flex-start', marginBottom: 16 }} />
           : <Btn title={whenStr(when.getTime())} kind="ghost" icon="calendar" onPress={pickAndroid} style={{ marginBottom: 16 }} />}
+
+        <Label>{`How long does it usually take? (${durTxt(dur)})`}</Label>
+        <Wrap>
+          <Chip icon="minus" label="Shorter" onPress={() => setDur(d => Math.max(1, d - 1))} />
+          <Chip icon="plus" label="Longer" onPress={() => setDur(d => Math.min(24, d + 1))} />
+          {[1, 2, 3, 4, 6, 8, 12, 24].map(h => <Chip key={h} label={durTxt(h)} on={dur === h} onPress={() => setDur(h)} />)}
+        </Wrap>
+        <P small mute style={{ marginTop: -8, marginBottom: 14 }}>When it&apos;s over, we&apos;ll ask you who came.</P>
 
         <PlacePicker label="Where" mode="venue" value={venue} picked={!!ll} near={homeLL(m)} placeholder="Café, cinema or venue"
           onChange={v => { setVenue(v); setLl(null); }} onPick={p => { setVenue(p.label); setLl(p.ll); }}

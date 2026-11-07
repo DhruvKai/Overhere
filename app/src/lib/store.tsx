@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AppState } from 'react-native';
 import { api, friendly } from './api';
 import { askedFrom, type Asked, type MicroKey } from './feedback';
-import { saved, toModel, type Model } from './model';
+import { learnTaste, saved, toModel, type Model } from './model';
 import { forgetPush } from './push';
 import { supabase } from './supabase';
 
@@ -146,8 +146,9 @@ export function useModel(): Model {
 export function useToggleSave() {
   const { model, savePriv, toast } = useStore();
   return (id: string) => {
-    const l = model ? saved(model) : [], on = l.includes(id);
-    savePriv({ saved: on ? l.filter(x => x !== id) : [...l, id].slice(-100) });
+    const l = model ? saved(model) : [], on = l.includes(id), cat = model?.acts.find(a => a.id === id)?.cat;
+    /* saving a plan counts a little towards its category in Swipe's order (learnTaste) */
+    savePriv(p => ({ saved: on ? l.filter(x => x !== id) : [...l, id].slice(-100), ...(!on && cat ? learnTaste(p, cat, 0.5) : {}) }));
     toast(on ? 'Removed from saved' : 'Saved. Find it in My plans.');
   };
 }

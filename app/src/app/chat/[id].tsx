@@ -1,14 +1,15 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ReasonSheet } from '@/components/ReasonSheet';
 import { ReportSheet } from '@/components/ReportSheet';
 import { Sheet } from '@/components/Sheet';
 import { TrustShareSheet } from '@/components/TrustShareSheet';
 import { Avatar, Badge, Btn, Empty, Field, Icon, P } from '@/components/ui';
 import { tipsOf } from '@/lib/feedback';
 import { api } from '@/lib/api';
-import { CHAT_OPEN_H, CHAT_REASONS, chatClosed, inChat, isPast, mutedOf, short, uname, type Msg } from '@/lib/model';
+import { CHAT_OPEN_H, CHAT_REASONS, chatClosed, inChat, isPast, mutedOf, OPT_OUT, RM_REASONS, short, uname, type Msg } from '@/lib/model';
 import { useModel, useStore } from '@/lib/store';
 import { tidyWhen } from '@/lib/when';
 import { useTheme } from '@/lib/theme';
@@ -21,7 +22,8 @@ export default function Chat() {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [reportMsg, setReportMsg] = useState<Msg | null>(null);
-  const [sheet, setSheet] = useState<'members' | 'poll' | 'trust' | null>(null);
+  const [sheet, setSheet] = useState<'members' | 'poll' | 'trust' | 'leave' | null>(null);
+  const [removing, setRemoving] = useState<string | null>(null);
   const [q, setQ] = useState('');
   const [opts, setOpts] = useState(['', '', '', '']);
   const a = m.acts.find(x => x.id === id);
@@ -56,12 +58,9 @@ export default function Chat() {
     savePriv(p => ({ muted: { ...(p.muted as object), [a.id]: !muted } }));
     toast(muted ? 'Chat notifications on' : 'Chat muted. You can still open it any time.');
   };
-  const remove = (u: string) => Alert.alert(`Remove ${uname(m, u)}?`,
-    `${uname(m, u)} will be taken out of "${short(a.desc)}" and its group chat, and told about it. Their spot goes to the next person on the waitlist, and they can't request this one again.`,
-    [{ text: 'Keep them', style: 'cancel' }, { text: 'Yes, remove', style: 'destructive', onPress: async () => { if (await run(() => api.removeMember(a.id, u)) !== undefined) toast('Removed'); } }]);
-  const leave = () => Alert.alert('Leave activity?',
-    `You'll leave "${short(a.desc)}" and its group chat. ${uname(m, a.host)} will be told, your spot goes to the next person on the waitlist, and you can't request this one again.`,
-    [{ text: 'Stay', style: 'cancel' }, { text: 'Yes, leave', style: 'destructive', onPress: async () => { if (await run(() => api.leaveActivity(a.id)) !== undefined) { toast('You left the plan'); router.back(); } } }]);
+  /* both ask for a reason (ReasonSheet below) */
+  const remove = (u: string) => { setSheet(null); setRemoving(u); };
+  const leave = () => setSheet('leave');
 
   const vote = (msg: Msg, opt: number) => run(() => api.vote(msg.id, opt));
   const headBtn = (icon: 'users' | 'bell' | 'bell-off', label: string, onPress: () => void) => (
@@ -141,7 +140,7 @@ export default function Chat() {
         {closed ? (
           <View accessibilityRole="text" style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 14, paddingBottom: insets.bottom + 14, backgroundColor: t.field, borderTopWidth: 1, borderColor: t.line }}>
             <Icon name="lock" size={15} color={t.mute} />
-            <Text style={{ color: t.mute, fontSize: 14, flex: 1 }}>This chat closed {CHAT_OPEN_H} hours after the plan started. You can still read it.</Text>
+            <Text style={{ color: t.mute, fontSize: 14, flex: 1 }}>This chat closed {CHAT_OPEN_H} hours after the plan ended. You can still read it.</Text>
           </View>
         ) : (
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, padding: 10, paddingBottom: insets.bottom + 10, backgroundColor: t.card, borderTopWidth: 1, borderColor: t.line }}>
@@ -174,7 +173,7 @@ export default function Chat() {
                 : host && !past && u !== '?' ? <Btn title="Remove" kind="danger" onPress={() => { setSheet(null); remove(u); }} style={{ minHeight: 36, paddingHorizontal: 12 }} /> : null}
             </View>
           ))}
-          {!host && !past && a.members.includes(m.me) ? <Btn title="Leave chat" kind="danger" icon="log-out" onPress={() => { setSheet(null); leave(); }} style={{ marginTop: 10 }} /> : null}
+          {!host && !past && a.members.includes(m.me) ? <Btn title="Leave the plan" kind="danger" icon="log-out" onPress={() => { setSheet(null); leave(); }} style={{ marginTop: 10 }} /> : null}
         </Sheet>
       ) : null}
       {sheet === 'poll' ? (
@@ -188,6 +187,19 @@ export default function Chat() {
         </Sheet>
       ) : null}
       {sheet === 'trust' ? <TrustShareSheet plan={a} onClose={() => setSheet(null)} /> : null}
+      {sheet === 'leave' ? (
+        <ReasonSheet title="Leave this plan?" reasons={OPT_OUT} action="Leave the plan"
+          intro={`You'll leave "${short(a.desc)}" and its group chat, and can't ask to join it again. ${uname(m, a.host)} and the group see your reason.`}
+          note={'"Feel uncomfortable with the group" and "Feel unsafe" stay private: the group only sees that you left, and our team looks at the plan. In danger right now? Call 112.'}
+          onClose={() => setSheet(null)}
+          onPick={async why => { if (await run(() => api.leaveActivity(a.id, why)) !== undefined) { setSheet(null); toast('You left the plan'); router.back(); } }} />
+      ) : null}
+      {removing ? (
+        <ReasonSheet title={`Remove ${uname(m, removing)}?`} reasons={RM_REASONS} action="Remove"
+          intro={`${uname(m, removing)} leaves the group chat and can't ask to join this plan again. They and the group see your reason.`}
+          onClose={() => setRemoving(null)}
+          onPick={async why => { if (await run(() => api.removeMember(a.id, removing, why)) !== undefined) { setRemoving(null); toast('Removed'); } }} />
+      ) : null}
     </>
   );
 }

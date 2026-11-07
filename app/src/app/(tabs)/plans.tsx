@@ -16,8 +16,7 @@ function status(m: Model, a: Plan): [string, 'ok' | 'bad' | 'warn' | 'info' | 'a
   switch (r?.status) {
     case 'accepted': return ['Going', 'ok'];
     case 'pending': return ['Pending', 'warn'];
-    case 'waitlist': return [a.mypos ? `Waitlist #${a.mypos}` : 'Waitlist', 'info'];
-    case 'rejected': return ['Declined', 'bad'];
+    case 'waitlist': case 'closed': case 'rejected': return ['Closed', 'info'];
     case 'left': return ['You left', 'info'];
     case 'removed': return ['Removed', 'bad'];
     default: return ['', 'info'];
@@ -37,8 +36,8 @@ export default function Plans() {
   const savedPlans = saved(m).map(id => m.acts.find(a => a.id === id)).filter((a): a is Plan => !!a && a.when > now && !myReq(m, a.id)).sort((a, b) => a.when - b.when);
   const sections = [
     { title: 'Saved for later', data: savedPlans },
-    { title: 'Coming up', data: all.filter(a => a.when > now && (a.host === m.me || ['accepted', 'pending', 'waitlist'].includes(myReq(m, a.id)?.status ?? ''))) },
-    { title: 'Past and closed', data: all.filter(a => a.when <= now || (a.host !== m.me && !['accepted', 'pending', 'waitlist'].includes(myReq(m, a.id)?.status ?? ''))).reverse() },
+    { title: 'Coming up', data: all.filter(a => a.when > now && (a.host === m.me || ['accepted', 'pending'].includes(myReq(m, a.id)?.status ?? ''))) },
+    { title: 'Past and closed', data: all.filter(a => a.when <= now || (a.host !== m.me && !['accepted', 'pending'].includes(myReq(m, a.id)?.status ?? ''))).reverse() },
   ].filter(s => s.data.length);
 
   return (

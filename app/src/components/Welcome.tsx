@@ -12,7 +12,7 @@ import { useTheme } from '@/lib/theme';
    sign-in. Shown until someone picks one of those; sign-in.tsx remembers it. */
 const PAGES: { photo: keyof typeof PHOTOS; icon: IconName; title: string; text: string }[] = [
   { photo: 'concert', icon: 'map-pin', title: 'Got a plan? Bring company.', text: "Post the movie, coffee or gig you're already planning. People nearby ask to join, and you choose who comes." },
-  { photo: 'chai', icon: 'layers', title: 'Swipe today, discover later', text: 'Plans for today and tomorrow come up as cards: swipe right to ask to join. Anything later is in Discover, on a list or a map.' },
+  { photo: 'chai', icon: 'layers', title: 'Swipe this week, discover more', text: 'Plans in the next 7 days come up as cards: swipe right to ask to join. Discover has every plan, on a list or a map.' },
   { photo: 'sukhna', icon: 'shield', title: 'Safe by design', text: 'Hosts approve every request. Face check, show-up records, a trusted contact and SOS in every chat. Not a dating app.' },
 ];
 

@@ -6,16 +6,17 @@ import type { AppStateResponse, Cat, Cost, Gender, RawNote, RawProfile, RawReq }
 
 export type Person = {
   id: string; name: string; gender: Gender | ''; age: number | ''; job: string; bio: string; emo: string; photo: string; photo2: string;
-  verified: boolean; kyc: boolean; sample: boolean; ints: string[]; avail: string[]; met: number; shows: number;
+  verified: boolean; kyc: boolean; sample: boolean; ints: string[]; avail: string[]; met: number; shows: number; noshows: number;
   hist: [string, Cat, number, string][];   // plans from before the app: title, category, days ago, Hosted/Joined
 };
-export type Rating = { ok: 'yes' | 'no'; stars: number; people: Record<string, string>; at: number };
+export type Rating = { ok: 'yes' | 'no'; stars: number; hostStars: number | null; people: Record<string, string>; at: number };
 
 export type Plan = {
   id: string; host: string; cat: Cat; desc: string; cap: number; when: number; aud: 'everyone' | Gender[];
   venue: string; cost: Cost; total: number | null; hood: string; ll: [number, number] | null;
   repeat: 'weekly' | 'biweekly' | 'monthly' | null; status: 'open' | 'full' | 'past'; created: number;
-  members: string[]; wl: number; mypos: number;
+  members: string[];
+  dur: number; relist: number; attDone: boolean; myAtt: 'show' | 'noshow' | null; myReply: boolean;
 };
 
 export type PollOpt = { t: string; v: string[] };
@@ -42,16 +43,36 @@ export type Model = {
   termsV: string | null;
   locked: number;
   ratings: Record<string, Rating>;        // your ratings of past meetups, by plan
+  due: { act: string; overdue: boolean }[];
 };
 
 export const GENDERS: Gender[] = ['Woman', 'Man', 'Non-binary'];
-export const INTERESTS = ['Movies', 'Cafe / Food', 'Concerts'];
+/* The 13 categories of the 7 Nov 2026 spec, in its order. movies, cafe and concerts keep their old keys and interest
+   names, so existing plans and profiles stay as they are (CATS and INTERESTS in web/app.js). */
+export const INTERESTS = ['Fitness and sport', 'Movies', 'Theatre', 'Stand-up comedy', 'Concerts', 'Hangout', 'Cafe / Food', 'Adventure',
+  'Outdoor leisure', 'Chores and errands', 'Work and study', 'Self care', 'Nightlife'];
 export const TIMES = ['Weekday evenings', 'Weekend days', 'Weekend evenings', 'Late nights'];
-export const CATS: Record<Cat, { label: string; icon: 'film' | 'coffee' | 'music'; fg: string; bg: string; fgDark: string; bgDark: string }> = {
-  movies: { label: 'Movies', icon: 'film', fg: '#7C3AED', bg: '#EDE9FE', fgDark: '#C4B5FD', bgDark: '#2E2350' },
-  cafe: { label: 'Cafe/Food', icon: 'coffee', fg: '#15803D', bg: '#DCFCE7', fgDark: '#86EFAC', bgDark: '#14301F' },
-  concerts: { label: 'Concerts', icon: 'music', fg: '#DB2777', bg: '#FCE7F3', fgDark: '#F9A8D4', bgDark: '#3F1530' },
+type CatIcon = 'activity' | 'film' | 'star' | 'mic' | 'music' | 'users' | 'coffee' | 'compass' | 'sun' | 'shopping-bag' | 'book-open' | 'heart' | 'moon';
+export const CATS: Record<Cat, { label: string; icon: CatIcon; fg: string; bg: string; fgDark: string; bgDark: string }> = {
+  fitness: { label: 'Fitness and sport', icon: 'activity', fg: '#B45309', bg: '#FEF3C7', fgDark: '#FCD34D', bgDark: '#3A2A0B' },
+  movies: { label: 'Movie', icon: 'film', fg: '#7C3AED', bg: '#EDE9FE', fgDark: '#C4B5FD', bgDark: '#2E2350' },
+  theatre: { label: 'Theatre', icon: 'star', fg: '#9F1239', bg: '#FFE4E6', fgDark: '#FDA4AF', bgDark: '#3F0E1B' },
+  comedy: { label: 'Stand-up comedy', icon: 'mic', fg: '#C2410C', bg: '#FFEDD5', fgDark: '#FDBA74', bgDark: '#3B1A0A' },
+  concerts: { label: 'Concert', icon: 'music', fg: '#DB2777', bg: '#FCE7F3', fgDark: '#F9A8D4', bgDark: '#3F1530' },
+  hangout: { label: 'Hangout', icon: 'users', fg: '#0E7490', bg: '#CFFAFE', fgDark: '#67E8F9', bgDark: '#0B2E36' },
+  cafe: { label: 'Food', icon: 'coffee', fg: '#15803D', bg: '#DCFCE7', fgDark: '#86EFAC', bgDark: '#14301F' },
+  adventure: { label: 'Adventure', icon: 'compass', fg: '#4D7C0F', bg: '#ECFCCB', fgDark: '#BEF264', bgDark: '#1E2E0A' },
+  outdoor: { label: 'Outdoor leisure', icon: 'sun', fg: '#047857', bg: '#D1FAE5', fgDark: '#6EE7B7', bgDark: '#0A2E22' },
+  errands: { label: 'Chores and errands', icon: 'shopping-bag', fg: '#475569', bg: '#E2E8F0', fgDark: '#CBD5E1', bgDark: '#1E2633' },
+  work: { label: 'Work and study', icon: 'book-open', fg: '#1D4ED8', bg: '#DBEAFE', fgDark: '#93C5FD', bgDark: '#132447' },
+  selfcare: { label: 'Self care', icon: 'heart', fg: '#0F766E', bg: '#CCFBF1', fgDark: '#5EEAD4', bgDark: '#0A2C2A' },
+  nightlife: { label: 'Nightlife', icon: 'moon', fg: '#6D28D9', bg: '#EDE9FE', fgDark: '#C4B5FD', bgDark: '#26173F' },
 };
+/* Reasons for leaving a plan and for removing someone (the 7 Nov spec). "Other" asks for the person's own words. */
+export const OPT_OUT = ['Plans changed', "Running late and can't make it", 'Travel or transport problem', 'Work or study commitment',
+  'Personal or family reason', 'Cost is more than expected', "The plan isn't what I expected", 'Feel uncomfortable with the group', 'Feel unsafe', 'Other'];
+export const RM_REASONS = ['They asked to be removed', 'Harassment or unwelcome messages', 'Unsafe or inappropriate conduct', 'Repeatedly late',
+  'Spam or promotion', 'Other'];
 export const COST: Record<Cost, string> = { split: 'Split equally', own: 'Everyone pays their own way', host: 'Host is covering everyone' };
 export const COST_S: Record<Cost, string> = { split: 'Equal Split', own: 'Go Dutch', host: 'Host Pays' };
 export const REPEAT = { weekly: 'Every week', biweekly: 'Every 2 weeks', monthly: 'Every month' } as const;
@@ -69,6 +90,7 @@ export function toModel(st: AppStateResponse): Model {
     people[x.id] = {
       id: x.id, name: x.name, gender: x.gender, age: x.age, job: x.job || '', bio: x.bio || '', emo: x.emo || defEmo(x.gender), photo: avatarUrl(x.photo), photo2: avatarUrl(x.photo2),
       verified: !!x.face, kyc: !!x.kyc, sample: !!x.sample, ints: x.ints || [], avail: x.avail || [], met: x.met || 0, shows: x.shows || 0,
+      noshows: x.noshows ?? Math.max(0, (x.met || 0) - (x.shows || 0)),
       hist: Array.isArray(x.hist) ? x.hist as Person['hist'] : [],
     };
   });
@@ -78,7 +100,7 @@ export function toModel(st: AppStateResponse): Model {
     repeat: a.repeat, status: a.when <= now ? 'past' : a.status, created: a.created,
     /* members are only sent for plans you host or joined; elsewhere just how many */
     members: a.members.length === a.mcount ? a.members : Array.from({ length: a.mcount }, () => '?'),
-    wl: a.wl || 0, mypos: a.mypos || 0,
+    dur: a.dur || 2, relist: a.relist || 0, attDone: !!a.att_done, myAtt: a.my_att ?? null, myReply: !!a.my_reply,
   }));
   const past = new Set(acts.filter(a => a.status === 'past').map(a => a.id));
   const reported = new Set(st.reported ?? []);
@@ -93,20 +115,27 @@ export function toModel(st: AppStateResponse): Model {
     me: st.me, skew: now - Date.now(), mode: st.mode, verify: st.verify, profile: st.profile,
     priv: st.profile?.state && typeof st.profile.state === 'object' ? st.profile.state : {},
     people, acts,
+    /* a rejection is silent: your own rejected requests show as closed, like the ones closed when a plan filled up */
     reqs: (st.reqs ?? []).sort((x, y) => x.at - y.at)
-      .map(r => (past.has(r.act) && (r.status === 'pending' || r.status === 'waitlist') ? { ...r, status: 'rejected' as const } : r)),
+      .map(r => (r.status === 'waitlist' || (r.status === 'rejected' && r.user === st.me) ? { ...r, status: 'closed' as const }
+        : past.has(r.act) && r.status === 'pending' ? { ...r, status: 'rejected' as const } : r)),
     chats, notes: st.notes ?? [], blocked: st.blocked ?? [],
     cities: Array.isArray(st.cities) ? st.cities : [], city: st.city ?? null, cityAuto: !!st.city_auto,
     termsV: st.terms_v ?? null, locked: st.locked ?? 0,
-    ratings: Object.fromEntries((st.ratings ?? []).map(r => [r.act, { ok: r.ok, stars: r.stars, people: r.people || {}, at: r.at }])),
+    ratings: Object.fromEntries((st.ratings ?? []).map(r => [r.act, { ok: r.ok, stars: r.stars, hostStars: r.host_stars ?? null, people: r.people || {}, at: r.at }])),
+    due: Array.isArray(st.due) ? st.due : [],
   };
 }
 
 /* ---------- helpers (ported from web/app.js) ---------- */
 export const nowOf = (m: Model) => Date.now() + m.skew;
-/* A group chat is read-only from 3 hours after its plan starts (_chat_closed in web/schema-app.sql decides). */
+/* A plan ends its duration after it starts; its group chat is read-only from 3 hours after that (_chat_closed in
+   web/schema-app.sql decides). */
+export const durTxt = (h: number) => `${h} hour${h === 1 ? '' : 's'}`;
+export const endOf = (a: Plan) => a.when + (a.dur || 2) * 3600e3;
+export const hasEnded = (m: Model, a: Plan) => endOf(a) <= nowOf(m);
 export const CHAT_OPEN_H = 3;
-export const chatClosed = (m: Model, a: Plan) => a.when + CHAT_OPEN_H * 3600e3 < nowOf(m);
+export const chatClosed = (m: Model, a: Plan) => endOf(a) + CHAT_OPEN_H * 3600e3 < nowOf(m);
 export const spots = (a: Plan) => a.cap - a.members.length;
 export const spotTxt = (a: Plan) => (spots(a) <= 0 ? 'Full' : `${spots(a)} spot${spots(a) === 1 ? '' : 's'} open`);
 export const myReq = (m: Model, act: string) => m.reqs.find(r => r.act === act && r.user === m.me);
@@ -144,20 +173,25 @@ export const kmAway = (m: Model, a: Plan): number => {
   return h <= NEAR_KM || !c ? h : kmBetween([c[2], c[3]], g);
 };
 
-/* visible: listed in Discover (full ones too, for the waitlist). eligible: can be requested right now. */
+/* visible: listed in Discover (open plans only: a full one leaves discovery). eligible: can be requested right now. */
 export const visible = (m: Model, a: Plan) =>
-  (a.status === 'open' || a.status === 'full') && a.host !== m.me && audOK(m, a) && !m.blocked.includes(a.host) && a.when > nowOf(m) && inView(m, a);
+  a.status === 'open' && a.host !== m.me && audOK(m, a) && !m.blocked.includes(a.host) && a.when > nowOf(m) && inView(m, a);
 export const eligible = (m: Model, a: Plan) => visible(m, a) && a.status === 'open' && spots(a) > 0 && !dismissed(m).includes(a.id);
 
-/* Swipe shows today and tomorrow; Discover starts the day after, so the two never show the same plan. */
-export const swipeEnd = (m: Model) => { const d = new Date(nowOf(m)); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + 2); return d.getTime(); };
+/* Swipe shows plans starting in the next 7 days (today and the 6 days after). Discover shows every upcoming plan,
+   Swipe's included. Same as SWIPE_DAYS in web/app.js. */
+const SWIPE_DAYS = 7;
+export const dayStart = (m: Model) => { const d = new Date(nowOf(m)); d.setHours(0, 0, 0, 0); return d; };
+export const swipeEnd = (m: Model) => { const d = dayStart(m); d.setDate(d.getDate() + SWIPE_DAYS); return d.getTime(); };
 const isSample = (m: Model, id: string) => !!m.people[id]?.sample;
+/* Swipe's order (the spec's "algorithm", as deck in web/app.js): real people's plans first, then score() (your profile's
+   interests and availability, who you follow, and taste from what you do in the app), then the soonest. */
 export const deck = (m: Model) =>
   m.acts.filter(a => eligible(m, a) && !myReq(m, a.id) && a.when < swipeEnd(m))
-    .sort((a, b) => Number(isSample(m, a.host)) - Number(isSample(m, b.host)) || a.when - b.when);
-/* Discover plans (after Swipe's days) can be saved for later; Swipe plans can be shared, not saved. */
-export const canSave = (m: Model, a: Plan) => a.when >= swipeEnd(m) && a.status !== 'past' && a.host !== m.me;
-export const feed = (m: Model) => m.acts.filter(a => visible(m, a) && !myReq(m, a.id) && a.when >= swipeEnd(m)).sort((a, b) => a.when - b.when);
+    .sort((a, b) => Number(isSample(m, a.host)) - Number(isSample(m, b.host)) || score(m, b) - score(m, a) || a.when - b.when);
+/* Upcoming plans can be saved for later: Discover's cards have the button, Swipe's cards have Share instead. */
+export const canSave = (m: Model, a: Plan) => a.when > nowOf(m) && a.status !== 'past' && a.host !== m.me;
+export const feed = (m: Model) => m.acts.filter(a => visible(m, a) && !myReq(m, a.id)).sort((a, b) => a.when - b.when);
 
 /* Plans whose group chat you are in: hosting, or accepted. */
 export const inChat = (m: Model, a: Plan) => a.host === m.me || myReq(m, a.id)?.status === 'accepted';
@@ -192,12 +226,14 @@ export const following = (m: Model): string[] => strs(m.priv.following);
 export const isPast = (m: Model, a: Plan) => a.status === 'past' || a.when <= nowOf(m);
 export const attended = (m: Model, a: Plan) => a.host === m.me || a.members.includes(m.me);
 export const isBlocked = (m: Model, id: string) => m.blocked.includes(id);
+/* Reliability, counted by the database: meetups (plans that ended), and how often the host marked them there or a
+   no-show. No formula; rate is only for the warning chip, from the marked ones. */
 export function trust(m: Model, id: string) {
   const p = m.people[id];
-  const met = p?.met || 0, shows = p?.shows || 0;
-  return { met, shows, rate: met ? Math.round((shows / met) * 100) : null };
+  const met = p?.met || 0, shows = p?.shows || 0, noshows = p?.noshows || 0, marked = shows + noshows;
+  return { met, shows, noshows, rate: marked ? Math.round((shows / marked) * 100) : null };
 }
-export const trustTxt = (m: Model, id: string) => { const t = trust(m, id); return t.met ? `Showed up ${t.shows} · No-show ${t.met - t.shows}` : 'New to meetups'; };
+export const trustTxt = (m: Model, id: string) => { const t = trust(m, id); return t.met ? `${t.met} meetup${t.met === 1 ? '' : 's'} · Showed up ${t.shows} · No-show ${t.noshows}` : 'New to meetups'; };
 const metWith = (m: Model, u: string) => m.acts.filter(a => isPast(m, a) && attended(m, a) && (a.host === u || a.members.includes(u))).length;
 /* chips: what you both like and when you're both free, how often you've met, and a warning after missed meetups */
 export function signals(m: Model, u: string): { text: string; tone: 'acc' | 'ok' | 'warn' }[] {
@@ -207,7 +243,7 @@ export function signals(m: Model, u: string): { text: string; tone: 'acc' | 'ok'
     ...(p?.avail || []).filter(x => (me?.avail || []).includes(x)).map(x => ({ text: 'Both free ' + x.toLowerCase(), tone: 'acc' as const })),
   ];
   if (met) out.push({ text: `Met you ${met}× before`, tone: 'ok' });
-  if (t.met >= 3 && (t.rate ?? 100) < 90) out.push({ text: `Missed ${t.met - t.shows} of ${t.met} meetups`, tone: 'warn' });
+  if (t.shows + t.noshows >= 3 && (t.rate ?? 100) < 90) out.push({ text: `Missed ${t.noshows} of ${t.shows + t.noshows} meetups`, tone: 'warn' });
   return out;
 }
 export type PastItem = { t: string; cat: Cat; at: number; role: 'Hosted' | 'Joined'; act?: string };
@@ -219,8 +255,15 @@ export function pastList(m: Model, id: string): PastItem[] {
   const old = (m.people[id]?.hist || []).map(([t, cat, d, role]) => ({ t, cat, at: now - d * 864e5, role: role === 'Hosted' ? 'Hosted' as const : 'Joined' as const }));
   return [...real, ...old].sort((a, b) => b.at - a.at);
 }
-/* a past plan you were in, with people there, that you haven't rated yet */
-export const canRate = (m: Model, a: Plan) => isPast(m, a) && attended(m, a) && a.members.length > 0 && !m.ratings[a.id];
+/* What's left to do after a plan: 'host' (rate it and record attendance), 'member' (the host marked you as there:
+   rate the plan and the host) or 'noshow' (marked as not there: say what happened). needRate in web/app.js. */
+export function needRate(m: Model, a: Plan): 'host' | 'member' | 'noshow' | null {
+  if (a.host === m.me) return a.members.length && hasEnded(m, a) && !a.attDone ? 'host' : null;
+  if (a.myAtt === 'show' && !m.ratings[a.id]) return 'member';
+  if (a.myAtt === 'noshow' && !a.myReply) return 'noshow';
+  return null;
+}
+export const canRate = (m: Model, a: Plan) => !!needRate(m, a);
 
 /* ---------- Discover: filters and "For you" (matchF, reasons, score in web/app.js) ---------- */
 export type Tod = 'any' | 'morning' | 'afternoon' | 'evening' | 'night';
@@ -231,7 +274,9 @@ export const dayKey = (t: number) => { const d = new Date(t); return d.getFullYe
 export const tod = (t: number): Tod => { const h = new Date(t).getHours(); return h >= 5 && h < 12 ? 'morning' : h >= 12 && h < 17 ? 'afternoon' : h >= 17 && h < 21 ? 'evening' : 'night'; };
 export const matchF = (m: Model, a: Plan, f: Filters) => (f.cat === 'all' || a.cat === f.cat) && (!f.dfrom || dayKey(a.when) >= f.dfrom)
   && (!f.dto || dayKey(a.when) <= f.dto) && (f.tod === 'any' || tod(a.when) === f.tod) && (!f.dist || kmAway(m, a) <= f.dist);
-const CAT_INT: Record<Cat, string> = { movies: 'Movies', cafe: 'Cafe / Food', concerts: 'Concerts' };
+const CAT_INT: Record<Cat, string> = { fitness: 'Fitness and sport', movies: 'Movies', theatre: 'Theatre', comedy: 'Stand-up comedy',
+  concerts: 'Concerts', hangout: 'Hangout', cafe: 'Cafe / Food', adventure: 'Adventure', outdoor: 'Outdoor leisure', errands: 'Chores and errands',
+  work: 'Work and study', selfcare: 'Self care', nightlife: 'Nightlife' };
 function slotOf(t: number) {
   const d = new Date(t), h = d.getHours(), we = d.getDay() === 0 || d.getDay() === 6;
   if (h >= 23 || h < 5) return 'Late nights';
@@ -245,7 +290,18 @@ export function reasons(m: Model, a: Plan): [string, number][] {
   if (s && (m.profile?.avail || []).includes(s)) r.push(['Fits your ' + s.toLowerCase(), 1]);
   return r;
 }
-export const score = (m: Model, a: Plan) => reasons(m, a).reduce((n, x) => n + x[1], 0);
+/* taste: per category, +1 for a request, +0.5 for a save, -0.5 for a skip, kept between -3 and 6, in profiles.state
+   (shared with the website). Worth half a point each. */
+export const tasteOf = (m: Model, c: Cat) => {
+  const t = m.priv.taste as Record<string, number> | undefined;
+  return Math.max(-3, Math.min(6, Number(t && typeof t === 'object' ? t[c] : 0) || 0));
+};
+export const learnTaste = (p: Record<string, unknown>, c: Cat, d: number) => {
+  const t = p.taste && typeof p.taste === 'object' ? { ...(p.taste as Record<string, number>) } : {};
+  t[c] = Math.max(-3, Math.min(6, (Number(t[c]) || 0) + d));
+  return { taste: t };
+};
+export const score = (m: Model, a: Plan) => reasons(m, a).reduce((n, x) => n + x[1], 0) + tasteOf(m, a.cat) * 0.5;
 const dLbl = (k: string) => new Date(k + 'T12:00:00').toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' });
 export const rangeLbl = (f: Filters) => (f.dfrom && f.dto ? (f.dfrom === f.dto ? dLbl(f.dfrom) : dLbl(f.dfrom) + ' – ' + dLbl(f.dto)) : f.dfrom ? 'From ' + dLbl(f.dfrom) : 'Until ' + dLbl(f.dto));
 /* the active filters as [which, label], shown as removable chips */
@@ -257,9 +313,9 @@ export function filterLabels(f: Filters): ['cat' | 'date' | 'tod' | 'dist', stri
   if (f.dist) out.push(['dist', `Within ${f.dist} km`]);
   return out;
 }
-/* today and tomorrow are in Swipe, so every preset starts the day after */
+/* every preset starts today */
 export function datePresets(m: Model): Record<'weekend' | 'week' | 'month', [string, string, string]> {
-  const t = new Date(swipeEnd(m)), k = (d: Date) => dayKey(d.getTime()), plus = (n: number) => { const d = new Date(t); d.setDate(d.getDate() + n); return d; };
+  const t = dayStart(m), k = (d: Date) => dayKey(d.getTime()), plus = (n: number) => { const d = new Date(t); d.setDate(d.getDate() + n); return d; };
   const dow = t.getDay(), sat = dow === 0 ? -1 : 6 - dow;
   return { weekend: ['This weekend', k(plus(Math.max(sat, 0))), k(plus(sat + 1))], week: ['Next 7 days', k(t), k(plus(6))], month: ['Next 30 days', k(t), k(plus(29))] };
 }

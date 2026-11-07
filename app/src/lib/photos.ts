@@ -1,29 +1,28 @@
 import type { Plan } from './model';
-import { PHOTOS, type PhotoKey } from './photoFiles';
+import { BANK, PHOTOS, type BankPhoto } from './photoFiles';
 
-/* A plan gets, in order: a photo of what it clearly is (karaoke, ramen...), else of its place if that's a
-   Chandigarh landmark, else a looser match within its category, else one of its category's photos (photoOf in web/app.js). */
-const WHAT: [RegExp, PhotoKey][] = [[/outdoor movie|movie on the lawn/, 'outdoorfilm'], [/jazz/, 'jazz'], [/karaoke/, 'karaoke'], [/sufi|qawwali/, 'sufi'],
-  [/carnatic|classical/, 'classical'], [/dhol|bhangra|folk/, 'dhol'], [/open.?mic|songwriting|poetry/, 'openmic'], [/techno|nightclub|\bdj\b|\bedm\b/, 'club'],
-  [/vinyl|record store/, 'vinyl'], [/ramen/, 'ramen'], [/momo/, 'momos'], [/paratha|parantha/, 'parantha'], [/chole|bhature/, 'cholebhature'],
-  [/dessert|sweets|mithai/, 'dessert'], [/cook.?along|cooking/, 'cooking'], [/tea (tasting|room|flight)/, 'tea'],
-  [/board ?game|pictionary|catan/, 'boardgames'], [/book (swap|club|exchange)/, 'books'], [/maggi|dhaba/, 'dhaba'], [/crossword|filter coffee/, 'coffee']];
-const PLACE: [RegExp, PhotoKey][] = [[/sukhna/, 'sukhna'], [/rock garden/, 'rockgarden'], [/rose garden/, 'rosegarden'], [/sector 17 (plaza|architecture)|plaza fountain/, 'plaza17'],
-  [/capitol|le corbusier/, 'capitol'], [/leisure valley/, 'leisure'], [/museum/, 'museum'], [/panjab university/, 'pu'], [/elante/, 'elante']];
-const LOOSE: Record<string, [RegExp, PhotoKey][]> = {
-  cafe: [[/brunch|pancake|breakfast/, 'brunch'], [/chai/, 'chai'], [/picnic/, 'picnic']],
-  concerts: [[/sitar|recital|raga/, 'classical'], [/band|gig|live music|acoustic|rock/, 'liveband']],
-  movies: [[/classic|re-?run|re-?release|\b90s\b|matinee|satyajit|retro/, 'classicfilm']],
-};
-const BY_CAT: Record<string, PhotoKey[]> = { movies: ['cinema', 'classicfilm'], cafe: ['coffee', 'brunch', 'chai'], concerts: ['concert', 'liveband'] };
+/* Each category has a bank of freely licensed photos (web/img/plans/bank.json, generated into photoFiles.ts by
+   web/tools/plan-photos.py: CC0, CC BY or CC BY-SA, no identifiable people). A plan gets the photo from its category's
+   bank whose tags best match its description and venue, else the category's default photo. The host never picks it,
+   and the plan screen says it's illustrative and credits it. photoFor in web/app.js does the same. */
+const words = (s: string) => ' ' + String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
+
+export function photoFor(a: Pick<Plan, 'cat' | 'desc' | 'venue'>): BankPhoto {
+  const d = words(a.desc), v = words(a.venue), has = (t: string, w: string) => t.includes(` ${w} `) || t.includes(` ${w}s `) || t.includes(` ${w}es `);
+  let best: BankPhoto | null = null, bs = 0;
+  for (const p of BANK) {
+    if (!p.cats.includes(a.cat)) continue;
+    /* whole words or phrases, plurals too ("momo" matches "momos", but "bar" doesn't match "barbecue"). The description
+       decides first; the venue's name (which often just says "café") only breaks ties, then the more specific match wins
+       ("board games" over "coffee"). */
+    let n = 0, m = 0, l = 0;
+    for (const g of new Set(p.tags.map(g => words(g).trim()))) { const hd = has(d, g), hv = has(v, g); n += +hd; m += +hv; if (hd || hv) l += g.length; }
+    const sc = n * 1e6 + m * 1e3 + l;
+    if (sc > bs) { bs = sc; best = p; }
+  }
+  return best ?? BANK.find(p => p.def.includes(a.cat)) ?? BANK.find(p => p.def.includes('cafe'))!;
+}
 
 export function photoOf(a: Pick<Plan, 'id' | 'cat' | 'desc' | 'venue'>) {
-  const t = (a.venue + ' ' + a.desc).toLowerCase();
-  const hit = (l: [RegExp, PhotoKey][]) => l.find(([re]) => re.test(t))?.[1];
-  const k = hit(WHAT) || hit(PLACE) || hit(LOOSE[a.cat] || []);
-  if (k) return PHOTOS[k];
-  const pool = BY_CAT[a.cat] || BY_CAT.cafe;
-  let h = 0;
-  for (const ch of String(a.id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return PHOTOS[pool[h % pool.length]];
+  return PHOTOS[photoFor(a).k];
 }
