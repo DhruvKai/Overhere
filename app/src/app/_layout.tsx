@@ -13,9 +13,10 @@ import { StoreProvider, useStore } from '@/lib/store';
 import { applyThemePref, useTheme } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync();
-/* WELCOME_FN: ask the welcome-email Edge Function to send "Welcome to Overhere" once sign-up is complete. Off until
-   that function is deployed on live with RESEND_API_KEY set (same switch as WELCOME_FN in web/app.js). */
-const WELCOME_FN = false;
+/* WELCOME_FN: the address of the welcome-email Edge Function, asked to send "Welcome to Overhere" once sign-up is
+   complete; false turns it off. On live it's "smart-service" (deployed from the dashboard, which picked that address);
+   keep it the same as WELCOME_FN in web/app.js. */
+const WELCOME_FN: string | false = 'smart-service';
 /* Profile -> Appearance, if it isn't "System" */
 applyThemePref();
 
@@ -62,7 +63,7 @@ function Gate() {
   useEffect(() => {
     if (!WELCOME_FN || !setUp || !user?.email_confirmed_at || user.app_metadata?.welcomed_at || welcomed.current === user.id) return;
     welcomed.current = user.id;
-    api.welcome().catch(e => console.warn('welcome email', e));
+    api.welcome(WELCOME_FN).catch(e => console.warn('welcome email', e));
   }, [setUp, user]);
   useEffect(() => { if (ready && !loading) SplashScreen.hideAsync(); }, [ready, loading]);
   /* Push: register this phone once the profile exists, and open whatever notification was tapped. */

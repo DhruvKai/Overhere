@@ -2685,13 +2685,15 @@ function authOf(u){
   const phone=!!(u.phone&&u.phone_confirmed_at);
   return {phone,email:!!u.email_confirmed_at,mail:u.email||'',pw:!phone||u.user_metadata?.pw_set===true};
 }
-/* WELCOME_FN: the welcome-email Edge Function sends "Welcome to Overhere" once a new account is complete. Off until
-   that function is deployed on live with RESEND_API_KEY set. It sends once per account (it checks), so calling it on
-   every start is fine. */
-const WELCOME_FN=false;
+/* WELCOME_FN: the address of the welcome-email Edge Function (supabase/functions/welcome-email), which sends "Welcome
+   to Overhere" once a new account is complete; false turns it off. On live it was deployed from the dashboard, which
+   gave it the address "smart-service" (the dashboard shows it as welcome-email). If it's redeployed with the CLI as
+   welcome-email, change this and WELCOME_FN in app/src/app/_layout.tsx. It sends once per account (it checks), so
+   calling it on every start is fine. */
+const WELCOME_FN='smart-service';
 function welcome(u){
   if(!WELCOME_FN||u?.app_metadata?.welcomed_at||!AUTHU.email||!AUTHU.pw)return;
-  edge('welcome-email',{}).catch(e=>console.warn('welcome email',e));
+  edge(WELCOME_FN,{}).catch(e=>console.warn('welcome email',e));
 }
 async function start(){
   if(starting)return starting;

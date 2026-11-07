@@ -81,8 +81,9 @@ export const api = {
   otpPaused: (phone: string) => edge<{ until?: number }>('otp-verify', { phone, check: true }),
   otpVerify: (phone: string, token: string) =>
     edge<{ session: { access_token: string; refresh_token: string } }>('otp-verify', { phone, token }),
-  /* the one-time welcome email (supabase/functions/welcome-email); it checks itself whether to send */
-  welcome: () => edge<{ sent: boolean; why?: string }>('welcome-email', {}),
+  /* the one-time welcome email (supabase/functions/welcome-email, at the address WELCOME_FN in _layout.tsx); it checks
+     itself whether to send */
+  welcome: (fn: string) => edge<{ sent: boolean; why?: string }>(fn, {}),
   faceResult: (sessionId: string) => edge<{ status: 'passed' | 'failed' | 'review'; reason: string | null; message: string | null }>('face-result', { sessionId }),
   /* photo 1 (the profile picture) or 2: a path in the avatars bucket, or null to clear it; clearing photo 1 clears both
      and shows the emoji (set_photo in web/schema-app.sql) */
