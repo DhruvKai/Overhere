@@ -168,7 +168,7 @@ const SB_URL=(CFG.SUPABASE_URL||'').replace(/\/+$/,'').replace(/\/rest\/v1$/,'')
 const ONLINE=!!(SB_URL&&CFG.SUPABASE_ANON_KEY&&/^https?:$/.test(location.protocol)&&window.supabase);
 const SB=ONLINE?window.supabase.createClient(SB_URL,CFG.SUPABASE_ANON_KEY):null;
 const EVERYONE='00000000-0000-0000-0000-000000000000';
-let DUE=[],ME=null,MYPHONE='',AUTHU={},MODE={face:'simulated',kyc:'simulated'},VER={face:{fails:0,attempts:0,max:5,review:false},kyc:{fails:0,attempts:0,max:5,review:false}},skew=0,loaded=false,DRAFT=null,LOCKED=0,CITIES=[],VIEW={city:null,auto:false};
+let DUE=[],ME=null,MYPHONE='',AUTHU={},MODE={face:'simulated',kyc:'simulated'},VER={face:{fails:0,attempts:0,max:5,review:false},kyc:{fails:0,attempts:0,max:5,review:false}},skew=0,loaded=false,LOCKED=0,CITIES=[],VIEW={city:null,auto:false};
 const isUuid=x=>typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(x);
 /* Your private settings, saved to your account. ACT_FLAGS remember which reminders an activity already gave you. */
 const PRIV=['dismissed','following','alerts','muted','tips','asked','actf','seenPost','savedF','city','saved','taste'];
@@ -187,7 +187,7 @@ const sid=id=>id==='me'?ME:id;   // back to a database id
 
 /* Turn the database's answer into the shapes the screens use. */
 function applyState(st){
-  ME=st.me;MODE=st.mode||MODE;VER=st.verify||VER;skew=(st.now||Date.now())-Date.now();DRAFT=null;   // the profile form starts empty: nothing pre-filled, not even from the old beta sign-up
+  ME=st.me;MODE=st.mode||MODE;VER=st.verify||VER;skew=(st.now||Date.now())-Date.now();
   LOCKED=st.locked||0;TERMS_V=st.terms_v||null;DUE=Array.isArray(st.due)?st.due:[];
   CITIES=Array.isArray(st.cities)?st.cities:[];VIEW={city:st.city||null,auto:!!st.city_auto};
   const mid=id=>id===ME?'me':id,p=st.profile,first=!loaded,known=new Set(S.notes.map(n=>n.id));
@@ -208,7 +208,7 @@ function applyState(st){
   ['muted','tips','asked','actf','taste'].forEach(k=>{if(!S[k]||typeof S[k]!=='object'||Array.isArray(S[k]))S[k]={}});if(typeof S.seenPost!=='number')S.seenPost=0;
   S.savedF=(Array.isArray(S.savedF)?S.savedF:[]).filter(x=>x&&/^sf[0-9a-z]+$/.test(x.id)&&typeof x.label==='string'&&x.f&&typeof x.f==='object').slice(0,10);
   S.alerts=(Array.isArray(S.alerts)?S.alerts:[]).filter(x=>x&&/^al[0-9a-z]+$/.test(x.id)&&typeof x.label==='string');
-  S.me={name:p.name,dob:p.dob,gender:p.gender,hood:p.hood,ll:p.lat!=null?[p.lat,p.lng]:null,job:p.job||'',bio:p.bio||'',ints:p.ints||[],avail:p.avail||[],emo:p.emo||defEmo(p.gender),
+  S.me={name:p.name,last:p.last_name||'',dob:p.dob,gender:p.gender,hood:p.hood,ll:p.lat!=null?[p.lat,p.lng]:null,job:p.job||'',bio:p.bio||'',ints:p.ints||[],avail:p.avail||[],emo:p.emo||defEmo(p.gender),
     usageOk:!!p.usage_ok,face:!!p.face,kyc:!!p.kyc,obDone:!!p.onboarded,terms:!TERMS_V||p.consent_version===TERMS_V,trusted:keepTrusted!==undefined?keepTrusted:(priv.trusted||null),trustv:mine.trust||[0,0],hist:mine.hist||[],photoPath:AVATAR_RE.test(p.photo||'')?p.photo:'',photo:avatarUrl(p.photo),photo2Path:AVATAR_RE.test(p.photo2||'')?p.photo2:'',photo2:avatarUrl(p.photo2)};
   if(first)dropOldPhoto();
   const t=now();
@@ -777,7 +777,7 @@ function friendly(e){
   if(/Failed to fetch|NetworkError|Load failed/i.test(m))return "Can't reach Overhere. Check your connection and try again.";
   if(/captcha/i.test(m))return "The security check didn't go through. Please try again in a minute.";
   if(/JWT|sign in again|not signed|refresh token/i.test(m))return 'Please sign in again.';
-  if(/phone (signups|provider|logins?) .*disabled|unsupported phone provider/i.test(m))return "Phone sign-in isn't switched on yet. Please use Google or email for now.";
+  if(/phone (signups|provider|logins?) .*disabled|unsupported phone provider/i.test(m))return "Phone sign-in isn't switched on yet. Please use email for now.";
   /* sending errors first: Supabase's "Error sending confirmation OTP to provider: Invalid ..." would otherwise read as a wrong code */
   if(/(error|fail).*send.*(sms|otp)|sms.*(fail|error)|invalid phone/i.test(m))return "We couldn't send the SMS. Check the number, or try again in a minute.";
   if(/token has expired|otp.*(expired|invalid)|invalid.*(otp|token)/i.test(m))return 'That code is wrong or has expired. Check it, or tap Resend code.';
@@ -1473,7 +1473,8 @@ function modalHtml(){
         <p class="small mute" style="margin:0">${photo?`Picking an emoji removes your photos${me.face?' and means redoing your face check':''}.`:'Other people see this next to your name until you add photos.'}</p></div>
       <div class="emogrid" role="radiogroup" aria-label="Emoji">${EMOJIS.map(e=>`<button role="radio" aria-checked="${!photo&&e===cur}" class="${!photo&&e===cur?'on':''}" data-a="pickemo" data-e="${esc(e)}" aria-label="${esc(e)}">${esc(e)}</button>`).join('')}</div>
       <h3>About you</h3>
-      <label for="p_name" style="margin-top:0">Name</label><input id="p_name" maxlength="40" value="${esc(me.name)}">
+      <label for="p_name" style="margin-top:0">First name</label><input id="p_name" maxlength="40" autocomplete="given-name" value="${esc(me.name)}">
+      <label for="p_last">Last name</label><input id="p_last" maxlength="40" autocomplete="family-name" value="${esc(me.last||'')}">
       <label for="p_dob">Date of birth</label><input id="p_dob" type="date" value="${esc(me.dob)}" ${me.kyc?'disabled':''}>
       <label for="p_gender">Gender identity</label><select id="p_gender" ${me.kyc?'disabled':''}>${GENDERS.map(g=>`<option ${g===me.gender?'selected':''}>${g}</option>`).join('')}</select>
       <p class="small mute" style="margin-top:6px">${me.kyc?`Confirmed by your ID check. To change these, email ${esc(CFG.CONTACT_EMAIL||'the beta team')}.`:'Decides which audience-limited plans you can see.'}</p>
@@ -1482,7 +1483,7 @@ function modalHtml(){
       <p class="small mute" style="margin-top:6px">Anywhere in India. You see plans within ${NEAR_KM} km of here, and distances are measured from it. With your current location, only the area is saved (to about 1 km), never your exact spot.</p>
       <label for="p_job">Profession</label><input id="p_job" maxlength="40" value="${esc(me.job||'')}" placeholder="e.g. Designer">
       <label for="p_bio">Bio</label><textarea id="p_bio" maxlength="300" placeholder="A line or two so hosts know who you are">${esc(me.bio||'')}</textarea>
-      <label>What would you want to do with company?</label>${opts('p_int',INTERESTS,me.ints)}
+      <label>What would you want to do with company? <span class="mute" style="font-weight:400">(pick at least one)</span></label>${opts('p_int',INTERESTS,me.ints)}
       <label>When are you usually free?</label>${opts('p_avail',TIMES,me.avail)}
       <h3 id="ep_safety">Safety</h3>
       <p class="small mute" style="margin-top:0">Trusted contact: someone you can send your plans to, or alert with SOS. Leave both empty to remove.</p>
@@ -1572,7 +1573,6 @@ function reviewMail(kind){
 
 /* ---------- render: sign-in and onboarding ---------- */
 const LOGO='<div class="logo" style="font-size:22px;margin-bottom:14px"><span class="dots"><i></i><i></i></span>Overhere</div>';
-const GOOGLE_G='<svg class="i" width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
 /* Sign-in fields: an icon in front and a message line under each. Password boxes also get a show/hide button and a Caps Lock warning. */
 const emailField=()=>`<label for="a_email">Email</label><div class="fi">${I('mail',18)}<input id="a_email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" maxlength="120" placeholder="you@example.com" value="${esc(ui.auth.email||'')}" aria-describedby="a_email_err a_email_hint"></div>
   <p class="ferr" id="a_email_err" aria-live="polite"></p><p class="fhint" id="a_email_hint" aria-live="polite" hidden></p>`;
@@ -1630,10 +1630,9 @@ function authHtml(){
   const up=md==='up',was=ui.auth.anim;
   return `<div class="ob">${LOGO}<p class="mute">Do things in your city with company. Post a plan you are already making, pick who joins. Not a dating app.</p>
     <div class="seg atab${(was?was==='up':up)?' up':''}"><button type="button" class="${up?'':'on'}" aria-pressed="${!up}" data-a="authmode" data-k="in">Sign in</button><button type="button" class="${up?'on':''}" aria-pressed="${up}" data-a="authmode" data-k="up">Create account</button></div>
-    <div class="aswap${was?' in':''}"><h1 class="pt">${up?'Create your account':'Welcome back'}</h1><p class="sub">${up?'Free, and it takes under a minute.':'Sign in to see plans near you.'}</p>
-    ${up?AGEBOX.replace('margin-top:14px','margin:0 0 14px'):''}<button class="btn out" disabled aria-disabled="true" title="Coming soon" style="cursor:not-allowed">${GOOGLE_G} Continue with Google <span class="small mute" style="font-weight:500">· Coming soon</span></button>
-    ${CFG.PHONE_LOGIN?`<div style="height:8px"></div><button class="btn out" data-a="authmode" data-k="phone">${I('phone',16)} Continue with phone</button>`:''}
-    <div class="or">or with email</div>
+    <div class="aswap${was?' in':''}"><h1 class="pt" style="margin-bottom:18px">${up?'Create your account':'Welcome back'}</h1>
+    ${up?AGEBOX.replace('margin-top:14px','margin:0 0 14px'):''}${CFG.PHONE_LOGIN?`<button class="btn out" data-a="authmode" data-k="phone">${I('phone',16)} Continue with phone</button>
+    <div class="or">or with email</div>`:''}
     <form id="a_form" data-submit="${up?'signup':'signin'}" novalidate>${emailField()}
     ${pwField('a_pw','Password',up?'new-password':'current-password',up?'':'<button type="button" class="lnk" data-a="authmode" data-k="reset">Forgot password?</button>')}
     ${up?pwMeter()+pwField('a_pw2','Confirm password','new-password'):''}
@@ -1669,24 +1668,38 @@ function pwStepHtml(){
     <div style="height:16px"></div>${ERRBOX}${goBtn('Save password')}</form>
     <p class="small mute" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p></div>`;
 }
+/* "Create your profile" in three short pages (who you are, where you're based, what you like), as in the app.
+   OBF keeps the answers between pages, starting empty; nothing is saved until the last page. */
+const OB_STEPS=3;let OBF={};
+function obKeep(){
+  const d=OBF;
+  if(document.getElementById('o_name')){d.name=val('o_name');d.last=val('o_last');d.dob=val('o_dob');d.gender=val('o_gender')}
+  if(document.getElementById('o_hood'))d.hood=val('o_hood');
+  if(document.getElementById('o_ok')){d.ints=many('o_int');d.avail=many('o_avail');d.ok=document.getElementById('o_ok').checked;d.usage=!!document.getElementById('o_usage')?.checked}
+  return d;
+}
 function onboardHtml(){
   let body;
   if(!S.me){
-    const d=DRAFT||{};
-    body=`<div class="logo" style="margin-bottom:18px"><span class="dots"><i></i><i></i></span>Overhere</div><h1 class="pt">Create your profile</h1><p class="sub">${DRAFT&&!DRAFT.typed?'We filled this in from your beta sign-up. Check it and continue.':'A few details so hosts know who is asking to join.'}</p>
-    <label for="o_name">Name</label><input id="o_name" maxlength="40" autocomplete="given-name" value="${esc(d.name||'')}">
+    const d=OBF,st=ui.obStep||0,tgt='target="_blank" rel="noopener" style="color:inherit"';
+    const back='<div style="height:8px"></div><button class="btn sec" data-a="obback">Back</button>';
+    body=`<div class="logo" style="margin-bottom:18px"><span class="dots"><i></i><i></i></span>Overhere</div>
+    <div class="obbar" role="img" aria-label="Step ${st+1} of ${OB_STEPS}">${Array.from({length:OB_STEPS},(_,k)=>`<i class="${k<=st?'on':''}"></i>`).join('')}</div>`+(st===0?`<h1 class="pt">About you</h1>
+    <label for="o_name">First name</label><input id="o_name" maxlength="40" autocomplete="given-name" value="${esc(d.name||'')}">
+    <label for="o_last">Last name</label><input id="o_last" maxlength="40" autocomplete="family-name" value="${esc(d.last||'')}">
     <label for="o_dob">Date of birth</label><input id="o_dob" type="date" value="${esc(d.dob||'')}">
-    <label for="o_gender">Gender identity (required)</label><select id="o_gender"><option value="">Select…</option>${GENDERS.map(g=>`<option ${g===d.gender?'selected':''}>${g}</option>`).join('')}</select>
-    <p class="small mute" style="margin-top:6px">Used only for the safety-oriented audience filter on posts.</p>
-    <label for="o_hood">Where are you based?</label>${placeBox('o_hood','Search your area or city, e.g. Indiranagar, Bengaluru',d.hood,'Areas in India')}
+    <label for="o_gender">Gender</label><select id="o_gender"><option value="">Select…</option>${GENDERS.map(g=>`<option ${g===d.gender?'selected':''}>${g}</option>`).join('')}</select>
+    <div style="height:18px"></div><button class="btn" data-a="obnext">Next</button>
+    <p class="small" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p>`
+    :st===1?`<h1 class="pt">Where are you based?</h1>
+    <label for="o_hood">Home area</label>${placeBox('o_hood','Search your area or city, e.g. Indiranagar, Bengaluru',d.hood,'Areas in India')}
     ${locBtn('o_hood','Use my current location')}
-    <p class="small mute" style="margin-top:6px">Anywhere in India. You see plans within ${NEAR_KM} km of here, and distances are measured from it. With your current location, only the area is saved (to about 1 km), never your exact spot.</p>
-    <label>What would you want to do with company?</label>${opts('o_int',INTERESTS,d.ints)}
+    <div style="height:18px"></div><button class="btn" data-a="obnext">Next</button>${back}`
+    :`<h1 class="pt">What do you like doing?</h1>${opts('o_int',INTERESTS,d.ints)}
     <label>When are you usually free?</label>${opts('o_avail',TIMES,d.avail)}
-    <label class="chk top" style="margin-top:18px"><input type="checkbox" id="o_ok"> <span>I agree to the <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms and community guidelines</a>, and that Overhere may store these details to run the beta. I am 18 or older. I can ask for my data to be deleted at any time by emailing ${esc(CFG.CONTACT_EMAIL||'the beta team')}. <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a></span></label>
-    <label class="chk top" style="margin-top:10px"><input type="checkbox" id="o_usage"> <span><b>Optional:</b> share usage statistics (which features I use, never my messages) to help improve the beta. You can turn this off any time in <i>Profile</i>.</span></label>
-    <div style="height:18px"></div><button class="btn" data-a="ob2">Continue</button>
-    <p class="small" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p>`;
+    <label class="chk top" style="margin-top:18px"><input type="checkbox" id="o_ok" ${d.ok?'checked':''}> <span>I agree to the <a href="terms.html" ${tgt}>Terms</a> and <a href="privacy.html" ${tgt}>Privacy policy</a></span></label>
+    <label class="chk top" style="margin-top:10px"><input type="checkbox" id="o_usage" ${d.usage?'checked':''}> <span>Share usage statistics to help improve Overhere (optional)</span></label>
+    <div style="height:18px"></div><button class="btn" data-a="ob2">Continue</button>${back}`);
   }else if(!S.me.face&&!ui.faceSkip&&!twoPhotos())body=`<h1 class="pt">Add two photos of you</h1><p class="sub">Photo 1 is your profile picture, and both show on your profile. The face check matches your live face against both.</p>${photoPair()}
     <div style="height:8px"></div><button class="btn sec" data-a="obfaceskip">Skip for now</button>
     <p class="small mute" style="text-align:center;margin-top:10px">Without photos you can browse, and other people see your emoji. Posting and joining plans need both photos and the face check.</p>
@@ -2269,14 +2282,6 @@ const A={
     if(error)return formErr(/different from the old/i.test(error.message)?'Choose a password different from your old one.':friendly(error));
     track('password_created');AUTHU.pw=true;ui.auth={mode:'in'};render();toast('Password saved');welcome(data?.user);return true;
   }),
-  google:async()=>{
-    return;   // Google sign-in is switched off for now (the button is greyed out); remove this line to bring it back
-    if(!ageOk(false))return;   // on Create account; Google sign-ups are also checked at the date of birth step
-    const {data,error}=await SB.auth.signInWithOAuth({provider:'google',options:{redirectTo:here(),skipBrowserRedirect:true}});
-    if(error)return toast(friendly(error));
-    /* Google can't be shown inside the beta page's frame, so the whole tab goes there */
-    try{(window.top||window).location.href=data.url}catch(e){window.open(data.url,'_blank','noopener')}
-  },
   forgot:()=>working(async()=>{
     if(!authCheck(false))return;
     const email=val('a_email'),{error}=await withCaptcha(t=>SB.auth.resetPasswordForEmail(email,{redirectTo:here(),captchaToken:t}));
@@ -2530,14 +2535,17 @@ const A={
   nshare:()=>{const t=document.getElementById('sh_txt');if(t&&navigator.share)navigator.share({text:t.value}).catch(()=>{})},
   /* profile */
   saveprofile:async()=>{
-    const name=val('p_name'),dob=val('p_dob'),tn=val('t_name'),tp=val('t_phone');
-    if(!name)return toast('Add your name');
+    const name=val('p_name'),last=val('p_last'),dob=val('p_dob'),tn=val('t_name'),tp=val('t_phone');
+    if(!name)return toast('Add your first name');
+    if(!last)return toast('Add your last name');
     if(!dob||!(ageOf(dob)>=18))return toast('Check your date of birth: you must be 18 or over');
     if((tn||tp)&&(!tn||tp.replace(/\D/g,'').length<7))return toast('Add a name and a valid phone for your trusted contact, or leave both empty');
     if(tp&&ownPhone(tp))return toast("Your trusted contact can't be the number you signed in with");
     const hood=val('p_hood'),hll=placeLL(hood,'p_hood');
     if(!hll)return toast('Pick your home area from the list, or use your current location');
-    const p={name,dob,gender:val('p_gender'),hood,lat:hll[0],lng:hll[1],job:val('p_job'),bio:document.getElementById('p_bio').value.trim(),ints:many('p_int'),avail:many('p_avail')};
+    const p={name,dob,gender:val('p_gender'),hood,lat:hll[0],lng:hll[1],job:val('p_job'),bio:document.getElementById('p_bio').value.trim(),ints:many('p_int'),avail:many('p_avail'),last_name:last};
+    if(!p.ints.length)return toast("Pick at least one thing you'd like to do");
+    if(!p.avail.length)return toast("Pick when you're usually free");
     if(ui.modal?.emo)p.emo=ui.modal.emo;
     S.me.trusted=tn?{name:tn.slice(0,40),phone:tp.slice(0,20)}:null;save();
     if(await run('save_profile',{p})===undefined)return;
@@ -2558,18 +2566,31 @@ const A={
   pickphoto:d=>{photoMenu(false);cropSlot=d.k==='2'&&S.me.photo?2:1;(document.getElementById('p_photo')||photoInput()).click()},
   rmphoto:async()=>{photoMenu(false);if(!await setPhoto(null))return;if(!S.me.face)toast('Photos removed. Showing your emoji.');if(ui.modal?.type==='editprofile')render();else refreshMyPhoto()},
   /* onboarding */
+  obnext:()=>{
+    const d=obKeep(),st=ui.obStep||0;
+    if(st===0){
+      if(!d.name)return toast('Add your first name');
+      if(!d.last)return toast('Add your last name');
+      if(!d.dob)return toast('Add your date of birth');
+      if(!d.gender)return toast('Pick your gender');
+      if(!(ageOf(d.dob)>=18)){ui.modal={type:'under18',dob:d.dob};render();return}
+    }else if(!placeLL(d.hood,'o_hood'))return toast('Pick your home area from the list, or use your current location');
+    ui.obStep=st+1;render();scrollTo(0,0);
+  },
+  obback:()=>{obKeep();ui.obStep=Math.max(0,(ui.obStep||0)-1);render();scrollTo(0,0)},
   ob2:async(d,e)=>{
-    const p={name:val('o_name'),dob:val('o_dob'),gender:val('o_gender'),hood:val('o_hood'),ints:many('o_int'),avail:many('o_avail')};
-    if(!p.name||!p.dob||!p.gender||!p.hood)return toast('Name, date of birth, gender identity and home area are required');
-    const hll=placeLL(p.hood,'o_hood');
-    if(!hll)return toast('Pick your home area from the list, or use your current location');
-    p.lat=hll[0];p.lng=hll[1];
-    if(!(ageOf(p.dob)>=18)){DRAFT={...(DRAFT||{}),...p,typed:true};ui.modal={type:'under18',dob:p.dob};render();return}   // DRAFT keeps what they typed
-    if(!document.getElementById('o_ok')?.checked)return toast('Please tick the consent box to continue');
-    p.emo=defEmo(p.gender);p.consent=true;p.terms=true;p.usage_ok=!!document.getElementById('o_usage')?.checked;
+    const f=obKeep(),hll=placeLL(f.hood,'o_hood');
+    if(!f.name||!f.last||!f.dob||!f.gender){ui.obStep=0;render();return toast('Add your name, date of birth and gender')}
+    if(!hll){ui.obStep=1;render();return toast('Pick your home area from the list, or use your current location')}
+    if(!f.ints.length)return toast("Pick at least one thing you'd like to do");
+    if(!f.avail.length)return toast("Pick when you're usually free");
+    if(!f.ok)return toast('Please agree to the Terms to continue');
+    const p={name:f.name,last_name:f.last,dob:f.dob,gender:f.gender,hood:f.hood,lat:hll[0],lng:hll[1],ints:f.ints,avail:f.avail,
+      emo:defEmo(f.gender),consent:true,terms:true,usage_ok:f.usage};
     e.target.closest('button').disabled=true;
     let r;try{r=await call('save_profile',{p})}catch(err){e.target.closest('button').disabled=false;return}
     if(r?.error==='under18')return gone18();
+    OBF={};ui.obStep=0;
     await refresh();
     track('profile_created');
   },

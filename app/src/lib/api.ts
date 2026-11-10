@@ -33,7 +33,7 @@ export type NewPlan = {
 };
 
 export type ProfileInput = {
-  name?: string; dob?: string; gender?: Gender; hood?: string; lat?: number; lng?: number; job?: string;
+  name?: string; last_name?: string; dob?: string; gender?: Gender; hood?: string; lat?: number; lng?: number; job?: string;
   bio?: string; ints?: string[]; avail?: string[]; emo?: string; usage_ok?: boolean; onboarded?: boolean; consent?: boolean;
 };
 

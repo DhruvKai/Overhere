@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "social.overhere.app",
+      "sha256_cert_fingerprints": ["3B:BC:9D:8A:9D:65:D4:9C:2E:59:94:75:50:CE:48:86:3C:8D:0D:46:E5:9C:F2:2C:1B:15:AD:3D:F8:10:BF:32"]
+    }
+  }
+]

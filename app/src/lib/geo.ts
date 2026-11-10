@@ -4,15 +4,23 @@ import { GEO_URL } from './supabase';
    A venue reads "Name, Locality, City"; an area "Area, City". */
 export type Place = { label: string; ll: [number, number]; kind: string; state: string };
 
-const inIndia = ([la, lo]: [number, number]) => la >= 6 && la <= 37.5 && lo >= 68 && lo <= 97.5;
+export const inIndia = ([la, lo]: [number, number]) => la >= 6 && la <= 37.5 && lo >= 68 && lo <= 97.5;
 const kindOf = (v?: string) => (v || 'place').replace(/_/g, ' ').replace(/^./, c => c.toUpperCase());
+
+/* OpenStreetMap services ask apps to say who they are; requests with a generic client name can be refused. */
+const HEADERS = { 'User-Agent': 'Overhere/1.0 (+https://overhere.social)' };
 
 type Feature = { properties?: Record<string, string>; geometry?: { coordinates?: [number, number] } };
 
-function item(f: Feature, mode: 'area' | 'venue'): Place | null {
+type Mode = 'area' | 'venue' | 'here';
+
+function item(f: Feature, mode: Mode): Place | null {
   const p = f.properties || {}, [lo, la] = f.geometry?.coordinates || [];
-  const town = p.city || p.county;
-  const parts = mode === 'venue' ? [p.name || p.street, p.locality || p.district || (p.name ? p.street : ''), town || p.state] : [p.name, town, town ? '' : p.state];
+  const town = p.city || p.county, areaT = ['locality', 'district', 'city', 'county', 'state'].includes(p.type);
+  /* here: the area around a spot (from "Use my current location"), never a shop or street name */
+  const parts = mode === 'venue' ? [p.name || p.street, p.locality || p.district || (p.name ? p.street : ''), town || p.state]
+    : mode === 'here' ? [p.locality || p.district || (areaT ? p.name : ''), town, town ? '' : p.state]
+    : [p.name, town, town ? '' : p.state];
   const seen = new Set<string>();
   const label = parts.flatMap(x => String(x || '').split(/\s*,\s*/))
     .filter(x => x && !seen.has(x.toLowerCase()) && seen.add(x.toLowerCase())).join(', ').slice(0, mode === 'venue' ? 120 : 80);
@@ -26,7 +34,7 @@ export async function searchPlaces(q: string, mode: 'area' | 'venue', near?: [nu
   if (near) params.push(['lat', near[0].toFixed(3)], ['lon', near[1].toFixed(3)]);
   if (mode === 'area') params.push(['osm_tag', 'place'], ['osm_tag', 'boundary:administrative']);
   params.forEach(([k, v]) => u.searchParams.append(k, v));
-  const r = await fetch(u.toString());
+  const r = await fetch(u.toString(), { headers: HEADERS });
   if (!r.ok) throw new Error(String(r.status));
   const d = (await r.json()) as { features?: Feature[] };
   const seen = new Set<string>();
@@ -34,4 +42,20 @@ export async function searchPlaces(q: string, mode: 'area' | 'venue', near?: [nu
     .filter(f => f.properties?.countrycode === 'IN')
     .map(f => item(f, mode))
     .filter((x): x is Place => !!x && !seen.has(x.label) && !!seen.add(x.label));
+}
+
+/* The area around a spot, like myloc in web/app.js: Photon's reverse lookup, labelled "Area, City".
+   Falls back to "Near 30.74, 76.78" when the lookup finds nothing or can't be reached. */
+export async function placeHere(ll: [number, number]): Promise<string> {
+  try {
+    const u = new URL(GEO_URL.replace(/\/+$/, '') + '/reverse');
+    [['lat', ll[0].toFixed(5)], ['lon', ll[1].toFixed(5)], ['lang', 'en'], ['limit', '1']].forEach(([k, v]) => u.searchParams.append(k, v));
+    const r = await fetch(u.toString(), { headers: HEADERS });
+    if (r.ok) {
+      const d = (await r.json()) as { features?: Feature[] };
+      const hit = (d.features || []).filter(f => f.properties?.countrycode === 'IN').map(f => item(f, 'here')).find(Boolean);
+      if (hit) return hit.label;
+    }
+  } catch { /* fall back below */ }
+  return `Near ${ll[0].toFixed(2)}, ${ll[1].toFixed(2)}`;
 }

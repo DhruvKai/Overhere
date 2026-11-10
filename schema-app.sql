@@ -327,6 +327,9 @@ alter table profiles add column if not exists photo text;
 alter table profiles drop constraint if exists profiles_photo_check;
 alter table profiles add constraint profiles_photo_check check (photo is null or photo ~ '^[0-9a-f-]{36}/[0-9a-z]{16}\.jpg$');
 alter table profiles add column if not exists photo2 text;
+-- Last name: asked at sign-up and in Edit profile. Only you see it: other people get `name` (the first name) from
+-- app_state, never this column, and the table itself is closed to clients (revoke below). '' on accounts made before it.
+alter table profiles add column if not exists last_name text not null default '' check (char_length(last_name) <= 40);
 alter table profiles drop constraint if exists profiles_photo2_check;
 alter table profiles add constraint profiles_photo2_check check (photo2 is null or photo2 ~ '^[0-9a-f-]{36}/[0-9a-z]{16}\.jpg$');
 -- The bucket: readable by link (the paths are only sent to signed-in people, in app_state), at most 200 KB a file
@@ -1061,6 +1064,18 @@ begin
     delete from auth.users where id = u;    -- no profile exists yet, so this removes everything from the attempt
     return jsonb_build_object('error', 'under18');
   end if;
+  -- at least one interest and one time you're usually free: at sign-up, and whenever a save sends the list (saves of
+  -- other fields leave it alone). Not a table check, so older accounts with none stay valid until they next edit.
+  if (not found or p ? 'ints') and jsonb_array_length(coalesce(p->'ints', '[]')) = 0 then
+    raise exception 'Pick at least one thing you''d like to do';
+  end if;
+  if (not found or p ? 'avail') and jsonb_array_length(coalesce(p->'avail', '[]')) = 0 then
+    raise exception 'Pick when you''re usually free';
+  end if;
+  -- a last name can't be blank when one is sent; apps from before it don't send one, so they can still sign people up
+  if p ? 'last_name' and btrim(coalesce(p->>'last_name', '')) = '' then
+    raise exception 'Add your last name';
+  end if;
   if found then
     if b is not null and b > current_date - interval '18 years' then raise exception 'You must be 18 or over to use Overhere'; end if;
     -- After the ID check, gender and date of birth come from the ID: changing them goes through a person.
@@ -1069,6 +1084,7 @@ begin
     end if;
     update profiles set
       name   = coalesce(p->>'name', name),
+      last_name = coalesce(btrim(p->>'last_name'), last_name),
       dob    = coalesce((p->>'dob')::date, dob),
       gender = coalesce(p->>'gender', gender),
       hood   = coalesce(p->>'hood', hood),
@@ -1088,8 +1104,8 @@ begin
   else
     if coalesce(p->>'consent', '') <> 'true' then raise exception 'Please tick the consent box to continue'; end if;
     if p->>'lat' is null or p->>'lng' is null then raise exception 'Pick your area from the list, or use your current location'; end if;
-    insert into profiles (id, email, name, dob, gender, hood, lat, lng, job, bio, ints, avail, emo, usage_ok, consent_version, consent_at)
-    values (u, em, p->>'name', b, p->>'gender', p->>'hood', round((p->>'lat')::numeric, 2)::float8, round((p->>'lng')::numeric, 2)::float8,
+    insert into profiles (id, email, name, last_name, dob, gender, hood, lat, lng, job, bio, ints, avail, emo, usage_ok, consent_version, consent_at)
+    values (u, em, p->>'name', coalesce(btrim(p->>'last_name'), ''), b, p->>'gender', p->>'hood', round((p->>'lat')::numeric, 2)::float8, round((p->>'lng')::numeric, 2)::float8,
             coalesce(p->>'job', ''), coalesce(p->>'bio', ''),
             array(select jsonb_array_elements_text(coalesce(p->'ints', '[]'))), array(select jsonb_array_elements_text(coalesce(p->'avail', '[]'))),
             coalesce(p->>'emo', ''), coalesce((p->>'usage_ok')::boolean, false), 'app-v2', now());   -- app-v2: data consent + Terms and community guidelines

@@ -1,6 +1,6 @@
 import Feather from '@expo/vector-icons/Feather';
 import { Image } from 'expo-image';
-import type { ComponentProps, ReactNode } from 'react';
+import { useState, type ComponentProps, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle } from 'react-native';
 import { CATS, defEmo, type Model, type Plan, placeLine, spotTxt, whenStr, kmAway } from '@/lib/model';
 import { avatarUrl } from '@/lib/avatar';
@@ -29,16 +29,57 @@ export function Btn({ title, onPress, kind = 'primary', icon, busy, disabled, st
   );
 }
 
-/* Text fields are 16px or more (web/AGENTS.md: iOS zooms smaller ones, and they're hard to read). */
-export function Field({ label, hint, error, ...p }: TextInputProps & { label?: string; hint?: string; error?: string }) {
+/* The Overhere logo, as on the website (.logo and .dots in app.html): two dark dots with a green ring, and the name. */
+export function Logo({ size = 22 }: { size?: number }) {
   const t = useTheme();
+  const d = Math.round(size * 0.5);
+  return (
+    <View accessible accessibilityRole="header" accessibilityLabel="Overhere" style={{ flexDirection: 'row', alignItems: 'center', gap: Math.round(size * 0.4) }}>
+      <View style={{ flexDirection: 'row', gap: 2 }}>
+        {[0, 1].map(k => <View key={k} style={{ width: d, height: d, borderRadius: d / 2, backgroundColor: '#1A1A1A', borderWidth: d * 0.23, borderColor: t.acc }} />)}
+      </View>
+      <Text style={{ color: t.ink, fontSize: size, fontWeight: '800', letterSpacing: -0.4 }}>Overhere</Text>
+    </View>
+  );
+}
+
+/* Text fields are 16px or more (web/AGENTS.md: iOS zooms smaller ones, and they're hard to read). */
+/* error: red line with a warning icon, and a red border. ok: a green line with a tick ("Passwords match").
+   right: something inside the box on the right (the show/hide button). below: more under the message line. */
+export function Field({ label, hint, error, ok, right, below, ...p }: TextInputProps & { label?: string; hint?: string; error?: string; ok?: string; right?: ReactNode; below?: ReactNode }) {
+  const t = useTheme();
+  const msg = error ? { text: error, color: t.bad, icon: 'alert-triangle' as const } : ok ? { text: ok, color: t.ok, icon: 'check-circle' as const } : null;
   return (
     <View style={{ marginBottom: 14 }}>
       {label ? <Text style={[s.label, { color: t.ink }]}>{label}</Text> : null}
-      <TextInput placeholderTextColor={t.ph} {...p}
-        style={[s.input, { backgroundColor: t.field, color: t.ink, borderColor: error ? t.bad : 'transparent' }, p.multiline && { minHeight: 90, textAlignVertical: 'top' }, p.style]} />
-      {error ? <Text style={[s.small, { color: t.bad, marginTop: 4 }]}>{error}</Text> : hint ? <Text style={[s.small, { color: t.mute, marginTop: 4 }]}>{hint}</Text> : null}
+      <View>
+        <TextInput placeholderTextColor={t.ph} accessibilityLabel={label} {...p}
+          style={[s.input, { backgroundColor: t.field, color: t.ink, borderColor: error ? t.bad : 'transparent' }, right ? { paddingRight: 52 } : null, p.multiline && { minHeight: 90, textAlignVertical: 'top' }, p.style]} />
+        {right ? <View style={{ position: 'absolute', right: 0, top: 0, bottom: 0, justifyContent: 'center' }}>{right}</View> : null}
+      </View>
+      {msg ? (
+        <View accessibilityLiveRegion="polite" style={{ flexDirection: 'row', gap: 5, alignItems: 'center', marginTop: 5 }}>
+          <Feather name={msg.icon} size={14} color={msg.color} />
+          <Text style={[s.small, { color: msg.color, flex: 1 }]}>{msg.text}</Text>
+        </View>
+      ) : hint ? <Text style={[s.small, { color: t.mute, marginTop: 4 }]}>{hint}</Text> : null}
+      {below}
     </View>
+  );
+}
+
+/* A password box with a show/hide button, like pwField in web/app.js. */
+export function PwField(p: Omit<ComponentProps<typeof Field>, 'secureTextEntry' | 'right'>) {
+  const t = useTheme();
+  const [show, setShow] = useState(false);
+  return (
+    <Field autoCapitalize="none" autoCorrect={false} spellCheck={false} maxLength={72} {...p} secureTextEntry={!show}
+      right={
+        <Pressable onPress={() => setShow(v => !v)} hitSlop={6} accessibilityRole="button" accessibilityLabel={show ? 'Hide password' : 'Show password'}
+          accessibilityState={{ selected: show }} style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}>
+          <Feather name={show ? 'eye-off' : 'eye'} size={19} color={t.mute} />
+        </Pressable>
+      } />
   );
 }
 

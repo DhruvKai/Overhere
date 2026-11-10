@@ -36,6 +36,7 @@ export default function Post() {
   const [cap, setCap] = useState(Math.max(minCap, start?.cap ?? 3));
   const [when, setWhen] = useState(() => (edit ? new Date(edit.when) : start ? nextLike(start.when) : firstTime()));
   const [venue, setVenue] = useState(start?.venue ?? '');
+  const [areaQ, setAreaQ] = useState('');
   const [ll, setLl] = useState<[number, number] | null>(start?.ll ?? null);
   const [cost, setCost] = useState<Cost>(start?.cost ?? 'own');
   const [total, setTotal] = useState(start?.total ? String(start.total) : '');
@@ -78,6 +79,7 @@ export default function Post() {
     const n = Number(total.replace(/[^\d]/g, ''));
     const bw = badWord(desc);
     const problem = !desc.trim() ? 'Say what the plan is' : bw ? badWordMsg(bw) : !venue.trim() ? 'Add where you\'ll meet'
+      : !ll ? 'Pick which area the venue is in, so it shows on the map'
       : when.getTime() <= Date.now() ? 'Pick a future date and time' : aud && !aud.length ? 'Pick who it\'s for' : '';
     setErr(problem);
     if (problem) return;
@@ -130,7 +132,13 @@ export default function Post() {
         <PlacePicker label="Where" mode="venue" value={venue} picked={!!ll} near={homeLL(m)} placeholder="Café, cinema or venue"
           onChange={v => { setVenue(v); setLl(null); }} onPick={p => { setVenue(p.label); setLl(p.ll); }}
           hint="Shows on the map" />
-        {!ll && venue.trim().length > 1 ? <P small mute style={{ marginTop: -8, marginBottom: 14 }}>Not in the list? It&apos;s fine as typed; it shows near your home area.</P> : null}
+        {/* a venue that isn't in the list: ask which area it's in, then it reads "Name, Area" and is pinned there (areaPicked in web/app.js) */}
+        {!ll && venue.trim().length > 1 ? (<>
+          <PlacePicker label="Not in the list? Which area is it in?" mode="area" value={areaQ} picked={false} near={homeLL(m)} locate="spot"
+            placeholder="Search the area or city, e.g. Indiranagar, Bengaluru" onChange={setAreaQ}
+            onPick={p => { setVenue(`${venue.trim()}, ${p.label}`.slice(0, 120)); setLl(p.ll); setAreaQ(''); }} />
+          <P small mute style={{ marginTop: -8, marginBottom: 14 }}>The pin goes in the middle of that area, so people can see roughly where it is.</P>
+        </>) : null}
 
         <Label>{`How many people can join? (${cap})`}</Label>
         <Wrap>{[2, 3, 4, 5, 6, 7, 8, 9, 10].filter(n => n >= minCap).map(n => <Chip key={n} label={String(n)} on={cap === n} onPress={() => setCap(n)} />)}</Wrap>

@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActionSheetIOS, Alert, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { JoinSheet } from '@/components/JoinSheet';
 import { ReasonSheet } from '@/components/ReasonSheet';
@@ -8,6 +8,7 @@ import { ReportSheet } from '@/components/ReportSheet';
 import { TrustShareSheet } from '@/components/TrustShareSheet';
 import { Avatar, Badge, Btn, Card, CatPill, Empty, H, Icon, Meta, P } from '@/components/ui';
 import { api } from '@/lib/api';
+import { INVITE_MISS } from '@/lib/invite';
 import {
   canSave, COST, durTxt, endOf, inChat, isVer, kmAway, myReq, needRate, nowOf, OPT_OUT, REPORT_REASONS, RM_REASONS, rupees, saved, short, signals, spots,
   spotTxt, tags, trustTxt, uname, whenStr,
@@ -30,8 +31,16 @@ export default function PlanScreen() {
   const [leaving, setLeaving] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
   const a = m.acts.find(x => x.id === id);
+  /* not in your list (often from an invite link): ask the server why, so the message is right (openInvite in web/app.js) */
+  const [why, setWhy] = useState('');
+  useEffect(() => {
+    if (a || !id) return;
+    let live = true;
+    api.inviteInfo(id).then(r => { if (live) setWhy(r); }, () => {});
+    return () => { live = false; };
+  }, [a, id]);
 
-  if (!a) return <Empty icon="calendar" title="This plan isn't available" text="It may have been cancelled, or it's no longer open to you." />;
+  if (!a) return <Empty icon="calendar" title="This plan isn't available" text={INVITE_MISS[why] || "It may have been cancelled, or it's no longer open to you."} />;
 
   const mine = a.host === m.me;
   const req = myReq(m, a.id);

@@ -22,6 +22,7 @@ export default function EditProfile() {
   const { run, toast, savePriv, session } = useStore();
   const p = m.profile!;
   const [name, setName] = useState(p.name);
+  const [last, setLast] = useState(p.last_name ?? '');
   const [emo, setEmo] = useState(p.emo || defEmo(p.gender));
   const [dob, setDob] = useState(showDob(p.dob));
   const [gender, setGender] = useState<Gender>(p.gender);
@@ -47,9 +48,12 @@ export default function EditProfile() {
 
   async function save() {
     if (!name.trim()) return toast('Add your first name');
+    if (!last.trim()) return toast('Add your last name');
     const iso = isoDob(dob);
     if (!iso) return toast('Enter your date of birth as DD/MM/YYYY');
     if (!ll) return toast('Pick your home area from the list');
+    if (!ints.length) return toast("Pick at least one thing you'd like to do");
+    if (!avail.length) return toast("Pick when you're usually free");
     /* trusted contact: both or neither (the same checks as the website) */
     const tn = tName.trim(), tp = tPhone.trim(), digits = tp.replace(/\D/g, '');
     if ((tn || tp) && (!tn || digits.length < 7)) return toast('Add a name and a valid phone for your trusted contact, or leave both empty');
@@ -59,7 +63,7 @@ export default function EditProfile() {
     setBusy(true);
     const ok = await run(async () => {
       await api.saveProfile({
-        name: name.trim(), emo, job: job.trim(), bio: bio.trim(), ints, avail, hood, lat: ll[0], lng: ll[1],
+        name: name.trim(), last_name: last.trim(), emo, job: job.trim(), bio: bio.trim(), ints, avail, hood, lat: ll[0], lng: ll[1],
         /* the database refuses changes to these after the ID check, so they're only sent before it */
         ...(p.kyc ? {} : { dob: iso, gender }),
       });
@@ -95,7 +99,8 @@ export default function EditProfile() {
             </Pressable>
           ))}
         </View>
-        <Field label="First name" value={name} onChangeText={setName} maxLength={40} />
+        <Field label="First name" value={name} onChangeText={setName} maxLength={40} autoComplete="given-name" textContentType="givenName" />
+        <Field label="Last name" value={last} onChangeText={setLast} maxLength={40} autoComplete="family-name" textContentType="familyName" />
         <Field label="Date of birth" value={dob} onChangeText={v => setDob(maskDob(v))} placeholder="DD/MM/YYYY" keyboardType="number-pad" maxLength={10} editable={!p.kyc} />
         <Label>Gender identity</Label>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
@@ -106,10 +111,10 @@ export default function EditProfile() {
         </P>
         <PlacePicker label="Home area" mode="area" value={hood} picked={!!ll} placeholder="Search your area or city"
           onChange={v => { setHood(v); setLl(null); }} onPick={x => { setHood(x.label); setLl(x.ll); }}
-          hint={`Anywhere in India. You see plans within ${NEAR_KM} km of here, and distances are measured from it.`} />
+          hint={`Anywhere in India. You see plans within ${NEAR_KM} km of here, and distances are measured from it.`} locate="home" />
         <Field label="What you do (optional)" value={job} onChangeText={setJob} maxLength={40} placeholder="e.g. Designer, student" />
         <Field label="About you (optional)" value={bio} onChangeText={setBio} maxLength={300} multiline hint={`${bio.length}/300`} />
-        <Label>What you like</Label>
+        <Label>What you like (pick at least one)</Label>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
           {INTERESTS.map(v => <Chip key={v} label={v} on={ints.includes(v)} onPress={() => setInts(l => toggle(l, v))} />)}
         </View>

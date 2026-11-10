@@ -3,11 +3,13 @@ import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCaptcha } from '@/components/Captcha';
-import { Btn, Field, H, Icon, P } from '@/components/ui';
+import { Btn, Field, H, Icon, Logo, P, PwField } from '@/components/ui';
 import Welcome from '@/components/Welcome';
 import { api, friendly } from '@/lib/api';
+import { emailProblem, mailFix } from '@/lib/email';
 import { column } from '@/lib/layout';
-import { PW_HINT, pwProblem } from '@/lib/password';
+import PwMeter from '@/components/PwMeter';
+import { pwProblem } from '@/lib/password';
 import { useStore } from '@/lib/store';
 import { SITE, supabase } from '@/lib/supabase';
 import { useTheme } from '@/lib/theme';
@@ -35,6 +37,10 @@ export default function SignIn() {
   const [sent, setSent] = useState(0);
   const [email, setEmail] = useState('');
   const [pw, setPw] = useState('');
+  const [pw2, setPw2] = useState('');
+  /* errors under each field, like fieldMsg in web/app.js: they appear when you leave a field or submit, and clear as you fix them */
+  const [fe, setFe] = useState<{ email?: string; pw?: string; pw2?: string }>({});
+  const [left2, setLeft2] = useState(false);
   const [signUp, setSignUp] = useState(false);
   const [is18, setIs18] = useState(false);
   const [err, setErr] = useState('');
@@ -88,10 +94,17 @@ export default function SignIn() {
     setBusy(false);
   }
 
+  /* the line under "Confirm password": a match as you type, a mismatch once it's as long as the password or you've left it */
+  const pw2Line = fe.pw2 ? { error: fe.pw2 } : pw2 && pw2 === pw ? { ok: 'Passwords match' }
+    : pw2 && (left2 || pw2.length >= pw.length) ? { error: "Passwords don't match" } : {};
+  const fix = mailFix(email);
+  const clearFe = () => { setErr(''); setFe({}); };
+
   async function emailGo() {
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) return setErr('Enter a valid email address');
-    if (signUp) { const bad = pwProblem(pw, email); if (bad) return setErr(bad); }
-    else if (!pw) return setErr('Enter your password');
+    const e = { email: emailProblem(email), pw: !pw ? (signUp ? 'Choose a password' : 'Enter your password') : signUp ? pwProblem(pw, email) : '',
+      pw2: !signUp ? '' : !pw2 ? 'Type your password again' : pw2 !== pw ? "Passwords don't match" : '' };
+    setFe(e); setErr('');
+    if (e.email || e.pw || e.pw2) return;
     if (signUp && !need18()) return;
     setBusy(true); setErr('');
     try {
@@ -111,7 +124,9 @@ export default function SignIn() {
   /* The link in the email opens the website's "choose a new password" step (web/app.js, PASSWORD_RECOVERY);
      after that they come back here and sign in with the new one. */
   async function sendReset(again?: boolean) {
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) return setErr('Enter a valid email address');
+    const bad = emailProblem(email);
+    setFe({ email: bad });
+    if (bad) return;
     const wait = again ? Math.ceil((sent + RESEND_MS - Date.now()) / 1000) : 0;
     if (wait > 0) return toast(`Please wait ${wait}s before asking again`);
     setBusy(true); setErr('');
@@ -135,6 +150,18 @@ export default function SignIn() {
     </Pressable>
   );
 
+  /* the email box, with "Did you mean gmail.com?" for a likely typo (mailHint in web/app.js) */
+  const emailField = (focus?: boolean) => (
+    <Field label="Email" value={email} onChangeText={v => { setEmail(v); setFe(f => ({ ...f, email: '' })); }} keyboardType="email-address" autoCapitalize="none"
+      autoCorrect={false} autoComplete="email" textContentType="emailAddress" placeholder="you@example.com" maxLength={120} autoFocus={focus}
+      error={fe.email} onBlur={() => { if (email.trim()) setFe(f => ({ ...f, email: emailProblem(email) })); }}
+      below={fix ? (
+        <Text style={{ color: t.ink2, fontSize: 13, marginTop: 5 }}>Did you mean{' '}
+          <Text accessibilityRole="button" style={{ color: t.accink, fontWeight: '700' }} onPress={() => { setEmail(fix); setFe(f => ({ ...f, email: '' })); }}>{fix}</Text>?
+        </Text>
+      ) : null} />
+  );
+
   if (intro) {
     return <Welcome onDone={up => { try { localStorage.setItem(SEEN, '1'); } catch { /* shows again next time */ } setSignUp(up); setIntro(false); }} />;
   }
@@ -144,11 +171,9 @@ export default function SignIn() {
       {captcha}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={[{ padding: 24, paddingTop: 48 }, column]} keyboardShouldPersistTaps="handled">
-          <View style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: t.acc, alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
-            <Icon name="map-pin" size={28} color={t.onAcc} />
-          </View>
+          <View style={{ marginBottom: 22 }}><Logo /></View>
           <H size={30}>{signUp ? 'Create your account' : 'Welcome back'}</H>
-          <P mute style={{ marginTop: 6, marginBottom: 28 }}>{signUp ? 'Free, and it takes about a minute.' : 'Sign in to see plans near you.'}</P>
+          <View style={{ height: 24 }} />
 
           {mode === 'phone' && (<>
             <Field label="Mobile number" value={phone} onChangeText={v => setPhone(phoneDigits(v))} keyboardType="phone-pad"
@@ -170,31 +195,38 @@ export default function SignIn() {
           </>)}
 
           {mode === 'email' && (<>
-            <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress" />
-            <Field label="Password" value={pw} onChangeText={setPw} secureTextEntry autoComplete={signUp ? 'new-password' : 'current-password'} textContentType={signUp ? 'newPassword' : 'password'} hint={signUp ? PW_HINT : undefined} />
+            {emailField()}
+            <PwField label="Password" value={pw} autoComplete={signUp ? 'new-password' : 'current-password'} textContentType={signUp ? 'newPassword' : 'password'}
+              error={fe.pw} onChangeText={v => { setPw(v); if (fe.pw && !(signUp && v && pwProblem(v, email))) setFe(f => ({ ...f, pw: '' })); }}
+              onBlur={() => { if (signUp && pw) setFe(f => ({ ...f, pw: pwProblem(pw, email) })); }} onSubmitEditing={signUp ? undefined : emailGo} />
+            {signUp ? (<>
+              <PwMeter pw={pw} email={email} />
+              <PwField label="Confirm password" value={pw2} autoComplete="new-password" textContentType="newPassword" {...pw2Line}
+                onChangeText={v => { setPw2(v); setFe(f => ({ ...f, pw2: '' })); }} onBlur={() => { if (pw2) setLeft2(true); }} />
+            </>) : null}
             {signUp ? Check : (
-              <Pressable onPress={() => { setMode('reset'); setErr(''); }} style={{ alignSelf: 'flex-end', marginTop: -6, marginBottom: 16 }}>
+              <Pressable onPress={() => { setMode('reset'); clearFe(); }} style={{ alignSelf: 'flex-end', marginTop: -6, marginBottom: 16 }}>
                 <Text style={{ color: t.accink, fontWeight: '700', fontSize: 15 }}>Forgot password?</Text>
               </Pressable>
             )}
             <Btn title={signUp ? 'Create account' : 'Sign in'} onPress={emailGo} busy={busy} />
-            <Pressable onPress={() => { setSignUp(v => !v); setErr(''); }} style={{ marginTop: 14 }}>
+            <Pressable onPress={() => { setSignUp(v => !v); clearFe(); setPw2(''); setLeft2(false); }} style={{ marginTop: 14 }}>
               <Text style={{ color: t.accink, fontWeight: '700', fontSize: 15 }}>{signUp ? 'I already have an account' : 'New here? Create an account'}</Text>
             </Pressable>
           </>)}
 
           {mode === 'reset' && (<>
             <P style={{ marginBottom: 14 }}>Enter the email you signed up with and we&apos;ll send you a link to choose a new password.</P>
-            <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress" autoFocus />
+            {emailField(true)}
             <Btn title="Send reset link" onPress={() => sendReset()} busy={busy} />
-            <Pressable onPress={() => { setMode('email'); setErr(''); }} style={{ marginTop: 14 }}>
+            <Pressable onPress={() => { setMode('email'); clearFe(); }} style={{ marginTop: 14 }}>
               <Text style={{ color: t.accink, fontWeight: '700', fontSize: 15 }}>Back to sign in</Text>
             </Pressable>
           </>)}
 
           {mode === 'resetSent' && (<>
             <P style={{ marginBottom: 14 }}>We sent a link to {email.trim()}. Open it, choose a new password, then come back here and sign in with it.</P>
-            <Btn title="Back to sign in" onPress={() => { setMode('email'); setSignUp(false); setPw(''); setErr(''); }} />
+            <Btn title="Back to sign in" onPress={() => { setMode('email'); setSignUp(false); setPw(''); setPw2(''); clearFe(); }} />
             <Pressable onPress={() => sendReset(true)} style={{ marginTop: 14 }}>
               <Text style={{ color: t.accink, fontWeight: '700', fontSize: 15 }}>Didn&apos;t get it? Send again</Text>
             </Pressable>
@@ -204,8 +236,8 @@ export default function SignIn() {
 
           <View style={{ height: 1, backgroundColor: t.line, marginVertical: 24 }} />
           {mode === 'phone' || mode === 'code'
-            ? <Btn title="Use email instead" kind="ghost" icon="mail" onPress={() => { setMode('email'); setErr(''); }} />
-            : <Btn title="Use phone instead" kind="ghost" icon="phone" onPress={() => { setMode('phone'); setErr(''); }} />}
+            ? <Btn title="Use email instead" kind="ghost" icon="mail" onPress={() => { setMode('email'); clearFe(); }} />
+            : <Btn title="Use phone instead" kind="ghost" icon="phone" onPress={() => { setMode('phone'); clearFe(); }} />}
           <P mute small style={{ marginTop: 20, textAlign: 'center' }}>
             By continuing you agree to the{' '}
             <Text style={{ color: t.accink, fontWeight: '700' }} onPress={() => WebBrowser.openBrowserAsync(SITE + '/terms.html')}>Terms</Text> and{' '}

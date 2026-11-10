@@ -8,7 +8,7 @@ export type Cost = 'split' | 'own' | 'host';
 export type ReqStatus = 'pending' | 'accepted' | 'rejected' | 'waitlist' | 'left' | 'removed' | 'closed';
 
 export type RawProfile = {
-  id: string; name: string; dob: string; gender: Gender; hood: string; lat: number | null; lng: number | null;
+  id: string; name: string; last_name?: string; dob: string; gender: Gender; hood: string; lat: number | null; lng: number | null;
   job: string; bio: string; ints: string[]; avail: string[]; emo: string; photo: string | null; photo2: string | null; face: boolean; kyc: boolean;
   onboarded: boolean; usage_ok: boolean; consent_version: string | null; state: Record<string, unknown>;
 };

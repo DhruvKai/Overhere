@@ -1,4 +1,4 @@
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Btn, Empty, Loading } from '@/components/ui';
 import { api } from '@/lib/api';
+import { setInviteReady, takeInvite } from '@/lib/invite';
 import { column, COLUMN, onTablet } from '@/lib/layout';
 import { onPushTap, openFromPush, registerPush } from '@/lib/push';
 import { StoreProvider, useStore } from '@/lib/store';
@@ -73,6 +74,13 @@ function Gate() {
     registerPush();
     return onPushTap(openFromPush);
   }, [pushOn]);
+  /* Invite links (lib/invite.ts): once signed in with a finished profile, open the plan from a link that was waiting. */
+  const plansOpen = setUp && onboarded;
+  useEffect(() => {
+    setInviteReady(plansOpen);
+    const id = plansOpen ? takeInvite() : null;
+    if (id) setTimeout(() => router.push({ pathname: '/plan/[id]', params: { id } }), 0);
+  }, [plansOpen]);
   if (!ready) return null;
   if (loading) {
     return error ? (

@@ -1,0 +1,3 @@
+# GitHub Pages builds this site with Jekyll, which skips dot-folders. .well-known holds assetlinks.json, which lets
+# overhere.social invite links open the Android app (app/app.json intentFilters).
+include: [".well-known"]
