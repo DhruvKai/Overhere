@@ -7,7 +7,8 @@ import { Avatar, Btn, Chip, Field, Label, P } from '@/components/ui';
 import { api } from '@/lib/api';
 import { setPhoto } from '@/lib/avatar';
 import { isoDob, maskDob, showDob } from '@/lib/dob';
-import { defEmo, EMOJIS, GENDERS, INTERESTS, NEAR_KM, TIMES, trustedOf } from '@/lib/model';
+import { defEmo, EMOJIS, GENDERS, MIN_INTS, NEAR_KM, TIMES, trustedOf } from '@/lib/model';
+import { InterestPicker } from '@/components/InterestPicker';
 import type { Gender } from '@/lib/types';
 import { useModel, useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
@@ -52,7 +53,7 @@ export default function EditProfile() {
     const iso = isoDob(dob);
     if (!iso) return toast('Enter your date of birth as DD/MM/YYYY');
     if (!ll) return toast('Pick your home area from the list');
-    if (!ints.length) return toast("Pick at least one thing you'd like to do");
+    if (ints.length < MIN_INTS) return toast(`Pick at least ${MIN_INTS} things you like doing`);
     if (!avail.length) return toast("Pick when you're usually free");
     /* trusted contact: both or neither (the same checks as the website) */
     const tn = tName.trim(), tp = tPhone.trim(), digits = tp.replace(/\D/g, '');
@@ -114,10 +115,8 @@ export default function EditProfile() {
           hint={`Anywhere in India. You see plans within ${NEAR_KM} km of here, and distances are measured from it.`} locate="home" />
         <Field label="What you do (optional)" value={job} onChangeText={setJob} maxLength={40} placeholder="e.g. Designer, student" />
         <Field label="About you (optional)" value={bio} onChangeText={setBio} maxLength={300} multiline hint={`${bio.length}/300`} />
-        <Label>What you like (pick at least one)</Label>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-          {INTERESTS.map(v => <Chip key={v} label={v} on={ints.includes(v)} onPress={() => setInts(l => toggle(l, v))} />)}
-        </View>
+        <Label>What you like doing</Label>
+        <InterestPicker value={ints} onChange={setInts} />
         <Label>When you&apos;re free</Label>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
           {TIMES.map(v => <Chip key={v} label={v} on={avail.includes(v)} onPress={() => setAvail(l => toggle(l, v))} />)}

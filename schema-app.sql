@@ -105,10 +105,17 @@ update profiles set hood = regexp_replace(hood, ', ([^,]+), \1$', ', \1') where 
 alter table activities drop constraint if exists activities_cat_check;
 alter table activities add constraint activities_cat_check check (cat in ('fitness','movies','theatre','comedy','concerts','hangout',
   'cafe','adventure','outdoor','errands','work','selfcare','nightlife'));
--- Interests follow the categories (the three old ones keep their wording, so nobody's interests change).
+-- Interests: the categories' own names and more specific ones, each counting towards a category in the apps
+-- (INT_GROUPS in web/app.js and app/src/lib/model.ts). 'Fitness and sport' is now 'Fitness' (next to 'Sports'):
+-- saved profiles are renamed here, and save_profile renames it when an older app sends it.
 alter table profiles drop constraint if exists profiles_ints_check;
-alter table profiles add constraint profiles_ints_check check (ints <@ array['Fitness and sport','Movies','Theatre','Stand-up comedy',
-  'Concerts','Hangout','Cafe / Food','Adventure','Outdoor leisure','Chores and errands','Work and study','Self care','Nightlife']);
+update profiles set ints = array_replace(ints, 'Fitness and sport', 'Fitness') where 'Fitness and sport' = any(ints);
+alter table profiles add constraint profiles_ints_check check (ints <@ array[
+  'Fitness','Gym','Running','Yoga','Cycling','Sports','Adventure',
+  'Trekking','Road trips','Camping','Outdoor leisure','Picnics','Walks','Photography','Cafe / Food','Street food',
+  'New restaurants','Coffee','Brunch','Cooking','Movies','Theatre','Stand-up comedy','Concerts','Live music',
+  'Karaoke','Dancing','Nightlife','Hangout','Board games','Video games','Art and craft','Books','Volunteering',
+  'Work and study','Co-working','Language exchange','Chores and errands','Shopping','Self care','Meditation']);
 -- How long the plan takes, in hours (1 to 24). It sets when the host is asked to record attendance (_plan_end).
 -- Plans from before get 2 hours.
 alter table activities add column if not exists duration_h int not null default 2;
@@ -1064,10 +1071,15 @@ begin
     delete from auth.users where id = u;    -- no profile exists yet, so this removes everything from the attempt
     return jsonb_build_object('error', 'under18');
   end if;
-  -- at least one interest and one time you're usually free: at sign-up, and whenever a save sends the list (saves of
+  -- older apps still send 'Fitness and sport', which is now 'Fitness'
+  if jsonb_typeof(p->'ints') = 'array' then
+    p := jsonb_set(p, '{ints}', (select coalesce(jsonb_agg(case when v = 'Fitness and sport' then 'Fitness' else v end order by o), '[]'::jsonb)
+                                 from jsonb_array_elements_text(p->'ints') with ordinality e(v, o)));
+  end if;
+  -- at least 3 interests and one time you're usually free: at sign-up, and whenever a save sends the list (saves of
   -- other fields leave it alone). Not a table check, so older accounts with none stay valid until they next edit.
-  if (not found or p ? 'ints') and jsonb_array_length(coalesce(p->'ints', '[]')) = 0 then
-    raise exception 'Pick at least one thing you''d like to do';
+  if (not found or p ? 'ints') and jsonb_array_length(coalesce(p->'ints', '[]')) < 3 then
+    raise exception 'Pick at least 3 things you like doing';
   end if;
   if (not found or p ? 'avail') and jsonb_array_length(coalesce(p->'avail', '[]')) = 0 then
     raise exception 'Pick when you''re usually free';

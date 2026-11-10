@@ -82,7 +82,22 @@ const I=(n,s=16)=>`<svg class="i" width="${s}" height="${s}" viewBox="0 0 24 24"
 const GENDERS=['Woman','Man','Non-binary'];
 /* The 13 categories of the 7 Nov 2026 spec, in its order (keys and checks in schema-app.sql). movies, cafe and concerts
    keep their old keys and interest names, so existing plans and profiles stay as they are. */
-const INTERESTS=['Fitness and sport','Movies','Theatre','Stand-up comedy','Concerts','Hangout','Cafe / Food','Adventure','Outdoor leisure','Chores and errands','Work and study','Self care','Nightlife'];
+/* Interests, in groups. Each counts as liking one plan category (for "You like ..." on plans); the first in a group
+   are the categories' own names from before, so older profiles still match. Same list in app/src/lib/model.ts and in
+   profiles_ints_check (schema-app.sql). At least MIN_INTS, checked here, in the app and by save_profile. */
+const INT_GROUPS=[
+  ['Staying active',[['Fitness','fitness'],['Gym','fitness'],['Running','fitness'],['Yoga','fitness'],['Cycling','fitness'],['Sports','fitness']]],
+  ['Out and about',[['Adventure','adventure'],['Trekking','adventure'],['Road trips','adventure'],['Camping','adventure'],['Outdoor leisure','outdoor'],['Picnics','outdoor'],['Walks','outdoor'],['Photography','outdoor']]],
+  ['Food and drink',[['Cafe / Food','cafe'],['Street food','cafe'],['New restaurants','cafe'],['Coffee','cafe'],['Brunch','cafe'],['Cooking','cafe']]],
+  ['Shows and nights out',[['Movies','movies'],['Theatre','theatre'],['Stand-up comedy','comedy'],['Concerts','concerts'],['Live music','concerts'],['Karaoke','nightlife'],['Dancing','nightlife'],['Nightlife','nightlife']]],
+  ['Games and hobbies',[['Hangout','hangout'],['Board games','hangout'],['Video games','hangout'],['Art and craft','hangout'],['Books','hangout'],['Volunteering','hangout']]],
+  ['Everyday',[['Work and study','work'],['Co-working','work'],['Language exchange','work'],['Chores and errands','errands'],['Shopping','errands'],['Self care','selfcare'],['Meditation','selfcare']]],
+];
+const INT_CAT=Object.fromEntries(INT_GROUPS.flatMap(([,l])=>l)),INTERESTS=Object.keys(INT_CAT),MIN_INTS=3;
+const intCount=n=>n>=MIN_INTS?`${n} picked`:`Pick at least ${MIN_INTS}${n?` · ${n} picked`:''}`;
+/* the interest chips, grouped, with a count that updates as you tick them (the change listener) */
+const intOpts=(name,sel)=>`<p class="icount${(sel||[]).length>=MIN_INTS?' ok':''}" id="${name}_n" aria-live="polite">${intCount((sel||[]).length)}</p>`
+  +INT_GROUPS.map(([g,l])=>`<h4 class="igrp">${g}</h4>${opts(name,l.map(x=>x[0]),sel)}`).join('');
 const TIMES=['Weekday evenings','Weekend days','Weekend evenings','Late nights'];
 const CATS={
   fitness:{label:'Fitness and sport',icon:'dumbbell',fg:'#B45309',bg:'#FEF3C7',g:'radial-gradient(80% 60% at 70% 20%,rgba(251,191,36,.6),transparent 60%),linear-gradient(160deg,#92400e,#2a1606)'},
@@ -149,8 +164,6 @@ const defEmo=g=>g==='Woman'?'👩':g==='Man'?'👨':'🧑';
 const EMOJIS=['👩🏻','👩🏽','👩🏿','👨🏻','👨🏽','👨🏿','🧑🏼','🧑🏾','👩🏽‍🦱','👨🏻‍🦱','👩🏾‍🦳','🧔🏽','👱🏻‍♀️','👳🏽‍♂️','🧕🏽','👩🏽‍💻','👨🏾‍💻','👩🏻‍🎨','👨🏽‍🍳','🧑🏽‍🎤','👩🏾‍🏫','👨🏻‍🎓','👩🏽‍🔬','🧑🏻‍🚀','😀','😎','🤓','🥳','🦊','🐼','🐯','🐨','🦉','🌻','🎧','🎬','☕','🎸'];
 /* Other people, filled in from the database: name, gender, age, job, bio, emoji, verified, show-up record, past plans, likes. */
 let USERS={};
-const CAT_INT={fitness:'Fitness and sport',movies:'Movies',theatre:'Theatre',comedy:'Stand-up comedy',concerts:'Concerts',hangout:'Hangout',cafe:'Cafe / Food',
-  adventure:'Adventure',outdoor:'Outdoor leisure',errands:'Chores and errands',work:'Work and study',selfcare:'Self care',nightlife:'Nightlife'};
 const CHAT_REASONS=['Harassment or threats','Sexual or unwanted messages','Spam or scam','Hate speech','Copyright infringement','Something else'];
 const MICRO={swipe:'Was swiping an easy way to find plans?',request:'How easy was it to ask to join?',post:'How easy was posting your plan?',rating:'Was rating the meetup quick enough?'};
 /* The feedback sheet: the consent wording version (same as the landing page's form) and its five faces. */
@@ -419,7 +432,7 @@ function slotOf(t){const d=new Date(t),h=d.getHours(),we=d.getDay()===0||d.getDa
 function reasons(a){
   const r=[],s=slotOf(a.when);
   if(S.following.includes(a.host))r.push(['You follow '+uname(a.host),3]);
-  if((S.me.ints||[]).includes(CAT_INT[a.cat]))r.push(['You like '+CAT_INT[a.cat],2]);
+  const li=(S.me.ints||[]).find(i=>INT_CAT[i]===a.cat);if(li)r.push(['You like '+li,2]);
   if(s&&(S.me.avail||[]).includes(s))r.push(['Fits your '+s.toLowerCase(),1]);
   return r;
 }
@@ -1483,7 +1496,7 @@ function modalHtml(){
       <p class="small mute" style="margin-top:6px">Anywhere in India. You see plans within ${NEAR_KM} km of here, and distances are measured from it. With your current location, only the area is saved (to about 1 km), never your exact spot.</p>
       <label for="p_job">Profession</label><input id="p_job" maxlength="40" value="${esc(me.job||'')}" placeholder="e.g. Designer">
       <label for="p_bio">Bio</label><textarea id="p_bio" maxlength="300" placeholder="A line or two so hosts know who you are">${esc(me.bio||'')}</textarea>
-      <label>What would you want to do with company? <span class="mute" style="font-weight:400">(pick at least one)</span></label>${opts('p_int',INTERESTS,me.ints)}
+      <label>What do you like doing?</label>${intOpts('p_int',me.ints)}
       <label>When are you usually free?</label>${opts('p_avail',TIMES,me.avail)}
       <h3 id="ep_safety">Safety</h3>
       <p class="small mute" style="margin-top:0">Trusted contact: someone you can send your plans to, or alert with SOS. Leave both empty to remove.</p>
@@ -1695,7 +1708,7 @@ function onboardHtml(){
     <label for="o_hood">Home area</label>${placeBox('o_hood','Search your area or city, e.g. Indiranagar, Bengaluru',d.hood,'Areas in India')}
     ${locBtn('o_hood','Use my current location')}
     <div style="height:18px"></div><button class="btn" data-a="obnext">Next</button>${back}`
-    :`<h1 class="pt">What do you like doing?</h1>${opts('o_int',INTERESTS,d.ints)}
+    :`<h1 class="pt">What do you like doing?</h1>${intOpts('o_int',d.ints)}
     <label>When are you usually free?</label>${opts('o_avail',TIMES,d.avail)}
     <label class="chk top" style="margin-top:18px"><input type="checkbox" id="o_ok" ${d.ok?'checked':''}> <span>I agree to the <a href="terms.html" ${tgt}>Terms</a> and <a href="privacy.html" ${tgt}>Privacy policy</a></span></label>
     <label class="chk top" style="margin-top:10px"><input type="checkbox" id="o_usage" ${d.usage?'checked':''}> <span>Share usage statistics to help improve Overhere (optional)</span></label>
@@ -2544,7 +2557,7 @@ const A={
     const hood=val('p_hood'),hll=placeLL(hood,'p_hood');
     if(!hll)return toast('Pick your home area from the list, or use your current location');
     const p={name,dob,gender:val('p_gender'),hood,lat:hll[0],lng:hll[1],job:val('p_job'),bio:document.getElementById('p_bio').value.trim(),ints:many('p_int'),avail:many('p_avail'),last_name:last};
-    if(!p.ints.length)return toast("Pick at least one thing you'd like to do");
+    if(p.ints.length<MIN_INTS)return toast(`Pick at least ${MIN_INTS} things you like doing`);
     if(!p.avail.length)return toast("Pick when you're usually free");
     if(ui.modal?.emo)p.emo=ui.modal.emo;
     S.me.trusted=tn?{name:tn.slice(0,40),phone:tp.slice(0,20)}:null;save();
@@ -2582,7 +2595,7 @@ const A={
     const f=obKeep(),hll=placeLL(f.hood,'o_hood');
     if(!f.name||!f.last||!f.dob||!f.gender){ui.obStep=0;render();return toast('Add your name, date of birth and gender')}
     if(!hll){ui.obStep=1;render();return toast('Pick your home area from the list, or use your current location')}
-    if(!f.ints.length)return toast("Pick at least one thing you'd like to do");
+    if(f.ints.length<MIN_INTS)return toast(`Pick at least ${MIN_INTS} things you like doing`);
     if(!f.avail.length)return toast("Pick when you're usually free");
     if(!f.ok)return toast('Please agree to the Terms to continue');
     const p={name:f.name,last_name:f.last,dob:f.dob,gender:f.gender,hood:f.hood,lat:hll[0],lng:hll[1],ints:f.ints,avail:f.avail,
@@ -2660,6 +2673,7 @@ document.addEventListener('keyup',e=>{if(e.target.classList?.contains('pwi'))cap
 document.addEventListener('mousedown',e=>{if(e.target.closest('.vopt'))e.preventDefault()});
 document.addEventListener('focusout',e=>{const id=e.target.id,box=PF[id]&&e.target.closest('.vbox');if(box)setTimeout(()=>{if(!box.contains(document.activeElement))placeList(id,false)},200)});
 document.addEventListener('change',e=>{
+  if(e.target.name==='o_int'||e.target.name==='p_int'){const el=document.getElementById(e.target.name+'_n'),n=many(e.target.name).length;if(el){el.textContent=intCount(n);el.classList.toggle('ok',n>=MIN_INTS)}}
   if(e.target.name==='rt_ok'){const w=document.getElementById('rt_wrong');if(w)w.hidden=e.target.value!=='no'}   // "Something went wrong": still in danger, or report it
   if(e.target.id==='d_from'||e.target.id==='d_to'){
     const f=ui.f;f[e.target.id==='d_from'?'dfrom':'dto']=e.target.value;

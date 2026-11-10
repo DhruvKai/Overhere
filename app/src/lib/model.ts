@@ -49,8 +49,21 @@ export type Model = {
 export const GENDERS: Gender[] = ['Woman', 'Man', 'Non-binary'];
 /* The 13 categories of the 7 Nov 2026 spec, in its order. movies, cafe and concerts keep their old keys and interest
    names, so existing plans and profiles stay as they are (CATS and INTERESTS in web/app.js). */
-export const INTERESTS = ['Fitness and sport', 'Movies', 'Theatre', 'Stand-up comedy', 'Concerts', 'Hangout', 'Cafe / Food', 'Adventure',
-  'Outdoor leisure', 'Chores and errands', 'Work and study', 'Self care', 'Nightlife'];
+/* Interests, in groups. Each counts as liking one plan category (for "You like ..." on plans); the first in a group are
+   the categories' own names from before, so older profiles still match. Same list as INT_GROUPS in web/app.js and
+   profiles_ints_check (schema-app.sql). At least MIN_INTS, checked here, on the website and by save_profile. */
+export const INT_GROUPS: [string, [string, Cat][]][] = [
+  ['Staying active', [['Fitness', 'fitness'], ['Gym', 'fitness'], ['Running', 'fitness'], ['Yoga', 'fitness'], ['Cycling', 'fitness'], ['Sports', 'fitness']]],
+  ['Out and about', [['Adventure', 'adventure'], ['Trekking', 'adventure'], ['Road trips', 'adventure'], ['Camping', 'adventure'], ['Outdoor leisure', 'outdoor'], ['Picnics', 'outdoor'], ['Walks', 'outdoor'], ['Photography', 'outdoor']]],
+  ['Food and drink', [['Cafe / Food', 'cafe'], ['Street food', 'cafe'], ['New restaurants', 'cafe'], ['Coffee', 'cafe'], ['Brunch', 'cafe'], ['Cooking', 'cafe']]],
+  ['Shows and nights out', [['Movies', 'movies'], ['Theatre', 'theatre'], ['Stand-up comedy', 'comedy'], ['Concerts', 'concerts'], ['Live music', 'concerts'], ['Karaoke', 'nightlife'], ['Dancing', 'nightlife'], ['Nightlife', 'nightlife']]],
+  ['Games and hobbies', [['Hangout', 'hangout'], ['Board games', 'hangout'], ['Video games', 'hangout'], ['Art and craft', 'hangout'], ['Books', 'hangout'], ['Volunteering', 'hangout']]],
+  ['Everyday', [['Work and study', 'work'], ['Co-working', 'work'], ['Language exchange', 'work'], ['Chores and errands', 'errands'], ['Shopping', 'errands'], ['Self care', 'selfcare'], ['Meditation', 'selfcare']]],
+];
+export const INT_CAT: Record<string, Cat> = Object.fromEntries(INT_GROUPS.flatMap(([, l]) => l));
+export const INTERESTS = Object.keys(INT_CAT);
+export const MIN_INTS = 3;
+export const intCount = (n: number) => (n >= MIN_INTS ? `${n} picked` : `Pick at least ${MIN_INTS}${n ? ` · ${n} picked` : ''}`);
 export const TIMES = ['Weekday evenings', 'Weekend days', 'Weekend evenings', 'Late nights'];
 type CatIcon = 'activity' | 'film' | 'star' | 'mic' | 'music' | 'users' | 'coffee' | 'compass' | 'sun' | 'shopping-bag' | 'book-open' | 'heart' | 'moon';
 export const CATS: Record<Cat, { label: string; icon: CatIcon; fg: string; bg: string; fgDark: string; bgDark: string }> = {
@@ -274,9 +287,6 @@ export const dayKey = (t: number) => { const d = new Date(t); return d.getFullYe
 export const tod = (t: number): Tod => { const h = new Date(t).getHours(); return h >= 5 && h < 12 ? 'morning' : h >= 12 && h < 17 ? 'afternoon' : h >= 17 && h < 21 ? 'evening' : 'night'; };
 export const matchF = (m: Model, a: Plan, f: Filters) => (f.cat === 'all' || a.cat === f.cat) && (!f.dfrom || dayKey(a.when) >= f.dfrom)
   && (!f.dto || dayKey(a.when) <= f.dto) && (f.tod === 'any' || tod(a.when) === f.tod) && (!f.dist || kmAway(m, a) <= f.dist);
-const CAT_INT: Record<Cat, string> = { fitness: 'Fitness and sport', movies: 'Movies', theatre: 'Theatre', comedy: 'Stand-up comedy',
-  concerts: 'Concerts', hangout: 'Hangout', cafe: 'Cafe / Food', adventure: 'Adventure', outdoor: 'Outdoor leisure', errands: 'Chores and errands',
-  work: 'Work and study', selfcare: 'Self care', nightlife: 'Nightlife' };
 function slotOf(t: number) {
   const d = new Date(t), h = d.getHours(), we = d.getDay() === 0 || d.getDay() === 6;
   if (h >= 23 || h < 5) return 'Late nights';
@@ -286,7 +296,8 @@ function slotOf(t: number) {
 export function reasons(m: Model, a: Plan): [string, number][] {
   const r: [string, number][] = [], s = slotOf(a.when);
   if (following(m).includes(a.host)) r.push(['You follow ' + uname(m, a.host), 3]);
-  if ((m.profile?.ints || []).includes(CAT_INT[a.cat])) r.push(['You like ' + CAT_INT[a.cat], 2]);
+  const li = (m.profile?.ints || []).find(i => INT_CAT[i] === a.cat);
+  if (li) r.push(['You like ' + li, 2]);
   if (s && (m.profile?.avail || []).includes(s)) r.push(['Fits your ' + s.toLowerCase(), 1]);
   return r;
 }

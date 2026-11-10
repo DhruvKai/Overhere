@@ -7,7 +7,8 @@ import { PhotoPair } from '@/components/PhotoPair';
 import { PlacePicker } from '@/components/PlacePicker';
 import { Avatar, Btn, Chip, Field, H, Icon, P } from '@/components/ui';
 import { api, friendly } from '@/lib/api';
-import { GENDERS, INTERESTS, TIMES } from '@/lib/model';
+import { GENDERS, MIN_INTS, TIMES } from '@/lib/model';
+import { InterestPicker } from '@/components/InterestPicker';
 import { useModel, useStore } from '@/lib/store';
 import { SITE } from '@/lib/supabase';
 import { useTheme } from '@/lib/theme';
@@ -137,7 +138,7 @@ function AboutYou() {
   }
 
   async function save() {
-    const problem = !ints.length ? "Pick at least one thing you'd like to do" : !avail.length ? "Pick when you're usually free"
+    const problem = ints.length < MIN_INTS ? `Pick at least ${MIN_INTS} things you like doing` : !avail.length ? "Pick when you're usually free"
       : !consent ? 'Please agree to the Terms to continue' : '';
     setErr(problem);
     if (problem || !ll || !gender) return;
@@ -185,7 +186,7 @@ function AboutYou() {
     body = (<>
       <H size={26}>What do you like doing?</H>
       <View style={{ height: 22 }} />
-      {chips(INTERESTS, ints, setInts)}
+      <InterestPicker value={ints} onChange={v => { setErr(''); setInts(v); }} />
       {label("When are you usually free?")}
       {chips(TIMES, avail, setAvail)}
       <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: consent }} onPress={() => { setErr(''); setConsent(v => !v); }}
