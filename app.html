@@ -101,7 +101,33 @@ p{margin:0 0 6px}
 .btn.bad{background:var(--badbg);color:var(--bad)}.btn.bad:hover{background:var(--badh)}
 .btn.ok{background:var(--okbg);color:var(--ok)}.btn.ok:hover{background:var(--okh)}
 .btn.ghost{background:var(--grey);color:var(--ink)}.btn.ghost:hover{background:var(--greyh)}
-.btn.sm{width:auto;padding:8px 16px;font-size:13px}
+.btn.sm{width:auto;padding:8px 16px;font-size:13px;white-space:nowrap;flex:none}
+.ib.bd{border:1px solid var(--line);width:36px;height:36px;flex:none}
+/* plan date: a row of days you can scroll sideways */
+.days{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 6px;margin:0 -2px;scroll-snap-type:x proximity}
+.days::-webkit-scrollbar{display:none}
+.days label{position:relative;margin:0;cursor:pointer;flex:none;scroll-snap-align:start}
+.days input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.days span{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:58px;height:66px;border-radius:14px;background:var(--field);border:1px solid var(--line);color:var(--ink2);transition:background .15s,border-color .15s}
+.days span small{font-size:11.5px;color:var(--mute);font-weight:600}.days span b{font-size:18px;line-height:1.1;color:var(--ink)}
+.days label:hover span{border-color:var(--lineh)}
+.days input:checked+span{background:var(--acc);border-color:var(--acc);color:#fff}.days input:checked+span :is(small,b){color:#fff}
+.days input:focus-visible+span{outline:2px solid var(--acc);outline-offset:2px}
+option:disabled{color:var(--ph)}
+/* dropdowns in the app's colours, where the browser allows it (Chrome and Edge); elsewhere the system list */
+@supports (appearance:base-select){
+  select,::picker(select){appearance:base-select}
+  select{display:flex;align-items:center;cursor:pointer}
+  select::picker-icon{content:'';width:18px;height:18px;background:var(--mute);transition:rotate .2s;
+    mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center/contain no-repeat}
+  select:open::picker-icon{rotate:180deg}
+  ::picker(select){border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);box-shadow:0 12px 32px rgba(26,26,26,.16);padding:6px;max-height:min(320px,55vh);margin-top:6px}
+  select option{padding:10px 12px;border-radius:10px;font-size:16px;gap:8px}
+  select option:hover,select option:focus-visible{background:var(--hover);outline:none}
+  select option:checked{background:var(--acc2);color:var(--accink);font-weight:600}
+  select option::checkmark{color:var(--acc)}
+  select option:disabled{color:var(--ph);background:none}
+}
 .btn.xs{width:auto;padding:6px 12px 6px 14px;font-size:12px;gap:3px}
 .btn:disabled{opacity:.5}
 .row{display:flex;gap:8px;align-items:center}

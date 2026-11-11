@@ -34,7 +34,7 @@ export default function Swipe() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Header title="This week" where />
+      <Header title="This week" logo where />
       <View style={{ paddingHorizontal: 16 }}><CityNote /><LockedNote /><FeedbackCard /></View>
       {cards.length ? (
         <View style={{ flex: 1, paddingHorizontal: 16 }}>

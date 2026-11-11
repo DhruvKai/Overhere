@@ -248,7 +248,7 @@ function authDraw(){
   $('#f_phone').classList.toggle('hide',!ph);$('#f_email').classList.toggle('hide',ph);
   $('#au_phone_hint').textContent=up?'We\'ll text you a 6-digit code. Then you\'ll add your email and confirm it with a code too.':'We\'ll text you a 6-digit code to sign in.';
   $('#au_email_hint').textContent=up?'Next, you\'ll choose a password and confirm your email.':'Next, you\'ll enter your password.';
-  $('#au_legal').classList.toggle('hide',!up);
+  $('#au_agree').classList.toggle('hide',!up);$('#au_legal').classList.toggle('hide',up);
 }
 function setMode(m,focus){
   mode=m;authDraw();
@@ -264,6 +264,7 @@ if(!CFG.PHONE_LOGIN){   // no SMS yet: email only
 }
 document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode,b.tagName==='A')));
 document.querySelectorAll('input[name=via]').forEach(r=>r.onchange=authDraw);
+$('#au_ok').addEventListener('change',e=>{if(e.target.checked)fieldErr('au_ok','')});
 $('#au_phone').addEventListener('input',e=>{if(e.target.getAttribute('aria-invalid')==='true'&&!phoneProblem(phoneDigits(e.target.value)))fieldErr('au_phone','')});
 /* A pasted "+91 98765 43210" or "098765 43210" loses its prefix and shows as "98765 43210", like in the app. */
 $('#au_phone').addEventListener('blur',e=>{const n=phoneDigits(e.target.value);if(n.length===10)e.target.value=n.slice(0,5)+' '+n.slice(5)});
@@ -273,6 +274,8 @@ $('#au_f').onsubmit=e=>{
   const h={mode,via:via(),at:Date.now()};
   if(h.via==='phone'){const n=phoneDigits($('#au_phone').value);if(!fieldErr('au_phone',phoneProblem(n)))return;h.phone='+91'+n}
   else{const v=$('#au_email').value.trim();if(!fieldErr('au_email',emailProblem(v)))return;h.email=v}
+  /* new accounts tick the 18+ box here, so the app can send the code straight away */
+  if(mode==='up'){if(!fieldErr('au_ok',$('#au_ok').checked?'':"Tick the box to confirm you're 18 or older and agree to the Terms."))return;h.ok=true}
   try{sessionStorage.setItem(HANDOFF,JSON.stringify(h))}catch(err){}
   location.href='app.html?'+(mode==='up'?'join':'signin');
 };

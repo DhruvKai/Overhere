@@ -729,7 +729,38 @@ function getLoc(){
 }
 const backB=m=>m.back?`<button class="ib" data-a="close" title="Back" aria-label="Back" style="margin-left:-8px">${I('chevron-left',18)}</button>`:'';
 const ageOf=dob=>{const d=new Date(dob);return isNaN(d)?'?':Math.floor((Date.now()-d)/31557600000)};
-const localInput=ts=>new Date(ts-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16);
+/* Date and time for a plan, like booking sites do it: a row of days (the next two weeks, then "Other" for any date)
+   and a time list in 15-minute steps. Times less than an hour away are greyed out. */
+const ymd=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const defaultWhen=()=>{const d=new Date(now()+864e5);d.setHours(19,0,0,0);return d.getTime()};   // tomorrow, 7 pm
+function whenPicker(ts){
+  const w=new Date(Math.round(ts/6e4)*6e4),day0=new Date(now());day0.setHours(0,0,0,0);
+  const days=Array.from({length:14},(_,i)=>new Date(day0.getFullYear(),day0.getMonth(),day0.getDate()+i));
+  const sel=ymd(w),inRow=days.some(d=>ymd(d)===sel);
+  const chip=(d,i)=>`<label><input type="radio" name="f_day" value="${ymd(d)}" ${ymd(d)===sel?'checked':''}><span><small>${i===0?'Today':i===1?'Tmrw':d.toLocaleDateString('en-IN',{weekday:'short'})}</small><b>${d.getDate()}</b><small>${d.toLocaleDateString('en-IN',{month:'short'})}</small></span></label>`;
+  const hm=`${String(w.getHours()).padStart(2,'0')}:${String(w.getMinutes()).padStart(2,'0')}`;
+  /* the 15-minute steps, plus the plan's own time if it's between two (older plans could be at any minute) */
+  const mins=[...new Set([...Array.from({length:96},(_,i)=>i*15),w.getHours()*60+w.getMinutes()])].sort((a,b)=>a-b);
+  const times=mins.map(x=>{const h=Math.floor(x/60),mi=x%60,v=`${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}`;
+    return `<option value="${v}" ${v===hm?'selected':''}>${new Date(2000,0,1,h,mi).toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'})}</option>`}).join('');
+  return `<label id="f_dayl">Date</label><div class="days" role="radiogroup" aria-labelledby="f_dayl">${days.map(chip).join('')}
+    <label><input type="radio" name="f_day" value="other" ${inRow?'':'checked'}><span>${I('calendar',17)}<small>Other</small></span></label></div>
+    <input id="f_date" type="date" aria-label="Pick a date" ${inRow?'hidden':''} min="${ymd(days[0])}" value="${inRow?'':sel}" style="margin-top:8px">
+    <label for="f_time">Time</label><select id="f_time">${times}</select>`;
+}
+/* the picked date and time as a timestamp (NaN when no date is picked) */
+function whenValue(){
+  const d=document.querySelector('[name=f_day]:checked')?.value,day=d==='other'?val('f_date'):d,tm=val('f_time');
+  return day&&tm?new Date(`${day}T${tm}`).getTime():NaN;
+}
+/* grey out times that have passed (or are under an hour away) on the picked day, and move off one if it's picked */
+function fixTimes(){
+  const sel=document.getElementById('f_time'),d=document.querySelector('[name=f_day]:checked')?.value;if(!sel)return;
+  document.getElementById('f_date')?.toggleAttribute('hidden',d!=='other');
+  const day=d==='other'?val('f_date'):d,min=now()+3600e3;
+  for(const o of sel.options)o.disabled=!!day&&new Date(`${day}T${o.value}`).getTime()<min;
+  if(sel.selectedOptions[0]?.disabled){const ok=[...sel.options].find(o=>!o.disabled);if(ok)sel.value=ok.value}
+}
 function profileOf(id){
   if(id==='me')return {name:S.me.name,gender:S.me.gender,age:ageOf(S.me.dob),job:S.me.job||'',bio:S.me.bio||''};
   return USERS[id]||{name:'Someone',gender:'',age:'',job:'',bio:''};
@@ -1173,7 +1204,7 @@ function tabProfile(){
     :!y&&ic==='scan-face'?`<button class="vi act" data-a="doface">${I(ic,14)}Face check<span class="e small">Start</span></button>`
     :`<div class="vi ${y?'y':''}">${I(ic,14)}${l}${y?`<span class="e">${I('circle-check',14)}</span>`:''}</div>`;
   const soft=(arr,none)=>arr&&arr.length?`<div class="soft">${arr.map(x=>`<span>${esc(x)}</span>`).join('')}</div>`:`<p class="small mute">${none}</p>`;
-  return `<div class="panel"><div class="ph">${I('user',15)} Your profile<span class="row" style="gap:8px;margin-left:auto"><button class="btn sm sec" data-a="editprofile">${I('pencil',14)} Edit profile</button><button class="ib" data-a="settings" title="Settings" aria-label="Settings">${I('settings',18)}</button></span></div>
+  return `<div class="panel"><div class="ph">${I('user',15)} Your profile<span class="row" style="gap:8px;margin-left:auto"><button class="btn sm sec" data-a="editprofile">${I('pencil',14)} Edit profile</button><button class="ib bd" data-a="settings" title="Settings" aria-label="Settings">${I('settings',18)}</button></span></div>
   <div class="pt2"><div class="phw" data-a="photo">${av('me','lg')}<button class="pe" id="p_pe" title="Change profile picture" aria-label="Change profile picture" aria-haspopup="menu" aria-expanded="false">${I('camera',14)}</button>
   <div class="pmenu" id="p_menu" role="menu" hidden></div></div><div><div class="pn">${esc(m.name)} ${isVer('me')?`<span class="vf">${I('badge-check',14)} Verified</span>`:''}</div><div class="small mute">${esc(m.hood)}</div><div class="small" style="margin-top:4px">${trustTxt('me')}</div></div></div>
   <input type="file" id="p_photo" accept="image/jpeg,image/png,image/webp,image/*" hidden>
@@ -1250,7 +1281,7 @@ function modalHtml(){
     return sheet(face?'Face verification':'Identity verification',`<div class="sb">${inner}</div>`);
   }
   if(m.type==='post'){
-    const mn=localInput(now()+3600e3),e=m.id&&actOf(m.id),t=!e&&m.tpl&&actOf(m.tpl),src=e||t,minCap=Math.max(2,e?e.members.length:0),cap0=Math.max(minCap,src?src.cap:2),aud=src?src.aud:'everyone';
+    const e=m.id&&actOf(m.id),t=!e&&m.tpl&&actOf(m.tpl),src=e||t,minCap=Math.max(2,e?e.members.length:0),cap0=Math.max(minCap,src?src.cap:2),aud=src?src.aud:'everyone';
     const tplWhen=t?(()=>{let w=t.when;while(w<now()+3600e3)w+=7*864e5;return w})():0;
     const past=[...new Map(S.acts.filter(a=>a.host==='me').sort((a,b)=>b.when-a.when).map(a=>[a.desc,a])).values()].slice(0,8);
     return sheet(e?'Edit activity':'Create Activity',`<div class="sb">
@@ -1261,7 +1292,7 @@ function modalHtml(){
       <p class="ferr" id="f_desc_err" aria-live="polite"></p>
       <label id="f_capl">How many people can join you?</label><div class="capg" role="radiogroup" aria-labelledby="f_capl">${[2,3,4,5,6,7,8,9,10].filter(n=>n>=minCap).map(n=>`<label><input type="radio" name="f_cap" value="${n}" ${n===cap0?'checked':''}><span>${n}</span></label>`).join('')}</div>
       <p class="small mute capx" id="f_capx">${capNote(cap0)}</p>
-      <label>Date and time</label><input id="f_when" type="datetime-local" min="${mn}" value="${localInput(e?e.when:t?tplWhen:now()+26*3600e3)}">
+      ${whenPicker(e?e.when:t?tplWhen:defaultWhen())}
       <label for="f_dur">How long does it usually take?</label><select id="f_dur">${Array.from({length:24},(_,i)=>i+1).map(h=>`<option value="${h}" ${h===(src?.dur||2)?'selected':''}>${durTxt(h)}</option>`).join('')}</select>
       <p class="small mute" style="margin-top:6px">When it's over, we'll ask you who came.</p>
       <label>Repeats</label><select id="f_rep"><option value="">Does not repeat</option>${Object.entries(REPEAT).map(([k,v])=>`<option value="${k}" ${src&&src.repeat===k?'selected':''}>${v}</option>`).join('')}</select>
@@ -1634,7 +1665,7 @@ function authHtml(){
     <form id="a_form" data-submit="sendcode" novalidate><label for="a_phone">Mobile number</label>
     <div class="fi tel"><span class="cc">${I('phone',16)}+91</span><input id="a_phone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="16" placeholder="98765 43210" value="${esc(ui.auth.phone?fmtPhone(ui.auth.phone.slice(3)):'')}" aria-describedby="a_phone_err a_phone_note"></div>
     <p class="ferr" id="a_phone_err" aria-live="polite"></p><p class="fhint" id="a_phone_note">Indian mobile numbers only.</p>
-    ${up?AGEBOX:''}<div style="height:18px"></div>${ERRBOX}${goBtn('Send code')}</form>
+    ${up?agebox():''}<div style="height:18px"></div>${ERRBOX}${goBtn('Send code')}</form>
     <div style="height:8px"></div><button class="btn ghost" data-a="authmode" data-k="${up?'up':'in'}">Back</button>
     <p class="small mute" style="text-align:center;margin-top:12px">${up?'':'By signing in you agree to our <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a>. '}Standard SMS rates may apply.</p></div>`;
   }
@@ -1656,7 +1687,7 @@ function authHtml(){
     <div class="or">or with email</div>`:''}
     <form id="a_form" data-submit="${up?'signup':'signin'}" novalidate>${emailField()}
     ${pwField('a_pw','Password',up?'new-password':'current-password',up?'':'<button type="button" class="lnk" data-a="authmode" data-k="reset">Forgot password?</button>')}
-    ${up?pwMeter()+pwField('a_pw2','Confirm password','new-password')+AGEBOX:''}
+    ${up?pwMeter()+pwField('a_pw2','Confirm password','new-password')+agebox():''}
     <div style="height:18px"></div>${ERRBOX}${goBtn(up?'Create account':'Sign in')}</form>
     <p class="small" style="text-align:center;margin-top:14px">${up?'Already have an account? <button class="lnk" data-a="authmode" data-k="in">Sign in</button>'
       :'New here? <button class="lnk" data-a="authmode" data-k="up">Create an account</button>'}</p>
@@ -1902,7 +1933,7 @@ function render(){
   <div class="hr"><button class="ib${ui.tab==='chats'?' on':''}" data-a="chats" title="Chats" aria-label="Chats" aria-pressed="${ui.tab==='chats'}">${I('messages-square',19)}${chatUnread()?'<span class="dot"></span>':''}</button><button class="ib${ui.tab==='notes'?' on':''}" data-a="bell" title="Notifications" aria-label="Notifications" aria-pressed="${ui.tab==='notes'}">${I('bell',19)}${unread?'<span class="dot"></span>':''}</button><button class="fbb" data-a="fb" data-k="header" title="Tell us what you think of Overhere">${I('message-heart',16)}<span>Feedback</span></button><button class="ib${ui.tab==='profile'?' on':''}" data-a="tab" data-t="profile" title="Your profile" aria-label="Your profile">${av('me')}</button></div></div></header>
   <main><div class="${ui.tab==='discover'?'wrap':'narrow'}">${view}</div></main>
   <nav>${T('swipe','flame','Swipe')}${T('discover','compass','Discover')}${T('acts','calendar-check','Activities'+(pend?` (${pend})`:''))}${T('reqs','mail','Requests')}</nav>${microHtml()}${modalHtml()}`;
-  restore();afterRender();
+  restore();afterRender();if(ui.modal?.type==='post')fixTimes();
 }
 /* Redraw after new data arrived: keep what you were typing (and the cursor) in fields that are still on screen.
    A live face check in progress is never redrawn, because that would stop the camera. */
@@ -2034,7 +2065,8 @@ function fieldMsg(id,msg,ok){
 /* A problem with the whole form (wrong password, account already exists...), shown above its button. */
 /* New accounts tick one box: 18 or older (the database refuses the login without it, _before_user_created) and the
    Terms (terms_ok, so onboarding doesn't ask again). Signing in doesn't ask: they agreed when they signed up. */
-const AGEBOX='<label class="chk top" style="margin-top:14px"><input type="checkbox" id="a_age"> <span>I\'m 18 or older and agree to the <a href="terms.html" target="_blank" rel="noopener">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a></span></label>';
+/* ticked already when the welcome page's box was ticked */
+const agebox=()=>'<label class="chk top" style="margin-top:14px"><input type="checkbox" id="a_age"'+(ui.auth?.ok?' checked':'')+'> <span>I\'m 18 or older and agree to the <a href="terms.html" target="_blank" rel="noopener">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a></span></label>';
 const NEW_ACCOUNT={age_18:true,terms_ok:true};
 function ageOk(inForm){
   const c=document.getElementById('a_age');if(!c||c.checked)return true;
@@ -2382,7 +2414,7 @@ const A={
   newpost:()=>safetyOnce(()=>gate(()=>{ui.modal={type:'post'};render()})),
   unlock:()=>gate(()=>{toast('Face check passed. Plans for your group now show too.');render()}),
   submitpost:async(d,e)=>{
-    const desc=val('f_desc'),venue=val('f_venue'),when=new Date(document.getElementById('f_when').value).getTime();
+    const desc=val('f_desc'),venue=val('f_venue'),when=whenValue();
     const gs=[...document.querySelectorAll('.f_g:checked')].map(x=>x.value),all=document.getElementById('f_all').checked||gs.length===GENDERS.length;
     const ed=ui.modal?.id&&actOf(ui.modal.id),cap=+(document.querySelector('[name=f_cap]:checked')?.value||2),rep=val('f_rep');
     if(!desc||!venue)return toast('Add a description and a venue');
@@ -2697,6 +2729,7 @@ document.addEventListener('change',e=>{
     if(f.dfrom&&f.dto&&f.dfrom>f.dto)[f.dfrom,f.dto]=[f.dto,f.dfrom];
     track('filter',{type:'date'});render()}
   if(e.target.id==='p_usage'){const on=e.target.checked;run('save_profile',{p:{usage_ok:on}}).then(r=>{if(r===undefined){e.target.checked=!on;return}toast(on?'Thanks! Usage statistics are on.':'Usage statistics are off, and what was collected is deleted.')})}
+  if(e.target.name==='f_day'||e.target.id==='f_date')fixTimes();
   if(e.target.id==='f_tpl'&&ui.modal?.type==='post'){ui.modal.tpl=e.target.value||null;render()}
   if(e.target.name==='fb_r'||e.target.id==='fb_ok'||e.target.id==='mf_ok')fbState();
   if(e.target.id==='p_photo'){const f=e.target.files[0];e.target.value='';openCropper(f)}
@@ -2776,13 +2809,22 @@ document.addEventListener('visibilitychange',async()=>{
   const t=await appTag();
   if(t&&t!==appTag0&&!ui.modal&&!saveT)location.reload();
 });
+/* The welcome page already checked the number (and took the 18+ tick), so the code goes out without a second
+   "Send code" tap: wait for the phone screen to be drawn, then press it. */
+function autoSend(tries=0){
+  delete ui.auth.auto;
+  const go=document.getElementById('a_go');
+  if(ui.auth.mode==='phone'&&go&&document.getElementById('a_phone'))return A.sendcode({});
+  if(tries<40&&ui.auth.mode==='phone')setTimeout(()=>autoSend(tries+1),150);
+}
 /* What the welcome page's sign-up box passed on (site.js): read once, and only if it's from the last 10 minutes. */
 function handoff(){
   let h=null;
   try{h=JSON.parse(sessionStorage.getItem('overhere_handoff'));sessionStorage.removeItem('overhere_handoff')}catch(e){}
   if(!h||!['up','in'].includes(h.mode)||!(Date.now()-h.at<6e5))return null;
-  if(h.via==='phone'&&CFG.PHONE_LOGIN&&/^\+91[6-9]\d{9}$/.test(h.phone||''))return {mode:'phone',was:h.mode,phone:h.phone};
-  if(h.via==='email'&&typeof h.email==='string'&&h.email.length<=120)return {mode:h.mode,email:h.email};
+  const ok=h.mode==='up'&&h.ok===true;
+  if(h.via==='phone'&&CFG.PHONE_LOGIN&&/^\+91[6-9]\d{9}$/.test(h.phone||''))return {mode:'phone',was:h.mode,phone:h.phone,ok,auto:h.mode==='in'||ok};
+  if(h.via==='email'&&typeof h.email==='string'&&h.email.length<=120)return {mode:h.mode,email:h.email,ok};
   return null;
 }
 /* You've been here: from now on the landing page sends you straight to the app (head.js). */
@@ -2793,7 +2835,7 @@ else{
   if(/type=recovery/.test(location.hash))ui.auth={mode:'newpw'};
   /* The welcome page's sign-up box opens here with ?join or ?signin, and leaves the phone number or email it
      checked in sessionStorage: start on that step with it filled in. */
-  else if(/[?&](join|signin)(&|$)/.test(location.search)){ui.auth=handoff()||{mode:/[?&]join(&|$)/.test(location.search)?'up':'in'};history.replaceState(null,'',here()+location.hash)}
+  else if(/[?&](join|signin)(&|$)/.test(location.search)){ui.auth=handoff()||{mode:/[?&]join(&|$)/.test(location.search)?'up':'in'};history.replaceState(null,'',here()+location.hash);if(ui.auth.auto)autoSend()}
   SB.auth.onAuthStateChange((ev,session)=>{
     /* don't call Supabase from inside this callback: do it just after */
     setTimeout(()=>{

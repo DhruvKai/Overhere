@@ -1,23 +1,23 @@
-import DateTimePicker, { DateTimePickerAndroid, type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { PlacePicker } from '@/components/PlacePicker';
 import { SafetyFirst, safetySeen } from '@/components/SafetyFirst';
+import { WhenPicker } from '@/components/WhenPicker';
 import { BottomBar, Btn, Chip, Empty, Field, Label, Note, P, Stepper, Wrap } from '@/components/ui';
 import { api } from '@/lib/api';
 import { registerPush } from '@/lib/push';
-import { CATS, COST, durTxt, GENDERS, homeLL, REPEAT, short, whenStr, type Plan } from '@/lib/model';
+import { CATS, COST, durTxt, GENDERS, homeLL, REPEAT, short, type Plan } from '@/lib/model';
 import { badWord, badWordMsg } from '@/lib/words';
 import { useModel, useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 import type { Cat, Cost, Gender } from '@/lib/types';
 
-/* A sensible first time: the next round hour at least 3 hours away. */
-const firstTime = () => { const d = new Date(Date.now() + 3 * 3600e3); d.setMinutes(0, 0, 0); d.setHours(d.getHours() + 1); return d; };
+/* A sensible first time: tomorrow at 7 pm, like the website. */
+const firstTime = () => { const d = new Date(Date.now() + 864e5); d.setHours(19, 0, 0, 0); return d; };
 
 /* A past plan's time, moved on by whole weeks until it's at least an hour away ("Post again" keeps the weekday and time). */
-const nextLike = (t: number) => { let w = t; while (w < Date.now() + 3600e3) w += 7 * 864e5; return new Date(w); };
+const nextLike = (t: number) => { let w = Math.round(t / 9e5) * 9e5; while (w < Date.now() + 3600e3) w += 7 * 864e5; return new Date(w); };
 
 /* Post a plan; with ?id edit one of yours, with ?tpl start from one you posted before ("Post again", or the chips at
    the top). The same form as the website's "Create Activity". */
@@ -65,17 +65,6 @@ export default function Post() {
     );
   }
 
-  const pickAndroid = () => DateTimePickerAndroid.open({
-    value: when, mode: 'date', minimumDate: new Date(),
-    onChange: (e: DateTimePickerEvent, d?: Date) => {
-      if (e.type !== 'set' || !d) return;
-      DateTimePickerAndroid.open({
-        value: d, mode: 'time', is24Hour: false,
-        onChange: (e2: DateTimePickerEvent, d2?: Date) => { if (e2.type === 'set' && d2) setWhen(d2); },
-      });
-    },
-  });
-
   async function post() {
     const n = Number(total.replace(/[^\d]/g, ''));
     const bw = badWord(desc);
@@ -117,10 +106,7 @@ export default function Post() {
         <Field label="What's the plan?" value={desc} onChangeText={setDesc} maxLength={160} multiline placeholder="e.g. Filter coffee and the Sunday crossword"
           hint={`${desc.length}/160`} error={badWord(desc) ? badWordMsg(badWord(desc)) : undefined} />
 
-        <Label>When</Label>
-        {Platform.OS === 'ios'
-          ? <DateTimePicker value={when} mode="datetime" minimumDate={new Date()} display="compact" onChange={(_e, d) => d && setWhen(d)} style={{ alignSelf: 'flex-start', marginBottom: 16 }} />
-          : <Btn title={whenStr(when.getTime())} kind="ghost" icon="calendar" onPress={pickAndroid} style={{ marginBottom: 16 }} />}
+        <WhenPicker value={when} onChange={setWhen} />
 
         <Label>How long does it take?</Label>
         <Stepper value={dur} label="How long it takes" min={1} max={24} onChange={setDur} unit={durTxt} />

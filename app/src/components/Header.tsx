@@ -3,17 +3,17 @@ import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/lib/theme';
-import { Icon } from './ui';
+import { Icon, Logo } from './ui';
 import { WhereButton } from './Where';
 
 /* Tab header: the title, then where you're browsing (tap to change city; Swipe and Discover) or nothing, and the Post
    button or something else on the right. */
-export function Header({ title, where, right }: { title: string; where?: boolean; right?: ReactNode }) {
+export function Header({ title, where, right, logo }: { title: string; where?: boolean; right?: ReactNode; logo?: boolean }) {
   const t = useTheme(), insets = useSafeAreaInsets();
   return (
     <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       <View style={{ flex: 1 }}>
-        <Text accessibilityRole="header" style={{ fontSize: 26, fontWeight: '800', color: t.ink, letterSpacing: -0.4 }}>{title}</Text>
+        {logo ? <Logo size={26} /> : <Text accessibilityRole="header" style={{ fontSize: 26, fontWeight: '800', color: t.ink, letterSpacing: -0.4 }}>{title}</Text>}
         {where ? <WhereButton /> : null}
       </View>
       {right ?? (

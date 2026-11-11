@@ -30,16 +30,16 @@ export function Btn({ title, onPress, kind = 'primary', icon, busy, disabled, st
   );
 }
 
-/* The Overhere logo, as on the website (.logo and .dots in app.html): two dark dots with a green ring, and the name.
+/* The Overhere logo: two white dots with a green ring, and the name (as on the welcome pages).
    light: white dots and name, for photos (the welcome pages). */
 export function Logo({ size = 22, light }: { size?: number; light?: boolean }) {
   const t = useTheme();
-  const d = Math.round(size * (light ? 0.66 : 0.5));
+  const d = Math.round(size * 0.66);
   const shadow = light ? { textShadowColor: 'rgba(0,0,0,0.55)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 } : null;
   return (
     <View accessible accessibilityRole="header" accessibilityLabel="Overhere" style={{ flexDirection: 'row', alignItems: 'center', gap: Math.round(size * 0.4) }}>
-      <View style={{ flexDirection: 'row', gap: light ? 3 : 2 }}>
-        {[0, 1].map(k => <View key={k} style={{ width: d, height: d, borderRadius: d / 2, backgroundColor: light ? '#fff' : '#1A1A1A', borderWidth: d * 0.25, borderColor: t.acc }} />)}
+      <View style={{ flexDirection: 'row', gap: 3 }}>
+        {[0, 1].map(k => <View key={k} style={{ width: d, height: d, borderRadius: d / 2, backgroundColor: '#fff', borderWidth: d * 0.25, borderColor: t.acc }} />)}
       </View>
       <Text style={[{ color: light ? '#fff' : t.ink, fontSize: size, fontWeight: '800', letterSpacing: -0.4 }, shadow]}>Overhere</Text>
     </View>

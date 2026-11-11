@@ -106,6 +106,8 @@ img{display:block;max-width:100%}
 .ferr:empty{display:none}
 .auth form .btn{margin-top:20px}
 .legal{font-size:13px;color:var(--mute);text-align:center;margin:16px 0 0}
+.agree{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.45;color:var(--ink2,var(--ink));margin:14px 0 0;cursor:pointer}
+.agree input{width:20px;height:20px;margin:1px 0 0;flex:none}.agree a{color:var(--accink)}
 .legal a{color:inherit}
 /* ---------- photo-led layout: the hero and the sign-up run to the edges as photos, content sits close to the edges ---------- */
 :root{--g:clamp(14px,2vw,32px);--r:14px}
@@ -481,9 +483,12 @@ input[type=checkbox],input[type=radio]{accent-color:var(--acc)}
           <p class="ferr" id="au_email_err" aria-live="polite"></p>
           <p class="hint" id="au_email_hint"></p>
         </div>
+        <div id="au_agree"><label class="agree"><input type="checkbox" id="au_ok" aria-describedby="au_ok_err"> <span>I'm 18 or older and agree to the <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy policy</a></span></label>
+        <p class="ferr" id="au_ok_err" aria-live="polite"></p></div>
+        <div style="height:14px"></div>
         <button class="btn wide" type="submit">Continue</button>
       </form>
-      <p class="legal" id="au_legal">Overhere is for adults 18 and over. <a href="terms.html">Terms</a> · <a href="privacy.html">Privacy policy</a></p>
+      <p class="legal hide" id="au_legal">By signing in you agree to our <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy policy</a>.</p>
     </div>
 
   </div>
