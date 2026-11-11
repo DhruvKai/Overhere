@@ -1,4 +1,5 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { goBack } from '@/lib/nav';
 import { useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -192,7 +193,7 @@ export default function Chat() {
           intro={`You'll leave "${short(a.desc)}" and its group chat, and can't ask to join it again. ${uname(m, a.host)} and the group see your reason.`}
           note={'"Feel uncomfortable with the group" and "Feel unsafe" stay private: the group only sees that you left, and our team looks at the plan. In danger right now? Call 112.'}
           onClose={() => setSheet(null)}
-          onPick={async why => { if (await run(() => api.leaveActivity(a.id, why)) !== undefined) { setSheet(null); toast('You left the plan'); router.back(); } }} />
+          onPick={async why => { if (await run(() => api.leaveActivity(a.id, why)) !== undefined) { setSheet(null); toast('You left the plan'); goBack(); } }} />
       ) : null}
       {removing ? (
         <ReasonSheet title={`Remove ${uname(m, removing)}?`} reasons={RM_REASONS} action="Remove"

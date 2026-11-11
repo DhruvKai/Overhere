@@ -1,4 +1,5 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { goBack } from '@/lib/nav';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { PlacePicker } from '@/components/PlacePicker';
@@ -82,7 +83,7 @@ export default function Post() {
     setBusy(false);
     if (r === undefined) return;
     toast(edit ? (edit.members.length ? 'Saved. Everyone going sees a note about the changes.' : 'Saved') : 'Posted! People nearby can see it now.');
-    router.back();
+    goBack();
     if (!edit) { askMicro('post'); registerPush(true); }   // to hear about requests to join
   }
 

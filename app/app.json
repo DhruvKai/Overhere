@@ -57,7 +57,7 @@
         }
       ],
       "@react-native-community/datetimepicker",
-      "expo-font",
+      ["expo-font", { "fonts": ["./assets/fonts/PlusJakartaSans-ExtraBold.ttf"] }],
       [
         "expo-image-picker",
         {

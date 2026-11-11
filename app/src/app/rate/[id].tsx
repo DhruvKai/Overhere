@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { goBack } from '@/lib/nav';
 import { useState } from 'react';
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { FeedbackSheet } from '@/components/Feedback';
@@ -43,7 +44,7 @@ export default function Rate() {
     const asked = askedOf(m);
     if (ok !== 'no' && mode !== 'noshow' && !asked.fbSent && !asked.fbMeet) { saveAsked(() => ({ fbMeet: true })); setMeetFb(true); return; }
     toast(msg);
-    router.back();
+    goBack();
     if (mode !== 'noshow') askMicro('rating');
   };
 
@@ -158,7 +159,7 @@ export default function Rate() {
         )}
       </ScrollView>
       <ReportSheet open={!!reporting} title={`Report ${reporting ? uname(m, reporting) : ''}`} reasons={REPORT_REASONS} target={reporting} act={a.id} onClose={() => setReporting(null)} />
-      {meetFb ? <FeedbackSheet from="meetup" onClose={() => { setMeetFb(false); router.back(); }} /> : null}
+      {meetFb ? <FeedbackSheet from="meetup" onClose={() => { setMeetFb(false); goBack(); }} /> : null}
     </>
   );
 }

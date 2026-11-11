@@ -1,8 +1,8 @@
-import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { useState, type ReactNode } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Alert, BackHandler, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { FaceCheck } from '@/components/FaceCheck';
 import { InterestPicker } from '@/components/InterestPicker';
 import { PhotoPair } from '@/components/PhotoPair';
 import { PlacePicker } from '@/components/PlacePicker';
@@ -19,7 +19,9 @@ import type { Gender } from '@/lib/types';
 const toggle = (l: string[], v: string) => (l.includes(v) ? l.filter(x => x !== v) : [...l, v]);
 
 /* Sign-up, the same steps as the website (onboardHtml in web/app.js): "About you" saves the profile, then two
-   photos, the face check (both can be skipped) and "Tell us more", which sets onboarded and opens the tabs. */
+   photos, the face check (both can be skipped) and "Tell us more", which sets onboarded and opens the tabs.
+   The face check runs here in place, as on the website, not on the Face check screen: once it passes, the next step
+   shows by itself, so finishing it never depends on going back to this screen. */
 export default function Onboarding() {
   return useStore().model?.profile ? <Steps /> : <AboutYou />;
 }
@@ -42,9 +44,17 @@ function Page({ top, children, buttons }: { top?: ReactNode; children: ReactNode
 }
 
 function Steps() {
+  const t = useTheme();
   const m = useModel();
   const { run, refresh, signOut } = useStore();
   const [skip, setSkip] = useState(false);
+  const [checking, setChecking] = useState(false);
+  /* Android's back button leaves the face check for the step before it, rather than closing the app */
+  useEffect(() => {
+    if (!checking) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => { setChecking(false); return true; });
+    return () => sub.remove();
+  }, [checking]);
   const [job, setJob] = useState('');
   const [bio, setBio] = useState('');
   const [busy, setBusy] = useState<'' | 'save' | 'skip'>('');
@@ -70,9 +80,22 @@ function Steps() {
       </Page>
     );
   }
+  if (!p.face && !skip && checking) {
+    return (
+      <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.bg }}>
+        <View style={[{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, minHeight: 52 }, column]}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => setChecking(false)} hitSlop={10} style={{ width: 44, height: 44, justifyContent: 'center', alignItems: 'center' }}>
+            <Icon name="arrow-left" size={22} />
+          </Pressable>
+          <Text accessibilityRole="header" style={{ color: t.ink, fontSize: 18, fontWeight: '700' }}>Face check</Text>
+        </View>
+        <View style={[{ flex: 1 }, column]}><FaceCheck onDone={() => setChecking(false)} /></View>
+      </SafeAreaView>
+    );
+  }
   if (!p.face && !skip) {
     return (
-      <Page buttons={<><Btn title="Start face check" onPress={() => router.push('/verify')} />{skipBtn}</>}>
+      <Page buttons={<><Btn title="Start face check" onPress={() => setChecking(true)} />{skipBtn}</>}>
         <H size={26}>Quick face check</H>
         <P mute style={{ marginTop: 6, marginBottom: 22 }}>Shows people you&apos;re real and the person in your photos. You need it to post or join plans.</P>
         <View style={{ alignItems: 'center' }}><Avatar m={m} id={m.me} size={112} /></View>

@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { goBack } from '@/lib/nav';
 import { useEffect, useState } from 'react';
 import { ActionSheetIOS, Alert, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { JoinSheet } from '@/components/JoinSheet';
@@ -222,7 +223,7 @@ export default function PlanScreen() {
           {mine && !past ? <Btn title="Cancel this plan" kind="danger" onPress={() => confirm('Cancel this plan?',
             `You're about to cancel "${short(a.desc)}" on ${whenStr(a.when)}. This can't be undone. ${a.members.length ? `${a.members.length} accepted ${a.members.length === 1 ? 'member' : 'members'} will be told and the group chat will close.` : 'No one has been accepted yet.'}${pending.length ? ` ${pending.length} pending ${pending.length === 1 ? 'request' : 'requests'} will be dropped.` : ''}`,
             'Cancel plan',
-            async () => { await api.cancelActivity(a.id); router.back(); }, 'Plan cancelled')} /> : null}
+            async () => { await api.cancelActivity(a.id); goBack(); }, 'Plan cancelled')} /> : null}
         </View>
       </ScrollView>
       {/* the plan's main action stays at the bottom: rate it, open the chat, or ask to join */}

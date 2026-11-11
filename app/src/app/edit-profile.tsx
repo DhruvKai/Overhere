@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { goBack } from '@/lib/nav';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { PhotoPair } from '@/components/PhotoPair';
@@ -72,7 +72,7 @@ export default function EditProfile() {
       if (emoPicked && p.photo) await setPhoto(null);
     });
     setBusy(false);
-    if (ok !== undefined) { toast('Saved'); router.back(); }
+    if (ok !== undefined) { toast('Saved'); goBack(); }
   }
 
   return (
