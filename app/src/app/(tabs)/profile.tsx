@@ -31,6 +31,15 @@ export default function Profile() {
     toast(`Unfollowed ${uname(m, id)}`);
   };
   const tags = (l: string[]) => <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>{l.map(i => <Badge key={i} text={i} tone="acc" />)}</View>;
+  const times = (l: string[]) => (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+      {l.map(i => (
+        <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: t.line, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 5 }}>
+          <Icon name="clock" size={12} color={t.mute} /><Text style={{ fontSize: 13, color: t.ink2 }}>{i}</Text>
+        </View>
+      ))}
+    </View>
+  );
 
   return (
     <View style={{ flex: 1 }}>
@@ -52,11 +61,9 @@ export default function Profile() {
           <Btn title="Edit profile" kind="ghost" icon="edit-2" onPress={() => router.push('/edit-profile')} style={{ marginTop: 14 }} />
         </Card>
 
-        {/* interests and free times together: both short lists of tags */}
-        <Card style={{ gap: 14 }}>
-          <View><Ph icon="star" title="Interests" />{tags(p.ints)}</View>
-          <View><Ph icon="clock" title="Usually free" />{tags(p.avail)}</View>
-        </Card>
+        <Card><Ph icon="star" title="Interests" />{tags(p.ints)}</Card>
+        {/* free times look different from interests: outlined, each with a clock */}
+        {p.avail?.length ? <Card><Ph icon="clock" title="Usually free" />{times(p.avail)}</Card> : null}
 
         {done < V.length ? (
           <Card>

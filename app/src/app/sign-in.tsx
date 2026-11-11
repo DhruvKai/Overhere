@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCaptcha } from '@/components/Captcha';
-import { Btn, Check, Field, H, Logo, P, PwField, TextLink } from '@/components/ui';
+import { Btn, Check, CodeBoxes, Field, H, Logo, P, PwField, TextLink } from '@/components/ui';
 import Welcome from '@/components/Welcome';
 import { api, friendly } from '@/lib/api';
 import { emailProblem, mailFix } from '@/lib/email';
@@ -90,14 +90,15 @@ export default function SignIn() {
 
   /* Checked by the otp-verify Edge Function (it pauses a number for an hour after 5 wrong codes), which hands back
      the session. */
-  async function checkCode() {
-    if (!/^\d{6}$/.test(code)) return setErr('Enter the 6-digit code');
+  async function checkCode(c = code) {
+    if (busy) return;
+    if (!/^\d{6}$/.test(c)) return setErr('Enter the 6-digit code');
     setBusy(true);
     try {
       const ph = '+91' + phoneDigits(phone);
       const { error } = OTP_GUARD
-        ? await supabase.auth.setSession((await api.otpVerify(ph, code)).session)
-        : await supabase.auth.verifyOtp({ phone: ph, token: code, type: 'sms' });
+        ? await supabase.auth.setSession((await api.otpVerify(ph, c)).session)
+        : await supabase.auth.verifyOtp({ phone: ph, token: c, type: 'sms' });
       if (error) throw error;   // signed in: the root layout takes it from here
     } catch (e) { setErr(friendly(e)); }
     setBusy(false);
@@ -205,10 +206,9 @@ export default function SignIn() {
 
           {mode === 'code' && (<>
             <P style={{ marginBottom: 14 }}>Enter the code we sent to +91 {phoneDigits(phone)}.</P>
-            <Field label="6-digit code" value={code} onChangeText={v => setCode(v.replace(/\D/g, '').slice(0, 6))} keyboardType="number-pad"
-              textContentType="oneTimeCode" autoComplete="sms-otp" autoFocus />
+            <CodeBoxes label="6-digit code" value={code} onChange={v => { setCode(v); setErr(''); }} onDone={checkCode} error={!!err} sms />
             {errLine}
-            <Btn title="Sign in" onPress={checkCode} busy={busy} />
+            <Btn title="Sign in" onPress={() => checkCode()} busy={busy} />
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
               <TextLink title="Change number" onPress={() => { setMode('phone'); setErr(''); }} />
               <TextLink title="Resend code" onPress={() => sendCode(true)} />

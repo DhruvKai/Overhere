@@ -1203,15 +1203,15 @@ function tabProfile(){
   const vi=([ic,l,y,k])=>k==='soon'?`<div class="vi off" aria-disabled="true">${I(ic,14)}${l}<span class="e small">Coming soon</span></div>`
     :!y&&ic==='scan-face'?`<button class="vi act" data-a="doface">${I(ic,14)}Face check<span class="e small">Start</span></button>`
     :`<div class="vi ${y?'y':''}">${I(ic,14)}${l}${y?`<span class="e">${I('circle-check',14)}</span>`:''}</div>`;
-  const soft=(arr,none)=>arr&&arr.length?`<div class="soft">${arr.map(x=>`<span>${esc(x)}</span>`).join('')}</div>`:`<p class="small mute">${none}</p>`;
+  const soft=(arr,none,tm)=>arr&&arr.length?`<div class="soft${tm?' tm':''}">${arr.map(x=>`<span>${tm?I('clock',13):''}${esc(x)}</span>`).join('')}</div>`:`<p class="small mute">${none}</p>`;
   return `<div class="panel"><div class="ph">${I('user',15)} Your profile<span class="row" style="gap:8px;margin-left:auto"><button class="btn sm sec" data-a="editprofile">${I('pencil',14)} Edit profile</button><button class="ib bd" data-a="settings" title="Settings" aria-label="Settings">${I('settings',18)}</button></span></div>
   <div class="pt2"><div class="phw" data-a="photo">${av('me','lg')}<button class="pe" id="p_pe" title="Change profile picture" aria-label="Change profile picture" aria-haspopup="menu" aria-expanded="false">${I('camera',14)}</button>
   <div class="pmenu" id="p_menu" role="menu" hidden></div></div><div><div class="pn">${esc(m.name)} ${isVer('me')?`<span class="vf">${I('badge-check',14)} Verified</span>`:''}</div><div class="small mute">${esc(m.hood)}</div><div class="small" style="margin-top:4px">${trustTxt('me')}</div></div></div>
   <input type="file" id="p_photo" accept="image/jpeg,image/png,image/webp,image/*" hidden>
   <div class="facts"><span>${ageOf(m.dob)} yrs</span><span>${esc(m.gender)}</span>${m.job?`<span>${I('briefcase',14)}${esc(m.job)}</span>`:''}</div>
   <p>${m.bio?esc(m.bio):'<span class="mute">Add a short bio so hosts know who you are. Tap Edit profile.</span>'}</p></div>
-  <div class="panel"><div class="ph">${I('star',15)} Interests</div>${soft(m.ints,'Add what you like doing in Edit profile.')}
-  <div class="ph" style="margin-top:16px">${I('clock',15)} Usually free</div>${soft(m.avail,'Add when you are usually free in Edit profile.')}</div>
+  <div class="panel"><div class="ph">${I('star',15)} Interests</div>${soft(m.ints,'Add what you like doing in Edit profile.')}</div>
+  <div class="panel"><div class="ph">${I('clock',15)} Usually free</div>${soft(m.avail,'Add when you are usually free in Edit profile.',true)}</div>
   <div class="panel"><div class="ph">${I('calendar-check',15)} Past activities</div>${pastHtml(pastList('me'),'Plans you host or join show up here.')}</div>
   ${done<V.length?`<div class="panel"><div class="ph">${I('shield-check',15)} Verifications <span class="r">${done} of ${V.length}</span></div>
   <div class="bar"><i style="width:${done/V.length*100}%"></i></div>

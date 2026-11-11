@@ -12,6 +12,8 @@ import { H, Icon, Label } from './ui';
 const TIMES = Array.from({ length: 96 }, (_, i) => i * 15);   // minutes after midnight
 const ROW = 50;
 const sameDay = (a: Date, b: Date) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+/* the earliest a plan can start: an hour from now */
+const soon = () => Date.now() + 3600e3;
 const at = (day: Date, min: number) => new Date(day.getFullYear(), day.getMonth(), day.getDate(), Math.floor(min / 60), min % 60);
 export const timeTxt = (min: number) => new Date(2000, 0, 1, Math.floor(min / 60), min % 60).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
 
@@ -23,10 +25,9 @@ export function WhenPicker({ value, onChange }: { value: Date; onChange: (d: Dat
   const days = Array.from({ length: 14 }, (_, i) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + i));
   const inRow = days.some(d => sameDay(d, value));
   const mins = value.getHours() * 60 + value.getMinutes();
-  const soonest = Date.now() + 3600e3;
   /* a new day keeps the time; if that's too soon on that day, it moves to the first time that works */
   const pickDay = (d: Date) => {
-    const ok = at(d, mins).getTime() >= soonest ? mins : TIMES.find(x => at(d, x).getTime() >= soonest);
+    const s0 = soon(), ok = at(d, mins).getTime() >= s0 ? mins : TIMES.find(x => at(d, x).getTime() >= s0);
     onChange(at(d, ok ?? mins));
   };
   const pickOther = () => {
@@ -70,7 +71,7 @@ export function WhenPicker({ value, onChange }: { value: Date; onChange: (d: Dat
         <Text style={{ flex: 1, marginLeft: 10, fontSize: 16, color: t.ink }}>{timeTxt(mins)}</Text>
         <Icon name="chevron-down" size={18} color={t.mute} />
       </Pressable>
-      {open ? <TimeSheet day={value} mins={mins} soonest={soonest} onPick={x => { onChange(at(value, x)); setOpen(false); }} onClose={() => setOpen(false)} /> : null}
+      {open ? <TimeSheet day={value} mins={mins} soonest={soon()} onPick={x => { onChange(at(value, x)); setOpen(false); }} onClose={() => setOpen(false)} /> : null}
     </>
   );
 }

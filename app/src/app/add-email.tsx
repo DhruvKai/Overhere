@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Btn, Field, H, Icon, P } from '@/components/ui';
+import { Btn, CodeBoxes, Field, H, Icon, P } from '@/components/ui';
 import { friendly } from '@/lib/api';
 import { useStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase';
@@ -65,8 +65,7 @@ export default function AddEmail() {
           </>) : (<>
             <H size={28}>Enter the code</H>
             <P mute style={{ marginTop: 6, marginBottom: 24 }}>We sent a 6-digit code to {email.trim()}. It can take a minute, and sometimes lands in spam.</P>
-            <Field label="Code from the email" value={code} keyboardType="number-pad" textContentType="oneTimeCode" autoComplete="one-time-code" autoFocus
-              onChangeText={v => { const c = v.replace(/\D/g, '').slice(0, 6); setCode(c); if (c.length === 6) confirm(c); }} />
+            <CodeBoxes label="Code from the email" value={code} onChange={setCode} onDone={c => confirm(c)} error={!!err} />
             <Btn title="Confirm email" onPress={() => confirm()} busy={busy} />
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 14 }}>
               <Pressable onPress={() => { setStep('add'); setErr(''); }}><Text style={{ color: t.accink, fontWeight: '700', fontSize: 15 }}>Use a different email</Text></Pressable>

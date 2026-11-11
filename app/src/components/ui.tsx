@@ -1,7 +1,7 @@
 import Feather from '@expo/vector-icons/Feather';
 import { Image } from 'expo-image';
-import { useState, type ComponentProps, type ReactNode } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle } from 'react-native';
+import { useRef, useState, type ComponentProps, type ReactNode } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type TextInputInstance, type TextInputProps, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CATS, defEmo, type Model, type Plan, placeLine, spotTxt, whenStr, kmAway } from '@/lib/model';
 import { avatarUrl } from '@/lib/avatar';
@@ -109,6 +109,34 @@ export function Field({ label, hint, error, ok, right, below, ...p }: TextInputP
       ) : hint ? <Text style={[s.small, { color: t.mute, marginTop: 4 }]}>{hint}</Text> : null}
       {below}
     </View>
+  );
+}
+
+/* A 6-digit code as six boxes, like the website's .otp: one invisible text box on top takes the typing, pasting and
+   the SMS autofill, and the boxes show the digits, with the next one to fill outlined. onDone runs on the 6th digit. */
+export function CodeBoxes({ value, onChange, onDone, label, error, sms }: { value: string; onChange: (v: string) => void; onDone?: (v: string) => void; label: string; error?: boolean; sms?: boolean }) {
+  const t = useTheme();
+  const box = useRef<TextInputInstance>(null);
+  const [focus, setFocus] = useState(true);
+  return (
+    <Pressable onPress={() => box.current?.focus()} accessible={false} style={{ marginBottom: 14 }}>
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        {Array.from({ length: 6 }, (_, i) => {
+          const on = focus && (i === value.length || (i === 5 && value.length === 6));
+          return (
+            <View key={i} style={{ flex: 1, height: 56, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5,
+              backgroundColor: on ? t.card : t.field, borderColor: error ? t.bad : on ? t.acc : 'transparent' }}>
+              <Text style={{ fontSize: 22, fontWeight: '700', color: t.ink }}>{value[i] ?? ''}</Text>
+            </View>
+          );
+        })}
+      </View>
+      <TextInput ref={box} value={value} autoFocus keyboardType="number-pad" maxLength={6} accessibilityLabel={label}
+        textContentType="oneTimeCode" autoComplete={sms ? 'sms-otp' : 'one-time-code'} caretHidden contextMenuHidden={false}
+        onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
+        onChangeText={v => { const c = v.replace(/\D/g, '').slice(0, 6); onChange(c); if (c.length === 6) onDone?.(c); }}
+        style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, opacity: 0.011, color: 'transparent', fontSize: 16 }} />
+    </Pressable>
   );
 }
 
