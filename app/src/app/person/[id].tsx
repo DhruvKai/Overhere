@@ -5,7 +5,8 @@ import { Alert, ScrollView, Text, useWindowDimensions, View } from 'react-native
 import { ReportSheet } from '@/components/ReportSheet';
 import { Avatar, Badge, Btn, Card, Empty, H, Icon, Note, P, PlanRow } from '@/components/ui';
 import { api } from '@/lib/api';
-import { ago, CATS, following, isBlocked, isVer, nowOf, pastList, REPORT_REASONS, signals, trust, visible } from '@/lib/model';
+import { following, isBlocked, isVer, pastList, REPORT_REASONS, signals, trust, visible } from '@/lib/model';
+import { PastRow } from '@/components/ProfileParts';
 import { useModel, useStore } from '@/lib/store';
 import { R, useTheme } from '@/lib/theme';
 
@@ -55,7 +56,8 @@ export default function Person() {
         ) : null}
 
         <View style={{ flexDirection: 'row', gap: 14, alignItems: 'center' }}>
-          <Avatar m={m} id={id} size={64} />
+          {/* the photos are already shown big above; the small picture is for people without them */}
+          {pics.length > 1 ? null : <Avatar m={m} id={id} size={64} />}
           <View style={{ flex: 1, gap: 2 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <H size={22}>{p.name}</H>
@@ -85,7 +87,7 @@ export default function Person() {
             <P small mute style={{ textAlign: 'center', marginTop: 6 }}>{fol ? `You'll hear when ${p.name} posts a new plan.` : `Get notified when ${p.name} posts a new plan.`}</P>
           </View>
         ) : null}
-        {!isVer(m, id) ? <Note>{p.name} has not verified their ID yet. Meet in busy public places and share your plan with someone you trust.</Note> : null}
+        {!isVer(m, id) ? <Note>{p.name} hasn&apos;t done the face check yet. Meet in busy public places and share your plan with someone you trust.</Note> : null}
 
         <H size={17}>Upcoming activities{ups.length ? ` (${ups.length})` : ''}</H>
         {ups.length ? ups.map(a => <PlanRow key={a.id} m={m} a={a} onPress={() => router.push({ pathname: '/plan/[id]', params: { id: a.id } })} />)
@@ -93,19 +95,7 @@ export default function Person() {
 
         <H size={17}>Past activities</H>
         {past.length ? (
-          <Card style={{ gap: 12 }}>
-            {past.map((x, i) => (
-              <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: t.dark ? CATS[x.cat].bgDark : CATS[x.cat].bg, alignItems: 'center', justifyContent: 'center' }}>
-                  <Icon name={CATS[x.cat].icon} size={16} color={t.dark ? CATS[x.cat].fgDark : CATS[x.cat].fg} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: t.ink, fontSize: 15, fontWeight: '600' }} numberOfLines={1}>{x.t}</Text>
-                  <P small mute>{x.role} · {ago(x.at, nowOf(m))}</P>
-                </View>
-              </View>
-            ))}
-          </Card>
+          <Card style={{ gap: 6 }}>{past.map((x, i) => <PastRow key={i} m={m} x={x} />)}</Card>
         ) : <P small mute>No past activities yet.</P>}
 
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>

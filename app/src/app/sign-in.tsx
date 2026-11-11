@@ -1,9 +1,9 @@
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCaptcha } from '@/components/Captcha';
-import { Btn, Field, H, Icon, Logo, P, PwField } from '@/components/ui';
+import { Btn, Check, Field, H, Logo, P, PwField, TextLink } from '@/components/ui';
 import Welcome from '@/components/Welcome';
 import { api, friendly } from '@/lib/api';
 import { emailProblem, mailFix } from '@/lib/email';
@@ -25,6 +25,11 @@ const phoneProblem = (n: string) => (!n ? 'Enter your mobile number' : n.length 
 /* The welcome pages show until someone taps "Create account" or "I already have an account". */
 const SEEN = 'overhere_welcome_seen';
 const seenWelcome = () => { try { return localStorage.getItem(SEEN) === '1'; } catch { return false; } };
+/* What a new account carries: "I'm 18 or older" (the database refuses the login without it, _before_user_created) and
+   that they agreed to the Terms, so sign-up doesn't ask again (onboarding.tsx). Only read when the account is made. */
+const NEW_ACCOUNT = { age_18: true, terms_ok: true };
+/* the database's answer when a phone login would be a new account without NEW_ACCOUNT: on sign-in, there's no account */
+const NO_ACCOUNT = /aged 18/i;
 
 export default function SignIn() {
   const t = useTheme();
@@ -42,19 +47,19 @@ export default function SignIn() {
   const [fe, setFe] = useState<{ email?: string; pw?: string; pw2?: string }>({});
   const [left2, setLeft2] = useState(false);
   const [signUp, setSignUp] = useState(false);
-  const [is18, setIs18] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
-  /* Phone and email sign-ups must carry "I'm 18 or older": the database refuses the login otherwise (_before_user_created). */
-  const need18 = () => { if (!is18) { setErr("Please confirm you're 18 or older"); return false; } return true; };
+  /* New accounts tick one box: 18 or older, and the Terms. Signing in doesn't ask: they agreed when they signed up. */
+  const needAgree = () => { if (signUp && !agreed) { setErr("Tick the box to confirm you're 18 or older and agree to the Terms"); return false; } return true; };
 
   /* A typo here sends the code to a stranger, so the first send asks "is this your number?" first. Resending
      goes to the number already confirmed. */
   function sendCode(again?: boolean) {
     const n = phoneDigits(phone), m = phoneProblem(n);
     setErr(m);
-    if (m || (!again && !need18())) return;
+    if (m || (!again && !needAgree())) return;
     if (again) return send(n, true);
     Alert.alert('Is this your number?', `+91 ${n.slice(0, 5)} ${n.slice(5)}\n\nWe'll text a 6-digit code to this number. Please check it's right.`, [
       { text: 'Edit number', style: 'cancel' },
@@ -71,7 +76,11 @@ export default function SignIn() {
       const p = OTP_GUARD ? await api.otpPaused('+91' + n).catch(() => ({} as { until?: number })) : {} as { until?: number };
       if (p.until) throw new Error(pausedText(p.until));
       const captchaToken = await getToken();
-      const { error } = await supabase.auth.signInWithOtp({ phone: '+91' + n, options: { captchaToken, data: { age_18: true } } });
+      const { error } = await supabase.auth.signInWithOtp({ phone: '+91' + n, options: { captchaToken, ...(signUp ? { data: NEW_ACCOUNT } : {}) } });
+      if (error && !signUp && NO_ACCOUNT.test(error.message)) {
+        setSignUp(true); setBusy(false);
+        return setErr("There's no account with this number yet. Tick the box to create one.");
+      }
       if (error) throw error;
       setSent(Date.now()); setMode('code'); setCode('');
       toast('Code sent to +91 ' + n);
@@ -105,12 +114,12 @@ export default function SignIn() {
       pw2: !signUp ? '' : !pw2 ? 'Type your password again' : pw2 !== pw ? "Passwords don't match" : '' };
     setFe(e); setErr('');
     if (e.email || e.pw || e.pw2) return;
-    if (signUp && !need18()) return;
+    if (!needAgree()) return;
     setBusy(true); setErr('');
     try {
       const captchaToken = await getToken();
       if (signUp) {
-        const { data, error } = await supabase.auth.signUp({ email: email.trim(), password: pw, options: { captchaToken, data: { age_18: true, pw_set: true }, emailRedirectTo: SITE + '/app.html' } });
+        const { data, error } = await supabase.auth.signUp({ email: email.trim(), password: pw, options: { captchaToken, data: { ...NEW_ACCOUNT, pw_set: true }, emailRedirectTo: SITE + '/app.html' } });
         if (error) throw error;
         if (!data.session) toast('Check your email to confirm your account, then sign in here.');
       } else {
@@ -140,14 +149,23 @@ export default function SignIn() {
     setBusy(false);
   }
 
-  const Check = (
-    <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: is18 }} onPress={() => setIs18(v => !v)}
-      style={{ flexDirection: 'row', gap: 10, alignItems: 'center', marginBottom: 16 }}>
-      <View style={{ width: 24, height: 24, borderRadius: 7, borderWidth: 2, borderColor: is18 ? t.acc : t.line, backgroundColor: is18 ? t.acc : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-        {is18 ? <Icon name="check" size={16} color={t.onAcc} /> : null}
-      </View>
-      <P>I&apos;m 18 or older</P>
-    </Pressable>
+  const open = (page: string) => WebBrowser.openBrowserAsync(SITE + page);
+  /* the one box a new account ticks */
+  const Agree = signUp ? (
+    <View style={{ marginBottom: 12 }}>
+      <Check on={agreed} onPress={() => { setAgreed(v => !v); setErr(''); }}>
+        <Text style={{ fontSize: 14, lineHeight: 20, color: t.ink2 }}>
+          I&apos;m 18 or older and agree to the <TextLink inline title="Terms" onPress={() => open('/terms.html')} /> and{' '}
+          <TextLink inline title="Privacy policy" onPress={() => open('/privacy.html')} />
+        </Text>
+      </Check>
+    </View>
+  ) : null;
+  /* a problem with the whole form, just above its button, where it's seen (as on the website) */
+  const errLine = err ? <Text accessibilityLiveRegion="polite" style={{ color: t.bad, marginBottom: 10, fontSize: 14 }}>{err}</Text> : null;
+  const switchMode = (
+    <TextLink title={signUp ? 'I already have an account' : 'New here? Create an account'}
+      onPress={() => { setSignUp(v => !v); clearFe(); setPw2(''); setLeft2(false); }} style={{ marginTop: 6 }} />
   );
 
   /* the email box, with "Did you mean gmail.com?" for a likely typo (mailHint in web/app.js) */
@@ -178,19 +196,22 @@ export default function SignIn() {
           {mode === 'phone' && (<>
             <Field label="Mobile number" value={phone} onChangeText={v => setPhone(phoneDigits(v))} keyboardType="phone-pad"
               placeholder="98765 43210" textContentType="telephoneNumber" autoComplete="tel"
-              hint={signUp ? "+91 · we'll text you a 6-digit code. Then you'll add your email and a password." : "+91 · we'll text you a 6-digit code"} />
-            {Check}
+              hint={signUp ? "+91 · we'll text you a code. Then you'll add your email and a password." : "+91 · we'll text you a 6-digit code"} />
+            {Agree}
+            {errLine}
             <Btn title="Send code" onPress={() => sendCode()} busy={busy} />
+            {switchMode}
           </>)}
 
           {mode === 'code' && (<>
             <P style={{ marginBottom: 14 }}>Enter the code we sent to +91 {phoneDigits(phone)}.</P>
             <Field label="6-digit code" value={code} onChangeText={v => setCode(v.replace(/\D/g, '').slice(0, 6))} keyboardType="number-pad"
               textContentType="oneTimeCode" autoComplete="sms-otp" autoFocus />
+            {errLine}
             <Btn title="Sign in" onPress={checkCode} busy={busy} />
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 14 }}>
-              <Pressable onPress={() => { setMode('phone'); setErr(''); }}><Text style={{ color: t.accink, fontWeight: '700', fontSize: 15 }}>Change number</Text></Pressable>
-              <Pressable onPress={() => sendCode(true)}><Text style={{ color: t.accink, fontWeight: '700', fontSize: 15 }}>Resend code</Text></Pressable>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
+              <TextLink title="Change number" onPress={() => { setMode('phone'); setErr(''); }} />
+              <TextLink title="Resend code" onPress={() => sendCode(true)} />
             </View>
           </>)}
 
@@ -204,45 +225,42 @@ export default function SignIn() {
               <PwField label="Confirm password" value={pw2} autoComplete="new-password" textContentType="newPassword" {...pw2Line}
                 onChangeText={v => { setPw2(v); setFe(f => ({ ...f, pw2: '' })); }} onBlur={() => { if (pw2) setLeft2(true); }} />
             </>) : null}
-            {signUp ? Check : (
-              <Pressable onPress={() => { setMode('reset'); clearFe(); }} style={{ alignSelf: 'flex-end', marginTop: -6, marginBottom: 16 }}>
-                <Text style={{ color: t.accink, fontWeight: '700', fontSize: 15 }}>Forgot password?</Text>
-              </Pressable>
+            {signUp ? Agree : (
+              <View style={{ alignSelf: 'flex-end', marginTop: -10, marginBottom: 8 }}>
+                <TextLink title="Forgot password?" onPress={() => { setMode('reset'); clearFe(); }} />
+              </View>
             )}
+            {errLine}
             <Btn title={signUp ? 'Create account' : 'Sign in'} onPress={emailGo} busy={busy} />
-            <Pressable onPress={() => { setSignUp(v => !v); clearFe(); setPw2(''); setLeft2(false); }} style={{ marginTop: 14 }}>
-              <Text style={{ color: t.accink, fontWeight: '700', fontSize: 15 }}>{signUp ? 'I already have an account' : 'New here? Create an account'}</Text>
-            </Pressable>
+            {switchMode}
           </>)}
 
           {mode === 'reset' && (<>
             <P style={{ marginBottom: 14 }}>Enter the email you signed up with and we&apos;ll send you a link to choose a new password.</P>
             {emailField(true)}
+            {errLine}
             <Btn title="Send reset link" onPress={() => sendReset()} busy={busy} />
-            <Pressable onPress={() => { setMode('email'); clearFe(); }} style={{ marginTop: 14 }}>
-              <Text style={{ color: t.accink, fontWeight: '700', fontSize: 15 }}>Back to sign in</Text>
-            </Pressable>
+            <TextLink title="Back to sign in" onPress={() => { setMode('email'); clearFe(); }} style={{ marginTop: 6 }} />
           </>)}
 
           {mode === 'resetSent' && (<>
             <P style={{ marginBottom: 14 }}>We sent a link to {email.trim()}. Open it, choose a new password, then come back here and sign in with it.</P>
             <Btn title="Back to sign in" onPress={() => { setMode('email'); setSignUp(false); setPw(''); setPw2(''); clearFe(); }} />
-            <Pressable onPress={() => sendReset(true)} style={{ marginTop: 14 }}>
-              <Text style={{ color: t.accink, fontWeight: '700', fontSize: 15 }}>Didn&apos;t get it? Send again</Text>
-            </Pressable>
+            <TextLink title="Didn't get it? Send again" onPress={() => sendReset(true)} style={{ marginTop: 6 }} />
           </>)}
 
-          {err ? <Text accessibilityLiveRegion="polite" style={{ color: t.bad, marginTop: 14, fontSize: 14 }}>{err}</Text> : null}
 
           <View style={{ height: 1, backgroundColor: t.line, marginVertical: 24 }} />
           {mode === 'phone' || mode === 'code'
             ? <Btn title="Use email instead" kind="ghost" icon="mail" onPress={() => { setMode('email'); clearFe(); }} />
             : <Btn title="Use phone instead" kind="ghost" icon="phone" onPress={() => { setMode('phone'); clearFe(); }} />}
-          <P mute small style={{ marginTop: 20, textAlign: 'center' }}>
-            By continuing you agree to the{' '}
-            <Text style={{ color: t.accink, fontWeight: '700' }} onPress={() => WebBrowser.openBrowserAsync(SITE + '/terms.html')}>Terms</Text> and{' '}
-            <Text style={{ color: t.accink, fontWeight: '700' }} onPress={() => WebBrowser.openBrowserAsync(SITE + '/privacy.html')}>Privacy policy</Text>.
-          </P>
+          {/* new accounts agree with the box above; this is the reminder for everyone signing in */}
+          {!signUp ? (
+            <P mute small style={{ marginTop: 20, textAlign: 'center' }}>
+              By signing in you agree to the <TextLink inline title="Terms" onPress={() => open('/terms.html')} /> and{' '}
+              <TextLink inline title="Privacy policy" onPress={() => open('/privacy.html')} />.
+            </P>
+          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

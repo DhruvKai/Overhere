@@ -2,6 +2,7 @@ import Feather from '@expo/vector-icons/Feather';
 import { Image } from 'expo-image';
 import { useState, type ComponentProps, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CATS, defEmo, type Model, type Plan, placeLine, spotTxt, whenStr, kmAway } from '@/lib/model';
 import { avatarUrl } from '@/lib/avatar';
 import { photoOf } from '@/lib/photos';
@@ -29,16 +30,59 @@ export function Btn({ title, onPress, kind = 'primary', icon, busy, disabled, st
   );
 }
 
-/* The Overhere logo, as on the website (.logo and .dots in app.html): two dark dots with a green ring, and the name. */
-export function Logo({ size = 22 }: { size?: number }) {
+/* The Overhere logo, as on the website (.logo and .dots in app.html): two dark dots with a green ring, and the name.
+   light: white dots and name, for photos (the welcome pages). */
+export function Logo({ size = 22, light }: { size?: number; light?: boolean }) {
   const t = useTheme();
-  const d = Math.round(size * 0.5);
+  const d = Math.round(size * (light ? 0.66 : 0.5));
+  const shadow = light ? { textShadowColor: 'rgba(0,0,0,0.55)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 } : null;
   return (
     <View accessible accessibilityRole="header" accessibilityLabel="Overhere" style={{ flexDirection: 'row', alignItems: 'center', gap: Math.round(size * 0.4) }}>
-      <View style={{ flexDirection: 'row', gap: 2 }}>
-        {[0, 1].map(k => <View key={k} style={{ width: d, height: d, borderRadius: d / 2, backgroundColor: '#1A1A1A', borderWidth: d * 0.23, borderColor: t.acc }} />)}
+      <View style={{ flexDirection: 'row', gap: light ? 3 : 2 }}>
+        {[0, 1].map(k => <View key={k} style={{ width: d, height: d, borderRadius: d / 2, backgroundColor: light ? '#fff' : '#1A1A1A', borderWidth: d * 0.25, borderColor: t.acc }} />)}
       </View>
-      <Text style={{ color: t.ink, fontSize: size, fontWeight: '800', letterSpacing: -0.4 }}>Overhere</Text>
+      <Text style={[{ color: light ? '#fff' : t.ink, fontSize: size, fontWeight: '800', letterSpacing: -0.4 }, shadow]}>Overhere</Text>
+    </View>
+  );
+}
+
+/* A tappable bit of green text, on its own (block) or inside a sentence (inline). */
+export function TextLink({ title, onPress, inline, style }: { title: string; onPress: () => void; inline?: boolean; style?: object }) {
+  const t = useTheme();
+  const text = <Text accessibilityRole="link" onPress={inline ? onPress : undefined} style={[{ color: t.accink, fontWeight: '700', fontSize: inline ? undefined : 15 }, style]}>{title}</Text>;
+  if (inline) return text;
+  return <Pressable accessibilityRole="button" onPress={onPress} hitSlop={8} style={{ minHeight: 40, justifyContent: 'center' }}>{text}</Pressable>;
+}
+
+/* The main action of a screen, kept at the bottom above the keyboard and the home bar, so it never scrolls away and
+   short screens don't end in empty space under a button. */
+export function BottomBar({ children }: { children: ReactNode }) {
+  const t = useTheme();
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: Math.max(insets.bottom, 12), gap: 8, backgroundColor: t.bg, borderTopWidth: 1, borderTopColor: t.line }}>
+      {children}
+    </View>
+  );
+}
+
+/* A number with − and + either side (how long a plan takes, how many can join). */
+export function Stepper({ value, label, min, max, onChange, unit }: { value: number; label: string; min: number; max: number; onChange: (n: number) => void; unit: (n: number) => string }) {
+  const t = useTheme();
+  const btn = (icon: 'minus' | 'plus', to: number, off: boolean) => (
+    <Pressable accessibilityRole="button" accessibilityLabel={`${icon === 'minus' ? 'Less' : 'More'}: ${label}`} disabled={off} onPress={() => onChange(to)} hitSlop={6}
+      style={{ width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: t.line, backgroundColor: t.card, alignItems: 'center', justifyContent: 'center', opacity: off ? 0.4 : 1 }}>
+      <Feather name={icon} size={18} color={t.ink} />
+    </Pressable>
+  );
+  return (
+    <View accessible accessibilityRole="adjustable" accessibilityLabel={label} accessibilityValue={{ text: unit(value) }}
+      accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+      onAccessibilityAction={e => onChange(Math.min(max, Math.max(min, value + (e.nativeEvent.actionName === 'increment' ? 1 : -1))))}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+      {btn('minus', Math.max(min, value - 1), value <= min)}
+      <Text style={{ minWidth: 76, textAlign: 'center', color: t.ink, fontSize: 17, fontWeight: '700' }}>{unit(value)}</Text>
+      {btn('plus', Math.min(max, value + 1), value >= max)}
     </View>
   );
 }

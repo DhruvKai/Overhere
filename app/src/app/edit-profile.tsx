@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { PhotoPair } from '@/components/PhotoPair';
 import { PlacePicker } from '@/components/PlacePicker';
-import { Avatar, Btn, Chip, Field, Label, P } from '@/components/ui';
+import { Avatar, BottomBar, Btn, Chip, Field, Label, P, Wrap } from '@/components/ui';
 import { api } from '@/lib/api';
 import { setPhoto } from '@/lib/avatar';
 import { isoDob, maskDob, showDob } from '@/lib/dob';
@@ -36,6 +36,7 @@ export default function EditProfile() {
   const [tName, setTName] = useState(trustedOf(m)?.name ?? '');
   const [tPhone, setTPhone] = useState(trustedOf(m)?.phone ?? '');
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
   const [photoBusy, setPhotoBusy] = useState(false);
   const [emoPicked, setEmoPicked] = useState(false);   // picking an emoji while you have photos removes them on Save
   const hasPhoto = !!p.photo && !emoPicked;
@@ -48,18 +49,18 @@ export default function EditProfile() {
   }
 
   async function save() {
-    if (!name.trim()) return toast('Add your first name');
-    if (!last.trim()) return toast('Add your last name');
-    const iso = isoDob(dob);
-    if (!iso) return toast('Enter your date of birth as DD/MM/YYYY');
-    if (!ll) return toast('Pick your home area from the list');
-    if (ints.length < MIN_INTS) return toast(`Pick at least ${MIN_INTS} things you like doing`);
-    if (!avail.length) return toast("Pick when you're usually free");
     /* trusted contact: both or neither (the same checks as the website) */
     const tn = tName.trim(), tp = tPhone.trim(), digits = tp.replace(/\D/g, '');
-    if ((tn || tp) && (!tn || digits.length < 7)) return toast('Add a name and a valid phone for your trusted contact, or leave both empty');
     const own = (session?.user.phone || '').replace(/\D/g, '').slice(-10);
-    if (tp && own && digits.slice(-10) === own) return toast("Your trusted contact can't be the number you signed in with");
+    const iso = isoDob(dob);
+    /* shown above Save (the bottom bar), like the sign-up pages */
+    const problem = !name.trim() ? 'Add your first name' : !last.trim() ? 'Add your last name' : !iso ? 'Enter your date of birth as DD/MM/YYYY'
+      : !ll ? 'Pick your home area from the list' : ints.length < MIN_INTS ? `Pick at least ${MIN_INTS} things you like doing`
+      : !avail.length ? "Pick when you're usually free"
+      : (tn || tp) && (!tn || digits.length < 7) ? 'Add a name and a valid phone for your trusted contact, or leave both empty'
+      : tp && own && digits.slice(-10) === own ? "Your trusted contact can't be the number you signed in with" : '';
+    setErr(problem);
+    if (problem || !ll) return;
     savePriv({ trusted: tn ? { name: tn.slice(0, 40), phone: tp.slice(0, 20) } : null });
     setBusy(true);
     const ok = await run(async () => {
@@ -76,7 +77,7 @@ export default function EditProfile() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
         <Label>Your photos</Label>
         <P mute small style={{ marginBottom: 10 }}>
           Photo 1 is your profile picture. The face check needs both and matches your live face against each.{p.face && p.photo ? ' A new photo means doing the face check again.' : ''}
@@ -103,30 +104,31 @@ export default function EditProfile() {
         <Field label="First name" value={name} onChangeText={setName} maxLength={40} autoComplete="given-name" textContentType="givenName" />
         <Field label="Last name" value={last} onChangeText={setLast} maxLength={40} autoComplete="family-name" textContentType="familyName" />
         <Field label="Date of birth" value={dob} onChangeText={v => setDob(maskDob(v))} placeholder="DD/MM/YYYY" keyboardType="number-pad" maxLength={10} editable={!p.kyc} />
-        <Label>Gender identity</Label>
+        <Label>Gender</Label>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
           {GENDERS.map(g => <Chip key={g} label={g} on={gender === g} onPress={() => { if (!p.kyc) setGender(g); }} />)}
         </View>
         <P mute small style={{ marginBottom: 14 }}>
-          {p.kyc ? 'Confirmed by your ID check. To change these, email admin@overhere.social.' : 'Decides which audience-limited plans you can see.'}
+          {p.kyc ? 'Confirmed by your ID check. To change these, email admin@overhere.social.' : 'Used for plans that are only for some people, like women-only plans.'}
         </P>
         <PlacePicker label="Home area" mode="area" value={hood} picked={!!ll} placeholder="Search your area or city"
           onChange={v => { setHood(v); setLl(null); }} onPick={x => { setHood(x.label); setLl(x.ll); }}
-          hint={`Anywhere in India. You see plans within ${NEAR_KM} km of here, and distances are measured from it.`} locate="home" />
-        <Field label="What you do (optional)" value={job} onChangeText={setJob} maxLength={40} placeholder="e.g. Designer, student" />
-        <Field label="About you (optional)" value={bio} onChangeText={setBio} maxLength={300} multiline hint={`${bio.length}/300`} />
+          hint={`You see plans within ${NEAR_KM} km of here.`} locate="home" />
+        <Field label="What you do" value={job} onChangeText={setJob} maxLength={40} placeholder="e.g. Designer, student" />
+        <Field label="About you" value={bio} onChangeText={setBio} maxLength={300} multiline hint={`${bio.length}/300`} />
         <Label>What you like doing</Label>
         <InterestPicker value={ints} onChange={setInts} />
-        <Label>When you&apos;re free</Label>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
-          {TIMES.map(v => <Chip key={v} label={v} on={avail.includes(v)} onPress={() => setAvail(l => toggle(l, v))} />)}
-        </View>
+        <Label>When you&apos;re usually free</Label>
+        <Wrap>{TIMES.map(v => <Chip key={v} label={v} on={avail.includes(v)} onPress={() => setAvail(l => toggle(l, v))} />)}</Wrap>
         <Label>Trusted contact</Label>
-        <P mute small style={{ marginBottom: 10 }}>Someone you can alert with SOS in one tap, with your location. Only you see this. Leave both empty to remove.</P>
+        <P mute small style={{ marginBottom: 10 }}>SOS can alert them in one tap, with your location. Only you see this.</P>
         <Field label="Name" value={tName} onChangeText={setTName} placeholder="e.g. Mum, Riya" maxLength={40} />
         <Field label="Phone" value={tPhone} onChangeText={setTPhone} placeholder="+91 98765 43210" keyboardType="phone-pad" maxLength={20} />
-        <Btn title="Save" onPress={save} busy={busy} />
       </ScrollView>
+      <BottomBar>
+        {err ? <Text accessibilityLiveRegion="polite" style={{ color: t.bad, fontSize: 14 }}>{err}</Text> : null}
+        <Btn title="Save" onPress={save} busy={busy} />
+      </BottomBar>
     </KeyboardAvoidingView>
   );
 }

@@ -42,7 +42,7 @@ export default function Plans() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Header title="My plans" sub="Hosting, going and requests" />
+      <Header title="My plans" />
       <SectionList
         sections={sections}
         keyExtractor={a => a.id}

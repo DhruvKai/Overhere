@@ -1,6 +1,7 @@
 "use strict";
 /* ---------- icons (Lucide, ISC licence) ---------- */
 const IC={
+  settings:'<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
   dumbbell:'<path d="M17.6 12.8a2 2 0 1 0 2.8-2.9l-1.7-1.7a2 2 0 0 0 2.8-2.8l-2.8-2.8a2 2 0 0 0-2.9 2.8l-1.7-1.8a2 2 0 1 0-2.9 2.9z"/><path d="m2.5 21.5 1.4-1.4"/><path d="m20.1 3.9 1.4-1.4"/><path d="M5.3 21.5a2 2 0 1 0 2.9-2.9l1.7 1.8a2 2 0 1 0 2.9-2.9l-6.4-6.3a2 2 0 1 0-2.8 2.8l1.7 1.8a2 2 0 0 0-2.8 2.8z"/><path d="m9.6 14.4 4.8-4.8"/>',
   drama:'<path d="M10 11h.01"/><path d="M14 6h.01"/><path d="M18 6h.01"/><path d="M6.5 13.1h.01"/><path d="M22 5c0 9-4 12-6 12s-6-3-6-12c0-2 2-3 6-3s6 1 6 3"/><path d="M17.4 9.9c-.8.8-2 .8-2.8 0"/><path d="M10.1 7.1C9 7.2 7.7 7.7 6 8.6c-3.5 2-4.7 3.9-3.7 5.6 4.5 7.8 9.5 8.4 11.2 7.4.9-.5 1.9-2.1 1.9-4.7"/><path d="M9.1 16.5c.3-1.1 1.4-1.7 2.4-1.4"/>',
   mic:'<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>',
@@ -979,7 +980,7 @@ const empty=(ic,t,sub,btn)=>`<div class="empty"><div class="big">${I(ic,30)}</di
 /* Audience-limited plans (e.g. women-only) are only sent to people whose ID check passed. */
 const lockedNote=()=>LOCKED&&!S.me.face?`<div class="dn" style="margin:0 0 14px;text-align:left">${I('shield-check',14)} ${LOCKED} ${LOCKED===1?'plan near you is':'plans near you are'} only open to certain groups, like women-only plans. <button class="lnk" data-a="unlock">Do the face check to see ${LOCKED===1?'it':'them'}</button></div>`:'';
 const whereBar=()=>`<div class="wbar"><button class="where" data-a="citymenu" aria-haspopup="dialog" aria-label="Showing plans ${esc(whereTxt())}. Change city">${I('map-pin',14)}<span>${viewCity()?esc(viewName()):'Near '+esc(homeName())}</span>${I('chevron-down',14)}</button></div>
-  ${VIEW.auto&&viewCity()?`<div class="dn" style="margin:0 0 14px;text-align:left">${I('compass',14)} Overhere is new in ${esc(homeName())}, so you're seeing plans in ${esc(viewName())} (${Math.round(kmBetween(homeLL(),viewLL()))} km away) too. Anything posted near you shows here first. <button class="lnk" data-a="citymenu">Pick another city</button></div>`:''}`;
+  ${VIEW.auto&&viewCity()?`<div class="dn" style="margin:0 0 14px;text-align:left">${I('compass',14)} Overhere is new in ${esc(homeName())}, so you're also seeing plans in ${esc(viewName())} (${Math.round(kmBetween(homeLL(),viewLL()))} km away). <button class="lnk" data-a="citymenu">Pick another city</button></div>`:''}`;
 function tabSwipe(){
   const d=deck();
   if(!d.length)return whereBar()+fbCard()+lockedNote()+empty('compass','Nothing new right now',`You have gone through all plans in the next 7 days ${esc(whereTxt())}. Check Discover for plans further out, or pick another city.`,'<button class="btn" data-a="tab" data-t="discover">Go to Discover</button>');
@@ -1014,12 +1015,12 @@ function tabDiscover(){
   if(f.sort==='for')list.sort((a,b)=>score(b)-score(a)||a.when-b.when);
   else if(f.sort==='near')list.sort((a,b)=>kmAway(a)-kmAway(b)||a.when-b.when);
   const alertable=act.some(([k])=>k!=='date'),saved=S.alerts.some(x=>x.label===alertLabel(f));
-  return `${whereBar()}<div class="hd"><div><h1 class="pt">All upcoming plans</h1><p class="sub">${all.length} upcoming ${esc(whereTxt())}</p></div><button class="btn sm mobonly" data-a="newpost">${I('plus',15)} Post</button></div>
-  ${lockedNote()}${fbCard()}${(()=>{const n=deck().length;return `<div class="alerts"><button class="alchip tn" data-a="tab" data-t="swipe">${I('flame',13)} Swipe this week${n?` · ${n}`:''}</button>${S.savedF.map(sf=>`<span class="alchip sf"><button class="lnk" data-a="applyf" data-id="${sf.id}">${I('filter',12)} ${esc(sf.label)}</button><button data-a="rmf" data-id="${sf.id}" aria-label="Remove saved filters ${esc(sf.label)}">${I('x',12)}</button></span>`).join('')}</div>`})()}${S.alerts.length?`<div class="alerts"><span class="small mute" style="display:inline-flex;align-items:center;gap:4px">${I('bell',13)} Your alerts</span>${S.alerts.map(al=>`<span class="alchip">${esc(al.label)}<button data-a="rmalert" data-id="${al.id}" aria-label="Remove alert ${esc(al.label)}">${I('x',12)}</button></span>`).join('')}</div>`:''}
+  return `${whereBar()}<div class="hd"><div><h1 class="pt">All upcoming plans</h1></div><button class="btn sm mobonly" data-a="newpost">${I('plus',15)} Post</button></div>
+  ${lockedNote()}${fbCard()}${(()=>{return S.savedF.length?`<div class="alerts">${S.savedF.map(sf=>`<span class="alchip sf"><button class="lnk" data-a="applyf" data-id="${sf.id}">${I('filter',12)} ${esc(sf.label)}</button><button data-a="rmf" data-id="${sf.id}" aria-label="Remove saved filters ${esc(sf.label)}">${I('x',12)}</button></span>`).join('')}</div>`:''})()}${S.alerts.length?`<div class="alerts"><span class="small mute" style="display:inline-flex;align-items:center;gap:4px">${I('bell',13)} Your alerts</span>${S.alerts.map(al=>`<span class="alchip">${esc(al.label)}<button data-a="rmalert" data-id="${al.id}" aria-label="Remove alert ${esc(al.label)}">${I('x',12)}</button></span>`).join('')}</div>`:''}
   <div class="dtools"><button class="fbtn ${act.length?'on':''}" data-a="filters" aria-haspopup="dialog">${I('filter',14)} Filters${act.length?`<b aria-label="${act.length} active">${act.length}</b>`:''}</button>
   <button class="fbtn" data-a="sortmenu" aria-haspopup="dialog" aria-label="Sort by ${SORTS[f.sort][1]}">${I('arrow-up-down',14)} Sort: ${SORTS[f.sort][1]}</button>
   ${SEG('fview',f.view,[['list',I('list',13)+'<span class="tl">List</span>','List view'],['map',I('map',13)+'<span class="tl">Map</span>','Map view']])}</div>
-  <div class="small mute fact"><span>Showing <b>${list.length}</b> ${list.length===1?'activity':'activities'}</span>
+  <div class="small mute fact"><span><b>${list.length}</b> ${list.length===1?'plan':'plans'}${act.length?` of ${all.length}`:''}</span>
   ${act.map(([k,l])=>`<span class="alchip">${esc(l)}<button data-a="fclear" data-k="${k}" aria-label="Remove filter ${esc(l)}">${I('x',12)}</button></span>`).join('')}
   ${act.length?`<button class="lnk" data-a="freset">Reset</button>`:''}${act.length&&!S.savedF.some(x=>x.label===activeFilters(f).map(y=>y[1]).join(' · ').slice(0,60))?`<button class="lnk" data-a="savef">${I('filter',13)} Save these filters</button>`:''}${alertable&&!saved?`<button class="lnk" data-a="saveal">${I('bell',13)} Alert me about new matches</button>`:''}</div>
   ${!list.length?empty('calendar',all.length?'No matches':'No plans yet',all.length?'Try different filters.':'Be the first to post one.',act.length&&all.length?'<button class="btn sec" data-a="freset">Reset filters</button>':'')
@@ -1107,12 +1108,12 @@ function mapFit(fly){
 }
 function tabActs(){
   const mine=S.acts.filter(a=>a.host==='me').sort((a,b)=>(a.status==='past')-(b.status==='past')||(a.status==='past'?b.when-a.when:a.when-b.when));
-  return `<div class="hd"><div><h1 class="pt">My Activities</h1><p class="sub">Plans you are hosting</p></div><button class="btn sm" data-a="newpost">${I('plus',15)} Post</button></div>`
+  return `<div class="hd"><div><h1 class="pt">My Activities</h1><p class="sub">Plans you are hosting</p></div>${mine.length?`<button class="btn sm" data-a="newpost">${I('plus',15)} Post</button>`:''}</div>`
     +(mine.length?mine.map(a=>{
       const p=S.reqs.filter(r=>r.act===a.id&&r.status==='pending').length,w=waitlist(a.id).length;
       return liHtml(a,'hostview',`<span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('users',13)}${a.members.length}/${a.cap} accepted</span>`,
         `${actChip(a.status)} ${p?`<span class="chip warn">${p} pending</span>`:''} ${w?`<span class="chip info">${w} waitlisted</span>`:''} ${a.repeat&&a.status!=='past'?`<span class="chip">${REPEAT[a.repeat]}</span>`:''} ${a.status==='past'&&a.members.length&&!S.ratings[a.id]?'<span class="chip warn">Rate meetup</span>':''}`);
-    }).join(''):empty('calendar-check','You have not posted anything','Post a plan you are already making and see who wants to join.','<button class="btn" data-a="newpost">Post an activity</button>'));
+    }).join(''):empty('calendar-check','No plans yet','Post something you are already going to, and pick who joins.','<button class="btn" data-a="newpost">Post a plan</button>'));
 }
 function tabReqs(){
   const mine=S.reqs.filter(r=>r.user==='me'&&actOf(r.act));
@@ -1157,14 +1158,14 @@ function tabChats(){
 }
 function tabNotes(){
   const N=S.notes,unread=N.filter(n=>!n.read).length;
-  const sec=(title,list,none)=>`<h3 class="nsh">${title}${list.some(n=>!n.read)?` <b>${list.filter(n=>!n.read).length}</b>`:''}</h3>
-  ${list.length?`<div class="nl">${list.map(noteHtml).join('')}</div>`:`<p class="small mute nnone">${none}</p>`}`;
-  return `<div class="nh"><h1 class="pt" style="font-size:22px;flex:1;margin:0">Notifications</h1>${unread?`<button class="btn sm sec" data-a="readall">${I('circle-check',14)} Mark all as read</button>`:''}</div>
-  ${sec('Notifications',N.filter(n=>n.kind!=='req'),'Updates and reminders about your activities will show up here.')}
-  ${sec('Requests',N.filter(n=>n.kind==='req'),'Join requests, and replies to yours, will show up here.')}`;
+  const sec=(title,list)=>list.length?`<h3 class="nsh">${title}</h3><div class="nl">${list.map(noteHtml).join('')}</div>`:'';
+  return `<div class="nh"><h1 class="pt" style="font-size:22px;flex:1;margin:0">Notifications</h1>${unread?`<button class="lnk" data-a="readall">Mark all read</button>`:''}</div>
+  ${N.length?sec('Notifications',N.filter(n=>n.kind!=='req'))+sec('Requests',N.filter(n=>n.kind==='req'))
+    :empty('bell','Nothing yet','Join requests, replies and reminders about your plans show up here.')}`;
 }
 function tabProfile(){
-  const m=S.me,th=themePref(),ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  if(ui.settings)return settingsHtml();
+  const m=S.me;
   const V=[AUTHU.phone?['phone','Phone Verified',true]:['mail','Email Verified',!!AUTHU.email],['scan-face','Face Verified',!!m.face],['id-card','Government ID',false,'soon'],['user','Profile Complete',!!(m.job&&m.bio&&(m.ints||[]).length&&(m.avail||[]).length)]];
   const done=V.filter(v=>v[2]).length;
   /* face check can be done from here; the ID check is greyed out until it's switched on */
@@ -1172,30 +1173,37 @@ function tabProfile(){
     :!y&&ic==='scan-face'?`<button class="vi act" data-a="doface">${I(ic,14)}Face check<span class="e small">Start</span></button>`
     :`<div class="vi ${y?'y':''}">${I(ic,14)}${l}${y?`<span class="e">${I('circle-check',14)}</span>`:''}</div>`;
   const soft=(arr,none)=>arr&&arr.length?`<div class="soft">${arr.map(x=>`<span>${esc(x)}</span>`).join('')}</div>`:`<p class="small mute">${none}</p>`;
-  return `<div class="panel"><div class="ph">${I('user',15)} Your profile<button class="btn sm sec" data-a="editprofile">${I('pencil',14)} Edit profile</button></div>
+  return `<div class="panel"><div class="ph">${I('user',15)} Your profile<span class="row" style="gap:8px;margin-left:auto"><button class="btn sm sec" data-a="editprofile">${I('pencil',14)} Edit profile</button><button class="ib" data-a="settings" title="Settings" aria-label="Settings">${I('settings',18)}</button></span></div>
   <div class="pt2"><div class="phw" data-a="photo">${av('me','lg')}<button class="pe" id="p_pe" title="Change profile picture" aria-label="Change profile picture" aria-haspopup="menu" aria-expanded="false">${I('camera',14)}</button>
   <div class="pmenu" id="p_menu" role="menu" hidden></div></div><div><div class="pn">${esc(m.name)} ${isVer('me')?`<span class="vf">${I('badge-check',14)} Verified</span>`:''}</div><div class="small mute">${esc(m.hood)}</div><div class="small" style="margin-top:4px">${trustTxt('me')}</div></div></div>
   <input type="file" id="p_photo" accept="image/jpeg,image/png,image/webp,image/*" hidden>
   <div class="facts"><span>${ageOf(m.dob)} yrs</span><span>${esc(m.gender)}</span>${m.job?`<span>${I('briefcase',14)}${esc(m.job)}</span>`:''}</div>
   <p>${m.bio?esc(m.bio):'<span class="mute">Add a short bio so hosts know who you are. Tap Edit profile.</span>'}</p></div>
-  <div class="panel"><div class="ph">${I('star',15)} Interests</div>${soft(m.ints,'Add what you would like to do with company in Edit profile.')}</div>
-  <div class="panel"><div class="ph">${I('clock',15)} Usually free</div>${soft(m.avail,'Tell hosts when you are usually free in Edit profile.')}</div>
-  <div class="panel"><div class="ph">${I('calendar-check',15)} Past activities</div>${pastHtml(pastList('me'),'Activities you host or join show up here.')}</div>
-  <div class="panel"><div class="ph">${I('shield-check',15)} Verifications <span class="r">${done}/${V.length} complete</span></div>
+  <div class="panel"><div class="ph">${I('star',15)} Interests</div>${soft(m.ints,'Add what you like doing in Edit profile.')}
+  <div class="ph" style="margin-top:16px">${I('clock',15)} Usually free</div>${soft(m.avail,'Add when you are usually free in Edit profile.')}</div>
+  <div class="panel"><div class="ph">${I('calendar-check',15)} Past activities</div>${pastHtml(pastList('me'),'Plans you host or join show up here.')}</div>
+  ${done<V.length?`<div class="panel"><div class="ph">${I('shield-check',15)} Verifications <span class="r">${done} of ${V.length}</span></div>
   <div class="bar"><i style="width:${done/V.length*100}%"></i></div>
-  <div class="vg">${V.map(vi).join('')}</div></div>
-  <div class="panel"><div class="ph">${I('user-plus',15)} Following</div>${S.following.length?S.following.map(u=>`<div class="blk">${av(u,'sm')}<button class="hlink" data-a="user" data-id="${u}">${esc(uname(u))}</button><button class="lnk" data-a="follow" data-id="${u}">Unfollow</button></div>`).join(''):'<p class="small mute" style="margin:0">Follow hosts from their profile to hear when they post a new plan.</p>'}</div>
+  <div class="vg">${V.map(vi).join('')}</div></div>`:''}
+  ${S.following.length?`<div class="panel"><div class="ph">${I('user-plus',15)} Following</div>${S.following.map(u=>`<div class="blk">${av(u,'sm')}<button class="hlink" data-a="user" data-id="${u}">${esc(uname(u))}</button><button class="lnk" data-a="follow" data-id="${u}">Unfollow</button></div>`).join('')}</div>`:''}
+
+`;
+}
+/* Settings, from the gear on Profile: feedback, the app, safety and the account (the app's settings.tsx). */
+function settingsHtml(){
+  const m=S.me,th=themePref(),ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  return `<div class="nh"><button class="ib" data-a="settings" data-k="off" title="Back to profile" aria-label="Back to profile">${I('chevron-left',20)}</button><h1 class="pt" style="font-size:22px;flex:1;margin:0">Settings</h1></div>
   <div class="panel fbp"><div class="ph">${I('message-heart',15)} Help shape Overhere</div>
-  <p class="small mute" style="margin-top:0">Overhere is in beta. Tell us what's working, what's confusing and what you'd like next. It takes about 20 seconds.</p>
+  <p class="small mute" style="margin-top:0">Tell us what's working and what isn't. It takes about 20 seconds.</p>
   <button class="btn sm" data-a="fb" data-k="profile">${I('message-heart',14)} Send feedback</button>${S.asked.fbSent?`<span class="small mute" style="margin-left:10px">Last sent ${new Date(S.asked.fbSent).toLocaleDateString([], {day:'numeric',month:'short'})}. Thank you!</span>`:''}</div>
   <div class="panel"><div class="ph">${I('sun',15)} App</div>
   <label style="margin-top:0">Appearance</label><span class="seg" role="radiogroup" aria-label="Appearance">${[['system','System'],['light','Light'],['dark','Dark']].map(([k,l])=>`<button role="radio" aria-checked="${th===k}" class="${th===k?'on':''}" data-a="theme" data-k="${k}">${l}</button>`).join('')}</span>
-  <label>Install</label>${isStandalone()?'<p class="small mute" style="margin:0">Overhere is installed on this device.</p>':installEvt?`<button class="btn sm sec" data-a="install">${I('download',14)} Install Overhere</button>`:ios?'<p class="small mute" style="margin:0">On iPhone: tap Share, then “Add to Home Screen”.</p>':'<p class="small mute" style="margin:0">Open the published site in Chrome or Edge and use “Install app” in the address bar. Installing is not available from a file or inside the beta page.</p>'}
-  <label>Usage statistics</label><label class="chk top" style="margin-top:0"><input type="checkbox" id="p_usage" ${m.usageOk?'checked':''}> <span>Share which features I use (never my messages) to help improve the beta. Turning this off also deletes what was collected.</span></label></div>
+  <label>Install</label>${isStandalone()?'<p class="small mute" style="margin:0">Overhere is installed on this device.</p>':installEvt?`<button class="btn sm sec" data-a="install">${I('download',14)} Install Overhere</button>`:ios?'<p class="small mute" style="margin:0">On iPhone: tap Share, then “Add to Home Screen”.</p>':'<p class="small mute" style="margin:0">In Chrome or Edge, use “Install app” in the address bar.</p>'}
+  <label>Usage statistics</label><label class="chk top" style="margin-top:0"><input type="checkbox" id="p_usage" ${m.usageOk?'checked':''}> <span>Share which features I use (never my messages) to help improve Overhere. Turning this off deletes what was collected.</span></label></div>
   <div class="panel"><div class="ph">${I('shield-check',15)} Safety</div>
-  <label style="margin-top:0">Trusted contact</label><p class="small mute" style="margin-top:0">Someone you can send your plans to, or alert with SOS, in one tap. Only you see this.</p>
+  <label style="margin-top:0">Trusted contact</label><p class="small mute" style="margin-top:0">Send them your plans, or alert them with SOS, in one tap. Only you see this.</p>
   ${m.trusted?`<div class="blk">${I('phone',15)}<span><b>${esc(m.trusted.name)}</b> · ${esc(m.trusted.phone)}</span><button class="lnk" data-a="editprofile" data-k="safety">Change</button></div>`:`<button class="btn sm sec" data-a="editprofile" data-k="safety">${I('user-plus',14)} Add a trusted contact</button>`}
-  <label>Blocked people</label>${S.blocked.length?S.blocked.map(u=>`<div class="blk">${av(u,'sm')}${esc(uname(u))}<button class="lnk" data-a="unblock" data-id="${u}">Unblock</button></div>`).join(''):'<p class="small mute" style="margin:0">You have not blocked anyone.</p>'}</div>
+  <label>Blocked people</label>${S.blocked.length?S.blocked.map(u=>`<div class="blk">${av(u,'sm')}${esc(uname(u))}<button class="lnk" data-a="unblock" data-id="${u}">Unblock</button></div>`).join(''):'<p class="small mute" style="margin:0">No one.</p>'}</div>
   <div class="panel"><div class="ph">${I('user',15)} Account</div>
   <p class="small mute" style="margin-top:0"><a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> · <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a> · <a href="copyright.html" target="_blank" rel="noopener" style="color:inherit">Copyright</a> · <a href="credits.html" target="_blank" rel="noopener" style="color:inherit">Credits</a></p>
   <div class="row" style="gap:8px"><button class="btn sm ghost" data-a="signout">${I('log-out',14)} Sign out</button><button class="btn sm ghost" style="color:var(--bad)" data-a="delacct">${I('trash',14)} Delete my account</button></div></div>
@@ -1228,7 +1236,7 @@ function modalHtml(){
     if(m.state==='flagged'||v.review)inner=`<div class="scan">${I('shield-check',56)}</div><p style="text-align:center"><strong>Check paused for 24 hours</strong></p><p class="mute" style="text-align:center">You have used all ${v.max||5} tries, so the check is paused${v.until?' until '+esc(new Date(v.until).toLocaleString([], {weekday:'short',hour:'numeric',minute:'2-digit'})):''}. Then you get ${v.max||5} new tries. A person on our team will also look at it, and you will get a notification if they approve it.</p>
       ${reviewMail(m.kind)}`;
     else if(face&&!twoPhotos())inner=`<p style="text-align:center;margin-top:0"><strong>First, add two photos of you</strong></p>
-      <p class="mute" style="text-align:center">The face check compares your live face with both, so people know your photos are really you. Photo 1 is your profile picture; both show on your profile.</p>
+      <p class="mute" style="text-align:center">The face check compares your face with both, so people know the photos are really you. The first is your profile picture.</p>
       ${photoPair()}`;
     else if(m.state==='scanning')inner=(live&&face?'<div id="face_box" class="facebox"></div>':`<div class="scan go">${I(ic,56)}</div>`)+`<p style="text-align:center" class="mute">${face?'Checking liveness…':'Reading your ID…'}</p>`;
     else if(!left)inner=`<div class="scan">${I('shield-check',56)}</div><p style="text-align:center"><strong>No tries left</strong></p><p class="mute" style="text-align:center">You have used all ${v.max||5} tries. The check is now paused for 24 hours, and a person on our team will look at it.</p>
@@ -1289,14 +1297,14 @@ function modalHtml(){
       <div class="dtiles">${tile('calendar',day,tm+' · '+durTxt(a.dur||2))}${tile('map-pin',esc(placeLine(a)),a.host==='me'?'':`${distKm(a)} km away`)}
       ${tile('users',left>0?`${left} of ${a.cap} open`:'Full',(n?`${n} going`:'be the first')+(wl?` · ${wl} on waitlist`:''))}${tile('wallet',COST_S[a.cost],costSub(a))}</div>
       ${extra.length?`<div class="tg" style="margin-top:10px">${extra.map(x=>`<span>${x}</span>`).join('')}</div>`:''}`;
-    if(m.type==='confirm'&&(can||canWait))return sheet(can?'Request to Join':'Join the waitlist',`<div class="sb">${top}${hostline}
+    if(m.type==='confirm'&&(can||canWait))return sheet(can?'Ask to join':'Join the waitlist',`<div class="sb">${top}${hostline}
       ${canWait?`<div class="warnbox" style="background:var(--infobg);border-color:#BFDBFE;color:var(--info)">${I('users',16)}<span>This activity is full. Join the waitlist and your request goes to ${esc(h.name)} automatically if a spot opens${wl?` (${wl} ahead of you)`:''}.</span></div>`:''}
       <label for="r_note" style="font-size:14px;margin-top:18px">Add a note <span class="mute" style="font-weight:400">(optional)</span></label>
       <p class="small mute">Introduce yourself or mention why you want to join.</p>
       <textarea id="r_note" maxlength="100" placeholder="Hey! I'd love to join, happy to be on time and split costs."></textarea><div class="cc"><span id="r_cnt">0</span>/100</div>
       ${isSample(a.host)?`<div class="warnbox">${I('alert-triangle',16)}<span><b>Sample plan.</b> It shows how Overhere works: the host says yes straight away, but nobody will actually be there. Don't go to meet anyone.</span></div>`:''}
       ${S.me.face?'<div style="height:14px"></div>':`<div class="warnbox">${I('alert-triangle',16)}<span>You'll need to do a quick face check before your request is sent. It takes about a minute.</span></div>`}
-      <button class="btn" data-a="request" data-id="${a.id}">${I('send',16)} ${canWait?(S.me.face?'Join waitlist':'Verify &amp; join waitlist'):(S.me.face?'Send Request':'Verify &amp; Send Request')}</button>
+      <button class="btn" data-a="request" data-id="${a.id}">${I('send',16)} ${canWait?(S.me.face?'Join waitlist':'Verify &amp; join waitlist'):(S.me.face?'Send request':'Do the face check')}</button>
       <div style="height:8px"></div><button class="btn ghost" data-a="close">Not now</button></div>`);
     const acc=rq?.status==='accepted',pos=rq?.status==='waitlist'?waitlist(a.id).findIndex(r=>r.user==='me')+1:0;
     return sheet(backB(m)+'Activity',`<div class="sb">${hero}${hostline}
@@ -1346,7 +1354,7 @@ function modalHtml(){
       ${signals(m.id)}
       <div style="height:12px"></div><button class="btn ${S.following.includes(m.id)?'ghost':'sec'}" data-a="follow" data-id="${m.id}" aria-pressed="${S.following.includes(m.id)}">${S.following.includes(m.id)?I('circle-check',16)+' Following':I('user-plus',16)+' Follow'}</button>
       <p class="small mute" style="margin:6px 0 0;text-align:center">${S.following.includes(m.id)?`You'll hear when ${esc(p.name)} posts a new plan.`:`Get notified when ${esc(p.name)} posts a new plan.`}</p>
-      ${isVer(m.id)?'':`<div class="warnbox">${I('alert-triangle',16)}<span>${esc(p.name)} has not verified their ID yet. Meet in busy public places and share your plan with someone you trust.</span></div>`}
+      ${isVer(m.id)?'':`<div class="warnbox">${I('alert-triangle',16)}<span>${esc(p.name)} hasn't done the face check yet. Meet in busy public places and share your plan with someone you trust.</span></div>`}
       <h3>Upcoming activities${ups.length?` (${ups.length})`:''}</h3>
       ${ups.length?ups.map(a=>{const rq=myReq(a.id);return liHtml(a,'detailback',`<span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(placeLine(a))} · ${distKm(a)} km</span>`,
         rq?`<span class="chip ${REQ_TONE[rq.status]||''}">${REQ_LBL[rq.status]||esc(rq.status)}</span>`:`<span class="chip">${spotTxt(a)}</span>`)}).join('')
@@ -1622,13 +1630,13 @@ function authHtml(){
   /* Phone: one flow for new and returning people. The code signs you in, and makes the account the first time. */
   if(md==='phone'){
     const up=ui.auth.was==='up';
-    return `<div class="ob">${LOGO}<div class="mailic">${I('phone',28)}</div><h1 class="pt">${up?'Sign up with phone':'Continue with phone'}</h1><p class="sub">We'll text you a 6-digit code to confirm it's you. ${up?"Next you'll add your email and a password.":'New here? This creates your account.'}</p>
+    return `<div class="ob">${LOGO}<div class="mailic">${I('phone',28)}</div><h1 class="pt">${up?'Sign up with phone':'Sign in with phone'}</h1><p class="sub">We'll text you a 6-digit code to confirm it's you.${up?" Next you'll add your email and a password.":''}</p>
     <form id="a_form" data-submit="sendcode" novalidate><label for="a_phone">Mobile number</label>
     <div class="fi tel"><span class="cc">${I('phone',16)}+91</span><input id="a_phone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="16" placeholder="98765 43210" value="${esc(ui.auth.phone?fmtPhone(ui.auth.phone.slice(3)):'')}" aria-describedby="a_phone_err a_phone_note"></div>
     <p class="ferr" id="a_phone_err" aria-live="polite"></p><p class="fhint" id="a_phone_note">Indian mobile numbers only.</p>
-    ${AGEBOX}<div style="height:18px"></div>${ERRBOX}${goBtn('Send code')}</form>
+    ${up?AGEBOX:''}<div style="height:18px"></div>${ERRBOX}${goBtn('Send code')}</form>
     <div style="height:8px"></div><button class="btn ghost" data-a="authmode" data-k="${up?'up':'in'}">Back</button>
-    <p class="small mute" style="text-align:center;margin-top:12px">By continuing you agree to our <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a>. Standard SMS rates may apply.</p></div>`;
+    <p class="small mute" style="text-align:center;margin-top:12px">${up?'':'By signing in you agree to our <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a>. '}Standard SMS rates may apply.</p></div>`;
   }
   if(md==='code'){
     const left=Math.ceil((ui.auth.sent+RESEND_MS-Date.now())/1000);
@@ -1644,13 +1652,12 @@ function authHtml(){
   return `<div class="ob">${LOGO}<p class="mute">Do things in your city with company. Post a plan you are already making, pick who joins. Not a dating app.</p>
     <div class="seg atab${(was?was==='up':up)?' up':''}"><button type="button" class="${up?'':'on'}" aria-pressed="${!up}" data-a="authmode" data-k="in">Sign in</button><button type="button" class="${up?'on':''}" aria-pressed="${up}" data-a="authmode" data-k="up">Create account</button></div>
     <div class="aswap${was?' in':''}"><h1 class="pt" style="margin-bottom:18px">${up?'Create your account':'Welcome back'}</h1>
-    ${up?AGEBOX.replace('margin-top:14px','margin:0 0 14px'):''}${CFG.PHONE_LOGIN?`<button class="btn out" data-a="authmode" data-k="phone">${I('phone',16)} Continue with phone</button>
+    ${CFG.PHONE_LOGIN?`<button class="btn out" data-a="authmode" data-k="phone">${I('phone',16)} Continue with phone</button>
     <div class="or">or with email</div>`:''}
     <form id="a_form" data-submit="${up?'signup':'signin'}" novalidate>${emailField()}
     ${pwField('a_pw','Password',up?'new-password':'current-password',up?'':'<button type="button" class="lnk" data-a="authmode" data-k="reset">Forgot password?</button>')}
-    ${up?pwMeter()+pwField('a_pw2','Confirm password','new-password'):''}
+    ${up?pwMeter()+pwField('a_pw2','Confirm password','new-password')+AGEBOX:''}
     <div style="height:18px"></div>${ERRBOX}${goBtn(up?'Create account':'Sign in')}</form>
-    ${up?'<p class="small mute" style="text-align:center;margin-top:12px">By creating an account you agree to our <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a>.</p>':''}
     <p class="small" style="text-align:center;margin-top:14px">${up?'Already have an account? <button class="lnk" data-a="authmode" data-k="in">Sign in</button>'
       :'New here? <button class="lnk" data-a="authmode" data-k="up">Create an account</button>'}</p>
     <p class="small mute" style="text-align:center;margin-top:10px"><a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> · <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a> · <a href="copyright.html" target="_blank" rel="noopener" style="color:inherit">Copyright</a> · <a href="credits.html" target="_blank" rel="noopener" style="color:inherit">Credits</a></p></div></div>`;
@@ -1688,7 +1695,7 @@ function obKeep(){
   const d=OBF;
   if(document.getElementById('o_name')){d.name=val('o_name');d.last=val('o_last');d.dob=val('o_dob');d.gender=val('o_gender')}
   if(document.getElementById('o_hood'))d.hood=val('o_hood');
-  if(document.getElementById('o_ok')){d.ints=many('o_int');d.avail=many('o_avail');d.ok=document.getElementById('o_ok').checked;d.usage=!!document.getElementById('o_usage')?.checked}
+  if(document.getElementById('o_usage')){d.ints=many('o_int');d.avail=many('o_avail');d.ok=AUTHU.terms||!!document.getElementById('o_ok')?.checked;d.usage=!!document.getElementById('o_usage').checked}
   return d;
 }
 function onboardHtml(){
@@ -1710,18 +1717,18 @@ function onboardHtml(){
     <div style="height:18px"></div><button class="btn" data-a="obnext">Next</button>${back}`
     :`<h1 class="pt">What do you like doing?</h1>${intOpts('o_int',d.ints)}
     <label>When are you usually free?</label>${opts('o_avail',TIMES,d.avail)}
-    <label class="chk top" style="margin-top:18px"><input type="checkbox" id="o_ok" ${d.ok?'checked':''}> <span>I agree to the <a href="terms.html" ${tgt}>Terms</a> and <a href="privacy.html" ${tgt}>Privacy policy</a></span></label>
-    <label class="chk top" style="margin-top:10px"><input type="checkbox" id="o_usage" ${d.usage?'checked':''}> <span>Share usage statistics to help improve Overhere (optional)</span></label>
+    ${AUTHU.terms?'':`<label class="chk top" style="margin-top:18px"><input type="checkbox" id="o_ok" ${d.ok?'checked':''}> <span>I agree to the <a href="terms.html" ${tgt}>Terms</a> and <a href="privacy.html" ${tgt}>Privacy policy</a></span></label>`}
+    <label class="chk top" style="margin-top:${AUTHU.terms?18:10}px"><input type="checkbox" id="o_usage" ${d.usage?'checked':''}> <span>Share usage statistics to help improve Overhere (optional)</span></label>
     <div style="height:18px"></div><button class="btn" data-a="ob2">Continue</button>${back}`);
-  }else if(!S.me.face&&!ui.faceSkip&&!twoPhotos())body=`<h1 class="pt">Add two photos of you</h1><p class="sub">Photo 1 is your profile picture, and both show on your profile. The face check matches your live face against both.</p>${photoPair()}
+  }else if(!S.me.face&&!ui.faceSkip&&!twoPhotos())body=`<h1 class="pt">Add two photos of you</h1><p class="sub">The first is your profile picture. The face check compares your face with both.</p>${photoPair()}
     <div style="height:8px"></div><button class="btn sec" data-a="obfaceskip">Skip for now</button>
-    <p class="small mute" style="text-align:center;margin-top:10px">Without photos you can browse, and other people see your emoji. Posting and joining plans need both photos and the face check.</p>
+    <p class="small mute" style="text-align:center;margin-top:10px">You can skip this and browse. Posting and joining plans need the photos and the face check.</p>
     <p class="small" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p>`;
-  else if(!S.me.face&&!ui.faceSkip)body=`<h1 class="pt">Quick face check</h1><p class="sub">Confirms you're a real person, and the person in your two photos. You can browse without it, but you need it to post a plan or ask to join one.</p><div class="ob-av">${av('me','lg')}</div><button class="btn" data-a="obface">Start face check</button>
+  else if(!S.me.face&&!ui.faceSkip)body=`<h1 class="pt">Quick face check</h1><p class="sub">Shows people you're real and the person in your photos. You need it to post or join plans.</p><div class="ob-av">${av('me','lg')}</div><button class="btn" data-a="obface">Start face check</button>
     <div style="height:8px"></div><button class="btn sec" data-a="obfaceskip">Skip for now</button>
     <p class="small" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p>`;
-  else body=`<h1 class="pt">Tell us more (optional)</h1><p class="sub">You can skip this and add it later.</p>
-    <label for="o_job">Profession</label><input id="o_job" maxlength="40"><label for="o_bio">Bio</label><textarea id="o_bio" maxlength="300"></textarea>
+  else body=`<h1 class="pt">Tell us more</h1><p class="sub">Optional. Hosts see this when you ask to join.</p>
+    <label for="o_job">What you do</label><input id="o_job" maxlength="40" placeholder="e.g. Designer, student"><label for="o_bio">About you</label><textarea id="o_bio" maxlength="300"></textarea>
     <div style="height:16px"></div><button class="btn" data-a="obdone" data-save="1">Save and start browsing</button><div style="height:8px"></div><button class="btn sec" data-a="obdone">Skip for now</button>`;
   return `<div class="ob">${body}</div>`;
 }
@@ -2025,10 +2032,13 @@ function fieldMsg(id,msg,ok){
   m.className='ferr'+(ok?' ok':'');m.innerHTML=msg?I(ok?'circle-check':'alert-triangle',14)+esc(msg):'';
 }
 /* A problem with the whole form (wrong password, account already exists...), shown above its button. */
-const AGEBOX='<label class="chk top" style="margin-top:14px"><input type="checkbox" id="a_age"> <span>I\'m 18 or older. Overhere is for adults only.</span></label>';
+/* New accounts tick one box: 18 or older (the database refuses the login without it, _before_user_created) and the
+   Terms (terms_ok, so onboarding doesn't ask again). Signing in doesn't ask: they agreed when they signed up. */
+const AGEBOX='<label class="chk top" style="margin-top:14px"><input type="checkbox" id="a_age"> <span>I\'m 18 or older and agree to the <a href="terms.html" target="_blank" rel="noopener">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a></span></label>';
+const NEW_ACCOUNT={age_18:true,terms_ok:true};
 function ageOk(inForm){
   const c=document.getElementById('a_age');if(!c||c.checked)return true;
-  const m="Please confirm you're 18 or older to continue.";if(inForm)formErr(m);else toast(m);c.focus();return false;
+  const m="Tick the box to confirm you're 18 or older and agree to the Terms.";if(inForm)formErr(m);else toast(m);c.focus();return false;
 }
 function formErr(msg,more=''){
   const b=document.getElementById('a_formerr');if(!b){if(msg)toast(msg);return}
@@ -2118,7 +2128,13 @@ async function sendCode(again){
   /* paused after 5 wrong codes (otp-verify): don't send a code that can't be used. If the check fails, send anyway. */
   const p=OTP_GUARD?await edge('otp-verify',{phone:'+91'+n,check:true}).catch(()=>({})):{};
   if(p?.until)return again?toast(otpPaused(p.until)):formErr(otpPaused(p.until));
-  const {error}=await withCaptcha(t=>SB.auth.signInWithOtp({phone:'+91'+n,options:{captchaToken:t,data:{age_18:true}}}));
+  const up=ui.auth.was==='up';
+  const {error}=await withCaptcha(t=>SB.auth.signInWithOtp({phone:'+91'+n,options:{captchaToken:t,...(up?{data:NEW_ACCOUNT}:{})}}));
+  /* signing in with a number that has no account: the database refuses it (no "18 or older"), so offer sign-up */
+  if(error&&!up&&/aged 18/i.test(error.message||'')){
+    ui.auth={mode:'phone',was:'up',phone:'+91'+n};render();
+    return formErr("There's no account with this number yet. Tick the box to create one.");
+  }
   if(error)return again?toast(friendly(error)):formErr(friendly(error));
   track('phone_code_sent',{again,signup:ui.auth.was==='up'});
   ui.auth={mode:'code',phone:'+91'+n,sent:Date.now(),was:ui.auth.was};render();resendTimer();
@@ -2157,7 +2173,7 @@ async function working(fn){
   finally{if(b&&!done){b.disabled=false;b.classList.remove('busy');b.removeAttribute('aria-busy')}}
 }
 const A={
-  tab:d=>{if(ui.tab!==d.t)track('tab_view',{tab:d.t});ui.tab=d.t;ui.seen=null;ui.modal=null;render()},
+  tab:d=>{if(ui.tab!==d.t)track('tab_view',{tab:d.t});ui.tab=d.t;ui.seen=null;ui.modal=null;ui.settings=false;render()},
   swipe:d=>swipe(d.d),
   swipeok:d=>{S.tips['swipe_'+d.d]=true;save();ui.modal=null;render();swipe(d.d)},
   detail:d=>{ui.modal={type:'detail',id:d.id};render()},
@@ -2228,7 +2244,7 @@ const A={
   }),
   signup:()=>working(async()=>{
     if(!authCheck(true)||!ageOk(true))return;
-    const email=val('a_email'),{data,error}=await withCaptcha(t=>SB.auth.signUp({email,password:pw(),options:{emailRedirectTo:here(),captchaToken:t,data:{age_18:true,pw_set:true}}}));
+    const email=val('a_email'),{data,error}=await withCaptcha(t=>SB.auth.signUp({email,password:pw(),options:{emailRedirectTo:here(),captchaToken:t,data:{...NEW_ACCOUNT,pw_set:true}}}));
     const exists=['You already have an account with this email.',' <button type="button" class="lnk" data-a="authmode" data-k="in">Sign in instead</button>'];
     if(error)return /already (registered|exists)/i.test(error.message)?formErr(...exists):formErr(friendly(error));
     /* With email confirmation on, Supabase answers an address that already has an account with a user that has no identities, not an error. */
@@ -2565,6 +2581,7 @@ const A={
     if(p.emo&&S.me.photoPath&&!await setPhoto(null))return;   // picking an emoji replaces the photos
     track('profile_saved');ui.modal=null;toast('Profile saved');render();
   },
+  settings:d=>{ui.settings=d.k!=='off';render();scrollTo(0,0)},
   editprofile:d=>{ui.modal={type:'editprofile'};render();if(d.k==='safety')document.getElementById('ep_safety')?.scrollIntoView({block:'start'})},
   /* In the edit sheet the emoji is applied on Save; update the preview without losing typed changes. */
   pickemo:d=>{
@@ -2718,7 +2735,7 @@ window.addEventListener('hashchange',async()=>{
    (pwStepHtml): user_metadata.pw_set records that. Email sign-ups chose their password when they signed up. */
 function authOf(u){
   const phone=!!(u.phone&&u.phone_confirmed_at);
-  return {phone,email:!!u.email_confirmed_at,mail:u.email||'',pw:!phone||u.user_metadata?.pw_set===true};
+  return {phone,email:!!u.email_confirmed_at,mail:u.email||'',pw:!phone||u.user_metadata?.pw_set===true,terms:u.user_metadata?.terms_ok===true};
 }
 /* WELCOME_FN: the address of the welcome-email Edge Function (supabase/functions/welcome-email), which sends "Welcome
    to Overhere" once a new account is complete; false turns it off. On live it was deployed from the dashboard, which

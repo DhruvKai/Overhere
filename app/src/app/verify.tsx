@@ -1,9 +1,9 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { Linking, ScrollView, Text, View } from 'react-native';
 import { FaceScan } from '@/components/FaceScan';
 import { PhotoPair } from '@/components/PhotoPair';
-import { Btn, Empty, H, Icon, P } from '@/components/ui';
+import { Btn, Check, Empty, H, Icon, P } from '@/components/ui';
 import { api, friendly, type FaceSession } from '@/lib/api';
 import { useModel, useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
@@ -46,7 +46,7 @@ Account: ${m.me}
     return (
       <ScrollView contentContainerStyle={{ padding: 20, gap: 10 }}>
         <H size={22}>First, add two photos of you</H>
-        <P>The face check compares your live face with both, so people know your photos are really you. Photo 1 is your profile picture; both show on your profile.</P>
+        <P>The face check compares your face with both, so people know the photos are really you. The first is your profile picture.</P>
         <View style={{ height: 4 }} />
         <PhotoPair />
       </ScrollView>
@@ -93,13 +93,8 @@ Account: ${m.me}
         <Icon name="smile" size={30} color={t.accink} />
       </View>
       <H size={22}>A quick face check</H>
-      <P>It shows people you&apos;re a real person, and the person in your two photos. Everyone who posts or joins plans has done it. You look at the camera for a few seconds.</P>
-      <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: agree }} onPress={() => setAgree(x => !x)} style={{ flexDirection: 'row', gap: 12 }}>
-        <View style={{ width: 24, height: 24, borderRadius: 7, borderWidth: 2, marginTop: 2, borderColor: agree ? t.acc : t.line, backgroundColor: agree ? t.acc : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-          {agree ? <Icon name="check" size={16} color={t.onAcc} /> : null}
-        </View>
-        <P style={{ flex: 1 }}>I agree to a face scan. The video goes only to our verification provider to check that I am a real person and match my two photos, and is not kept. Overhere stores whether it passed and the provider&apos;s scores. If a scan fails, one still frame from it is kept privately so our team can compare it with my photos, and deleted once they have reviewed it or I pass.</P>
-      </Pressable>
+      <P>Shows people you&apos;re real and the person in your photos. You look at the camera for a few seconds.</P>
+      <Check on={agree} onPress={() => setAgree(x => !x)}>I agree to a face scan. The video goes only to our verification provider to check that I am a real person and match my two photos, and is not kept. Overhere stores whether it passed and the provider&apos;s scores. If a scan fails, one still frame from it is kept privately so our team can compare it with my photos, and deleted once they have reviewed it or I pass.</Check>
       {live ? null : <P small mute>Beta: the check is simulated for now, so it always passes.</P>}
       <Btn title="Start face check" icon="camera" onPress={start} busy={busy} />
       {err ? <Text accessibilityLiveRegion="polite" style={{ color: t.bad, fontSize: 14 }}>{err}</Text> : null}

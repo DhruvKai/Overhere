@@ -226,6 +226,7 @@ input[aria-invalid=true],input[aria-invalid=true]:focus{border-color:var(--bad)}
 .chm{font-size:13.5px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .chi.un .chm{color:var(--ink);font-weight:600}
 .media .smp{position:absolute;top:10px;right:10px;margin:0;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.media .smp:has(+ .svb){top:18px;right:54px}  /* next to the save button, not under it */
 .udot{width:10px;height:10px;border-radius:50%;background:var(--acc);flex:0 0 auto}
 /* CAPTCHA: invisible unless Cloudflare asks for a tap */
 #cf_box{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:9999;pointer-events:none}

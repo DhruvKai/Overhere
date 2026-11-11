@@ -6,7 +6,7 @@ import { JoinSheet } from '@/components/JoinSheet';
 import { ReasonSheet } from '@/components/ReasonSheet';
 import { ReportSheet } from '@/components/ReportSheet';
 import { TrustShareSheet } from '@/components/TrustShareSheet';
-import { Avatar, Badge, Btn, Card, CatPill, Empty, H, Icon, Meta, P } from '@/components/ui';
+import { Avatar, Badge, BottomBar, Btn, Card, CatPill, Empty, H, Icon, Meta, P } from '@/components/ui';
 import { api } from '@/lib/api';
 import { INVITE_MISS } from '@/lib/invite';
 import {
@@ -52,6 +52,8 @@ export default function PlanScreen() {
   const DECIDED: Record<string, string> = { rejected: 'Declined', left: 'Left', removed: 'Removed', closed: 'Closed', waitlist: 'Closed' };
   const rate = needRate(m, a);
   const km = kmAway(m, a);
+  const canAsk = !mine && !req && !past;
+  const full = spots(a) <= 0 || a.status === 'full';
 
   const confirm = (title: string, text: string, label: string, fn: () => Promise<unknown>, done: string) =>
     Alert.alert(title, text, [{ text: 'Not now', style: 'cancel' }, {
@@ -101,7 +103,7 @@ export default function PlanScreen() {
           <H size={24}>{a.desc}</H>
           <Meta icon="calendar" text={`${whenStr(a.when)} · ${durTxt(a.dur)}`} />
           <Meta icon="map-pin" text={a.venue + (km != null ? ` · ${km.toFixed(1)} km away` : '')} />
-          <Meta icon="users" text={`${spotTxt(a)} · ${a.members.length} of ${a.cap} going`} />
+          <Meta icon="users" text={a.members.length ? `${a.members.length} going · ${spotTxt(a)}` : spotTxt(a)} />
           <Meta icon="credit-card" text={COST[a.cost] + (a.total ? ` · about ${rupees(a.total)} in total` : '')} />
         </View>
 
@@ -204,13 +206,9 @@ export default function PlanScreen() {
         ) : null}
 
         <View style={{ gap: 10 }}>
-          {rate ? <Btn title={rate === 'host' ? 'Rate and record attendance' : rate === 'noshow' ? 'Tell the host what happened' : 'Rate the meetup'} icon="star"
-            onPress={() => router.push({ pathname: '/rate/[id]', params: { id: a.id } })} /> : null}
           {mine && past && a.members.length && !rate ? <P small mute style={{ textAlign: 'center' }}>{a.attDone ? 'You recorded attendance. Thanks!' : `You can record who came once it ends, ${whenStr(endOf(a))}.`}</P> : null}
           {!mine && m.ratings[a.id] && past ? <P small mute style={{ textAlign: 'center' }}>You rated this meetup. Thanks!</P> : null}
-          {inChat(m, a) ? <Btn title="Open group chat" icon="message-circle" kind={rate ? 'ghost' : 'primary'} onPress={() => router.push({ pathname: '/chat/[id]', params: { id: a.id } })} /> : null}
-          {!mine && !req && !past ? (spots(a) <= 0 || a.status === 'full' ? <P mute style={{ textAlign: 'center' }}>This plan is full.</P>
-            : <Btn title="Ask to join" icon="heart" onPress={() => setAsking(true)} />) : null}
+          {canAsk && full ? <P mute style={{ textAlign: 'center' }}>This plan is full.</P> : null}
           {req && req.status === 'pending' && !past ? (
             <>
               <P mute style={{ textAlign: 'center' }}>{`Waiting for ${uname(m, a.host)} to reply.`}</P>
@@ -227,6 +225,15 @@ export default function PlanScreen() {
             async () => { await api.cancelActivity(a.id); router.back(); }, 'Plan cancelled')} /> : null}
         </View>
       </ScrollView>
+      {/* the plan's main action stays at the bottom: rate it, open the chat, or ask to join */}
+      {rate || inChat(m, a) || (canAsk && !full) ? (
+        <BottomBar>
+          {rate ? <Btn title={rate === 'host' ? 'Rate and record attendance' : rate === 'noshow' ? 'Tell the host what happened' : 'Rate the meetup'} icon="star"
+            onPress={() => router.push({ pathname: '/rate/[id]', params: { id: a.id } })} /> : null}
+          {inChat(m, a) ? <Btn title="Open group chat" icon="message-circle" kind={rate ? 'ghost' : 'primary'} onPress={() => router.push({ pathname: '/chat/[id]', params: { id: a.id } })} /> : null}
+          {canAsk && !full ? <Btn title="Ask to join" icon="heart" onPress={() => setAsking(true)} /> : null}
+        </BottomBar>
+      ) : null}
       {asking ? <JoinSheet plan={a} onClose={() => setAsking(false)} /> : null}
       {trustShare ? <TrustShareSheet plan={a} onClose={() => setTrustShare(false)} /> : null}
       {leaving ? (

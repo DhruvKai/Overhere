@@ -8,10 +8,10 @@ import { useTheme } from '@/lib/theme';
 import { Sheet } from './Sheet';
 import { Icon, Note, P } from './ui';
 
-/* Where you're browsing, at the top of Swipe and Discover: near your home area, or a city with plans (the website's
-   whereBar). The choice is saved in profiles.state.city and the server sends that city's plans. When Overhere is new
-   near you, the nearest city is picked for you and a note says so. */
-export function WhereBar() {
+/* Where you're browsing, under the title on Swipe and Discover (Header): near your home area, or a city with plans
+   (the website's whereBar). Tap to change. The choice is saved in profiles.state.city and the server sends that
+   city's plans. */
+export function WhereButton() {
   const t = useTheme();
   const m = useModel();
   const [open, setOpen] = useState(false);
@@ -19,17 +19,22 @@ export function WhereBar() {
   return (
     <>
       <Pressable accessibilityRole="button" accessibilityLabel={`Showing plans ${c ? 'in ' + viewName(m) : 'near ' + homeName(m)}. Change city`} onPress={() => setOpen(true)}
-        style={{ flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', backgroundColor: t.card, borderColor: t.line, borderWidth: 1, borderRadius: 99, paddingHorizontal: 12, minHeight: 36, marginBottom: 10 }}>
-        <Icon name="map-pin" size={14} color={t.accink} />
-        <Text style={{ color: t.ink, fontWeight: '600', fontSize: 14 }}>{c ? viewName(m) : 'Near ' + homeName(m)}</Text>
+        hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', minHeight: 28 }}>
+        <Icon name="map-pin" size={13} color={t.accink} />
+        <Text style={{ color: t.ink2, fontWeight: '600', fontSize: 14 }} numberOfLines={1}>{c ? viewName(m) : 'Near ' + homeName(m)}</Text>
         <Icon name="chevron-down" size={14} color={t.mute} />
       </Pressable>
-      {m.cityAuto && c ? (
-        <Note icon="compass" tone="info">Overhere is new in {homeName(m)}, so you&apos;re seeing plans in {viewName(m)} ({Math.round(kmBetween(homeLL(m), [c[2], c[3]]))} km away) too. Anything posted near you shows here first.</Note>
-      ) : null}
       {open ? <CitySheet onClose={() => setOpen(false)} /> : null}
     </>
   );
+}
+
+/* When Overhere is new near you, the nearest city is picked for you, and this says so (above the plans). */
+export function CityNote() {
+  const m = useModel();
+  const c = viewCity(m);
+  if (!m.cityAuto || !c) return null;
+  return <Note icon="compass" tone="info">Overhere is new in {homeName(m)}, so you&apos;re also seeing plans in {viewName(m)} ({Math.round(kmBetween(homeLL(m), [c[2], c[3]]))} km away).</Note>;
 }
 
 function CitySheet({ onClose }: { onClose: () => void }) {

@@ -1,11 +1,12 @@
 import DateTimePicker, { DateTimePickerAndroid, type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { PlacePicker } from '@/components/PlacePicker';
 import { SafetyFirst, safetySeen } from '@/components/SafetyFirst';
-import { Btn, Chip, Empty, Field, Label, Note, P, Wrap } from '@/components/ui';
+import { BottomBar, Btn, Chip, Empty, Field, Label, Note, P, Stepper, Wrap } from '@/components/ui';
 import { api } from '@/lib/api';
+import { registerPush } from '@/lib/push';
 import { CATS, COST, durTxt, GENDERS, homeLL, REPEAT, short, whenStr, type Plan } from '@/lib/model';
 import { badWord, badWordMsg } from '@/lib/words';
 import { useModel, useStore } from '@/lib/store';
@@ -93,7 +94,7 @@ export default function Post() {
     if (r === undefined) return;
     toast(edit ? (edit.members.length ? 'Saved. Everyone going sees a note about the changes.' : 'Saved') : 'Posted! People nearby can see it now.');
     router.back();
-    if (!edit) askMicro('post');
+    if (!edit) { askMicro('post'); registerPush(true); }   // to hear about requests to join
   }
 
 
@@ -121,12 +122,8 @@ export default function Post() {
           ? <DateTimePicker value={when} mode="datetime" minimumDate={new Date()} display="compact" onChange={(_e, d) => d && setWhen(d)} style={{ alignSelf: 'flex-start', marginBottom: 16 }} />
           : <Btn title={whenStr(when.getTime())} kind="ghost" icon="calendar" onPress={pickAndroid} style={{ marginBottom: 16 }} />}
 
-        <Label>{`How long does it usually take? (${durTxt(dur)})`}</Label>
-        <Wrap>
-          <Chip icon="minus" label="Shorter" onPress={() => setDur(d => Math.max(1, d - 1))} />
-          <Chip icon="plus" label="Longer" onPress={() => setDur(d => Math.min(24, d + 1))} />
-          {[1, 2, 3, 4, 6, 8, 12, 24].map(h => <Chip key={h} label={durTxt(h)} on={dur === h} onPress={() => setDur(h)} />)}
-        </Wrap>
+        <Label>How long does it take?</Label>
+        <Stepper value={dur} label="How long it takes" min={1} max={24} onChange={setDur} unit={durTxt} />
         <P small mute style={{ marginTop: -8, marginBottom: 14 }}>When it&apos;s over, we&apos;ll ask you who came.</P>
 
         <PlacePicker label="Where" mode="venue" value={venue} picked={!!ll} near={homeLL(m)} placeholder="Café, cinema or venue"
@@ -140,8 +137,8 @@ export default function Post() {
           <P small mute style={{ marginTop: -8, marginBottom: 14 }}>The pin goes in the middle of that area, so people can see roughly where it is.</P>
         </>) : null}
 
-        <Label>{`How many people can join? (${cap})`}</Label>
-        <Wrap>{[2, 3, 4, 5, 6, 7, 8, 9, 10].filter(n => n >= minCap).map(n => <Chip key={n} label={String(n)} on={cap === n} onPress={() => setCap(n)} />)}</Wrap>
+        <Label>How many people can join?</Label>
+        <Stepper value={cap} label="How many people can join" min={minCap} max={10} onChange={setCap} unit={n => `${n} people`} />
 
         <Label>Cost</Label>
         <Wrap>{(Object.keys(COST) as Cost[]).map(k => <Chip key={k} label={COST[k]} on={cost === k} onPress={() => setCost(k)} />)}</Wrap>
@@ -164,9 +161,11 @@ export default function Post() {
         </Wrap>
         {repeat ? <P small mute style={{ marginTop: -8, marginBottom: 14 }}>The next one is posted automatically when this one ends.</P> : null}
 
-        {err ? <Text accessibilityLiveRegion="polite" style={{ color: t.bad, marginBottom: 12, fontSize: 14 }}>{err}</Text> : null}
-        <Btn title={edit ? 'Save changes' : 'Post plan'} icon={edit ? 'check' : 'send'} onPress={post} busy={busy} />
       </ScrollView>
+      <View><BottomBar>
+        {err ? <Text accessibilityLiveRegion="polite" style={{ color: t.bad, fontSize: 14 }}>{err}</Text> : null}
+        <Btn title={edit ? 'Save changes' : 'Post plan'} icon={edit ? 'check' : 'send'} onPress={post} busy={busy} />
+      </BottomBar></View>
     </KeyboardAvoidingView>
   );
 }

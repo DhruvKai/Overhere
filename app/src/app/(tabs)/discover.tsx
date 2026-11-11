@@ -8,11 +8,11 @@ import { Header } from '@/components/Header';
 import { JoinSheet } from '@/components/JoinSheet';
 import { PlanMap } from '@/components/PlanMap';
 import { Sheet } from '@/components/Sheet';
-import { Btn, Chip, Empty, Icon, P, PlanRow, SaveToggle, type IconName } from '@/components/ui';
-import { LockedNote, WhereBar } from '@/components/Where';
+import { Btn, Chip, Empty, Icon, PlanRow, SaveToggle, type IconName } from '@/components/ui';
+import { CityNote, LockedNote } from '@/components/Where';
 import {
-  alertLabel, alertsOf, canSave, CATS, datePresets, dayKey, deck, DISTS, feed, filterLabels, kmAway, matchF, myReq, NO_FILTERS, reasons, saved,
-  nowOf, savedFOf, score, spots, whereTxt, type Filters, type Plan, type Sort, type Tod,
+  alertLabel, alertsOf, canSave, CATS, datePresets, dayKey, DISTS, feed, filterLabels, kmAway, matchF, myReq, NO_FILTERS, reasons, saved,
+  nowOf, savedFOf, score, spots, type Filters, type Plan, type Sort, type Tod,
 } from '@/lib/model';
 import { useModel, useStore, useToggleSave } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
@@ -49,7 +49,7 @@ export default function Discover() {
     if (sort === 'near') return [...l].sort((a, b) => kmAway(m, a) - kmAway(m, b) || a.when - b.when);
     return l;
   }, [m, all, f, sort]);
-  const act = filterLabels(f), sf = savedFOf(m), al = alertsOf(m), nDeck = deck(m).length;
+  const act = filterLabels(f), sf = savedFOf(m), al = alertsOf(m);
   const label = act.map(x => x[1]).join(' · ').slice(0, 60);
   const alertable = act.some(([k]) => k !== 'date'), alerted = al.some(x => x.label === alertLabel(f));
 
@@ -98,14 +98,14 @@ export default function Discover() {
 
   const head = (
     <View>
-      <WhereBar />
-      <P small mute style={{ marginBottom: 10 }}>{all.length} upcoming {whereTxt(m)}</P>
+      <CityNote />
       <LockedNote />
       <FeedbackCard />
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-        <Chip icon="zap" label={`Swipe this week${nDeck ? ` · ${nDeck}` : ''}`} onPress={() => router.navigate('/')} />
-        {sf.map(x => removable(x.label, () => rm('savedF', x.id), () => applyF(x.id), 'filter'))}
-      </View>
+      {sf.length ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+          {sf.map(x => removable(x.label, () => rm('savedF', x.id), () => applyF(x.id), 'filter'))}
+        </View>
+      ) : null}
       {al.length ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center', marginBottom: 10 }}>
           <Icon name="bell" size={13} color={t.mute} /><Text style={{ color: t.mute, fontSize: 13 }}>Your alerts</Text>
@@ -114,11 +114,11 @@ export default function Discover() {
       ) : null}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
         {tool('filter', 'Filters', () => setSheet('filters'), act.length > 0, act.length)}
-        {tool('sliders', `Sort: ${SORTS[sort][1]}`, () => setSheet('sort'))}
+        {tool('sliders', SORTS[sort][1], () => setSheet('sort'))}
         {tool(view === 'list' ? 'map' : 'list', view === 'list' ? 'Map' : 'List', () => setView(view === 'list' ? 'map' : 'list'))}
       </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center', marginBottom: 10 }}>
-        <Text style={{ color: t.mute, fontSize: 13 }}>Showing <Text style={{ fontWeight: '700', color: t.ink }}>{list.length}</Text> {list.length === 1 ? 'activity' : 'activities'}</Text>
+        <Text style={{ color: t.mute, fontSize: 13 }}><Text style={{ fontWeight: '700', color: t.ink }}>{list.length}</Text> {list.length === 1 ? 'plan' : 'plans'}{act.length ? ` of ${all.length}` : ''}</Text>
         {act.map(([k, l]) => removable(l, () => clear(k)))}
       </View>
       {act.length ? (
@@ -133,7 +133,7 @@ export default function Discover() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Header title="Discover" />
+      <Header title="Discover" where />
       {view === 'map' ? <View style={{ flex: 1 }}><View style={{ paddingHorizontal: 16 }}>{head}</View><PlanMap m={m} list={list} /></View> : (
       <FlashList<Plan>
         data={list}
@@ -141,8 +141,10 @@ export default function Discover() {
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
         refreshControl={<RefreshControl refreshing={pulling} onRefresh={onPull} tintColor={t.acc} />}
-        renderItem={({ item }) => {
-          const why = sort === 'for' ? reasons(m, item)[0]?.[0] : undefined;
+        renderItem={({ item, index }) => {
+          /* why it's suggested, once per run of plans with the same reason (like a section label), not on every card */
+          const whyOf = (x?: Plan) => (sort === 'for' && x ? reasons(m, x)[0]?.[0] : undefined);
+          const why = whyOf(item) !== whyOf(list[index - 1]) ? whyOf(item) : undefined;
           const rq = myReq(m, item.id);
           return (
             <View>
@@ -241,7 +243,7 @@ function FiltersSheet({ f, setF, count, onClose }: { f: Filters; setF: (f: Filte
       </View>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         {filterLabels(f).length ? <Btn title="Reset" kind="ghost" onPress={() => setF(NO_FILTERS)} style={{ flex: 1 }} /> : null}
-        <Btn title={`Show ${count} ${count === 1 ? 'activity' : 'activities'}`} onPress={onClose} style={{ flex: 2 }} />
+        <Btn title={`Show ${count} ${count === 1 ? 'plan' : 'plans'}`} onPress={onClose} style={{ flex: 2 }} />
       </View>
     </Sheet>
   );

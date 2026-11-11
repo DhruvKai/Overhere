@@ -1,19 +1,20 @@
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { InterestPicker } from '@/components/InterestPicker';
 import { PhotoPair } from '@/components/PhotoPair';
 import { PlacePicker } from '@/components/PlacePicker';
-import { Avatar, Btn, Chip, Field, H, Icon, P } from '@/components/ui';
+import { Avatar, BottomBar, Btn, Check, Chip, Field, H, Icon, Label, P, TextLink, Wrap } from '@/components/ui';
 import { api, friendly } from '@/lib/api';
-import { GENDERS, MIN_INTS, TIMES } from '@/lib/model';
-import { InterestPicker } from '@/components/InterestPicker';
+import { isoDob, maskDob } from '@/lib/dob';
+import { column } from '@/lib/layout';
+import { GENDERS, MIN_INTS, NEAR_KM, TIMES } from '@/lib/model';
 import { useModel, useStore } from '@/lib/store';
 import { SITE } from '@/lib/supabase';
 import { useTheme } from '@/lib/theme';
 import type { Gender } from '@/lib/types';
-import { isoDob, maskDob } from '@/lib/dob';
 
 const toggle = (l: string[], v: string) => (l.includes(v) ? l.filter(x => x !== v) : [...l, v]);
 
@@ -23,8 +24,24 @@ export default function Onboarding() {
   return useStore().model?.profile ? <Steps /> : <AboutYou />;
 }
 
-function Steps() {
+/* Every sign-up page: optional back arrow and progress bars at the top, the page in a scroll view, and its buttons
+   kept at the bottom (BottomBar), so short pages don't end in a gap and long ones don't hide the button. */
+function Page({ top, children, buttons }: { top?: ReactNode; children: ReactNode; buttons: ReactNode }) {
   const t = useTheme();
+  return (
+    <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.bg }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={[{ padding: 24, paddingTop: 12 }, column]} keyboardShouldPersistTaps="handled">
+          {top}
+          {children}
+        </ScrollView>
+        <View style={column}><BottomBar>{buttons}</BottomBar></View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+function Steps() {
   const m = useModel();
   const { run, refresh, signOut } = useStore();
   const [skip, setSkip] = useState(false);
@@ -40,46 +57,40 @@ function Steps() {
     else setBusy('');
   }
 
-  const skipBtn = <><View style={{ height: 8 }} /><Btn title="Skip for now" kind="soft" onPress={() => setSkip(true)} /></>;
-  let body;
+  const out = <View style={{ alignItems: 'center', marginTop: 18 }}><TextLink title="Sign out" onPress={signOut} /></View>;
+  const skipBtn = <Btn title="Skip for now" kind="ghost" onPress={() => setSkip(true)} />;
   if (!p.face && !skip && !(p.photo && p.photo2)) {
-    body = (<>
-      <H size={26}>Add two photos of you</H>
-      <P mute style={{ marginTop: 6, marginBottom: 22 }}>Photo 1 is your profile picture, and both show on your profile. The face check matches your live face against both.</P>
-      <PhotoPair />
-      {skipBtn}
-      <P mute small style={{ textAlign: 'center', marginTop: 10 }}>Without photos you can browse, and other people see your emoji. Posting and joining plans need both photos and the face check.</P>
-    </>);
-  } else if (!p.face && !skip) {
-    body = (<>
-      <H size={26}>Quick face check</H>
-      <P mute style={{ marginTop: 6, marginBottom: 22 }}>Confirms you&apos;re a real person, and the person in your two photos. You can browse without it, but you need it to post a plan or ask to join one.</P>
-      <View style={{ alignItems: 'center', marginBottom: 22 }}><Avatar m={m} id={m.me} size={96} /></View>
-      <Btn title="Start face check" onPress={() => router.push('/verify')} />
-      {skipBtn}
-    </>);
-  } else {
-    body = (<>
-      <H size={26}>Tell us more (optional)</H>
-      <P mute style={{ marginTop: 6, marginBottom: 22 }}>You can skip this and add it later.</P>
-      <Field label="Profession" value={job} onChangeText={setJob} maxLength={40} />
-      <Field label="Bio" value={bio} onChangeText={setBio} maxLength={300} multiline />
-      <View style={{ height: 6 }} />
-      <Btn title="Save and start browsing" onPress={() => done(true)} busy={busy === 'save'} disabled={!!busy} />
-      <View style={{ height: 8 }} />
-      <Btn title="Skip for now" kind="soft" onPress={() => done(false)} busy={busy === 'skip'} disabled={!!busy} />
-    </>);
+    return (
+      <Page buttons={skipBtn}>
+        <H size={26}>Add two photos of you</H>
+        <P mute style={{ marginTop: 6, marginBottom: 22 }}>The first is your profile picture. The face check compares your face with both.</P>
+        <PhotoPair />
+        <P mute small style={{ textAlign: 'center', marginTop: 10 }}>You can skip this and browse. Posting and joining plans need the photos and the face check.</P>
+        {out}
+      </Page>
+    );
+  }
+  if (!p.face && !skip) {
+    return (
+      <Page buttons={<><Btn title="Start face check" onPress={() => router.push('/verify')} />{skipBtn}</>}>
+        <H size={26}>Quick face check</H>
+        <P mute style={{ marginTop: 6, marginBottom: 22 }}>Shows people you&apos;re real and the person in your photos. You need it to post or join plans.</P>
+        <View style={{ alignItems: 'center' }}><Avatar m={m} id={m.me} size={112} /></View>
+        {out}
+      </Page>
+    );
   }
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ padding: 24 }} keyboardShouldPersistTaps="handled">
-          {body}
-          <View style={{ height: 10 }} />
-          <Btn title="Sign out" kind="ghost" onPress={signOut} />
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+    <Page buttons={<>
+      <Btn title="Save and start browsing" onPress={() => done(true)} busy={busy === 'save'} disabled={!!busy || !(job.trim() || bio.trim())} />
+      <Btn title="Skip for now" kind="ghost" onPress={() => done(false)} busy={busy === 'skip'} disabled={!!busy} />
+    </>}>
+      <H size={26}>Tell us more</H>
+      <P mute style={{ marginTop: 6, marginBottom: 22 }}>Optional. Hosts see this when you ask to join.</P>
+      <Field label="What you do" value={job} onChangeText={setJob} maxLength={40} placeholder="e.g. Designer, student" />
+      <Field label="About you" value={bio} onChangeText={setBio} maxLength={300} multiline hint={`${bio.length}/300`} />
+      {out}
+    </Page>
   );
 }
 
@@ -91,7 +102,10 @@ const adult = (iso: string) => { const d = new Date(); d.setFullYear(d.getFullYe
 
 function AboutYou() {
   const t = useTheme();
-  const { refresh, signOut, toast } = useStore();
+  const { refresh, signOut, toast, session } = useStore();
+  /* New accounts agreed to the Terms on the sign-up screen (terms_ok, sign-in.tsx). Older ones, made before that box
+     existed, still tick it here. */
+  const agreedAtSignUp = session?.user.user_metadata?.terms_ok === true;
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [last, setLast] = useState('');
@@ -101,7 +115,7 @@ function AboutYou() {
   const [ll, setLl] = useState<[number, number] | null>(null);
   const [ints, setInts] = useState<string[]>([]);
   const [avail, setAvail] = useState<string[]>([]);
-  const [consent, setConsent] = useState(false);
+  const [consent, setConsent] = useState(agreedAtSignUp);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const iso = isoDob(dob);
@@ -155,10 +169,19 @@ function AboutYou() {
     setBusy(false);
   }
 
-  const label = (text: string) => <Text style={{ color: t.ink, fontWeight: '700', fontSize: 14, marginBottom: 8 }}>{text}</Text>;
-  const chips = (list: readonly string[], on: string[], set: (f: (l: string[]) => string[]) => void) => (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
-      {list.map(v => <Chip key={v} label={v} on={on.includes(v)} onPress={() => { setErr(''); set(l => toggle(l, v)); }} />)}
+  const back = () => { setErr(''); setStep(s => s - 1); };
+  const top = (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24, minHeight: 44 }}>
+      {step > 0 ? (
+        <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={back} hitSlop={10} style={{ width: 36, height: 44, justifyContent: 'center' }}>
+          <Icon name="arrow-left" size={22} />
+        </Pressable>
+      ) : null}
+      {/* where you are: three short bars */}
+      <View accessible accessibilityLabel={`Step ${step + 1} of ${STEPS}`} style={{ flex: 1, flexDirection: 'row', gap: 6 }}>
+        {Array.from({ length: STEPS }, (_, k) => <View key={k} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: k <= step ? t.acc : t.line }} />)}
+      </View>
+      {step === 0 ? <TextLink title="Sign out" onPress={signOut} /> : null}
     </View>
   );
 
@@ -170,15 +193,13 @@ function AboutYou() {
       <Field label="First name" value={name} onChangeText={setName} maxLength={40} autoComplete="given-name" textContentType="givenName" />
       <Field label="Last name" value={last} onChangeText={setLast} maxLength={40} autoComplete="family-name" textContentType="familyName" />
       <Field label="Date of birth" value={dob} onChangeText={v => setDob(maskDob(v))} placeholder="DD/MM/YYYY" keyboardType="number-pad" maxLength={10} />
-      {label('Gender')}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
-        {GENDERS.map(g => <Chip key={g} label={g} on={gender === g} onPress={() => { setErr(''); setGender(g); }} />)}
-      </View>
+      <Label>Gender</Label>
+      <Wrap>{GENDERS.map(g => <Chip key={g} label={g} on={gender === g} onPress={() => { setErr(''); setGender(g); }} />)}</Wrap>
     </>);
   } else if (step === 1) {
     body = (<>
       <H size={26}>Where are you based?</H>
-      <View style={{ height: 22 }} />
+      <P mute style={{ marginTop: 6, marginBottom: 22 }}>You&apos;ll see plans within {NEAR_KM} km of here.</P>
       <PlacePicker label="Home area" mode="area" value={hood} picked={!!ll} placeholder="e.g. Koramangala, Bengaluru"
         onChange={v => { setHood(v); setLl(null); setErr(''); }} onPick={p => { setHood(p.label); setLl(p.ll); setErr(''); }} locate="home" />
     </>);
@@ -187,38 +208,25 @@ function AboutYou() {
       <H size={26}>What do you like doing?</H>
       <View style={{ height: 22 }} />
       <InterestPicker value={ints} onChange={v => { setErr(''); setInts(v); }} />
-      {label("When are you usually free?")}
-      {chips(TIMES, avail, setAvail)}
-      <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: consent }} onPress={() => { setErr(''); setConsent(v => !v); }}
-        style={{ flexDirection: 'row', gap: 12, alignItems: 'center', marginBottom: 18 }}>
-        <View style={{ width: 24, height: 24, borderRadius: 7, borderWidth: 2, borderColor: consent ? t.acc : t.line, backgroundColor: consent ? t.acc : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-          {consent ? <Icon name="check" size={16} color={t.onAcc} /> : null}
-        </View>
-        <P style={{ flex: 1 }}>
-          I agree to the <Text style={{ color: t.accink, fontWeight: '700' }} onPress={() => WebBrowser.openBrowserAsync(SITE + '/terms.html')}>Terms</Text> and{' '}
-          <Text style={{ color: t.accink, fontWeight: '700' }} onPress={() => WebBrowser.openBrowserAsync(SITE + '/privacy.html')}>Privacy policy</Text>
-        </P>
-      </Pressable>
+      <Label>When are you usually free?</Label>
+      <Wrap>{TIMES.map(v => <Chip key={v} label={v} on={avail.includes(v)} onPress={() => { setErr(''); setAvail(l => toggle(l, v)); }} />)}</Wrap>
+      {!agreedAtSignUp ? (
+        <Check on={consent} onPress={() => { setErr(''); setConsent(v => !v); }}>
+          <Text style={{ fontSize: 14, lineHeight: 20, color: t.ink2 }}>
+            I agree to the <TextLink inline title="Terms" onPress={() => WebBrowser.openBrowserAsync(SITE + '/terms.html')} /> and{' '}
+            <TextLink inline title="Privacy policy" onPress={() => WebBrowser.openBrowserAsync(SITE + '/privacy.html')} />
+          </Text>
+        </Check>
+      ) : null}
     </>);
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ padding: 24 }} keyboardShouldPersistTaps="handled">
-          {/* where you are: three short bars */}
-          <View accessible accessibilityLabel={`Step ${step + 1} of ${STEPS}`} style={{ flexDirection: 'row', gap: 6, marginBottom: 24 }}>
-            {Array.from({ length: STEPS }, (_, k) => <View key={k} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: k <= step ? t.acc : t.line }} />)}
-          </View>
-          {body}
-          {err ? <Text accessibilityLiveRegion="polite" style={{ color: t.bad, marginBottom: 12, fontSize: 14 }}>{err}</Text> : null}
-          {step < STEPS - 1 ? <Btn title="Next" onPress={next} busy={busy} /> : <Btn title="Continue" onPress={save} busy={busy} />}
-          <View style={{ height: 10 }} />
-          {step > 0
-            ? <Btn title="Back" kind="ghost" onPress={() => { setErr(''); setStep(s => s - 1); }} />
-            : <Btn title="Sign out" kind="ghost" onPress={signOut} />}
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+    <Page top={top} buttons={<>
+      {err ? <Text accessibilityLiveRegion="polite" style={{ color: t.bad, fontSize: 14 }}>{err}</Text> : null}
+      {step < STEPS - 1 ? <Btn title="Next" onPress={next} busy={busy} /> : <Btn title="Continue" onPress={save} busy={busy} />}
+    </>}>
+      {body}
+    </Page>
   );
 }

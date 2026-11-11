@@ -3,24 +3,22 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Btn, Icon, type IconName } from '@/components/ui';
+import { Btn, Icon, Logo, type IconName } from '@/components/ui';
 import { column } from '@/lib/layout';
 import { PHOTOS } from '@/lib/photoFiles';
-import { useTheme } from '@/lib/theme';
 
 /* First open: three pages on what Overhere is (the same story as the website's welcome page), then sign-up or
    sign-in. Shown until someone picks one of those; sign-in.tsx remembers it. */
 const PAGES: { photo: keyof typeof PHOTOS; icon: IconName; title: string; text: string }[] = [
-  { photo: 'concert', icon: 'map-pin', title: 'Got a plan? Bring company.', text: "Post the movie, coffee or gig you're already planning. People nearby ask to join, and you choose who comes." },
-  { photo: 'chai', icon: 'layers', title: 'Swipe this week, discover more', text: 'Plans in the next 7 days come up as cards: swipe right to ask to join. Discover has every plan, on a list or a map.' },
-  { photo: 'sukhna', icon: 'shield', title: 'Safe by design', text: 'Hosts approve every request. Face check, show-up records, a trusted contact and SOS in every chat. Not a dating app.' },
+  { photo: 'concert', icon: 'map-pin', title: 'Got a plan? Bring company.', text: "Post the movie, coffee or gig you're already going to. People nearby ask to join, and you pick who comes." },
+  { photo: 'chai', icon: 'layers', title: 'Swipe this week, discover more', text: 'Swipe right on a plan to ask to join. Discover has every plan, on a list or a map.' },
+  { photo: 'sukhna', icon: 'shield', title: 'Safe by design', text: 'Everyone does a face check, hosts approve every request, and every chat has SOS. Not a dating app.' },
 ];
 
 /* a soft shadow under the header text, for photos that stay bright even under the gradient */
 const shadow = { textShadowColor: 'rgba(0,0,0,0.55)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 };
 
 export default function Welcome({ onDone }: { onDone: (signUp: boolean) => void }) {
-  const t = useTheme();
   const { width, height } = useWindowDimensions();
   const [page, setPage] = useState(0);
   const pager = useRef<ScrollViewInstance>(null);
@@ -48,12 +46,7 @@ export default function Welcome({ onDone }: { onDone: (signUp: boolean) => void 
 
       <SafeAreaView pointerEvents="box-none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'space-between' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 8 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }} accessible accessibilityRole="header" accessibilityLabel="Overhere">
-            <View style={{ flexDirection: 'row', gap: 3 }}>
-              {[0, 1].map(k => <View key={k} style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: '#fff', borderWidth: 4, borderColor: t.acc }} />)}
-            </View>
-            <Text style={{ color: '#fff', fontSize: 24, fontWeight: '800', letterSpacing: -0.5, ...shadow }}>Overhere</Text>
-          </View>
+          <Logo size={24} light />
           {!last ? (
             <Pressable accessibilityRole="button" onPress={() => go(PAGES.length - 1)} hitSlop={12}>
               <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700', ...shadow }}>Skip</Text>

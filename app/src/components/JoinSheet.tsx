@@ -5,6 +5,7 @@ import { Pressable, Text, View } from 'react-native';
 import { api } from '@/lib/api';
 import { COST, isVer, kmAway, learnTaste, placeLine, rupees, spots, spotTxt, tags, uname, whenStr, type Plan } from '@/lib/model';
 import { photoOf } from '@/lib/photos';
+import { registerPush } from '@/lib/push';
 import { useModel, useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 import { SafetyFirst, safetySeen } from './SafetyFirst';
@@ -44,12 +45,13 @@ export function JoinSheet({ plan, onClose, onDone }: { plan: Plan | null; onClos
     onClose();
     onDone?.();
     askMicro('request');
+    registerPush(true);   // now's when notifications are useful: to hear back from the host
   }
 
   if (safety) return <Sheet title="Before your first meetup" onClose={() => setSafety(false)}><SafetyFirst title={false} onOk={() => send(true)} /></Sheet>;
 
   return (
-    <Sheet title="Request to Join" onClose={onClose}>
+    <Sheet title="Ask to join" onClose={onClose}>
       <View style={{ flexDirection: 'row', gap: 12, backgroundColor: t.field, borderRadius: 18, padding: 12 }}>
         <Image source={photoOf(a)} style={{ width: 76, height: 76, borderRadius: 38 }} contentFit="cover" />
         <View style={{ flex: 1, gap: 3 }}>
@@ -77,13 +79,12 @@ export function JoinSheet({ plan, onClose, onDone }: { plan: Plan | null; onClos
       </View>
 
       {full ? <Note icon="users" tone="info">This plan is full, so it can&apos;t take requests right now.</Note> : null}
-      <Label>Add a note <Text style={{ fontWeight: '400', color: t.mute }}>(optional)</Text></Label>
-      <P small mute style={{ marginTop: -4, marginBottom: 8 }}>Introduce yourself or mention why you want to join.</P>
+      <Label>Note to {hostName} <Text style={{ fontWeight: '400', color: t.mute }}>(optional)</Text></Label>
       <Field accessibilityLabel="Note to the host" hint={`${note.length}/100`} value={note} onChangeText={setNote} maxLength={100} multiline
-        placeholder="Hey! I'd love to join, happy to be on time and split costs." />
+        placeholder="Say hi, or why you'd like to come" />
       {host?.sample ? <Note><Text style={{ fontWeight: '700' }}>Sample plan.</Text> It shows how Overhere works: the host says yes straight away, but nobody will actually be there. Don&apos;t go to meet anyone.</Note> : null}
-      {!face ? <Note>You&apos;ll need to do a quick face check before your request is sent. It takes about a minute.</Note> : null}
-      <Btn title={face ? 'Send Request' : 'Verify & Send Request'} onPress={() => send()} busy={busy} icon="send" disabled={full} />
+      {!face ? <P small mute style={{ marginBottom: 10 }}>First, a quick face check. It takes about a minute.</P> : null}
+      <Btn title={face ? 'Send request' : 'Do the face check'} onPress={() => send()} busy={busy} icon={face ? 'send' : 'smile'} disabled={full} />
       <View style={{ height: 8 }} />
       <Btn title="Not now" kind="ghost" onPress={onClose} />
     </Sheet>

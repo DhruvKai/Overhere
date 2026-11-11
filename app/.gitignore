@@ -41,3 +41,10 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+/android
+/ios
+
+# local builds (LOCAL-BUILDS.md): the output, and the upload key, which must never reach GitHub
+/builds
+credentials.json
+/credentials

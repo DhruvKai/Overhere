@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, RefreshControl, SectionList, Text, View } from 'react-native';
 import { Header } from '@/components/Header';
 import { Sheet } from '@/components/Sheet';
-import { Badge, Btn, Empty, H, Icon, P, type IconName } from '@/components/ui';
+import { Badge, Btn, Empty, H, Icon, P, TextLink, type IconName } from '@/components/ui';
 import { api } from '@/lib/api';
 import { ago, nowOf, trustedOf, type Note, type Plan } from '@/lib/model';
 import { actfOf } from '@/lib/reminders';
@@ -23,10 +23,11 @@ export default function Notes() {
   const [safe, setSafe] = useState<Plan | null>(null);
   const unread = m.notes.filter(n => !n.read).length;
   const now = nowOf(m);
+  /* empty sections are left out; with nothing at all, one empty state says what will show up */
   const sections = [
-    { title: 'Notifications', data: m.notes.filter(n => n.kind !== 'req'), none: 'Updates and reminders about your activities will show up here.' },
-    { title: 'Requests', data: m.notes.filter(n => n.kind === 'req'), none: 'Join requests, and replies to yours, will show up here.' },
-  ];
+    { title: 'Notifications', data: m.notes.filter(n => n.kind !== 'req') },
+    { title: 'Requests', data: m.notes.filter(n => n.kind === 'req') },
+  ].filter(s => s.data.length);
 
   const open = (n: Note) => {
     if (!n.read) api.readNotifications([n.id]).then(refresh, () => {});
@@ -46,7 +47,7 @@ export default function Notes() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Header title="Updates" sub="Requests, changes and reminders" right={unread ? <Btn title="Mark all as read" kind="soft" icon="check-circle" onPress={readAll} style={{ minHeight: 38, paddingHorizontal: 12 }} /> : <View />} />
+      <Header title="Updates" right={unread ? <TextLink title="Mark all read" onPress={readAll} /> : <View />} />
       <SectionList
         sections={sections}
         keyExtractor={n => n.id}
@@ -54,18 +55,7 @@ export default function Notes() {
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
         refreshControl={<RefreshControl refreshing={pulling} onRefresh={async () => { setPulling(true); await refresh(); setPulling(false); }} tintColor={t.acc} />}
         ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-        renderSectionHeader={({ section }) => {
-          const n = section.data.filter(x => !x.read).length;
-          return (
-            <View style={{ paddingTop: 12, paddingBottom: 8 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <H size={17}>{section.title}</H>
-                {n ? <Badge text={String(n)} tone="acc" /> : null}
-              </View>
-              {!section.data.length ? <P small mute style={{ marginTop: 6 }}>{section.none}</P> : null}
-            </View>
-          );
-        }}
+        renderSectionHeader={({ section }) => <View style={{ paddingTop: 12, paddingBottom: 8 }}><H size={17}>{section.title}</H></View>}
         renderItem={({ item: n }) => (
           <Pressable accessibilityRole="button" onPress={() => open(n)}
             style={{ flexDirection: 'row', gap: 12, padding: 14, borderRadius: 18, borderWidth: 1, borderColor: t.line, backgroundColor: n.read ? t.card : t.newbg }}>
@@ -75,7 +65,8 @@ export default function Notes() {
             <View style={{ flex: 1, gap: 4 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <Text style={{ color: t.ink, fontWeight: '700', fontSize: 15 }}>{n.title || 'Update'}</Text>
-                {n.tag ? <Badge text={n.tag} tone={TONE[n.tone] ?? 'info'} /> : null}
+                {/* the badge only when it adds something: not "Cancelled" next to "Activity cancelled" */}
+                {n.tag && !(n.title || '').toLowerCase().includes(n.tag.toLowerCase()) ? <Badge text={n.tag} tone={TONE[n.tone] ?? 'info'} /> : null}
               </View>
               <Text style={{ color: t.ink2, fontSize: 14, lineHeight: 19 }}>{n.text}</Text>
               <Text style={{ color: t.mute, fontSize: 12 }}>{ago(n.at, now)}</Text>
@@ -83,7 +74,7 @@ export default function Notes() {
             {!n.read ? <View accessibilityLabel="Unread" style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: t.acc, marginTop: 6 }} /> : null}
           </Pressable>
         )}
-        ListEmptyComponent={<Empty icon="bell" title="Nothing new" text="Join requests, replies and reminders for your plans show up here." />}
+        ListEmptyComponent={<Empty icon="bell" title="Nothing yet" text="Join requests, replies and reminders about your plans show up here." />}
       />
       {safe ? (
         <Sheet title="Arrived safely?" onClose={() => setSafe(null)}>

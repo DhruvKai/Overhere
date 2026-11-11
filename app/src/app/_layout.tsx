@@ -121,6 +121,7 @@ function Gate() {
         <Stack.Screen name="post" options={{ presentation: 'modal', headerShown: true, title: 'Post a plan', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink }} />
         <Stack.Screen name="sos" options={{ presentation: 'modal', headerShown: true, title: 'Get help', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink }} />
         <Stack.Screen name="edit-profile" options={{ presentation: 'modal', headerShown: true, title: 'Edit profile', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink }} />
+        <Stack.Screen name="settings" options={{ headerShown: true, title: 'Settings', headerBackTitle: 'Back', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink, headerShadowVisible: false }} />
       </Stack.Protected>
     </Stack>
   );

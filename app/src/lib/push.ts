@@ -15,8 +15,10 @@ Notifications.setNotificationHandler({
   handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
 });
 
-/* Asks once (Android 13+ and iOS show the system prompt), then saves this phone's token for the signed-in person. */
-export async function registerPush() {
+/* Saves this phone's token for the signed-in person. ask: show the system prompt (Android 13+ and iOS) if it hasn't
+   been answered yet. The app starts without asking, and asks when it's clearly useful: after your first join request
+   or plan, when you'll want to hear back (JoinSheet, post.tsx). */
+export async function registerPush(ask = false) {
   if (inExpoGo) return;
   try {
     if (Platform.OS === 'android') {
@@ -24,6 +26,7 @@ export async function registerPush() {
       await Notifications.setNotificationChannelAsync('default', { name: 'Updates', importance: AndroidImportance.HIGH });
     }
     let { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted' && !ask) return;
     if (status !== 'granted') status = (await Notifications.requestPermissionsAsync()).status;
     if (status !== 'granted') return;
     const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;

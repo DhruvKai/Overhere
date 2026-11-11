@@ -7,7 +7,7 @@ import { JoinSheet } from '@/components/JoinSheet';
 import { Sheet } from '@/components/Sheet';
 import { SwipeDeck } from '@/components/SwipeDeck';
 import { Btn, Empty, P } from '@/components/ui';
-import { LockedNote, WhereBar } from '@/components/Where';
+import { CityNote, LockedNote } from '@/components/Where';
 import { tipsOf } from '@/lib/feedback';
 import { deck, dismissed, learnTaste, type Plan } from '@/lib/model';
 import { useModel, useStore } from '@/lib/store';
@@ -34,8 +34,8 @@ export default function Swipe() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Header title="This week" />
-      <View style={{ paddingHorizontal: 16 }}><WhereBar /><LockedNote /><FeedbackCard /></View>
+      <Header title="This week" where />
+      <View style={{ paddingHorizontal: 16 }}><CityNote /><LockedNote /><FeedbackCard /></View>
       {cards.length ? (
         <View style={{ flex: 1, paddingHorizontal: 16 }}>
           <SwipeDeck m={m} cards={cards} onSwipe={onSwipe} holdLeft={!sure} />

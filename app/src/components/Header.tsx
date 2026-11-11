@@ -2,20 +2,19 @@ import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { homeName, viewCity, viewName } from '@/lib/model';
-import { useModel } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 import { Icon } from './ui';
+import { WhereButton } from './Where';
 
-/* Tab header: the title, where you're browsing, and the Post button. */
-export function Header({ title, sub, right }: { title: string; sub?: string; right?: ReactNode }) {
+/* Tab header: the title, then where you're browsing (tap to change city; Swipe and Discover) or nothing, and the Post
+   button or something else on the right. */
+export function Header({ title, where, right }: { title: string; where?: boolean; right?: ReactNode }) {
   const t = useTheme(), insets = useSafeAreaInsets();
-  const m = useModel();
   return (
     <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       <View style={{ flex: 1 }}>
         <Text accessibilityRole="header" style={{ fontSize: 26, fontWeight: '800', color: t.ink, letterSpacing: -0.4 }}>{title}</Text>
-        <Text style={{ fontSize: 13, color: t.mute }} numberOfLines={1}>{sub ?? (viewCity(m) ? `In ${viewName(m)}` : `Near ${homeName(m)}`)}</Text>
+        {where ? <WhereButton /> : null}
       </View>
       {right ?? (
         <Pressable accessibilityRole="button" accessibilityLabel="Post a plan" onPress={() => router.push('/post')}
@@ -25,5 +24,16 @@ export function Header({ title, sub, right }: { title: string; sub?: string; rig
         </Pressable>
       )}
     </View>
+  );
+}
+
+/* A round icon button for a header's right side (Settings on Profile). */
+export function HeaderIcon({ icon, label, onPress }: { icon: 'settings'; label: string; onPress: () => void }) {
+  const t = useTheme();
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} hitSlop={6}
+      style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: t.card, borderWidth: 1, borderColor: t.line, alignItems: 'center', justifyContent: 'center' }}>
+      <Icon name={icon} size={20} />
+    </Pressable>
   );
 }
