@@ -3,6 +3,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { goBack } from '@/lib/nav';
 import { useState } from 'react';
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FeedbackSheet } from '@/components/Feedback';
 import { ReportSheet } from '@/components/ReportSheet';
 import { Avatar, Btn, Chip, Empty, Field, Label, Meta, P } from '@/components/ui';
@@ -21,6 +22,8 @@ import { R, useTheme } from '@/lib/theme';
 export default function Rate() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const t = useTheme();
+  /* Android draws behind its navigation buttons, so the end of the page keeps clear of them */
+  const insets = useSafeAreaInsets();
   const m = useModel();
   const { run, toast, askMicro, saveAsked } = useStore();
   const a = m.acts.find(x => x.id === id);
@@ -89,7 +92,7 @@ export default function Rate() {
   return (
     <>
       <Stack.Screen options={{ title: mode === 'host' ? 'Rate and record attendance' : mode === 'noshow' ? 'We missed you' : 'How did it go?' }} />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 6, paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 6, paddingBottom: 40 + insets.bottom }}>
         <View style={{ flexDirection: 'row', gap: 12, backgroundColor: t.field, borderRadius: R, padding: 12, marginBottom: 12 }}>
           <Image source={photoOf(a)} style={{ width: 64, height: 64, borderRadius: 14 }} contentFit="cover" />
           <View style={{ flex: 1, gap: 3 }}>

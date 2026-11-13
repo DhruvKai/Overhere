@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FeedbackSheet } from '@/components/Feedback';
 import { PersonRow, Ph, Row } from '@/components/ProfileParts';
 import { Btn, Card, Check, Icon, P, TextLink } from '@/components/ui';
@@ -17,6 +18,8 @@ import { setThemePref, themePref, useTheme, type ThemePref } from '@/lib/theme';
 /* Settings, from the gear on Profile: safety, the app, feedback, the legal pages and the account. */
 export default function Settings() {
   const t = useTheme();
+  /* Android draws behind its navigation buttons, so the end of the page keeps clear of them */
+  const insets = useSafeAreaInsets();
   const m = useModel();
   const { signOut, toast, run } = useStore();
   const [fb, setFb] = useState(false);
@@ -44,7 +47,7 @@ export default function Settings() {
 
   return (
     <>
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 + insets.bottom }}>
         <Card>
           <Ph icon="shield" title="Safety" />
           {sub('Trusted contact')}

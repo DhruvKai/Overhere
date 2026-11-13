@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ReportSheet } from '@/components/ReportSheet';
 import { Avatar, Badge, Btn, Card, Empty, H, Icon, Note, P, PlanRow } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -15,6 +16,8 @@ import { R, useTheme } from '@/lib/theme';
 export default function Person() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const t = useTheme();
+  /* Android draws behind its navigation buttons, so the end of the page keeps clear of them */
+  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const m = useModel();
   const { run, toast, savePriv } = useStore();
@@ -44,7 +47,7 @@ export default function Person() {
   return (
     <>
       <Stack.Screen options={{ title: p.name }} />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, gap: 14, paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, gap: 14, paddingBottom: 40 + insets.bottom }}>
         {pics.length > 1 ? (
           <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} accessibilityLabel={`Photos of ${p.name}. Swipe for more.`}
             style={{ marginHorizontal: -16 }} contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }}>

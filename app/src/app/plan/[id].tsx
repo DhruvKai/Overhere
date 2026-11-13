@@ -1,27 +1,36 @@
 import { Image } from 'expo-image';
-import { router, Stack, useLocalSearchParams } from 'expo-router';
+import Feather from '@expo/vector-icons/Feather';
+import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { setStatusBarStyle } from 'expo-status-bar';
 import { goBack } from '@/lib/nav';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActionSheetIOS, Alert, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { JoinSheet } from '@/components/JoinSheet';
 import { ReasonSheet } from '@/components/ReasonSheet';
 import { ReportSheet } from '@/components/ReportSheet';
 import { TrustShareSheet } from '@/components/TrustShareSheet';
-import { Avatar, Badge, BottomBar, Btn, Card, CatPill, Empty, H, Icon, Meta, P } from '@/components/ui';
+import { Avatar, Badge, BottomBar, Btn, Card, CatPill, Empty, H, Icon, P, type IconName } from '@/components/ui';
 import { api } from '@/lib/api';
 import { INVITE_MISS } from '@/lib/invite';
 import {
-  canSave, COST, durTxt, endOf, inChat, isVer, kmAway, myReq, needRate, nowOf, OPT_OUT, REPORT_REASONS, RM_REASONS, rupees, saved, short, signals, spots,
-  spotTxt, tags, trustTxt, uname, whenStr,
+  canSave, COST_S, costSub, durTxt, endOf, inChat, isVer, kmAway, myReq, needRate, nowOf, OPT_OUT, placeLine, REPORT_REASONS, RM_REASONS, saved, short,
+  signals, spots, tags, trustTxt, uname, whenParts, whenStr,
 } from '@/lib/model';
 import { photoFor, photoOf } from '@/lib/photos';
 import { sharePlan } from '@/lib/share';
 import { useModel, useStore, useToggleSave } from '@/lib/store';
-import { R, useTheme } from '@/lib/theme';
+import { useTheme } from '@/lib/theme';
 
 export default function PlanScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const t = useTheme();
+  const insets = useSafeAreaInsets();
+  /* light status bar text over the photo while this screen is showing, the theme's again when it isn't */
+  useFocusEffect(useCallback(() => {
+    setStatusBarStyle('light');
+    return () => setStatusBarStyle(t.dark ? 'light' : 'dark');
+  }, [t.dark]));
   const m = useModel();
   const { run, toast } = useStore();
   const toggleSave = useToggleSave();
@@ -53,8 +62,10 @@ export default function PlanScreen() {
   const DECIDED: Record<string, string> = { rejected: 'Declined', left: 'Left', removed: 'Removed', closed: 'Closed', waitlist: 'Closed' };
   const rate = needRate(m, a);
   const km = kmAway(m, a);
+  const [day, tm] = whenParts(a.when, nowOf(m));
   const canAsk = !mine && !req && !past;
   const full = spots(a) <= 0 || a.status === 'full';
+  const bar = !!rate || inChat(m, a) || (canAsk && !full);
 
   const confirm = (title: string, text: string, label: string, fn: () => Promise<unknown>, done: string) =>
     Alert.alert(title, text, [{ text: 'Not now', style: 'cancel' }, {
@@ -76,53 +87,44 @@ export default function PlanScreen() {
 
   return (
     <>
-      <Stack.Screen options={{
-        headerRight: () => (
-          <View style={{ flexDirection: 'row', gap: 18 }}>
-            {canSave(m, a) ? (
-              <Pressable accessibilityRole="button" accessibilityState={{ selected: saved(m).includes(a.id) }} accessibilityLabel={saved(m).includes(a.id) ? 'Saved. Tap to remove' : 'Save for later'}
-                onPress={() => toggleSave(a.id)} hitSlop={10}><Icon name="bookmark" size={21} color={saved(m).includes(a.id) ? t.accink : undefined} /></Pressable>
-            ) : null}
-            <Pressable accessibilityRole="button" accessibilityLabel="Share invite link" onPress={share} hitSlop={10}><Icon name="share" size={21} /></Pressable>
-            {!mine ? <Pressable accessibilityRole="button" accessibilityLabel="Report or block" onPress={more} hitSlop={10}><Icon name="more-horizontal" size={22} /></Pressable> : null}
-          </View>
-        ),
-      }} />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 0, gap: 14, paddingBottom: 40 }}>
-        <Image source={photoOf(a)} style={{ width: '100%', aspectRatio: 16 / 10, borderRadius: R }} contentFit="cover" />
-        {/* plan photos come from a bank of licensed photos, never the venue itself (lib/photos.ts) */}
-        {(() => { const p = photoFor(a); return (
-          <Pressable accessibilityRole="link" onPress={() => Linking.openURL(p.src)} style={{ marginTop: -8 }}>
-            <P small mute>Illustrative photo, not the actual venue · {p.title} by {p.by}, {p.lic}</P>
-          </Pressable>
-        ); })()}
-        <View style={{ gap: 8 }}>
-          <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+      {/* layout A: the photo runs to the top of the screen, with the buttons on it, and the plan sits on a sheet over its edge */}
+      <Stack.Screen options={{ headerShown: false }} />
+      {/* with no button bar at the bottom, the page keeps clear of Android's navigation buttons itself */}
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 + (bar ? 0 : insets.bottom) }}>
+        <Image source={photoOf(a)} style={{ width: '100%', height: 280 + insets.top }} contentFit="cover" accessibilityIgnoresInvertColors />
+        <View style={{ marginTop: -24, borderTopLeftRadius: 24, borderTopRightRadius: 24, backgroundColor: t.bg, padding: 20, paddingTop: 20, gap: 14 }}>
+          <View>
             <CatPill cat={a.cat} tint />
-            {tags(a).map(x => <Badge key={x} text={x} tone="acc" />)}
+            <View style={{ marginTop: 12 }}><H size={25}>{a.desc}</H></View>
           </View>
-          <H size={24}>{a.desc}</H>
-          <Meta icon="calendar" text={`${whenStr(a.when)} · ${durTxt(a.dur)}`} />
-          <Meta icon="map-pin" text={a.venue + (km != null ? ` · ${km.toFixed(1)} km away` : '')} />
-          <Meta icon="users" text={a.members.length ? `${a.members.length} going · ${spotTxt(a)}` : spotTxt(a)} />
-          <Meta icon="credit-card" text={COST[a.cost] + (a.total ? ` · about ${rupees(a.total)} in total` : '')} />
-        </View>
-
-        <Card>
           <Pressable accessibilityRole={mine ? undefined : 'button'} accessibilityLabel={mine ? undefined : `View ${host?.name ?? 'the host'}'s profile`} disabled={mine}
-            onPress={() => router.push({ pathname: '/person/[id]', params: { id: a.host } })} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <Avatar m={m} id={a.host} size={48} />
+            onPress={() => router.push({ pathname: '/person/[id]', params: { id: a.host } })}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: t.line }}>
+            <Avatar m={m} id={a.host} size={42} />
             <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                 <Text style={{ color: t.ink, fontSize: 16, fontWeight: '700' }}>{mine ? 'You' : host?.name ?? 'Someone'}{!mine && host?.age ? `, ${host.age}` : ''}</Text>
                 {isVer(m, a.host) ? <Icon name="check-circle" size={16} color={t.ok} /> : null}
+                {!mine && host?.sample ? <Badge text="SAMPLE" tone="warn" /> : null}
               </View>
               <P small mute>{mine ? 'You host this plan' : `Host${host?.met ? ` · ${host.shows}/${host.met} meetups showed up` : ''}`}</P>
             </View>
             {!mine ? <Icon name="chevron-right" size={18} color={t.mute} /> : null}
           </Pressable>
-          {!mine && host?.bio ? <P style={{ marginTop: 10 }}>{host.bio}</P> : null}
-        </Card>
+          {/* when, where, spots, cost: one line each */}
+          <View style={{ gap: 14, paddingTop: 2 }}>
+            <Fact icon="calendar" text={`${day} · ${tm}`} sub={durTxt(a.dur)} />
+            <Fact icon="map-pin" text={placeLine(a)} sub={km != null ? `${km.toFixed(1)} km` : ''} />
+            <Fact icon="users" text={spots(a) > 0 ? `${spots(a)} of ${a.cap} spots open` : 'Full'} sub={a.members.length ? `${a.members.length} going` : ''} />
+            <Fact icon="credit-card" text={COST_S[a.cost]} sub={costSub(m, a)} />
+          </View>
+          {tags(a, false).length ? <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>{tags(a, false).map(x => <Badge key={x} text={x} tone="acc" />)}</View> : null}
+          {/* plan photos come from a bank of licensed photos, never the venue itself (lib/photos.ts) */}
+          {(() => { const p = photoFor(a); return (
+            <Pressable accessibilityRole="link" onPress={() => Linking.openURL(p.src)}>
+              <Text style={{ color: t.mute, fontSize: 11.5 }}>Illustrative photo · {p.title} by {p.by}, {p.lic}</Text>
+            </Pressable>
+          ); })()}
 
         {inChat(m, a) && a.members.length ? (
           <Card>
@@ -225,9 +227,19 @@ export default function PlanScreen() {
             'Cancel plan',
             async () => { await api.cancelActivity(a.id); goBack(); }, 'Plan cancelled')} /> : null}
         </View>
+        </View>
       </ScrollView>
+      {/* back, save, share and more, on round buttons over the photo */}
+      <View pointerEvents="box-none" style={{ position: 'absolute', top: insets.top + 8, left: 14, right: 14, flexDirection: 'row', justifyContent: 'space-between' }}>
+        <RoundBtn icon="arrow-left" label="Back" onPress={() => goBack()} />
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          {canSave(m, a) ? <RoundBtn icon="bookmark" label={saved(m).includes(a.id) ? 'Saved. Tap to remove' : 'Save for later'} on={saved(m).includes(a.id)} onPress={() => toggleSave(a.id)} /> : null}
+          <RoundBtn icon="share" label="Share invite link" onPress={share} />
+          {!mine ? <RoundBtn icon="more-horizontal" label="Report or block" onPress={more} /> : null}
+        </View>
+      </View>
       {/* the plan's main action stays at the bottom: rate it, open the chat, or ask to join */}
-      {rate || inChat(m, a) || (canAsk && !full) ? (
+      {bar ? (
         <BottomBar>
           {rate ? <Btn title={rate === 'host' ? 'Rate and record attendance' : rate === 'noshow' ? 'Tell the host what happened' : 'Rate the meetup'} icon="star"
             onPress={() => router.push({ pathname: '/rate/[id]', params: { id: a.id } })} /> : null}
@@ -252,5 +264,26 @@ export default function PlanScreen() {
       ) : null}
       <ReportSheet open={reporting} title="Report this plan" reasons={REPORT_REASONS} target={a.host} act={a.id} onClose={() => setReporting(false)} />
     </>
+  );
+}
+
+/* One fact about the plan: an icon, the fact, and a quieter detail after it. */
+function Fact({ icon, text, sub }: { icon: IconName; text: string; sub?: string }) {
+  const t = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 13 }}>
+      <Icon name={icon} size={19} color={t.accink} />
+      <Text style={{ flex: 1, color: t.ink, fontSize: 15.5 }}>{text}{sub ? <Text style={{ color: t.mute }}> · {sub}</Text> : null}</Text>
+    </View>
+  );
+}
+
+/* A round button on the photo, readable on any picture. */
+function RoundBtn({ icon, label, on, onPress }: { icon: IconName; label: string; on?: boolean; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={on === undefined ? undefined : { selected: on }} onPress={onPress} hitSlop={6}
+      style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(15,12,8,0.5)', alignItems: 'center', justifyContent: 'center' }}>
+      <Feather name={icon} size={19} color={on ? '#9FD3AA' : '#fff'} />
+    </Pressable>
   );
 }

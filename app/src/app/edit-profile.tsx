@@ -1,6 +1,7 @@
 import { goBack } from '@/lib/nav';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PhotoPair } from '@/components/PhotoPair';
 import { PlacePicker } from '@/components/PlacePicker';
 import { Avatar, BottomBar, Btn, Chip, Field, Label, P, Wrap } from '@/components/ui';
@@ -19,6 +20,8 @@ const toggle = (l: string[], v: string) => (l.includes(v) ? l.filter(x => x !== 
    home area, job, bio and likes, as on the website. After the ID check, date of birth and gender come from the ID. */
 export default function EditProfile() {
   const t = useTheme();
+  /* Android draws behind its navigation buttons, so the end of the page keeps clear of them */
+  const insets = useSafeAreaInsets();
   const m = useModel();
   const { run, toast, savePriv, session } = useStore();
   const p = m.profile!;
@@ -77,7 +80,7 @@ export default function EditProfile() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 24 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 24 + insets.bottom }} keyboardShouldPersistTaps="handled">
         <Label>Your photos</Label>
         <P mute small style={{ marginBottom: 10 }}>
           Photo 1 is your profile picture. The face check needs both and matches your live face against each.{p.face && p.photo ? ' A new photo means doing the face check again.' : ''}

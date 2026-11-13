@@ -2,6 +2,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { goBack } from '@/lib/nav';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PlacePicker } from '@/components/PlacePicker';
 import { SafetyFirst, safetySeen } from '@/components/SafetyFirst';
 import { WhenPicker } from '@/components/WhenPicker';
@@ -24,6 +25,8 @@ const nextLike = (t: number) => { let w = Math.round(t / 9e5) * 9e5; while (w < 
    the top). The same form as the website's "Create Activity". */
 export default function Post() {
   const t = useTheme();
+  /* Android draws behind its navigation buttons, so the end of the page keeps clear of them */
+  const insets = useSafeAreaInsets();
   const m = useModel();
   const { run, toast, askMicro } = useStore();
   const { id, tpl } = useLocalSearchParams<{ id?: string; tpl?: string }>();
@@ -91,7 +94,7 @@ export default function Post() {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       <Stack.Screen options={{ title: edit ? 'Edit plan' : 'Post a plan' }} />
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 + insets.bottom }} keyboardShouldPersistTaps="handled">
         {edit && edit.members.length ? <Note tone="info" icon="users">{edit.members.length} {edit.members.length === 1 ? 'person is' : 'people are'} already going. They&apos;ll see a note about your changes in the group chat.</Note> : null}
         {!edit && mine.length ? (
           <>

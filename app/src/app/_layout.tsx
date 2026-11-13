@@ -2,10 +2,10 @@ import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider } from 'expo-rout
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Btn, Empty, Loading } from '@/components/ui';
+import { Btn, Empty, Icon, Loading } from '@/components/ui';
 import { api } from '@/lib/api';
 import { setInviteReady, takeInvite } from '@/lib/invite';
 import { column, COLUMN, onTablet } from '@/lib/layout';
@@ -32,15 +32,21 @@ if (!onTablet()) {
   } catch { /* older build without the module */ }
 }
 
+/* Short messages over the tab bar. They go by themselves, and the cross (or a tap anywhere on it) closes one sooner. */
 function Toast() {
-  const { toastMsg } = useStore();
+  const { toastMsg, hideToast } = useStore();
   const t = useTheme(), insets = useSafeAreaInsets();
   if (!toastMsg) return null;
   return (
-    <View pointerEvents="none" accessibilityLiveRegion="polite" style={{ position: 'absolute', left: 16, right: 16, bottom: insets.bottom + 72, alignItems: 'center' }}>
-      <View style={{ width: '100%', maxWidth: COLUMN - 32, backgroundColor: t.ink, borderRadius: 14, padding: 14 }}>
-        <Text style={{ color: t.bg, fontSize: 15, fontWeight: '600' }}>{toastMsg}</Text>
-      </View>
+    <View pointerEvents="box-none" accessibilityLiveRegion="polite" style={{ position: 'absolute', left: 16, right: 16, bottom: insets.bottom + 72, alignItems: 'center' }}>
+      <Pressable onPress={hideToast} accessibilityHint="Tap to close"
+        style={{ width: '100%', maxWidth: COLUMN - 32, backgroundColor: t.ink, borderRadius: 14, paddingVertical: 14, paddingLeft: 14, paddingRight: 6, flexDirection: 'row', alignItems: 'flex-start', gap: 4 }}>
+        <Text style={{ flex: 1, color: t.bg, fontSize: 15, fontWeight: '600' }}>{toastMsg}</Text>
+        <Pressable onPress={hideToast} accessibilityRole="button" accessibilityLabel="Close message" hitSlop={10}
+          style={{ width: 32, height: 22, alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name="x" size={18} color={t.bg} />
+        </Pressable>
+      </Pressable>
     </View>
   );
 }

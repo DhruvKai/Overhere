@@ -17,6 +17,7 @@ type Store = {
   error: string;
   toastMsg: string;
   toast: (msg: string) => void;
+  hideToast: () => void;
   refresh: () => Promise<void>;
   /* Run an action, then read everything again. Returns the answer, or undefined if it failed (already shown). */
   run: <T>(fn: () => Promise<T>) => Promise<T | true | undefined>;
@@ -49,8 +50,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const toast = useCallback((msg: string) => {
     setToastMsg(msg);
     clearTimeout(toastT.current);
-    toastT.current = setTimeout(() => setToastMsg(''), 2800);
+    /* longer messages (reminders) stay up a little longer, and the cross on the toast closes it sooner */
+    toastT.current = setTimeout(() => setToastMsg(''), msg.length > 70 ? 5000 : 2800);
   }, []);
+  const hideToast = useCallback(() => { clearTimeout(toastT.current); setToastMsg(''); }, []);
+
+  /* Settings changed here but not saved yet (savePriv waits 700ms). A read that lands in between would bring back the
+     old settings and undo them, which made reminders fire again and again, so they're laid back over every read. */
+  const unsaved = useRef<Priv | null>(null);
 
   /* Read everything again. Several calls at once collapse into one extra read (refresh() in web/app.js). */
   const refresh = useCallback((): Promise<void> => {
@@ -58,7 +65,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     busy.current = (async () => {
       do {
         again.current = false;
-        try { setModel(toModel(await api.appState())); setError(''); }
+        try {
+          const next = toModel(await api.appState());
+          if (unsaved.current) next.priv = { ...next.priv, ...unsaved.current };
+          setModel(next); setError('');
+        }
         catch (e) { setError(friendly(e)); }
       } while (again.current);
       busy.current = null;
@@ -76,12 +87,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const saveT = useRef<ReturnType<typeof setTimeout>>(undefined);
   const savePriv = useCallback((patch: Priv | ((priv: Priv) => Priv)) => {
-    setModel(m => (m ? { ...m, priv: { ...m.priv, ...(typeof patch === 'function' ? patch(m.priv) : patch) } } : m));
+    setModel(m => {
+      if (!m) return m;
+      const ch = typeof patch === 'function' ? patch(m.priv) : patch;
+      unsaved.current = { ...unsaved.current, ...ch };
+      return { ...m, priv: { ...m.priv, ...ch } };
+    });
     clearTimeout(saveT.current);
     saveT.current = setTimeout(async () => {
-      const m = modelRef.current;
+      const m = modelRef.current, sent = unsaved.current;
       if (!m) return;
-      try { await api.saveState(m.priv); } catch { toast("Couldn't save your settings. Check your connection."); }
+      try {
+        await api.saveState(m.priv);
+        /* saved, unless more changes came in while it was on its way (those keep a newer object) */
+        if (unsaved.current === sent) unsaved.current = null;
+      } catch { toast("Couldn't save your settings. Check your connection."); }
     }, 700);
   }, [toast]);
   const saveAsked = useCallback((f: (a: Asked) => Asked) =>
@@ -97,6 +117,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     await forgetPush();
     await supabase.auth.signOut();
+    unsaved.current = null;
     setModel(null);
   }, []);
 
@@ -124,8 +145,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => { clearTimeout(t); supabase.removeChannel(ch); sub.remove(); };
   }, [uid, refresh]);
 
-  const value = useMemo<Store>(() => ({ ready, session, model, error, toastMsg, toast, refresh, run, savePriv, saveAsked, micro, askMicro, endMicro, signOut }),
-    [ready, session, model, error, toastMsg, toast, refresh, run, savePriv, saveAsked, micro, askMicro, endMicro, signOut]);
+  const value = useMemo<Store>(() => ({ ready, session, model, error, toastMsg, toast, hideToast, refresh, run, savePriv, saveAsked, micro, askMicro, endMicro, signOut }),
+    [ready, session, model, error, toastMsg, toast, hideToast, refresh, run, savePriv, saveAsked, micro, askMicro, endMicro, signOut]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

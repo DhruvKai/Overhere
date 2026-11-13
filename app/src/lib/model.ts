@@ -223,7 +223,14 @@ export function ago(t: number, now = Date.now()) {
   const s = Math.max(0, (now - t) / 1000);
   return s < 60 ? 'just now' : s < 3600 ? `${Math.floor(s / 60)}m ago` : s < 86400 ? `${Math.floor(s / 3600)}h ago` : s < 14 * 86400 ? `${Math.floor(s / 86400)}d ago` : `${Math.floor(s / 604800)}w ago`;
 }
-export const tags = (a: Plan) => [COST_S[a.cost], ...(a.aud === 'everyone' ? [] : [`${a.aud.join(' / ')} only`]), ...(a.repeat ? [REPEAT[a.repeat]] : [])];
+/* After COST_S on the plan's cost line: only what the short name doesn't already say (costSub in web/app.js). */
+export function costSub(m: Model, a: Plan) {
+  const each = a.total ? Math.ceil(a.total / (a.cap + 1) / 10) * 10 : 0;
+  if (a.cost === 'host') return a.host === m.me ? 'you cover everyone' : '';
+  return a.total ? `about ${rupees(each)} each` : '';
+}
+/* withCost false: the screen already has the full cost line (COST), so the short cost tag would say it twice */
+export const tags = (a: Plan, withCost = true) => [...(withCost ? [COST_S[a.cost]] : []), ...(a.aud === 'everyone' ? [] : [`${a.aud.join(' / ')} only`]), ...(a.repeat ? [REPEAT[a.repeat]] : [])];
 export const rupees = (n: number) => '₹' + Math.round(n).toLocaleString('en-IN');
 
 /* The venue line under a plan's title, without the place's name when the title already says it. */
