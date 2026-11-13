@@ -2,6 +2,8 @@ import Feather from '@expo/vector-icons/Feather';
 import { Image } from 'expo-image';
 import { useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type TextInputInstance, type TextInputProps, type ViewStyle } from 'react-native';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import { introClock, introLogo } from '@/components/Intro';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CATS, defEmo, type Model, type Plan, placeLine, spotTxt, whenStr, kmAway } from '@/lib/model';
 import { avatarUrl } from '@/lib/avatar';
@@ -35,16 +37,32 @@ export function Btn({ title, onPress, kind = 'primary', icon, busy, disabled, st
    app.json; the family name is the file name). The font is already that weight, so no fontWeight on top of it.
    light: white name with a shadow, for photos (the welcome pages). */
 export const LOGO_FONT = 'PlusJakartaSans-ExtraBold';
-export function Logo({ size = 22, light }: { size?: number; light?: boolean }) {
+export function Logo({ size = 22, light, intro }: { size?: number; light?: boolean; intro?: boolean }) {
   const t = useTheme();
-  const d = Math.round(size * 0.56);
+  const d = Math.round(size * 0.56), gap = Math.max(2, Math.round(size * 0.08)), r = (d + gap) / 2;
   const shadow = light ? { textShadowColor: 'rgba(0,0,0,0.55)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 } : null;
+  /* intro: under the startup animation (Intro.tsx), the dots fade in turning once, flat, around the point between
+     them, then the name slides out from behind them, all on the animation's clock. Otherwise the logo just sits. */
+  const dotA = useAnimatedStyle(() => {
+    const p = intro ? introLogo(introClock.value) : { show: 1, turn: 1 }, a = p.turn * 2 * Math.PI;
+    return { opacity: p.show, transform: [{ translateX: r - r * Math.cos(a) }, { translateY: -r * Math.sin(a) }] };
+  });
+  const dotB = useAnimatedStyle(() => {
+    const p = intro ? introLogo(introClock.value) : { show: 1, turn: 1 }, a = p.turn * 2 * Math.PI;
+    return { opacity: p.show, transform: [{ translateX: r * Math.cos(a) - r }, { translateY: r * Math.sin(a) }] };
+  });
+  const word = useAnimatedStyle(() => {
+    const n = intro ? introLogo(introClock.value).name : 1;
+    return { opacity: n, transform: [{ translateX: (1 - n) * -14 }] };
+  });
+  const dot = { width: d, height: d, borderRadius: d / 2, backgroundColor: '#1A1A1A', borderWidth: d * 0.22, borderColor: t.acc };
   return (
     <View accessible accessibilityRole="header" accessibilityLabel="Overhere" style={{ flexDirection: 'row', alignItems: 'center', gap: Math.round(size * 0.3) }}>
-      <View style={{ flexDirection: 'row', gap: Math.max(2, Math.round(size * 0.08)) }}>
-        {[0, 1].map(k => <View key={k} style={{ width: d, height: d, borderRadius: d / 2, backgroundColor: '#1A1A1A', borderWidth: d * 0.22, borderColor: t.acc }} />)}
+      <View style={{ flexDirection: 'row', gap }}>
+        <Animated.View style={[dot, dotA]} />
+        <Animated.View style={[dot, dotB]} />
       </View>
-      <Text style={[{ color: light ? '#fff' : t.ink, fontFamily: LOGO_FONT, fontSize: size, letterSpacing: -0.6, includeFontPadding: false }, shadow]}>Overhere</Text>
+      <Animated.Text style={[{ color: light ? '#fff' : t.ink, fontFamily: LOGO_FONT, fontSize: size, letterSpacing: -0.6, includeFontPadding: false }, shadow, word]}>Overhere</Animated.Text>
     </View>
   );
 }

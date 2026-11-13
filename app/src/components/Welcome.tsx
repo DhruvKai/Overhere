@@ -1,8 +1,10 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Text, useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewInstance } from 'react-native';
+import Animated, { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { introPending, useIntroRise } from '@/components/Intro';
 import { Btn, Icon, Logo, type IconName } from '@/components/ui';
 import { column } from '@/lib/layout';
 import { PHOTOS } from '@/lib/photoFiles';
@@ -15,6 +17,11 @@ const PAGES: { photo: keyof typeof PHOTOS; icon: IconName; title: string; text: 
   { photo: 'sukhna', icon: 'shield', title: 'Safe by design', text: 'Everyone does a face check, hosts approve every request, and every chat has SOS. Not a dating app.' },
 ];
 
+/* Under the startup animation, the text and buttons rise in one after another as its cover fades (Intro.tsx). */
+function Rise({ i, on, children }: { i: number; on: boolean; children: ReactNode }) {
+  return <Animated.View style={useIntroRise(i, on)}>{children}</Animated.View>;
+}
+
 /* a soft shadow under the header text, for photos that stay bright even under the gradient */
 const shadow = { textShadowColor: 'rgba(0,0,0,0.55)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 };
 
@@ -23,6 +30,9 @@ export default function Welcome({ onDone }: { onDone: (signUp: boolean) => void 
   const [page, setPage] = useState(0);
   const pager = useRef<ScrollViewInstance>(null);
   const last = page === PAGES.length - 1;
+  /* shown under the startup animation: wait for it, then come in (only on that first showing) */
+  const reduce = useReducedMotion();
+  const [intro] = useState(() => introPending() && !reduce);
   /* Scrolling from code doesn't send the end-of-scroll event (iOS and web), so Next sets the page itself too. */
   const go = (i: number) => { setPage(i); pager.current?.scrollTo({ x: i * width, animated: true }); };
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -46,7 +56,7 @@ export default function Welcome({ onDone }: { onDone: (signUp: boolean) => void 
 
       <SafeAreaView pointerEvents="box-none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'space-between' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 8 }}>
-          <Logo size={24} light />
+          <Logo size={24} light intro={intro} />
           {!last ? (
             <Pressable accessibilityRole="button" onPress={() => go(PAGES.length - 1)} hitSlop={12}>
               <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700', ...shadow }}>Skip</Text>
@@ -55,12 +65,19 @@ export default function Welcome({ onDone }: { onDone: (signUp: boolean) => void 
         </View>
 
         <View pointerEvents="box-none" style={[{ paddingHorizontal: 24, paddingBottom: 18 }, column]}>
-          <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-            <Icon name={PAGES[page].icon} size={22} color="#fff" />
-          </View>
-          <Text accessibilityRole="header" style={{ color: '#fff', fontSize: 32, lineHeight: 36, fontWeight: '800', letterSpacing: -0.8 }}>{PAGES[page].title}</Text>
-          <Text style={{ color: 'rgba(255,255,255,0.84)', fontSize: 16, lineHeight: 23, marginTop: 10, minHeight: 69 }}>{PAGES[page].text}</Text>
+          <Rise i={0} on={intro}>
+            <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+              <Icon name={PAGES[page].icon} size={22} color="#fff" />
+            </View>
+          </Rise>
+          <Rise i={1} on={intro}>
+            <Text accessibilityRole="header" style={{ color: '#fff', fontSize: 32, lineHeight: 36, fontWeight: '800', letterSpacing: -0.8 }}>{PAGES[page].title}</Text>
+          </Rise>
+          <Rise i={2} on={intro}>
+            <Text style={{ color: 'rgba(255,255,255,0.84)', fontSize: 16, lineHeight: 23, marginTop: 10, minHeight: 69 }}>{PAGES[page].text}</Text>
+          </Rise>
 
+          <Rise i={3} on={intro}>
           <View style={{ flexDirection: 'row', gap: 6, marginTop: 20, marginBottom: 22 }} accessibilityLabel={`Page ${page + 1} of ${PAGES.length}`}>
             {PAGES.map((p, i) => (
               <Pressable key={p.photo} onPress={() => go(i)} hitSlop={8} accessibilityRole="button" accessibilityLabel={`Go to page ${i + 1}`}>
@@ -68,7 +85,9 @@ export default function Welcome({ onDone }: { onDone: (signUp: boolean) => void 
               </Pressable>
             ))}
           </View>
+          </Rise>
 
+          <Rise i={4} on={intro}>
           {last ? (<>
             <Btn title="Create account" onPress={() => onDone(true)} />
             <Pressable accessibilityRole="button" onPress={() => onDone(false)} style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center', marginTop: 6 }}>
@@ -77,6 +96,7 @@ export default function Welcome({ onDone }: { onDone: (signUp: boolean) => void 
           </>) : (
             <Btn title="Next" onPress={() => go(page + 1)} />
           )}
+          </Rise>
         </View>
       </SafeAreaView>
     </View>

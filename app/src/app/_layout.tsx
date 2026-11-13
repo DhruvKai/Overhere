@@ -1,10 +1,11 @@
 import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Intro, introPending } from '@/components/Intro';
 import { Btn, Empty, Icon, Loading } from '@/components/ui';
 import { api } from '@/lib/api';
 import { setInviteReady, takeInvite } from '@/lib/invite';
@@ -72,7 +73,15 @@ function Gate() {
     welcomed.current = user.id;
     api.welcome(WELCOME_FN).catch(e => console.warn('welcome email', e));
   }, [setUp, user]);
-  useEffect(() => { if (ready && !loading) SplashScreen.hideAsync(); }, [ready, loading]);
+  /* the startup animation (Intro.tsx) covers the app from the start and plays once the splash has really gone (a
+     moment after hideAsync, which only asks for it to go) */
+  const [intro, setIntro] = useState(introPending);
+  const [splashGone, setSplashGone] = useState(false);
+  const introDone = useCallback(() => setIntro(false), []);
+  useEffect(() => {
+    if (!ready || loading) return;
+    SplashScreen.hideAsync().catch(() => {}).finally(() => setTimeout(() => setSplashGone(true), 250));
+  }, [ready, loading]);
   /* Push: register this phone once the profile exists, and open whatever notification was tapped. */
   const pushOn = signedIn && hasProfile;
   useEffect(() => {
@@ -88,6 +97,7 @@ function Gate() {
     if (id) setTimeout(() => router.push({ pathname: '/plan/[id]', params: { id } }), 0);
   }, [plansOpen]);
   if (!ready) return null;
+  if (loading && !error) return <Loading />;
   if (loading) {
     return error ? (
       <View style={{ flex: 1, backgroundColor: t.bg, justifyContent: 'center' }}>
@@ -102,34 +112,37 @@ function Gate() {
   return (
     /* Screens sit in the middle column on tablets (lib/layout.ts). The tabs keep the full width so the tab bar
        spans the screen (their screens get the column in (tabs)/_layout.tsx), and sign-in so the welcome photos do. */
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg, ...column } }}>
-      <Stack.Protected guard={!signedIn}>
-        <Stack.Screen name="sign-in" options={{ contentStyle: { backgroundColor: t.bg } }} />
-      </Stack.Protected>
-      <Stack.Protected guard={needEmail}>
-        <Stack.Screen name="add-email" />
-      </Stack.Protected>
-      <Stack.Protected guard={needPw}>
-        <Stack.Screen name="create-password" />
-      </Stack.Protected>
-      <Stack.Protected guard={setUp && !onboarded}>
-        <Stack.Screen name="onboarding" />
-      </Stack.Protected>
-      <Stack.Protected guard={setUp && hasProfile}>
-        <Stack.Screen name="verify" options={{ presentation: 'modal', headerShown: true, title: 'Face check', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink }} />
-      </Stack.Protected>
-      <Stack.Protected guard={setUp && onboarded}>
-        <Stack.Screen name="(tabs)" options={{ contentStyle: { backgroundColor: t.bg } }} />
-        <Stack.Screen name="plan/[id]" options={{ headerShown: true, title: '', headerBackTitle: 'Back', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink, headerShadowVisible: false }} />
-        <Stack.Screen name="rate/[id]" options={{ presentation: 'modal', headerShown: true, title: 'How did it go?', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink }} />
-        <Stack.Screen name="person/[id]" options={{ headerShown: true, title: '', headerBackTitle: 'Back', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink, headerShadowVisible: false }} />
-        <Stack.Screen name="chat/[id]" options={{ headerShown: true, title: 'Group chat', headerBackTitle: 'Back', headerStyle: { backgroundColor: t.card }, headerTintColor: t.ink }} />
-        <Stack.Screen name="post" options={{ presentation: 'modal', headerShown: true, title: 'Post a plan', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink }} />
-        <Stack.Screen name="sos" options={{ presentation: 'modal', headerShown: true, title: 'Get help', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink }} />
-        <Stack.Screen name="edit-profile" options={{ presentation: 'modal', headerShown: true, title: 'Edit profile', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink }} />
-        <Stack.Screen name="settings" options={{ headerShown: true, title: 'Settings', headerBackTitle: 'Back', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink, headerShadowVisible: false }} />
-      </Stack.Protected>
-    </Stack>
+    <>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg, ...column } }}>
+        <Stack.Protected guard={!signedIn}>
+          <Stack.Screen name="sign-in" options={{ contentStyle: { backgroundColor: t.bg } }} />
+        </Stack.Protected>
+        <Stack.Protected guard={needEmail}>
+          <Stack.Screen name="add-email" />
+        </Stack.Protected>
+        <Stack.Protected guard={needPw}>
+          <Stack.Screen name="create-password" />
+        </Stack.Protected>
+        <Stack.Protected guard={setUp && !onboarded}>
+          <Stack.Screen name="onboarding" />
+        </Stack.Protected>
+        <Stack.Protected guard={setUp && hasProfile}>
+          <Stack.Screen name="verify" options={{ presentation: 'modal', headerShown: true, title: 'Face check', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink }} />
+        </Stack.Protected>
+        <Stack.Protected guard={setUp && onboarded}>
+          <Stack.Screen name="(tabs)" options={{ contentStyle: { backgroundColor: t.bg } }} />
+          <Stack.Screen name="plan/[id]" options={{ headerShown: true, title: '', headerBackTitle: 'Back', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink, headerShadowVisible: false }} />
+          <Stack.Screen name="rate/[id]" options={{ presentation: 'modal', headerShown: true, title: 'How did it go?', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink }} />
+          <Stack.Screen name="person/[id]" options={{ headerShown: true, title: '', headerBackTitle: 'Back', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink, headerShadowVisible: false }} />
+          <Stack.Screen name="chat/[id]" options={{ headerShown: true, title: 'Group chat', headerBackTitle: 'Back', headerStyle: { backgroundColor: t.card }, headerTintColor: t.ink }} />
+          <Stack.Screen name="post" options={{ presentation: 'modal', headerShown: true, title: 'Post a plan', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink }} />
+          <Stack.Screen name="sos" options={{ presentation: 'modal', headerShown: true, title: 'Get help', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink }} />
+          <Stack.Screen name="edit-profile" options={{ presentation: 'modal', headerShown: true, title: 'Edit profile', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink }} />
+          <Stack.Screen name="settings" options={{ headerShown: true, title: 'Settings', headerBackTitle: 'Back', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink, headerShadowVisible: false }} />
+        </Stack.Protected>
+      </Stack>
+      {intro ? <Intro go={splashGone} onDone={introDone} /> : null}
+    </>
   );
 }
 
