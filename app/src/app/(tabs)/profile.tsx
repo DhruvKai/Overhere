@@ -1,9 +1,9 @@
 import { router } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 import { Header, HeaderIcon } from '@/components/Header';
-import { PastRow, PersonRow, Ph } from '@/components/ProfileParts';
+import { genderTxt, IntChips, PastRow, PersonRow, Ph, Stats, TimeChips } from '@/components/ProfileParts';
 import { Avatar, Badge, Btn, Card, H, Icon, P, TextLink, type IconName } from '@/components/ui';
-import { canRate, following, isVer, pastList, trustTxt, uname } from '@/lib/model';
+import { canRate, following, isVer, pastList, uname } from '@/lib/model';
 import { useModel, useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 
@@ -30,40 +30,39 @@ export default function Profile() {
     savePriv(pv => ({ following: (Array.isArray(pv.following) ? pv.following as string[] : []).filter(x => x !== id) }));
     toast(`Unfollowed ${uname(m, id)}`);
   };
-  const tags = (l: string[]) => <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>{l.map(i => <Badge key={i} text={i} tone="acc" />)}</View>;
-  const times = (l: string[]) => (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-      {l.map(i => (
-        <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: t.line, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 5 }}>
-          <Icon name="clock" size={12} color={t.mute} /><Text style={{ fontSize: 13, color: t.ink2 }}>{i}</Text>
-        </View>
-      ))}
-    </View>
-  );
-
   return (
     <View style={{ flex: 1 }}>
-      <Header title="Profile" right={<HeaderIcon icon="settings" label="Settings" onPress={() => router.push('/settings')} />} />
+      {/* edit and settings at the top right */}
+      <Header title="Profile" right={
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <HeaderIcon icon="edit-2" label="Edit profile" onPress={() => router.push('/edit-profile')} />
+          <HeaderIcon icon="settings" label="Settings" onPress={() => router.push('/settings')} />
+        </View>
+      } />
       <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, gap: 14, paddingBottom: 40 }}>
+        {/* photo; name, age, tick and gender; work and area; the three numbers beside it; then the bio */}
         <Card>
           <View style={{ flexDirection: 'row', gap: 14, alignItems: 'center' }}>
-            <Avatar m={m} id={m.me} size={64} />
-            <View style={{ flex: 1 }}>
+            <Avatar m={m} id={m.me} size={72} />
+            <View style={{ flex: 1, gap: 2 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                 <H size={21}>{p.name}, {ageOf(p.dob)}</H>
                 {isVer(m, m.me) || p.face ? <Icon name="check-circle" size={16} color={t.ok} /> : null}
+                {p.gender ? <Text style={{ color: t.ink2, fontSize: 13.5 }}>{genderTxt(p.gender)}</Text> : null}
               </View>
-              <P mute>{p.gender} · {p.hood}</P>
-              <P small style={{ marginTop: 2 }}>{trustTxt(m, m.me)}</P>
+              {p.job || p.hood ? <P mute>{[p.job, p.hood].filter(Boolean).join(' · ')}</P> : null}
+              <View style={{ marginTop: 8 }}><Stats m={m} id={m.me} small /></View>
             </View>
           </View>
-          {p.job || p.bio ? <P style={{ marginTop: 12 }}>{[p.job, p.bio].filter(Boolean).join(' · ')}</P> : null}
-          <Btn title="Edit profile" kind="ghost" icon="edit-2" onPress={() => router.push('/edit-profile')} style={{ marginTop: 14 }} />
+          {p.bio ? (
+            <View style={{ marginTop: 14, backgroundColor: t.field, borderRadius: 12, padding: 12 }}>
+              <P>{p.bio}</P>
+            </View>
+          ) : null}
         </Card>
 
-        <Card><Ph icon="star" title="Interests" />{tags(p.ints)}</Card>
-        {/* free times look different from interests: outlined, each with a clock */}
-        {p.avail?.length ? <Card><Ph icon="clock" title="Usually free" />{times(p.avail)}</Card> : null}
+        <Card><Ph icon="star" title="Interests" /><IntChips list={p.ints} /></Card>
+        {p.avail?.length ? <Card><Ph icon="clock" title="Usually free" /><TimeChips list={p.avail} /></Card> : null}
 
         {done < V.length ? (
           <Card>

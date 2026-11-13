@@ -1,9 +1,9 @@
 import Feather from '@expo/vector-icons/Feather';
 import { router, Tabs } from 'expo-router';
 import { useEffect } from 'react';
-import { View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { MicroAsk } from '@/components/Feedback';
-import { Btn, Empty } from '@/components/ui';
+import { Avatar, Btn, Empty, Icon } from '@/components/ui';
 import { TermsPrompt } from '@/components/TermsPrompt';
 import { column } from '@/lib/layout';
 import { nowOf } from '@/lib/model';
@@ -17,7 +17,6 @@ let counted = false;
 export default function TabLayout() {
   const t = useTheme();
   const { model, saveAsked } = useStore();
-  const unread = model?.notes.filter(n => !n.read).length ?? 0;
   useEffect(() => {
     if (counted || !model) return;
     counted = true;
@@ -54,9 +53,30 @@ export default function TabLayout() {
       }}>
         <Tabs.Screen name="index" options={{ title: 'Swipe', tabBarIcon: icon('layers') }} />
         <Tabs.Screen name="discover" options={{ title: 'Discover', tabBarIcon: icon('compass') }} />
+        {/* Post sits in the middle: a green button that opens the post screen, not a tab */}
+        <Tabs.Screen name="new" options={{
+          title: 'Post',
+          tabBarButton: () => (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Post a plan" onPress={() => router.push('/post')}
+                style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: t.acc, borderRadius: 99, paddingHorizontal: 15, height: 42, opacity: pressed ? 0.85 : 1 })}>
+                <Icon name="plus" size={18} color={t.onAcc} />
+                <Text style={{ color: t.onAcc, fontWeight: '700', fontSize: 15 }}>Post</Text>
+              </Pressable>
+            </View>
+          ),
+        }} />
         <Tabs.Screen name="plans" options={{ title: 'My plans', tabBarIcon: icon('message-circle') }} />
-        <Tabs.Screen name="notes" options={{ title: 'Updates', tabBarIcon: icon('bell'), tabBarBadge: unread ? (unread > 9 ? '9+' : unread) : undefined }} />
-        <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: icon('user') }} />
+        {/* your own photo, ringed in green while you're on it */}
+        <Tabs.Screen name="profile" options={{
+          title: 'Profile',
+          tabBarLabel: () => null,
+          tabBarIcon: ({ focused }) => model ? (
+            <View style={{ marginTop: 10, borderRadius: 99, padding: 2, borderWidth: 2, borderColor: focused ? t.acc : 'transparent' }}>
+              <Avatar m={model} id={model.me} size={34} />
+            </View>
+          ) : icon('user')({ color: t.mute }),
+        }} />
       </Tabs>
       <MicroAsk />
       <TermsPrompt />

@@ -1,7 +1,7 @@
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, RefreshControl, SectionList, Text, View } from 'react-native';
-import { Header } from '@/components/Header';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Sheet } from '@/components/Sheet';
 import { Badge, Btn, Empty, H, Icon, P, TextLink, type IconName } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -13,10 +13,12 @@ import { useTheme } from '@/lib/theme';
 const KIND: Record<string, IconName> = { req: 'user-check', update: 'layers', remind: 'calendar' };
 const TONE: Record<string, 'ok' | 'bad' | 'warn' | 'info'> = { good: 'ok', bad: 'bad', warn: 'warn', info: 'info' };
 
-/* Notifications, then join requests and replies, as on the website. Tapping one marks it read and opens what it's
+/* Updates, opened from the bell at the top right of the tabs (Header), with a back arrow.
+   Notifications, then join requests and replies, as on the website. Tapping one marks it read and opens what it's
    about: the "Arrived safely?" check-in, the group chat, the rating, or the plan. Notifications are never deleted. */
-export default function Notes() {
+export default function Updates() {
   const t = useTheme();
+  const insets = useSafeAreaInsets();
   const m = useModel();
   const { refresh, run, toast, savePriv } = useStore();
   const [pulling, setPulling] = useState(false);
@@ -47,12 +49,12 @@ export default function Notes() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Header title="Updates" right={unread ? <TextLink title="Mark all read" onPress={readAll} /> : <View />} />
+      <Stack.Screen options={{ headerRight: () => (unread ? <TextLink title="Mark all read" onPress={readAll} /> : null) }} />
       <SectionList
         sections={sections}
         keyExtractor={n => n.id}
         stickySectionHeadersEnabled={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 + insets.bottom }}
         refreshControl={<RefreshControl refreshing={pulling} onRefresh={async () => { setPulling(true); await refresh(); setPulling(false); }} tintColor={t.acc} />}
         ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
         renderSectionHeader={({ section }) => <View style={{ paddingTop: 12, paddingBottom: 8 }}><H size={17}>{section.title}</H></View>}

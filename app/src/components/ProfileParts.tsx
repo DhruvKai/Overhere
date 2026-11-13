@@ -1,12 +1,49 @@
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { ago, CATS, nowOf, uname, type Model, type PastItem } from '@/lib/model';
+import { ago, CATS, nowOf, trust, uname, type Model, type PastItem } from '@/lib/model';
 import { useModel } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
-import { Avatar, Icon, P, type IconName } from './ui';
+import { Avatar, Badge, Icon, P, type IconName } from './ui';
 
 /* Pieces shared by Profile, Settings and someone else's profile. */
+
+/* Someone's record as three numbers: meetups, showed up, no-shows. small: the tighter version beside a photo. */
+export function Stats({ m, id, small }: { m: Model; id: string; small?: boolean }) {
+  const t = useTheme(), tr = trust(m, id);
+  return (
+    <View style={{ flexDirection: 'row', gap: small ? 6 : 8 }}>
+      {([[tr.met, 'meetups'], [tr.shows, 'showed up'], [tr.noshows, 'no-shows']] as const).map(([n, l]) => (
+        <View key={l} style={{ flex: 1, alignItems: 'center', backgroundColor: t.field, borderRadius: small ? 12 : 14, paddingVertical: small ? 7 : 10 }}>
+          <Text style={{ color: t.ink, fontSize: small ? 17 : 20, fontWeight: '800' }}>{n}</Text>
+          <Text style={{ color: t.mute, fontSize: small ? 11.5 : 12 }} numberOfLines={1}>{l}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/* Gender with its symbol where there is one (Woman, Man). */
+export const genderTxt = (g?: string) => (g === 'Woman' ? '♀ Woman' : g === 'Man' ? '♂ Man' : g || '');
+
+/* Interests as filled chips. */
+export function IntChips({ list }: { list: string[] }) {
+  return <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>{list.map(i => <Badge key={i} text={i} tone="acc" />)}</View>;
+}
+
+/* Free times look different from interests: outlined, each with a clock. */
+export function TimeChips({ list }: { list: string[] }) {
+  const t = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+      {list.map(i => (
+        <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: t.line, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 5 }}>
+          <Icon name="clock" size={12} color={t.mute} /><Text style={{ fontSize: 13, color: t.ink2 }}>{i}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
 
 /* A card's heading with its icon, like the website's panel headings. */
 export function Ph({ icon, title, right }: { icon: IconName; title: string; right?: string }) {

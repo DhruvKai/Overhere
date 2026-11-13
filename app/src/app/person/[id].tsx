@@ -6,8 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ReportSheet } from '@/components/ReportSheet';
 import { Avatar, Badge, Btn, Card, Empty, H, Icon, Note, P, PlanRow } from '@/components/ui';
 import { api } from '@/lib/api';
-import { following, isBlocked, isVer, pastList, REPORT_REASONS, signals, trust, visible } from '@/lib/model';
-import { PastRow } from '@/components/ProfileParts';
+import { following, isBlocked, isVer, pastList, REPORT_REASONS, signals, visible } from '@/lib/model';
+import { IntChips, PastRow, Ph, Stats, TimeChips } from '@/components/ProfileParts';
 import { useModel, useStore } from '@/lib/store';
 import { R, useTheme } from '@/lib/theme';
 
@@ -25,7 +25,7 @@ export default function Person() {
   const p = m.people[id];
   if (!p) return <Empty icon="user" title="This profile isn't available" text="They may have deleted their account, or you blocked each other." />;
 
-  const tr = trust(m, id), bl = isBlocked(m, id), fol = following(m).includes(id);
+  const bl = isBlocked(m, id), fol = following(m).includes(id);
   const pics = [p.photo, p.photo2].filter(Boolean);
   const ups = m.acts.filter(a => a.host === id && visible(m, a)).sort((a, b) => a.when - b.when);
   const past = pastList(m, id).slice(0, 6);
@@ -70,19 +70,18 @@ export default function Person() {
             <P mute>{[p.gender, p.age].filter(Boolean).join(', ')}{p.job ? ` · ${p.job}` : ''}</P>
           </View>
         </View>
+        <Stats m={m} id={id} />
         {p.bio ? <P>{p.bio}</P> : null}
 
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          {[[tr.met, 'meetups'], [tr.shows, 'showed up'], [tr.noshows, 'no-shows']].map(([n, l]) => (
-            <View key={l} style={{ flex: 1, alignItems: 'center', backgroundColor: t.field, borderRadius: 14, paddingVertical: 10 }}>
-              <Text style={{ color: t.ink, fontSize: 20, fontWeight: '800' }}>{n}</Text>
-              <Text style={{ color: t.mute, fontSize: 12 }}>{l}</Text>
-            </View>
-          ))}
-        </View>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-          {sig.length ? sig.map(s => <Badge key={s.text} text={s.text} tone={s.tone} />) : <P small mute>Nothing in common yet</P>}
-        </View>
+        {/* what they're into and when they're usually free, then what you share */}
+        {p.ints.length ? <Card><Ph icon="star" title="Interests" /><IntChips list={p.ints} /></Card> : null}
+        {p.avail.length ? <Card><Ph icon="clock" title="Usually free" /><TimeChips list={p.avail} /></Card> : null}
+        <Card>
+          <Ph icon="users" title="In common with you" />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+            {sig.length ? sig.map(s => <Badge key={s.text} text={s.text} tone={s.tone} />) : <P small mute>Nothing in common yet</P>}
+          </View>
+        </Card>
 
         {!bl ? (
           <View>
