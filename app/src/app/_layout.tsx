@@ -1,5 +1,6 @@
 import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { NavigationBar } from 'expo-navigation-bar';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -159,6 +160,8 @@ export default function RootLayout() {
         <ThemeProvider value={nav}>
           <StoreProvider>
             <StatusBar style={t.dark ? 'light' : 'dark'} />
+            {/* Android's ◀ ● ■ buttons in the theme's colours, over the app's own strip (no see-through scrim: app.json) */}
+            <NavigationBar style={t.dark ? 'dark' : 'light'} />
             <Gate />
             <Toast />
           </StoreProvider>

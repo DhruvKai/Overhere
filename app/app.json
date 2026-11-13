@@ -45,6 +45,7 @@
       "expo-sqlite",
       "expo-image",
       "expo-web-browser",
+      ["expo-navigation-bar", { "enforceContrast": false }],
       [
         "expo-splash-screen",
         {

@@ -33,22 +33,19 @@ export function HeaderIcon({ icon, label, onPress }: { icon: IconName; label: st
   );
 }
 
-/* Updates at the top right: a bell with its name under it, and the number of unread ones. */
+/* Updates at the top right: a round bell button (like the gear on Profile) with the number of unread ones. */
 export function UpdatesButton() {
   const t = useTheme();
   const unread = useStore().model?.notes.filter(n => !n.read).length ?? 0;
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={unread ? `Updates, ${unread} new` : 'Updates'} onPress={() => router.push('/updates')}
-      style={({ pressed }) => ({ alignItems: 'center', justifyContent: 'center', gap: 1, minWidth: 64, minHeight: 50, paddingHorizontal: 8, borderRadius: 14, borderWidth: 1, borderColor: t.line, backgroundColor: t.card, opacity: pressed ? 0.8 : 1 })}>
-      <View>
-        <Icon name="bell" size={20} />
-        {unread ? (
-          <View style={{ position: 'absolute', top: -6, right: -10, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, backgroundColor: t.bad, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>{unread > 9 ? '9+' : unread}</Text>
-          </View>
-        ) : null}
-      </View>
-      <Text style={{ color: t.ink2, fontSize: 11.5, fontWeight: '600' }}>Updates</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel={unread ? `Updates, ${unread} new` : 'Updates'} onPress={() => router.push('/updates')} hitSlop={6}
+      style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: t.card, borderWidth: 1, borderColor: t.line, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.8 : 1 })}>
+      <Icon name="bell" size={20} />
+      {unread ? (
+        <View style={{ position: 'absolute', top: -4, right: -4, minWidth: 19, height: 19, borderRadius: 10, paddingHorizontal: 4, backgroundColor: t.bad, borderWidth: 1.5, borderColor: t.bg, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>{unread > 9 ? '9+' : unread}</Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }

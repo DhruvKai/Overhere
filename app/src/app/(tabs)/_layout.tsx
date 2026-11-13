@@ -2,6 +2,7 @@ import Feather from '@expo/vector-icons/Feather';
 import { router, Tabs } from 'expo-router';
 import { useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MicroAsk } from '@/components/Feedback';
 import { Avatar, Btn, Empty, Icon } from '@/components/ui';
 import { TermsPrompt } from '@/components/TermsPrompt';
@@ -16,6 +17,7 @@ let counted = false;
 
 export default function TabLayout() {
   const t = useTheme();
+  const insets = useSafeAreaInsets();
   const { model, saveAsked } = useStore();
   useEffect(() => {
     if (counted || !model) return;
@@ -48,8 +50,16 @@ export default function TabLayout() {
         sceneStyle: { backgroundColor: t.bg, ...column },
         tabBarActiveTintColor: t.acc,
         tabBarInactiveTintColor: t.mute,
-        tabBarStyle: { backgroundColor: t.card, borderTopColor: t.line },
-        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+        /* room for the tallest item (your photo), a little space under the items, and then a solid strip of its own
+           behind the phone's ◀ ● ■ buttons, as in WhatsApp */
+        tabBarStyle: { borderTopColor: t.line, height: 64 + insets.bottom + 6, paddingTop: 6, paddingBottom: insets.bottom + 6 },
+        tabBarBackground: () => (
+          <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, backgroundColor: t.card }} />
+            <View style={{ height: insets.bottom, backgroundColor: t.dark ? '#0B0A08' : '#E9E2D3' }} />
+          </View>
+        ),
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '600', marginTop: 2 },
       }}>
         <Tabs.Screen name="index" options={{ title: 'Swipe', tabBarIcon: icon('layers') }} />
         <Tabs.Screen name="discover" options={{ title: 'Discover', tabBarIcon: icon('compass') }} />
@@ -72,8 +82,8 @@ export default function TabLayout() {
           title: 'Profile',
           tabBarLabel: () => null,
           tabBarIcon: ({ focused }) => model ? (
-            <View style={{ marginTop: 10, borderRadius: 99, padding: 2, borderWidth: 2, borderColor: focused ? t.acc : 'transparent' }}>
-              <Avatar m={model} id={model.me} size={34} />
+            <View style={{ borderRadius: 99, padding: 1.5, borderWidth: 2, borderColor: focused ? t.acc : 'transparent' }}>
+              <Avatar m={model} id={model.me} size={32} />
             </View>
           ) : icon('user')({ color: t.mute }),
         }} />
