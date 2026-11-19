@@ -8,7 +8,7 @@ import { Avatar, BottomBar, Btn, Chip, Field, Label, P, Wrap } from '@/component
 import { api } from '@/lib/api';
 import { setPhoto } from '@/lib/avatar';
 import { isoDob, maskDob, showDob } from '@/lib/dob';
-import { defEmo, EMOJIS, GENDERS, MIN_INTS, NEAR_KM, TIMES, trustedOf } from '@/lib/model';
+import { defEmo, EMOJIS, GENDERS, homeLL, MIN_INTS, NEAR_KM, TIMES, trustedOf } from '@/lib/model';
 import { InterestPicker } from '@/components/InterestPicker';
 import type { Gender } from '@/lib/types';
 import { useModel, useStore } from '@/lib/store';
@@ -17,7 +17,7 @@ import { useTheme } from '@/lib/theme';
 const toggle = (l: string[], v: string) => (l.includes(v) ? l.filter(x => x !== v) : [...l, v]);
 
 /* Name, avatar (an emoji, or two photos of your face that the face check is matched against), date of birth, gender,
-   home area, job, bio and likes, as on the website. After the ID check, date of birth and gender come from the ID. */
+   home area, job, bio and likes, as on the website. Date of birth and gender are fixed once given at sign-up. */
 export default function EditProfile() {
   const t = useTheme();
   /* Android draws behind its navigation buttons, so the end of the page keeps clear of them */
@@ -69,8 +69,8 @@ export default function EditProfile() {
     const ok = await run(async () => {
       await api.saveProfile({
         name: name.trim(), last_name: last.trim(), emo, job: job.trim(), bio: bio.trim(), ints, avail, hood, lat: ll[0], lng: ll[1],
-        /* the database refuses changes to these after the ID check, so they're only sent before it */
-        ...(p.kyc ? {} : { dob: iso, gender }),
+        /* fixed once given at sign-up (the database refuses a change), so only sent by an older account that never gave one */
+        ...(p.dob ? {} : { dob: iso }), ...(p.gender ? {} : { gender }),
       });
       if (emoPicked && p.photo) await setPhoto(null);
     });
@@ -106,15 +106,15 @@ export default function EditProfile() {
         </View>
         <Field label="First name" value={name} onChangeText={setName} maxLength={40} autoComplete="given-name" textContentType="givenName" />
         <Field label="Last name" value={last} onChangeText={setLast} maxLength={40} autoComplete="family-name" textContentType="familyName" />
-        <Field label="Date of birth" value={dob} onChangeText={v => setDob(maskDob(v))} placeholder="DD/MM/YYYY" keyboardType="number-pad" maxLength={10} editable={!p.kyc} />
+        <Field label="Date of birth" value={dob} onChangeText={v => setDob(maskDob(v))} placeholder="DD/MM/YYYY" keyboardType="number-pad" maxLength={10} editable={!p.dob} />
         <Label>Gender</Label>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-          {GENDERS.map(g => <Chip key={g} label={g} on={gender === g} onPress={() => { if (!p.kyc) setGender(g); }} />)}
+          {GENDERS.map(g => <Chip key={g} label={g} on={gender === g} onPress={() => { if (!p.gender) setGender(g); }} />)}
         </View>
         <P mute small style={{ marginBottom: 14 }}>
-          {p.kyc ? 'Confirmed by your ID check. To change these, email admin@overhere.social.' : 'Used for plans that are only for some people, like women-only plans.'}
+          {p.dob && p.gender ? "These can't be changed. If one is wrong, email admin@overhere.social." : 'Used for plans that are only for some people, like women-only plans.'}
         </P>
-        <PlacePicker label="Home area" mode="area" value={hood} picked={!!ll} placeholder="Search your area or city"
+        <PlacePicker label="Home area" mode="area" value={hood} picked={!!ll} near={homeLL(m)} placeholder="Search your area or city"
           onChange={v => { setHood(v); setLl(null); }} onPick={x => { setHood(x.label); setLl(x.ll); }}
           hint={`You see plans within ${NEAR_KM} km of here.`} locate="home" />
         <Field label="What you do" value={job} onChangeText={setJob} maxLength={40} placeholder="e.g. Designer, student" />

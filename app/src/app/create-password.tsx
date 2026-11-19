@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ProgressBar, useProgress } from '@/components/SignupPage';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Btn, H, Icon, P, PwField } from '@/components/ui';
@@ -13,6 +14,7 @@ import { useTheme } from '@/lib/theme';
    web/app.js. Saving it sets user_metadata.pw_set; the session update then moves the root layout on. */
 export default function CreatePassword() {
   const t = useTheme();
+  const { pct } = useProgress();
   const { toast, signOut, session } = useStore();
   const email = session?.user.email ?? '';
   const [pw, setPw] = useState('');
@@ -40,7 +42,9 @@ export default function CreatePassword() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 48 }} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 24 }} keyboardShouldPersistTaps="handled">
+          {/* sign-up screens 7, 8 and 8b: how much is done */}
+          <View style={{ marginBottom: 24 }}><ProgressBar pct={pct} /></View>
           <View style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: t.acc2, alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
             <Icon name="lock" size={26} color={t.accink} />
           </View>

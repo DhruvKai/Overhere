@@ -1090,9 +1090,11 @@ begin
   end if;
   if found then
     if b is not null and b > current_date - interval '18 years' then raise exception 'You must be 18 or over to use Overhere'; end if;
-    -- After the ID check, gender and date of birth come from the ID: changing them goes through a person.
-    if cur.kyc and ((p ? 'gender' and p->>'gender' is distinct from cur.gender) or (p ? 'dob' and (p->>'dob')::date is distinct from cur.dob)) then
-      raise exception 'Your gender and date of birth are confirmed by your ID. To change them, please email us.';
+    -- Gender and date of birth are fixed once given at sign-up (sign-up says so); a mistake is fixed by a person, by
+    -- email. An older account without one can still add it, once.
+    if (p ? 'gender' and cur.gender is not null and p->>'gender' is distinct from cur.gender)
+       or (p ? 'dob' and cur.dob is not null and (p->>'dob')::date is distinct from cur.dob) then
+      raise exception 'Your date of birth and gender can''t be changed. If one is wrong, please email us.';
     end if;
     update profiles set
       name   = coalesce(p->>'name', name),

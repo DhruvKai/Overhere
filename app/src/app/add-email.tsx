@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ProgressBar, useProgress } from '@/components/SignupPage';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Btn, CodeBoxes, Field, H, Icon, P } from '@/components/ui';
@@ -15,6 +16,7 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 export default function AddEmail() {
   const t = useTheme();
+  const { pct } = useProgress();
   const { toast, signOut } = useStore();
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -53,7 +55,9 @@ export default function AddEmail() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 48 }} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 24 }} keyboardShouldPersistTaps="handled">
+          {/* sign-up screens 7, 8 and 8b: how much is done */}
+          <View style={{ marginBottom: 24 }}><ProgressBar pct={pct} /></View>
           <View style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: t.acc2, alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
             <Icon name="mail" size={26} color={t.accink} />
           </View>

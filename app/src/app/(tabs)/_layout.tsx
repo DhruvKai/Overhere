@@ -77,13 +77,13 @@ export default function TabLayout() {
           ),
         }} />
         <Tabs.Screen name="plans" options={{ title: 'My plans', tabBarIcon: icon('message-circle') }} />
-        {/* your own photo, ringed in green while you're on it */}
+        {/* your own photo, about the size of the other icons and labelled like them so the row lines up, ringed in green
+            while you're on it */}
         <Tabs.Screen name="profile" options={{
           title: 'Profile',
-          tabBarLabel: () => null,
           tabBarIcon: ({ focused }) => model ? (
-            <View style={{ borderRadius: 99, padding: 1.5, borderWidth: 2, borderColor: focused ? t.acc : 'transparent' }}>
-              <Avatar m={model} id={model.me} size={32} />
+            <View style={{ borderRadius: 99, padding: 1, borderWidth: 1.5, borderColor: focused ? t.acc : 'transparent' }}>
+              <Avatar m={model} id={model.me} size={23} />
             </View>
           ) : icon('user')({ color: t.mute }),
         }} />

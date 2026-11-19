@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com 'wasm-unsafe-eval'; frame-src 'self' https://challenges.cloudflare.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://tile.openstreetmap.org https://*.supabase.co; media-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://*.amazonaws.com wss://*.amazonaws.com https://photon.komoot.io; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com https://maps.googleapis.com https://maps.gstatic.com 'wasm-unsafe-eval'; frame-src 'self' https://challenges.cloudflare.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://tile.openstreetmap.org https://*.supabase.co https://*.googleapis.com https://*.gstatic.com https://*.google.com; media-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://*.amazonaws.com wss://*.amazonaws.com https://photon.komoot.io https://maps.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Overhere</title>
@@ -144,6 +144,9 @@ input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--acc)}
 .chk.top{align-items:flex-start;font-size:13px;line-height:1.45}.chk.top input{margin-top:3px}
 /* profile sign-up: which of the three pages you're on */
 .obbar{display:flex;gap:6px;margin:0 0 22px}.obbar i{flex:1;height:4px;border-radius:2px;background:var(--line)}.obbar i.on{background:var(--acc)}
+/* sign-up from screen 5 on, and the card on Profile: how much is done */
+.supb{display:flex;align-items:center;gap:10px;margin:0 0 22px}.supt{flex:1;height:6px;border-radius:3px;background:var(--line);overflow:hidden}.supt i{display:block;height:100%;border-radius:3px;background:var(--acc)}.supb span{font-size:13px;font-weight:700;color:var(--ink2);min-width:62px;text-align:right}
+.pgl{display:flex;align-items:center;gap:10px;padding:7px 0}.pgl .t{flex:1}.pgl .t small{color:var(--mute)}
 .facebox{min-height:340px;border-radius:18px;overflow:hidden;background:var(--grey);margin:4px 0 12px}
 .or{display:flex;align-items:center;gap:10px;color:var(--mute);font-size:12.5px;margin:14px 0 2px}.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
 .opts{display:flex;flex-wrap:wrap;gap:8px}
@@ -240,7 +243,6 @@ input[aria-invalid=true],input[aria-invalid=true]:focus{border-color:var(--bad)}
 .cat{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:99px;background:#fff}
 .vf{color:var(--acc);font-weight:600;font-size:12px;display:inline-flex;align-items:center;gap:3px}
 /* sample hosts: always labelled */
-.smp{display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;padding:2px 7px;border-radius:99px;background:var(--warnbg);color:var(--warn);margin-left:4px;vertical-align:middle}
 /* chats list */
 .chl{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
 .chi{min-width:0;box-sizing:border-box;display:flex;align-items:center;gap:12px;width:100%;text-align:left;font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px 14px;cursor:pointer}
@@ -251,8 +253,6 @@ input[aria-invalid=true],input[aria-invalid=true]:focus{border-color:var(--bad)}
 .cht .tm{font-size:12px;color:var(--mute);flex:0 0 auto}
 .chm{font-size:13.5px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .chi.un .chm{color:var(--ink);font-weight:600}
-.media .smp{position:absolute;top:10px;right:10px;margin:0;box-shadow:0 1px 4px rgba(0,0,0,.2)}
-.media .smp:has(+ .svb){top:18px;right:54px}  /* next to the save button, not under it */
 .udot{width:10px;height:10px;border-radius:50%;background:var(--acc);flex:0 0 auto}
 /* CAPTCHA: invisible unless Cloudflare asks for a tap */
 #cf_box{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:9999;pointer-events:none}
@@ -568,7 +568,7 @@ a.btn{text-decoration:none}
 .cin{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--line)}
 .cin.closed{align-items:center;color:var(--mute);font-size:13.5px;background:var(--field)}.cin.closed .i{flex:0 0 auto}
 .cin input{flex:1}.cin button{width:auto}
-#toast{position:absolute;left:14px;right:14px;top:14px;z-index:50;background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:14px;font-size:13.5px;opacity:0;transform:translateY(-12px);transition:.25s;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+#toast{position:absolute;left:14px;right:14px;top:14px;z-index:50;background:color-mix(in srgb,var(--ink) 80%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:var(--bg);padding:12px 16px;border-radius:14px;font-size:13.5px;opacity:0;transform:translateY(-12px);transition:.25s;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.2)}
 #toast.show{opacity:1;transform:none;pointer-events:auto}
 #toast{display:flex;align-items:flex-start;gap:8px;padding-right:8px}
 #toast span{flex:1}
@@ -581,7 +581,8 @@ a.btn{text-decoration:none}
 .scan.go{animation:pulse .7s infinite alternate}
 @keyframes pulse{to{transform:scale(1.08);background:#D4E6CB}}
 .dn{border-left:3px solid var(--acc);padding-left:10px;margin:10px 0;font-size:12.5px;color:var(--mute)}
-.empty{text-align:center;padding:50px 20px;color:var(--mute);max-width:420px;margin:0 auto}
+/* in the middle of the screen, as in the app */
+.empty{text-align:center;padding:24px 20px;color:var(--mute);max-width:420px;margin:0 auto;min-height:55vh;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .empty .big{width:72px;height:72px;border-radius:50%;background:var(--acc2);color:var(--acc);display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
 .empty h2{color:var(--ink)}
 .empty .btn{width:auto;margin-top:10px}

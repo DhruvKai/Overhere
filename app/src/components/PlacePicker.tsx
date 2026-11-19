@@ -1,11 +1,11 @@
 import * as Location from 'expo-location';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
-import { inIndia, placeHere, searchPlaces, type Place } from '@/lib/geo';
+import { inIndia, newSession, placeHere, placeSpot, searchPlaces, type Hit, type Place } from '@/lib/geo';
 import { useTheme } from '@/lib/theme';
 import { Field, Icon } from './ui';
 
-/* A search box with OpenStreetMap suggestions. `picked` is set only when a suggestion is chosen,
+/* A search box with place suggestions (Google, or OpenStreetMap until Google is set up: lib/geo.ts). `picked` is set only when a suggestion is chosen,
    so the place always comes with its map position. `locate` adds a "use my location" button, as on the website:
    'home' keeps only the area, rounded to about 1 km, never the exact spot; 'spot' (a venue's area) pins where you are. */
 export function PlacePicker({ label, mode, value, picked, near, onChange, onPick, placeholder, hint, locate }: {
@@ -13,7 +13,9 @@ export function PlacePicker({ label, mode, value, picked, near, onChange, onPick
   onChange: (text: string) => void; onPick: (p: Place) => void; placeholder?: string; hint?: string; locate?: 'home' | 'spot';
 }) {
   const t = useTheme();
-  const [hits, setHits] = useState<Place[] | null>([]);
+  const [hits, setHits] = useState<Hit[] | null>([]);
+  const session = useRef('');
+  const [placing, setPlacing] = useState(false);
   const [fail, setFail] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const latest = useRef('');
@@ -53,11 +55,25 @@ export function PlacePicker({ label, mode, value, picked, near, onChange, onPick
     if (q.length < 2) { setHits([]); return; }
     setHits(null);
     timer.current = setTimeout(() => {
-      searchPlaces(q, mode, near).then(
+      session.current ||= newSession();
+      searchPlaces(q, mode, near, session.current).then(
         l => { if (latest.current === q) { setHits(l); setFail(false); } },
         () => { if (latest.current === q) { setHits([]); setFail(true); } });
     }, 300);
   };
+
+  /* a Google suggestion gets its position now; the others already have it */
+  async function pick(p: Hit) {
+    latest.current = ''; clearTimeout(timer.current); setHits([]);
+    if (p.ll) { onPick({ label: p.label, kind: p.kind, state: p.state, ll: p.ll }); return; }
+    if (!p.id || placing) return;
+    setPlacing(true); setLocErr('');
+    try {
+      const ll = await placeSpot(p.id, session.current);
+      onPick({ label: p.label, kind: p.kind, state: p.state, ll });
+    } catch { onChange(p.label); setLocErr("Couldn't find that place on the map. Try picking it again."); }
+    finally { session.current = ''; setPlacing(false); }
+  }
 
   return (
     <View>
@@ -71,17 +87,18 @@ export function PlacePicker({ label, mode, value, picked, near, onChange, onPick
         </Pressable>
       ) : null}
       {locErr ? <Text style={{ color: t.bad, marginTop: -6, marginBottom: 10 }}>{locErr}</Text> : null}
-      {hits === null ? <ActivityIndicator color={t.acc} style={{ marginTop: -6, marginBottom: 10 }} /> : null}
+      {hits === null || placing ? <ActivityIndicator color={t.acc} style={{ marginTop: -6, marginBottom: 10 }} /> : null}
       {fail ? <Text style={{ color: t.bad, marginTop: -6, marginBottom: 10 }}>Place search isn&apos;t reachable right now. Try again in a moment.</Text> : null}
       {hits && hits.length > 0 ? (
         <View accessibilityRole="list" style={{ backgroundColor: t.card, borderColor: t.line, borderWidth: 1, borderRadius: 14, marginTop: -6, marginBottom: 14, overflow: 'hidden' }}>
           {hits.map((p, i) => (
-            <Pressable key={p.label} accessibilityRole="button" onPress={() => { latest.current = ''; clearTimeout(timer.current); onPick(p); setHits([]); }}
+            <Pressable key={p.label} accessibilityRole="button" onPress={() => pick(p)}
               style={({ pressed }) => ({ padding: 12, borderTopWidth: i ? 1 : 0, borderColor: t.line, backgroundColor: pressed ? t.field : 'transparent' })}>
               <Text style={{ color: t.ink, fontSize: 15, fontWeight: '600' }}>{p.label}</Text>
               <Text style={{ color: t.mute, fontSize: 13 }}>{p.kind}{p.state ? ' · ' + p.state : ''}</Text>
             </Pressable>
           ))}
+          {hits[0].by ? <Text style={{ color: t.mute, fontSize: 11.5, padding: 8, paddingTop: 6, textAlign: 'right' }}>Results from {hits[0].by}</Text> : null}
         </View>
       ) : null}
     </View>

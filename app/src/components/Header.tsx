@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { bellCount } from '@/lib/model';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 import { Icon, Logo, type IconName } from './ui';
@@ -33,17 +34,20 @@ export function HeaderIcon({ icon, label, onPress }: { icon: IconName; label: st
   );
 }
 
-/* Updates at the top right: a round bell button (like the gear on Profile) with the number of unread ones. */
+/* Updates at the top right: a round bell button (like the gear on Profile) with the number of new ones since you last
+   opened Updates. */
 export function UpdatesButton() {
   const t = useTheme();
-  const unread = useStore().model?.notes.filter(n => !n.read).length ?? 0;
+  const model = useStore().model;
+  const unread = model ? bellCount(model) : 0;
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={unread ? `Updates, ${unread} new` : 'Updates'} onPress={() => router.push('/updates')} hitSlop={6}
       style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: t.card, borderWidth: 1, borderColor: t.line, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.8 : 1 })}>
       <Icon name="bell" size={20} />
+      {/* soft: a pale badge with the number in the brand green, rather than a bright red one */}
       {unread ? (
-        <View style={{ position: 'absolute', top: -4, right: -4, minWidth: 19, height: 19, borderRadius: 10, paddingHorizontal: 4, backgroundColor: t.bad, borderWidth: 1.5, borderColor: t.bg, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>{unread > 9 ? '9+' : unread}</Text>
+        <View style={{ position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, backgroundColor: t.acc2, borderWidth: 1.5, borderColor: t.bg, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ color: t.accink, fontSize: 10.5, fontWeight: '700' }}>{unread > 9 ? '9+' : unread}</Text>
         </View>
       ) : null}
     </Pressable>

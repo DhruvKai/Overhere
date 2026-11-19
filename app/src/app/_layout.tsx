@@ -42,7 +42,7 @@ function Toast() {
   return (
     <View pointerEvents="box-none" accessibilityLiveRegion="polite" style={{ position: 'absolute', left: 16, right: 16, bottom: insets.bottom + 72, alignItems: 'center' }}>
       <Pressable onPress={hideToast} accessibilityHint="Tap to close"
-        style={{ width: '100%', maxWidth: COLUMN - 32, backgroundColor: t.ink, borderRadius: 14, paddingVertical: 14, paddingLeft: 14, paddingRight: 6, flexDirection: 'row', alignItems: 'flex-start', gap: 4 }}>
+        style={{ width: '100%', maxWidth: COLUMN - 32, backgroundColor: t.ink + 'E0', borderRadius: 14, paddingVertical: 14, paddingLeft: 14, paddingRight: 6, flexDirection: 'row', alignItems: 'flex-start', gap: 4 }}>
         <Text style={{ flex: 1, color: t.bg, fontSize: 15, fontWeight: '600' }}>{toastMsg}</Text>
         <Pressable onPress={hideToast} accessibilityRole="button" accessibilityLabel="Close message" hitSlop={10}
           style={{ width: 32, height: 22, alignItems: 'center', justifyContent: 'center' }}>
@@ -138,6 +138,7 @@ function Gate() {
           <Stack.Screen name="chat/[id]" options={{ headerShown: true, title: 'Group chat', headerBackTitle: 'Back', headerStyle: { backgroundColor: t.card }, headerTintColor: t.ink }} />
           <Stack.Screen name="post" options={{ presentation: 'modal', headerShown: true, title: 'Post a plan', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink }} />
           <Stack.Screen name="sos" options={{ presentation: 'modal', headerShown: true, title: 'Get help', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink }} />
+          <Stack.Screen name="add-phone" options={{ presentation: 'modal', headerShown: true, title: 'Add your phone number', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink }} />
           <Stack.Screen name="edit-profile" options={{ presentation: 'modal', headerShown: true, title: 'Edit profile', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink }} />
           <Stack.Screen name="updates" options={{ headerShown: true, title: 'Updates', headerBackTitle: 'Back', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink, headerShadowVisible: false }} />
         <Stack.Screen name="settings" options={{ headerShown: true, title: 'Settings', headerBackTitle: 'Back', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink, headerShadowVisible: false }} />

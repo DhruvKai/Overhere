@@ -2,7 +2,8 @@ import { router } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 import { Header, HeaderIcon } from '@/components/Header';
 import { genderTxt, IntChips, PastRow, PersonRow, Ph, Stats, TimeChips } from '@/components/ProfileParts';
-import { Avatar, Badge, Btn, Card, H, Icon, P, TextLink, type IconName } from '@/components/ui';
+import { ProgressBar, useProgress } from '@/components/SignupPage';
+import { Avatar, Btn, Card, H, Icon, P, TextLink, type IconName } from '@/components/ui';
 import { canRate, following, isVer, pastList, uname } from '@/lib/model';
 import { useModel, useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
@@ -14,18 +15,20 @@ const ageOf = (dob: string) => { const d = new Date(dob); return isNaN(+d) ? '' 
 export default function Profile() {
   const t = useTheme();
   const m = useModel();
-  const { savePriv, toast, session } = useStore();
+  const { savePriv, toast } = useStore();
   const p = m.profile!;
   const fol = following(m), past = pastList(m, m.me).slice(0, 6);
-  const byPhone = !!session?.user.phone;
-  /* what's verified, as on the website: how you signed in, the face check, the ID check, a complete profile */
-  const V: [IconName, string, boolean][] = [
-    [byPhone ? 'phone' : 'mail', byPhone ? 'Phone verified' : 'Email verified', byPhone ? !!session?.user.phone_confirmed_at : !!session?.user.email_confirmed_at],
-    ['smile', 'Face verified', !!p.face],
-    ['credit-card', 'Government ID', !!p.kyc],
-    ['user', 'Profile complete', !!(p.job && p.bio && p.ints.length && p.avail.length)],
-  ];
-  const done = V.filter(v => v[2]).length;
+  /* what's left of sign-up, the same score as the bar during sign-up (lib/signup.ts) and the website's profile */
+  const { items, pct } = useProgress();
+  const todo = items.filter(x => !x.done);
+  const GO: Partial<Record<(typeof items)[number]['key'], [IconName, string, () => void]>> = {
+    phone: ['phone', 'Add', () => router.push('/add-phone')],
+    details: ['user', 'Add', () => router.push('/edit-profile')],
+    job: ['briefcase', 'Add', () => router.push('/edit-profile')],
+    bio: ['edit-3', 'Add', () => router.push('/edit-profile')],
+    photos: ['camera', 'Add', () => router.push('/edit-profile')],
+    face: ['smile', 'Start', () => router.push('/verify')],
+  };
   const unfollow = (id: string) => {
     savePriv(pv => ({ following: (Array.isArray(pv.following) ? pv.following as string[] : []).filter(x => x !== id) }));
     toast(`Unfollowed ${uname(m, id)}`);
@@ -64,22 +67,22 @@ export default function Profile() {
         <Card><Ph icon="star" title="Interests" /><IntChips list={p.ints} /></Card>
         {p.avail?.length ? <Card><Ph icon="clock" title="Usually free" /><TimeChips list={p.avail} /></Card> : null}
 
-        {done < V.length ? (
+        {pct < 100 ? (
           <Card>
-            <Ph icon="shield" title="Verifications" right={`${done} of ${V.length}`} />
-            <View style={{ height: 6, borderRadius: 3, backgroundColor: t.field, marginBottom: 12, overflow: 'hidden' }}>
-              <View style={{ width: `${(done / V.length) * 100}%`, height: 6, backgroundColor: t.acc }} />
-            </View>
-            {V.map(([ic, label, ok]) => (
-              <View key={label} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }}>
-                <Icon name={ic} size={16} color={ok ? t.ok : t.mute} />
-                <Text style={{ flex: 1, color: t.ink, fontSize: 15 }}>{label}</Text>
-                {ok ? <Badge text="Done" tone="ok" />
-                  : label === 'Face verified' ? <Btn title="Start" kind="soft" onPress={() => router.push('/verify')} style={{ minHeight: 34, paddingHorizontal: 12 }} />
-                  : label === 'Government ID' ? <Badge text="Coming soon" tone="info" />
-                  : label === 'Profile complete' ? <TextLink title="Add" onPress={() => router.push('/edit-profile')} /> : null}
-              </View>
-            ))}
+            <Ph icon="check-circle" title="Finish your profile" right={`${pct}%`} />
+            <View style={{ marginBottom: 8 }}><ProgressBar pct={pct} label={false} /></View>
+            {todo.map(x => {
+              const g = GO[x.key];
+              return (
+                <View key={x.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }}>
+                  <Icon name={g?.[0] ?? 'circle'} size={16} color={t.mute} />
+                  <Text style={{ flex: 1, color: t.ink, fontSize: 15 }}>{x.label} <Text style={{ color: t.mute, fontSize: 13 }}>+{x.pts}%</Text></Text>
+                  {g ? (x.key === 'face'
+                    ? <Btn title={g[1]} kind="soft" onPress={g[2]} style={{ minHeight: 34, paddingHorizontal: 12 }} />
+                    : <TextLink title={g[1]} onPress={g[2]} />) : null}
+                </View>
+              );
+            })}
             {!p.face ? <P small mute style={{ marginTop: 4 }}>You need the face check to post plans and ask to join.</P> : null}
           </Card>
         ) : null}

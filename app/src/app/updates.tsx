@@ -1,11 +1,11 @@
 import { router, Stack } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, RefreshControl, SectionList, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Sheet } from '@/components/Sheet';
 import { Badge, Btn, Empty, H, Icon, P, TextLink, type IconName } from '@/components/ui';
 import { api } from '@/lib/api';
-import { ago, nowOf, trustedOf, type Note, type Plan } from '@/lib/model';
+import { ago, noteSeen, nowOf, trustedOf, type Note, type Plan } from '@/lib/model';
 import { actfOf } from '@/lib/reminders';
 import { useModel, useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
@@ -24,6 +24,11 @@ export default function Updates() {
   const [pulling, setPulling] = useState(false);
   const [safe, setSafe] = useState<Plan | null>(null);
   const unread = m.notes.filter(n => !n.read).length;
+  /* being here counts as seeing them all (and any that arrive while open): the bell's number goes until a newer one */
+  const newest = Math.max(0, ...m.notes.map(n => +n.at || 0));
+  useEffect(() => {
+    if (newest > noteSeen(m)) savePriv({ noteSeen: newest });
+  }, [newest]);   // eslint-disable-line react-hooks/exhaustive-deps
   const now = nowOf(m);
   /* empty sections are left out; with nothing at all, one empty state says what will show up */
   const sections = [
@@ -54,7 +59,7 @@ export default function Updates() {
         sections={sections}
         keyExtractor={n => n.id}
         stickySectionHeadersEnabled={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 + insets.bottom }}
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 16, paddingBottom: 24 + insets.bottom }}
         refreshControl={<RefreshControl refreshing={pulling} onRefresh={async () => { setPulling(true); await refresh(); setPulling(false); }} tintColor={t.acc} />}
         ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
         renderSectionHeader={({ section }) => <View style={{ paddingTop: 12, paddingBottom: 8 }}><H size={17}>{section.title}</H></View>}

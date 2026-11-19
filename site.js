@@ -240,15 +240,20 @@ const phoneDigits=s=>{const d=s.replace(/\D/g,'');return (d.length>10?d.replace(
 const phoneProblem=n=>!n?'Enter your mobile number':n.length<10?'Enter all 10 digits':!/^[6-9]/.test(n)?'Indian mobile numbers start with 6, 7, 8 or 9':'';
 const emailProblem=v=>!v?'Enter your email':!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)*\.[a-z]{2,}$/i.test(v)?'That doesn\'t look like an email address. Check for typos.':'';
 const via=()=>document.querySelector('input[name=via]:checked')?.value||'email';
+/* A new account starts in the app with a few questions (interests, free times, age, gender) and gives its phone
+   number after them, so Create account is just a button here. Without SMS (CFG.PHONE_LOGIN off) it's the email form. */
+const quick=()=>mode==='up'&&CFG.PHONE_LOGIN;
 function authDraw(){
-  const up=mode==='up',ph=via()==='phone';
+  const up=mode==='up',ph=via()==='phone',q=quick();
   $('#tab_up').setAttribute('aria-selected',String(up));$('#tab_in').setAttribute('aria-selected',String(!up));
   $('#au_t').textContent=up?'Create your account':'Welcome back';
-  $('#au_s').textContent=up?'Start with your phone number or email.':'Sign in to see plans near you.';
-  $('#f_phone').classList.toggle('hide',!ph);$('#f_email').classList.toggle('hide',ph);
+  $('#au_s').textContent=q?'A few quick questions, then your phone number and email. About two minutes.':up?'Start with your phone number or email.':'Sign in to see plans near you.';
+  $('#f_phone').classList.toggle('hide',!ph||q);$('#f_email').classList.toggle('hide',ph||q);
+  if(CFG.PHONE_LOGIN)$('#au_via').classList.toggle('hide',q);
+  $('#au_f button[type=submit]').textContent=q?'Get started':'Continue';
   $('#au_phone_hint').textContent=up?'We\'ll text you a 6-digit code. Then you\'ll add your email and confirm it with a code too.':'We\'ll text you a 6-digit code to sign in.';
   $('#au_email_hint').textContent=up?'Next, you\'ll choose a password and confirm your email.':'Next, you\'ll enter your password.';
-  $('#au_agree').classList.toggle('hide',!up);$('#au_legal').classList.toggle('hide',up);
+  $('#au_agree').classList.toggle('hide',!up||q);$('#au_legal').classList.toggle('hide',up);
 }
 function setMode(m,focus){
   mode=m;authDraw();
@@ -271,6 +276,7 @@ $('#au_phone').addEventListener('blur',e=>{const n=phoneDigits(e.target.value);i
 $('#au_email').addEventListener('input',e=>{if(e.target.getAttribute('aria-invalid')==='true'&&!emailProblem(e.target.value.trim()))fieldErr('au_email','')});
 $('#au_f').onsubmit=e=>{
   e.preventDefault();
+  if(quick()){location.href='app.html?join';return}   // the questions and the phone number are in the app
   const h={mode,via:via(),at:Date.now()};
   if(h.via==='phone'){const n=phoneDigits($('#au_phone').value);if(!fieldErr('au_phone',phoneProblem(n)))return;h.phone='+91'+n}
   else{const v=$('#au_email').value.trim();if(!fieldErr('au_email',emailProblem(v)))return;h.email=v}

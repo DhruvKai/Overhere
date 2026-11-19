@@ -24,7 +24,6 @@ export function JoinSheet({ plan, onClose, onDone }: { plan: Plan | null; onClos
   if (!plan) return null;
   const a = plan;
   const full = spots(a) <= 0 || a.status === 'full';
-  const sample = !!m.people[a.host]?.sample;
   const hostName = uname(m, a.host);
   const face = !!m.profile?.face;
 
@@ -67,9 +66,7 @@ export function JoinSheet({ plan, onClose, onDone }: { plan: Plan | null; onClos
       <Label>Say hi to {hostName} <Text style={{ fontWeight: '400', color: t.mute }}>(optional)</Text></Label>
       <Field accessibilityLabel={`Note to ${hostName}`} value={note} onChangeText={setNote} maxLength={100} multiline
         placeholder="Say hi, or why you'd like to come" />
-      {sample || !face ? (
-        <Note>{sample ? <Text style={{ fontWeight: '700' }}>Sample plan: </Text> : null}{sample ? 'nobody will be there. ' : ''}{!face ? 'Quick 1-min face check first.' : ''}</Note>
-      ) : null}
+      {!face ? <Note>Quick 1-min face check first.</Note> : null}
       <Btn title={face ? 'Send request' : 'Do the face check'} onPress={() => send()} busy={busy} icon={face ? 'send' : 'smile'} disabled={full} />
       <View style={{ height: 8 }} />
       <Btn title="Not now" kind="ghost" onPress={onClose} />

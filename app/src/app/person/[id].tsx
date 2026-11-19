@@ -65,7 +65,6 @@ export default function Person() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <H size={22}>{p.name}</H>
               {isVer(m, id) ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}><Icon name="check-circle" size={15} color={t.ok} /><Text style={{ color: t.ok, fontSize: 13, fontWeight: '600' }}>Verified</Text></View> : null}
-              {p.sample ? <Badge text="SAMPLE" tone="warn" /> : null}
             </View>
             <P mute>{[p.gender, p.age].filter(Boolean).join(', ')}{p.job ? ` · ${p.job}` : ''}</P>
           </View>

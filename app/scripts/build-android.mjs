@@ -30,6 +30,9 @@ function run(cmd, cmdArgs, opts = {}) {
   return r;
 }
 
+/* the map engine: the app carries its own copy of web/mapkit.js (scripts/sync-mapkit.mjs) */
+run(process.execPath, [join(ROOT, 'scripts', 'sync-mapkit.mjs')], { shell: false });
+
 /* ---------- toolchain: JDK 17 and the Android SDK ---------- */
 const local = process.env.LOCALAPPDATA || '';
 const home = process.env.HOME || process.env.USERPROFILE || '';

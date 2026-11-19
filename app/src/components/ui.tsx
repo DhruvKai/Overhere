@@ -336,7 +336,7 @@ const s = StyleSheet.create({
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 99, paddingHorizontal: 14, minHeight: 38, justifyContent: 'center' },
   chipT: { fontSize: 14, fontWeight: '600' },
   card: { borderRadius: R, borderWidth: 1, padding: 16 },
-  empty: { alignItems: 'center', padding: 32, paddingTop: 60 },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },   // in the middle of the space it's given
   emptyIc: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   cat: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' },

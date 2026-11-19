@@ -1,15 +1,18 @@
 import * as WebBrowser from 'expo-web-browser';
-import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, BackHandler, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCaptcha } from '@/components/Captcha';
 import { Btn, Check, CodeBoxes, Field, H, Logo, P, PwField, TextLink } from '@/components/ui';
+import { ProgressBar } from '@/components/SignupPage';
+import { StartSteps } from '@/components/StartSteps';
 import Welcome from '@/components/Welcome';
 import { api, friendly } from '@/lib/api';
 import { emailProblem, mailFix } from '@/lib/email';
 import { column } from '@/lib/layout';
 import PwMeter from '@/components/PwMeter';
 import { pwProblem } from '@/lib/password';
+import { draftStep, loadDraft } from '@/lib/signup';
 import { useStore } from '@/lib/store';
 import { SITE, supabase } from '@/lib/supabase';
 import { useTheme } from '@/lib/theme';
@@ -47,6 +50,10 @@ export default function SignIn() {
   const [fe, setFe] = useState<{ email?: string; pw?: string; pw2?: string }>({});
   const [left2, setLeft2] = useState(false);
   const [signUp, setSignUp] = useState(false);
+  /* a new account answers screens 1-4 first (StartSteps), then comes here for the phone number; `pre` is the screen
+     to show, or null once they're answered */
+  const [pre, setPre] = useState<number | null>(null);
+  const startSignUp = () => { setSignUp(true); setMode('phone'); setPre(draftStep(loadDraft()) < 4 ? draftStep(loadDraft()) : null); };
   const [agreed, setAgreed] = useState(false);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
@@ -166,7 +173,7 @@ export default function SignIn() {
   const errLine = err ? <Text accessibilityLiveRegion="polite" style={{ color: t.bad, marginBottom: 10, fontSize: 14 }}>{err}</Text> : null;
   const switchMode = (
     <TextLink title={signUp ? 'I already have an account' : 'New here? Create an account'}
-      onPress={() => { setSignUp(v => !v); clearFe(); setPw2(''); setLeft2(false); }} style={{ marginTop: 6 }} />
+      onPress={() => { clearFe(); setPw2(''); setLeft2(false); if (signUp) setSignUp(false); else startSignUp(); }} style={{ marginTop: 6 }} />
   );
 
   /* the email box, with "Did you mean gmail.com?" for a likely typo (mailHint in web/app.js) */
@@ -181,8 +188,18 @@ export default function SignIn() {
       ) : null} />
   );
 
+  /* Android's back button on the phone screens of a new account: back to the code's number, or to screen 4 */
+  useEffect(() => {
+    if (!signUp || pre !== null || intro) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => { setErr(''); if (mode === 'code') setMode('phone'); else setPre(3); return true; });
+    return () => sub.remove();
+  }, [signUp, pre, intro, mode]);
+
   if (intro) {
-    return <Welcome onDone={up => { try { localStorage.setItem(SEEN, '1'); } catch { /* shows again next time */ } setSignUp(up); setIntro(false); }} />;
+    return <Welcome onDone={up => { try { localStorage.setItem(SEEN, '1'); } catch { /* shows again next time */ } setIntro(false); if (up) startSignUp(); }} />;
+  }
+  if (signUp && pre !== null) {
+    return <StartSteps at={pre} onDone={() => setPre(null)} onBack={() => { setSignUp(false); setPre(null); setIntro(true); }} />;
   }
 
   return (
@@ -190,7 +207,13 @@ export default function SignIn() {
       {captcha}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={[{ padding: 24, paddingTop: 48 }, column]} keyboardShouldPersistTaps="handled">
-          <View style={{ marginBottom: 22 }}><Logo /></View>
+          {signUp ? (
+            /* screen 5 on: back to the gender screen, and how much of sign-up is done (30% here) */
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 22 }}>
+              <TextLink title="Back" onPress={() => { clearFe(); if (mode === 'code') setMode('phone'); else setPre(3); }} />
+              <View style={{ flex: 1 }}><ProgressBar pct={30} /></View>
+            </View>
+          ) : <View style={{ marginBottom: 22 }}><Logo /></View>}
           <H size={30}>{signUp ? 'Create your account' : 'Welcome back'}</H>
           <View style={{ height: 24 }} />
 
@@ -250,8 +273,9 @@ export default function SignIn() {
           </>)}
 
 
-          <View style={{ height: 1, backgroundColor: t.line, marginVertical: 24 }} />
-          {mode === 'phone' || mode === 'code'
+          {signUp ? null : <View style={{ height: 1, backgroundColor: t.line, marginVertical: 24 }} />}
+          {/* new accounts start with the phone (the email comes next, on its own screen); signing in can use either */}
+          {signUp ? null : mode === 'phone' || mode === 'code'
             ? <Btn title="Use email instead" kind="ghost" icon="mail" onPress={() => { setMode('email'); clearFe(); }} />
             : <Btn title="Use phone instead" kind="ghost" icon="phone" onPress={() => { setMode('phone'); clearFe(); }} />}
           {/* new accounts agree with the box above; this is the reminder for everyone signing in */}

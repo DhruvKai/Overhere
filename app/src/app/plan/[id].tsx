@@ -105,7 +105,6 @@ export default function PlanScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                 <Text style={{ color: t.ink, fontSize: 16, fontWeight: '700' }}>{mine ? 'You' : host?.name ?? 'Someone'}{!mine && host?.age ? `, ${host.age}` : ''}</Text>
                 {isVer(m, a.host) ? <Icon name="check-circle" size={16} color={t.ok} /> : null}
-                {!mine && host?.sample ? <Badge text="SAMPLE" tone="warn" /> : null}
               </View>
               <P small mute>{mine ? 'You host this plan' : `Host${host?.met ? ` · ${host.shows}/${host.met} meetups showed up` : ''}`}</P>
             </View>

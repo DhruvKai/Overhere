@@ -47,7 +47,7 @@ export default function Plans() {
         sections={sections}
         keyExtractor={a => a.id}
         stickySectionHeadersEnabled={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 16, paddingBottom: 24 }}
         refreshControl={<RefreshControl refreshing={pulling} onRefresh={async () => { setPulling(true); await refresh(); setPulling(false); }} tintColor={t.acc} />}
         renderSectionHeader={({ section }) => <View style={{ paddingTop: 10, paddingBottom: 8 }}><H size={17}>{section.title}</H></View>}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}

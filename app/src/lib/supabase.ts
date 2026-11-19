@@ -7,6 +7,8 @@ export const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 export const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 export const TURNSTILE_SITE_KEY = process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 export const GEO_URL = process.env.EXPO_PUBLIC_GEO_URL || 'https://photon.komoot.io';
+/* Google Maps for Discover's map: the same browser key as GOOGLE_MAPS_KEY in web/config.js. Empty keeps OpenStreetMap. */
+export const GOOGLE_MAPS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY ?? '';
 export const SITE = 'https://overhere.social';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {

@@ -138,7 +138,7 @@ export default function Discover() {
       <FlashList<Plan>
         data={list}
         keyExtractor={a => a.id}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24 }}
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 16, paddingBottom: 24 }}
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
         refreshControl={<RefreshControl refreshing={pulling} onRefresh={onPull} tintColor={t.acc} />}
         renderItem={({ item, index }) => {

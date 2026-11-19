@@ -33,7 +33,7 @@ export default function Chat() {
 
   const closed = chatClosed(m, a);
   const muted = !!mutedOf(m)[a.id];
-  const host = a.host === m.me, past = isPast(m, a), sample = !!m.people[a.host]?.sample;
+  const host = a.host === m.me, past = isPast(m, a);
   /* the safety tips show at the top of each chat until you tap "Got it" (profiles.state.tips[plan], like the website) */
   const tips = !closed && !tipsOf(m)[a.id];
   /* newest first, for the inverted list */
@@ -86,7 +86,6 @@ export default function Chat() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
         <Text style={{ color: t.mute, fontSize: 12.5, paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: 1, borderColor: t.line }}>
           Members: {[a.host, ...a.members].map(u => uname(m, u)).join(', ')} · full history visible to everyone{muted ? ' · notifications muted' : ''}
-          {sample ? <Text style={{ fontWeight: '700' }}> · Sample plan: the host&apos;s messages are pre-written and nobody will be there</Text> : null}
         </Text>
         <FlatList
           inverted
@@ -136,8 +135,9 @@ export default function Chat() {
               </Pressable>
             );
           }}
-          ListEmptyComponent={<Text style={{ color: t.mute, textAlign: 'center', padding: 24, transform: [{ scaleY: -1 }] }}>Say hi and agree where to meet.</Text>}
         />
+        {/* under the list, not inside it: the inverted list flips what's in it, and on Android that mirrored this line */}
+        {!msgs.length ? <Text style={{ color: t.mute, textAlign: 'center', padding: 16 }}>Say hi and agree where to meet.</Text> : null}
         {closed ? (
           <View accessibilityRole="text" style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 14, paddingBottom: insets.bottom + 14, backgroundColor: t.field, borderTopWidth: 1, borderColor: t.line }}>
             <Icon name="lock" size={15} color={t.mute} />

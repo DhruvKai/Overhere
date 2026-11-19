@@ -53,7 +53,7 @@ td:first-child{font-weight:600;min-width:110px}
 </div></header>
 <main>
   <h1>Privacy policy</h1>
-  <p class="mute">Last updated 10 November 2026</p>
+  <p class="mute">Last updated 19 November 2026</p>
   <p>Overhere is a beta app for doing things in your city with other people: you post a plan you're already making,
     and choose who joins. This page explains what we collect, who can see it, who helps us run the app, and how to
     have your data deleted.</p>
@@ -114,7 +114,7 @@ td:first-child{font-weight:600;min-width:110px}
     </table></div>
     <h3>What we don't collect</h3>
     <ul>
-      <li><b>Your exact location.</b> The app reads it only when you ask: on the SOS screen, to put it into a message <i>you</i> send from your own SMS or WhatsApp, and when you tap <i>Use my current location</i>, to find the name of the area or place you're in (see Photon in <a href="#providers">section 5</a>). For your home area we save only the area, rounded to about 1 km. For a plan's venue we save the venue's spot, which the plan shows to people nearby.</li>
+      <li><b>Your exact location.</b> The app reads it only when you ask: on the SOS screen, to put it into a message <i>you</i> send from your own SMS or WhatsApp, and when you tap <i>Use my current location</i>, to find the name of the area or place you're in (see Ola Maps in <a href="#providers">section 5</a>). For your home area we save only the area, rounded to about 1 km. For a plan's venue we save the venue's spot, which the plan shows to people nearby.</li>
       <li><b>Your photo library.</b> When you add a photo, the app sees only the photo you pick, and uploads only the small, cropped copy.</li>
       <li><b>Your contacts, or other apps' data.</b> When you share a plan, your phone's own share menu (or your browser's) sends a link to the app you choose. We don't see who you send it to.</li>
     </ul>
@@ -175,7 +175,8 @@ td:first-child{font-weight:600;min-width:110px}
       <tbody>
         <tr><td>Supabase</td><td>Stores the app's data and handles sign-in.</td></tr>
         <tr><td>GitHub Pages</td><td>Hosts the website. Like any web host, it receives your IP address when you load a page.</td></tr>
-        <tr><td>Photon (komoot, Germany)</td><td>Searches places across India when you type a venue or your home area: what you type is sent to it a moment after you stop typing. If you tap <i>Use my current location</i>, your position is sent to it once to find the area's or place's name. It sees your IP address, but not your name or account.</td></tr>
+        <tr><td>Ola Maps (Ola Krutrim, India)</td><td>Searches places across India when you type a venue or your home area: what you type is sent a moment after you stop typing, through our own server, so Ola doesn't see your IP address, name or account. If you tap <i>Use my current location</i>, your position is sent the same way, once, to find the area's or place's name.</td></tr>
+        <tr><td>Photon (komoot, Germany)</td><td>Only as a backup, if Ola's search can't be reached: then what you type is sent to Photon directly from your device, so it sees your IP address, but not your name or account.</td></tr>
         <tr><td>OpenStreetMap</td><td>Only when you open the map in Discover, on the website or in the app: supplies the map images. Your device fetches them from OpenStreetMap's servers, which see your IP address.</td></tr>
         <tr><td>Our email provider (Resend)</td><td>Sends sign-up confirmation emails, codes to confirm your email address, and password emails (these are the only emails we send you; we don't send marketing email). It also sends our own team short alerts when a face check is paused (with your name) or when phone sign-in for a number is paused after wrong codes (with that number).</td></tr>
         <tr><td>Name.com</td><td>Our domain provider. Emails you send to admin@overhere.social pass through its forwarding service to our inbox.</td></tr>

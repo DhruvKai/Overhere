@@ -12,6 +12,10 @@ window.APP_CONFIG = {
   // The public one is free for light use; for real traffic, run your own or use a paid host, and put its address here
   // and in app.html's Content-Security-Policy (connect-src).
   GEO_URL: "https://photon.komoot.io",
+  // Google Maps for Discover's map: the BROWSER key from Google Cloud (Maps JavaScript API only, limited to this site's
+  // addresses; see GOOGLE-MAPS-SETUP.md). Leave "" to keep the OpenStreetMap map. Place search goes through the
+  // "places" Edge Function, which has its own server key; until that is set up, the search above (Photon) is used.
+  GOOGLE_MAPS_KEY: "",
   PHONE_LOGIN: true,  // true shows "Continue with phone" on the sign-in screen. Only after SMS is set up (SETUP-APP.md)
 };
 // On your own computer (localhost or 127.0.0.1) the site uses the TEST database (Supabase project overhere-test), so

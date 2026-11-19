@@ -185,7 +185,8 @@ const EVERYONE='00000000-0000-0000-0000-000000000000';
 let DUE=[],ME=null,MYPHONE='',AUTHU={},MODE={face:'simulated',kyc:'simulated'},VER={face:{fails:0,attempts:0,max:5,review:false},kyc:{fails:0,attempts:0,max:5,review:false}},skew=0,loaded=false,LOCKED=0,CITIES=[],VIEW={city:null,auto:false};
 const isUuid=x=>typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(x);
 /* Your private settings, saved to your account. ACT_FLAGS remember which reminders an activity already gave you. */
-const PRIV=['dismissed','following','alerts','muted','tips','asked','actf','seenPost','savedF','city','saved','taste'];
+/* noteSeen: when you last opened Notifications (the newest one's time then), so the bell only counts newer ones */
+const PRIV=['dismissed','following','alerts','muted','tips','asked','actf','seenPost','savedF','city','saved','taste','noteSeen'];
 /* The consent version that includes the Terms and community guidelines (terms.html). The database says which one is
    current (app_state's terms_v), so the app only asks once the database can record the answer. */
 let TERMS_V=null,GONE18=false;
@@ -219,7 +220,7 @@ function applyState(st){
   if(keepLocal)Object.assign(S,keepLocal);   // settings you changed a moment ago and are still being saved
   S.following=(Array.isArray(S.following)?S.following:[]).filter(isUuid);S.dismissed=(Array.isArray(S.dismissed)?S.dismissed:[]).filter(isUuid);S.saved=(Array.isArray(S.saved)?S.saved:[]).filter(isUuid).slice(-100);
   if(typeof S.city!=='string'||S.city.length>8)S.city=null;
-  ['muted','tips','asked','actf','taste'].forEach(k=>{if(!S[k]||typeof S[k]!=='object'||Array.isArray(S[k]))S[k]={}});if(typeof S.seenPost!=='number')S.seenPost=0;
+  ['muted','tips','asked','actf','taste'].forEach(k=>{if(!S[k]||typeof S[k]!=='object'||Array.isArray(S[k]))S[k]={}});if(typeof S.seenPost!=='number')S.seenPost=0;if(typeof S.noteSeen!=='number')S.noteSeen=0;
   S.savedF=(Array.isArray(S.savedF)?S.savedF:[]).filter(x=>x&&/^sf[0-9a-z]+$/.test(x.id)&&typeof x.label==='string'&&x.f&&typeof x.f==='object').slice(0,10);
   S.alerts=(Array.isArray(S.alerts)?S.alerts:[]).filter(x=>x&&/^al[0-9a-z]+$/.test(x.id)&&typeof x.label==='string');
   S.me={name:p.name,last:p.last_name||'',dob:p.dob,gender:p.gender,hood:p.hood,ll:p.lat!=null?[p.lat,p.lng]:null,job:p.job||'',bio:p.bio||'',ints:p.ints||[],avail:p.avail||[],emo:p.emo||defEmo(p.gender),
@@ -399,8 +400,6 @@ const audOK=a=>a.aud==='everyone'||a.aud.includes(S.me.gender);
 const isBlocked=id=>S.blocked.includes(id);
 /* Badges tell other people something, so they only show once the face check is real (not simulated). */
 const isVer=id=>MODE.face==='live'&&(id==='me'?!!S.me.face:!!USERS[id]?.verified);
-/* Sample hosts keep the app from looking empty; they are always labelled so nobody mistakes them for real people. */
-const sampleTag=id=>USERS[id]?.sample?'<span class="smp" title="A sample host that shows how Overhere works. Nobody will actually be there.">Sample</span>':'';
 const vf=(id,long)=>isVer(id)?`<span class="vf">${long?I('badge-check',14)+' Verified':'✓'}</span>`:'';
 /* There's no waitlist any more (the 7 Nov spec): a full plan leaves discovery and its waiting requests close. */
 const waitlist=()=>[];
@@ -544,10 +543,45 @@ const geoKey=(q,area)=>(area?'a|':'v|')+normTxt(q);
 function geoSearch(q,area){
   const k=geoKey(q,area),h=S.me?homeLL():null;
   GEO_HITS.set(k,null);
-  const par={q,limit:8,lang:'en',bbox:'68,6,97.5,37.5',...(h?{lat:h[0].toFixed(3),lon:h[1].toFixed(3)}:{}),...(area?{osm_tag:['place','boundary:administrative']}:{})};
-  return geoFetch('/api/',par,area?'area':'venue').then(list=>{
-    const seen=new Set();GEO_HITS.set(k,list.filter(p=>!seen.has(p.label)&&seen.add(p.label)));
-  },()=>GEO_HITS.set(k,'fail'));
+  const photon=()=>{
+    const par={q,limit:8,lang:'en',bbox:'68,6,97.5,37.5',...(h?{lat:h[0].toFixed(3),lon:h[1].toFixed(3)}:{}),...(area?{osm_tag:['place','boundary:administrative']}:{})};
+    return geoFetch('/api/',par,area?'area':'venue').then(list=>{
+      const seen=new Set();GEO_HITS.set(k,list.filter(p=>!seen.has(p.label)&&seen.add(p.label)));
+    },()=>GEO_HITS.set(k,'fail'));
+  };
+  if(GOOGLE_OFF)return photon();
+  const s=area?'a':'v';
+  return gplaces({q,mode:area?'area':'venue',near:h,session:gsess(s)}).then(d=>{
+    const by=d.via==='ola'?'Ola Maps':'Google Maps';
+    GEO_HITS.set(k,(d.hits||[]).map(p=>{const key=p.label.toLowerCase();PLACE_ID[key]={id:p.id,s};if(Array.isArray(p.ll))PLACE_AT[key]=p.ll;
+      return {label:p.label,kind:p.kind,state:p.state||'',km:p.km,ll:Array.isArray(p.ll)?p.ll:undefined,by}}));
+  },photon);
+}
+/* Ola Maps or Google place search, through the places Edge Function (supabase/functions/places), which holds the keys.
+   Ola's suggestions come with their spot; a Google one has none until it's picked: placeResolve() then asks, once. Until the function is set
+   up (it answers {off:true}), or whenever it can't be reached, Photon is used as before. GSESS: one random id per
+   search box kind from the first letter typed until a pick, so Google bills the typing and the pick as one. */
+let GOOGLE_OFF=!ONLINE;
+const PLACE_ID={},PLACE_WAIT={},GSESS={};
+const gsess=k=>GSESS[k]||(GSESS[k]=(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2,12)));
+async function gplaces(body){
+  const {data,error}=await SB.functions.invoke('places',{body});
+  if(error){let j=null;try{j=await error.context?.json()}catch(e){}if(j?.off||error.context?.status===404||error.name==='FunctionsFetchError')GOOGLE_OFF=true;   /* not set up, not deployed, or unreachable: Photon until the page reloads */throw new Error(j?.error||error.message)}
+  return data;
+}
+/* The spot of a Google suggestion, fetched when it's picked (or typed out in full). null if it can't be placed. */
+function placeResolve(v){
+  const k=(v||'').trim().toLowerCase(),g=PLACE_ID[k];
+  if(PLACE_AT[k]||!g)return Promise.resolve(PLACE_AT[k]||null);
+  return PLACE_WAIT[k]||(PLACE_WAIT[k]=gplaces({id:g.id,session:GSESS[g.s]||''})
+    .then(d=>{PLACE_AT[k]=d.ll;return d.ll},()=>null)
+    .finally(()=>{delete PLACE_WAIT[k];delete GSESS[g.s]}));
+}
+/* The name of where you are (from "Use my current location"): Google when it's set up, else Photon. */
+async function placeName(ll,mode){
+  if(!GOOGLE_OFF){try{const d=await gplaces({at:ll,mode});if(d?.label)return d.label}catch(e){}}
+  const r=await geoFetch('/reverse',{lat:ll[0].toFixed(5),lon:ll[1].toFixed(5),lang:'en',limit:1},mode).catch(()=>[]);
+  return r[0]?.label||'';
 }
 /* The search boxes: a plan's venue, the venue's area when it isn't listed, and your home area. */
 const PF={f_venue:{area:false},f_area:{area:true},o_hood:{area:true},p_hood:{area:true}};
@@ -560,10 +594,12 @@ function placeList(id,show){
   if(!area&&!PLACES)loadPlaces().then(()=>{if(document.activeElement===inp)placeList(id,true)});
   const k=geoKey(q,area),hits=GEO_HITS.get(k);
   if(hits===undefined){clearTimeout(geoT);geoT=setTimeout(()=>geoSearch(q,area).then(()=>{if(document.activeElement===inp&&inp.value.trim()===q)placeList(id,true)}),300)}
-  const local=area?[]:findPlaces(q),seen=new Set(local.map(p=>p.label.toLowerCase()));
+  /* the Chandigarh list only backs up Photon: Ola and Google already know those places, and where they are more exactly */
+  const local=area||!GOOGLE_OFF?[]:findPlaces(q),seen=new Set(local.map(p=>p.label.toLowerCase()));
   const remote=Array.isArray(hits)?hits.filter(p=>!seen.has(p.label.toLowerCase())):[];
   const list=[...local,...remote].slice(0,8),waiting=hits===undefined||hits===null,home=S.me?homeLL():null;
-  const sub=p=>area?esc(p.kind+(p.state?' · '+p.state:'')):esc(p.kind)+(home?` · ${kmBetween(home,p.ll).toFixed(1)} km from ${esc(homeName())}`:'');
+  const km=p=>p.ll?kmBetween(home,p.ll):p.km;
+  const sub=p=>area?esc(p.kind+(p.state?' · '+p.state:'')):esc(p.kind)+(home&&km(p)!=null?` · ${km(p).toFixed(1)} km from ${esc(homeName())}`:'');
   /* a venue's last option is the name as typed: used as it is if the map already knows it, otherwise you pick its area */
   const n=list.length,exact=list.some(p=>p.label.toLowerCase()===q.toLowerCase()),known=placeLL(q,id);
   const other=area||exact?'':known
@@ -573,7 +609,7 @@ function placeList(id,show){
     :hits==='fail'&&!n?`<div class="vnote">Couldn't search places right now. Check your connection${area?', or use your current location':''}.</div>`
     :!n&&area?'<div class="vnote">No places found. Try the city name, or use your current location.</div>':'';
   box.innerHTML=note+list.map((p,i)=>`<button type="button" class="vopt" role="option" id="${id}_o${i}" aria-selected="false" data-a="pickplace" data-f="${id}" data-v="${esc(p.label)}"><b>${esc(p.label)}</b><span>${sub(p)}</span></button>`).join('')+other
-    +(remote.length?'<div class="vnote vsrc">Search by Photon · © OpenStreetMap</div>':'');
+    +(remote.length?`<div class="vnote vsrc">${remote[0].by?'Results from '+remote[0].by:'Search by Photon · © OpenStreetMap'}</div>`:'');
   vPick=-1;box.hidden=false;inp.setAttribute('aria-expanded','true');inp.removeAttribute('aria-activedescendant');
 }
 const closePlaceLists=except=>Object.keys(PF).forEach(id=>{if(id!==except)placeList(id,false)});
@@ -783,7 +819,7 @@ function toast(msg){
 /* A notification for you, made by the app (reminders, alerts). The key stops the same one being made twice. */
 function notify(text,o={}){
   const n={id:'tmp'+Math.random().toString(36).slice(2),text,at:now(),read:false,kind:o.kind||'update',title:o.title||'Update',tag:o.tag||'',tone:o.tone||'',act:o.act||null,check:!!o.check,safe:!!o.safe,chat:!!o.chat};
-  S.notes.unshift(n);toast(n.title+' · '+text);
+  S.notes.unshift(n);toast(text);   // the message alone: each one makes sense without its title
   if(SB)call('add_notification',{p_kind:n.kind,p_title:n.title,p_tag:n.tag,p_tone:n.tone,p_act:n.act,p_body:text,p_flags:['check','safe','chat'].filter(k=>n[k]),p_key:o.key||null},true).catch(()=>{});
 }
 
@@ -873,10 +909,10 @@ function tick(){
     if(a.status!=='past'&&mine&&left>0){
       if(!a.reminded&&left<=2*3600e3){
         a.reminded=a.remind24=true;ch=true;
-        notify(`"${short(a.desc)}" at ${a.venue} starts at ${new Date(a.when).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}. Don't be late!`,{kind:'remind',title:'Activity in 2 hours',tag:'Soon',tone:'warn',act:a.id,key:'remind2:'+a.id});
+        notify(`"${short(a.desc)}" starts at ${new Date(a.when).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}.`,{kind:'remind',title:'Activity in 2 hours',tag:'Soon',tone:'warn',act:a.id,key:'remind2:'+a.id});
       }else if(!a.remind24&&left<=24*3600e3){
         a.remind24=true;ch=true;
-        notify(`"${short(a.desc)}" is ${whenStr(a.when).replace(/^(Today|Tomorrow)/,w=>w.toLowerCase())} at ${a.venue}.`,{kind:'remind',title:'Coming up',tag:'Within 24h',tone:'warn',act:a.id,key:'remind24:'+a.id});
+        notify(`"${short(a.desc)}" is ${whenStr(a.when).replace(/^(Today|Tomorrow)/,w=>w.toLowerCase())} at ${a.venue.split(',')[0]}.`,{kind:'remind',title:'Coming up',tag:'Within 24h',tone:'warn',act:a.id,key:'remind24:'+a.id});
       }
     }
     /* After the plan, the database asks: the host to record attendance when it ends (and reminds them daily), and the
@@ -980,7 +1016,7 @@ function cardHtml(a,cls){
   const h=profileOf(a.host);
   return `<div class="card ${cls}" style="background:${planBg(a)}"${cls==='top'?` data-a="detail" data-id="${a.id}" role="button" tabindex="0" aria-label="${esc(a.desc)}: view details"`:''}><div class="shade"></div><div class="stamp"></div>
   <div class="cp">${catPill(a.cat)}</div>${cls==='top'&&a.host!=='me'?`<button class="shb" data-a="share" data-k="invite" data-id="${a.id}" title="Share" aria-label="Share this plan">${I('share',16)}</button>`:''}
-  <div class="body"><div class="who">${a.host==='me'?`${av('me','sm')}You`:`<button class="hlink" data-a="user" data-id="${a.host}" title="View ${esc(h.name)}'s profile">${av(a.host,'sm')}<span><span class="hname">${esc(h.name)}</span>, ${h.age}</span></button>`} ${vf(a.host)}${sampleTag(a.host)}</div>
+  <div class="body"><div class="who">${a.host==='me'?`${av('me','sm')}You`:`<button class="hlink" data-a="user" data-id="${a.host}" title="View ${esc(h.name)}'s profile">${av(a.host,'sm')}<span><span class="hname">${esc(h.name)}</span>, ${h.age}</span></button>`} ${vf(a.host)}</div>
   <h2>${esc(a.desc)}</h2>
   <div class="meta"><span>${I('calendar',14)}${whenStr(a.when)}</span><span>${I('map-pin',14)}${esc(placeLine(a))}</span><span>${I('users',14)}${spotTxt(a)}</span></div>
   <div class="tags">${tags(a).map(t=>`<span>${esc(t)}</span>`).join('')}</div></div></div>`;
@@ -989,7 +1025,7 @@ const REQ_LBL={closed:'Closed',pending:'Requested',accepted:'Accepted',rejected:
 const REQ_TONE={pending:'acc',accepted:'ok',rejected:'bad',waitlist:'info'};
 function acCard(a){
   const rq=myReq(a.id),full=spots(a)<=0;
-  return `<div class="ac" data-a="detail" data-id="${a.id}"><div class="media" style="background:${planBg(a)}">${catPill(a.cat)}${sampleTag(a.host)}${saveBtn(a)}</div>
+  return `<div class="ac" data-a="detail" data-id="${a.id}"><div class="media" style="background:${planBg(a)}">${catPill(a.cat)}${saveBtn(a)}</div>
   <div class="bd">${ui.f.sort==='for'&&reasons(a)[0]?`<div class="why">${I('sparkles',12)} ${esc(reasons(a)[0][0])}</div>`:''}<h4>${esc(a.desc)}</h4>
   <div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(placeLine(a))} · ${distKm(a)} km</span></div>
   <div class="tg"><span>${I('users',12)}${spotTxt(a)}</span>${tags(a).map(t=>`<span>${esc(t)}</span>`).join('')}</div>
@@ -1057,10 +1093,10 @@ function tabDiscover(){
   ${!list.length?empty('calendar',all.length?'No matches':'No plans yet',all.length?'Try different filters.':'Be the first to post one.',act.length&&all.length?'<button class="btn sec" data-a="freset">Reset filters</button>':'')
    :f.view==='map'?mapHtml(list):`<div class="grid">${list.map(a=>acCard(a)).join('')}</div>`}`;
 }
-/* Discover's map: OpenStreetMap under Leaflet (both loaded only when the map is first opened).
+/* Discover's map: Google Maps, or OpenStreetMap under Leaflet (see loadMap; loaded only when the map is first opened).
    Pins closer than a finger's width on screen merge into a numbered bubble: tapping it zooms in, or lists the plans
    when they're at the same spot. Tapping a pin shows a preview card on the map instead of leaving it. */
-let mapList=[],mapView=null,liveMap=null,leafletP=null,mapPins=null;
+let mapList=[],mapView=null,liveMap=null;
 function mapHtml(list){
   mapList=list;
   return `<div class="mapw"><div id="lmap" class="map" role="region" aria-label="Map of plans near you"></div>
@@ -1068,34 +1104,35 @@ function mapHtml(list){
     <div class="mprev" id="mprev" hidden></div></div>
   <p class="small mute" style="margin-top:8px">${kmBetween(homeLL(),viewLL())<=NEAR_KM?`The blue dot is the centre of ${esc(S.me.hood)}. `:''}A pin is at the place when the host picked it from the list, otherwise in the middle of the area the venue is in. A number means several plans close together: tap it to zoom in.</p>`;
 }
-function loadLeaflet(){
-  if(window.L)return Promise.resolve();
-  return leafletP||(leafletP=new Promise((ok,bad)=>{
-    const css=document.createElement('link');css.rel='stylesheet';css.href='vendor/leaflet/leaflet.css';document.head.appendChild(css);
-    const s=document.createElement('script');s.src='vendor/leaflet/leaflet.js';s.onload=ok;s.onerror=()=>{leafletP=null;bad()};document.head.appendChild(s);
-  }));
+/* The map engine (mapkit.js): Google Maps when CFG.GOOGLE_MAPS_KEY is set, Leaflet over OpenStreetMap otherwise.
+   It's fetched the first time the map opens. If Google refuses the key, the map is drawn again with Leaflet. */
+let mapKitP=null;
+function loadMap(){
+  mapKitP=mapKitP||(window.MapKit?Promise.resolve():new Promise((ok,bad)=>{
+    const s=document.createElement('script');s.src='mapkit.js';s.onload=ok;s.onerror=()=>{mapKitP=null;bad()};document.head.appendChild(s);
+  })).then(()=>{if(!loadMap.hooked){loadMap.hooked=1;MapKit.onFail(()=>{const el=document.getElementById('lmap');if(el){delete el.dataset.on;drawMap()}})}});
+  return mapKitP.then(()=>MapKit.load(CFG.GOOGLE_MAPS_KEY||''));
 }
 /* Group the pins by where they land on screen at this zoom, and draw one marker per group. */
 function drawPins(){
-  const m=liveMap;if(!m||!mapPins)return;
-  mapPins.clearLayers();
+  const m=liveMap;if(!m)return;
+  m.clearPins();
   const groups=[];
-  mapList.forEach(a=>{const p=m.latLngToLayerPoint(geo(a)),g=groups.find(g=>g.p.distanceTo(p)<40);if(g)g.items.push(a);else groups.push({p,items:[a]})});
+  mapList.forEach(a=>{const p=m.point(geo(a)),g=groups.find(g=>g.p.distanceTo(p)<40);if(g)g.items.push(a);else groups.push({p,items:[a]})});
   groups.forEach(({items})=>{
     if(items.length===1){
       const a=items[0],c=CATS[a.cat],label=`${short(a.desc)} · ${whenStr(a.when)} · ${distKm(a)} km`;
-      L.marker(geo(a),{title:label,keyboard:true,riseOnHover:true,icon:L.divIcon({className:'',iconSize:[34,34],iconAnchor:[17,17],html:`<span class="lpin" style="--pc:${c.fg}">${I(c.icon,15)}</span>`})})
-        .addTo(mapPins).on('click',()=>mapPreview([a]));
+      m.pin(geo(a),{title:label,size:34,html:`<span class="lpin" style="--pc:${c.fg}">${I(c.icon,15)}</span>`,onClick:()=>mapPreview([a])});
       return;
     }
     const ll=items.map(geo),mid=[ll.reduce((s,x)=>s+x[0],0)/ll.length,ll.reduce((s,x)=>s+x[1],0)/ll.length];
-    const size=items.length<10?38:items.length<50?44:50,bounds=L.latLngBounds(ll);
-    L.marker(mid,{title:`${items.length} plans here`,keyboard:true,riseOnHover:true,icon:L.divIcon({className:'',iconSize:[size,size],iconAnchor:[size/2,size/2],html:`<span class="lclu" style="width:${size}px;height:${size}px">${items.length}</span>`})})
-      .addTo(mapPins).on('click',()=>{
-        /* the same spot, or as close as the map goes: list them; otherwise zoom in to pull them apart */
-        if(m.getZoom()>=17||bounds.getNorthEast().distanceTo(bounds.getSouthWest())<30)mapPreview(items);
-        else m.flyToBounds(bounds.pad(0.4),{maxZoom:17,duration:.5});
-      });
+    const size=items.length<10?38:items.length<50?44:50;
+    const span=MapKit.meters([Math.min(...ll.map(x=>x[0])),Math.min(...ll.map(x=>x[1]))],[Math.max(...ll.map(x=>x[0])),Math.max(...ll.map(x=>x[1]))]);
+    m.pin(mid,{title:`${items.length} plans here`,size,z:10,html:`<span class="lclu" style="width:${size}px;height:${size}px">${items.length}</span>`,onClick:()=>{
+      /* the same spot, or as close as the map goes: list them; otherwise zoom in to pull them apart */
+      if(m.zoom()>=17||span<30)mapPreview(items);
+      else m.fit(ll,{maxZoom:17,fly:true,pad:0.4});
+    }});
   });
 }
 /* The card on the map: one plan with its photo and buttons, or a short list when several share a spot. */
@@ -1112,20 +1149,17 @@ function mapPreview(items){
 }
 async function drawMap(){
   const el=document.getElementById('lmap');if(!el)return;
-  try{await loadLeaflet()}catch(e){el.innerHTML='<p class="small mute" style="padding:16px">The map could not load. Check your connection, or switch to the list.</p>';return}
+  try{await loadMap()}catch(e){el.innerHTML='<p class="small mute" style="padding:16px">The map could not load. Check your connection, or switch to the list.</p>';return}
   if(!el.isConnected||el.dataset.on)return;
   el.dataset.on='1';
   if(liveMap){liveMap.remove();liveMap=null}   // the previous render's map
-  const home=homeLL(),mid=viewLL(),homeIn=kmBetween(home,mid)<=NEAR_KM,m=L.map(el).setView(mapView?.c||mid,mapView?.z||13);
+  const home=homeLL(),mid=viewLL(),homeIn=kmBetween(home,mid)<=NEAR_KM;
+  const m=MapKit.create(el,{center:mapView?.c||mid,zoom:mapView?.z||13});
   liveMap=m;
-  m.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>');
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,
-    attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'}).addTo(m);
-  if(homeIn)L.marker(home,{zIndexOffset:1000,keyboard:false,interactive:false,icon:L.divIcon({className:'',iconSize:[18,18],iconAnchor:[9,9],html:'<span class="lyou"></span>'})}).addTo(m);
-  mapPins=L.layerGroup().addTo(m);
-  m.on('zoomend',drawPins);
+  if(homeIn)m.dot(home,{size:18,html:'<span class="lyou"></span>'});
+  m.on('zoom',drawPins);
   m.on('click',()=>mapPreview(null));
-  m.on('moveend',()=>{mapView={c:m.getCenter(),z:m.getZoom()}});
+  m.on('move',()=>{mapView=m.view()});
   if(!mapView)mapFit(false);
   drawPins();
 }
@@ -1133,9 +1167,7 @@ async function drawMap(){
 function mapFit(fly){
   const m=liveMap;if(!m)return;
   const home=homeLL(),mid=viewLL(),pts=[kmBetween(home,mid)<=NEAR_KM?home:mid,...mapList.map(geo)];
-  if(pts.length<2){m.setView(pts[0],13);return}
-  const b=L.latLngBounds(pts).pad(0.12);
-  if(fly)m.flyToBounds(b,{maxZoom:15,duration:.5});else m.fitBounds(b,{maxZoom:15});
+  m.fit(pts,{maxZoom:15,fly});
 }
 function tabActs(){
   const mine=S.acts.filter(a=>a.host==='me').sort((a,b)=>(a.status==='past')-(b.status==='past')||(a.status==='past'?b.when-a.when:a.when-b.when));
@@ -1170,6 +1202,10 @@ function noteHtml(n){
   ${fresh?'<span class="udot" aria-label="New"></span>':''}</div>`;
 }
 /* ---------- chats: every group chat you're in (hosting, or accepted), newest message first ---------- */
+/* The bell counts unread notifications that came after you last opened them, so opening the list clears it even
+   before you read each one (the same as the app's bell). */
+const bellCount=()=>S.notes.filter(n=>!n.read&&(+n.at||0)>(S.noteSeen||0)).length;
+function noteSeenNow(){const t=Math.max(0,...S.notes.map(n=>+n.at||0));if(t>(S.noteSeen||0)){S.noteSeen=t;save()}}
 const chatNote=id=>S.notes.find(n=>n.key==='chat:'+id&&!n.read);
 function myChats(){
   return S.acts.filter(a=>(a.host==='me'||myReq(a.id)?.status==='accepted')&&(S.chats[a.id]||[]).length)
@@ -1183,11 +1219,12 @@ function tabChats(){
   ${list.length?`<div class="chl">${list.map(({a,last})=>{const un=!!chatNote(a.id);return `<button class="chi${un?' un':''}" data-a="chat" data-id="${a.id}">${planThumb(a)}
     <span class="chb"><span class="cht"><b>${esc(short(a.desc))}</b><span class="tm">${ago(last.at)}</span></span>
     <span class="chm">${esc(who(last)+(last.poll?'Poll: '+last.poll.q:last.text))}</span>
-    <span class="small mute">${isPast(a)?'Ended':whenStr(a.when)} · ${a.members.length+1} in the group${S.muted[a.id]?' · muted':''}${isSample(a.host)?' · sample plan':''}</span></span>
+    <span class="small mute">${isPast(a)?'Ended':whenStr(a.when)} · ${a.members.length+1} in the group${S.muted[a.id]?' · muted':''}</span></span>
     ${un?'<span class="udot" aria-label="Unread"></span>':''}</button>`}).join('')}</div>`
   :empty('messages-square','No chats yet','When you host a plan and accept someone, or a host accepts your request, the group chat shows up here.','<button class="btn" data-a="tab" data-t="discover">Find a plan</button>')}`;
 }
 function tabNotes(){
+  noteSeenNow();   // ones that arrive while the list is open count as seen too
   const N=S.notes,unread=N.filter(n=>!n.read).length;
   const sec=(title,list)=>list.length?`<h3 class="nsh">${title}</h3><div class="nl">${list.map(noteHtml).join('')}</div>`:'';
   return `<div class="nh"><h1 class="pt" style="font-size:22px;flex:1;margin:0">Notifications</h1>${unread?`<button class="lnk" data-a="readall">Mark all read</button>`:''}</div>
@@ -1197,12 +1234,6 @@ function tabNotes(){
 function tabProfile(){
   if(ui.settings)return settingsHtml();
   const m=S.me;
-  const V=[AUTHU.phone?['phone','Phone Verified',true]:['mail','Email Verified',!!AUTHU.email],['scan-face','Face Verified',!!m.face],['id-card','Government ID',false,'soon'],['user','Profile Complete',!!(m.job&&m.bio&&(m.ints||[]).length&&(m.avail||[]).length)]];
-  const done=V.filter(v=>v[2]).length;
-  /* face check can be done from here; the ID check is greyed out until it's switched on */
-  const vi=([ic,l,y,k])=>k==='soon'?`<div class="vi off" aria-disabled="true">${I(ic,14)}${l}<span class="e small">Coming soon</span></div>`
-    :!y&&ic==='scan-face'?`<button class="vi act" data-a="doface">${I(ic,14)}Face check<span class="e small">Start</span></button>`
-    :`<div class="vi ${y?'y':''}">${I(ic,14)}${l}${y?`<span class="e">${I('circle-check',14)}</span>`:''}</div>`;
   const soft=(arr,none,tm)=>arr&&arr.length?`<div class="soft${tm?' tm':''}">${arr.map(x=>`<span>${tm?I('clock',13):''}${esc(x)}</span>`).join('')}</div>`:`<p class="small mute">${none}</p>`;
   return `<div class="panel"><div class="ph">${I('user',15)} Your profile<span class="row" style="gap:8px;margin-left:auto"><button class="btn sm sec" data-a="editprofile">${I('pencil',14)} Edit profile</button><button class="ib bd" data-a="settings" title="Settings" aria-label="Settings">${I('settings',18)}</button></span></div>
   <div class="pt2"><div class="phw" data-a="photo">${av('me','lg')}<button class="pe" id="p_pe" title="Change profile picture" aria-label="Change profile picture" aria-haspopup="menu" aria-expanded="false">${I('camera',14)}</button>
@@ -1213,12 +1244,18 @@ function tabProfile(){
   <div class="panel"><div class="ph">${I('star',15)} Interests</div>${soft(m.ints,'Add what you like doing in Edit profile.')}</div>
   <div class="panel"><div class="ph">${I('clock',15)} Usually free</div>${soft(m.avail,'Add when you are usually free in Edit profile.',true)}</div>
   <div class="panel"><div class="ph">${I('calendar-check',15)} Past activities</div>${pastHtml(pastList('me'),'Plans you host or join show up here.')}</div>
-  ${done<V.length?`<div class="panel"><div class="ph">${I('shield-check',15)} Verifications <span class="r">${done} of ${V.length}</span></div>
-  <div class="bar"><i style="width:${done/V.length*100}%"></i></div>
-  <div class="vg">${V.map(vi).join('')}</div></div>`:''}
+  ${suPct()<100?progressPanel():''}
   ${S.following.length?`<div class="panel"><div class="ph">${I('user-plus',15)} Following</div>${S.following.map(u=>`<div class="blk">${av(u,'sm')}<button class="hlink" data-a="user" data-id="${u}">${esc(uname(u))}</button><button class="lnk" data-a="follow" data-id="${u}">Unfollow</button></div>`).join('')}</div>`:''}
 
 `;
+}
+/* What's left of sign-up, the same score as the bar during sign-up (suItems) and the card on the app's Profile. */
+function progressPanel(){
+  const p=suPct(),edit='<button class="lnk" data-a="editprofile">Add</button>';
+  const go={phone:'<button class="lnk" data-a="addphone">Add</button>',details:edit,job:edit,bio:edit,photos:edit,face:'<button class="btn sm" data-a="doface">Start</button>'};
+  return `<div class="panel"><div class="ph">${I('circle-check',15)} Finish your profile <span class="r">${p}%</span></div>${pctBar(p,false)}
+  ${suItems().filter(x=>!x.done).map(x=>`<div class="pgl"><span class="t">${esc(x.label)} <small>+${x.pts}%</small></span>${go[x.key]||''}</div>`).join('')}
+  ${S.me.face?'':'<p class="small mute" style="margin-bottom:0">You need the face check to post plans and ask to join.</p>'}</div>`;
 }
 /* Settings, from the gear on Profile: feedback, the app, safety and the account (the app's settings.tsx). */
 function settingsHtml(){
@@ -1319,7 +1356,7 @@ function modalHtml(){
     const fact=(ic,txt,sub)=>`<div class="dfact">${I(ic,19)}<span>${txt}${sub?`<span class="mute"> · ${sub}</span>`:''}</span></div>`;
     const extra=[...(a.aud==='everyone'?[]:[esc(a.aud.join(' / '))+' only']),...(a.repeat?[REPEAT[a.repeat]]:[])];
     const hostrow=a.host==='me'?`<div class="dhost">${av('me')}<div><b>You</b><span class="hs">You host this plan</span></div></div>`
-      :`<div class="dhost"><button class="hlink" data-a="user" data-id="${a.host}" title="View ${esc(h.name)}'s profile">${av(a.host)}<div><b>${esc(h.name)}, ${h.age} ${vf(a.host)}</b><span class="hs">Host${tr.met?` · ${tr.shows}/${tr.met} meetups showed up`:''}</span></div></button>${sampleTag(a.host)}</div>`;
+      :`<div class="dhost"><button class="hlink" data-a="user" data-id="${a.host}" title="View ${esc(h.name)}'s profile">${av(a.host)}<div><b>${esc(h.name)}, ${h.age} ${vf(a.host)}</b><span class="hs">Host${tr.met?` · ${tr.shows}/${tr.met} meetups showed up`:''}</span></div></button></div>`;
     const hero=`<div class="dphoto" style="background:${planBg(a)}"></div>
       <div style="margin-top:14px">${catPill(a.cat,true)}</div><h3 class="dtitle">${esc(a.desc)}</h3>${hostrow}
       <div class="dfacts">${fact('calendar',`${day} · ${tm}`,durTxt(a.dur||2))}${fact('map-pin',esc(placeLine(a)),a.host==='me'?'':`${distKm(a)} km`)}
@@ -1328,7 +1365,7 @@ function modalHtml(){
     /* asking: just enough to know which plan it is (the detail view has the rest), the note, and one short warning */
     const mini=`<div class="jmini">${planThumb(a)}<div style="min-width:0"><div class="t">${esc(a.desc)}</div>
       <div class="meta2"><span>${I('calendar',13)}${whenStr(a.when)}</span><span>${I('map-pin',13)}${esc(placeLine(a))}</span></div></div></div>`;
-    const warn=[isSample(a.host)?'<b>Sample plan:</b> nobody will be there.':'',S.me.face?'':'Quick 1-min face check first.'].filter(Boolean).join(' ');
+    const warn=S.me.face?'':'Quick 1-min face check first.';
     if(m.type==='confirm'&&(can||canWait))return sheet(can?'Ask to join':'Join the waitlist',`<div class="sb">${mini}
       ${canWait?`<div class="warnbox" style="background:var(--infobg);border-color:#BFDBFE;color:var(--info)">${I('users',16)}<span>This activity is full. Join the waitlist and your request goes to ${esc(h.name)} automatically if a spot opens${wl?` (${wl} ahead of you)`:''}.</span></div>`:''}
       <label for="r_note" style="font-size:14px;margin-top:16px">Say hi to ${esc(h.name)} <span class="mute" style="font-weight:400">(optional)</span></label>
@@ -1378,7 +1415,7 @@ function modalHtml(){
     const pics=[p.photo,p.photo2].filter(Boolean);
     return sheet(backB(m)+'Profile',`<div class="sb">
       ${pics.length>1?`<div class="gal" tabindex="0" aria-label="Photos of ${esc(p.name)}. Swipe for more.">${pics.map((ph,i)=>`<img src="${esc(ph)}" alt="Photo ${i+1} of ${esc(p.name)}" loading="lazy" decoding="async">`).join('')}</div>`:''}
-      <div class="pt2">${av(m.id,'lg')}<div><div class="pn">${esc(p.name)} ${vf(m.id,true)}${sampleTag(m.id)}</div><div class="small mute">${esc(p.gender)}, ${p.age}${p.job?' · '+esc(p.job):''}</div></div></div>
+      <div class="pt2">${av(m.id,'lg')}<div><div class="pn">${esc(p.name)} ${vf(m.id,true)}</div><div class="small mute">${esc(p.gender)}, ${p.age}${p.job?' · '+esc(p.job):''}</div></div></div>
       ${p.bio?`<p style="margin:16px 0 0">${esc(p.bio)}</p>`:''}
       <div class="tstats"><div><b>${t.met}</b><span>meetups</span></div><div><b>${t.shows}</b><span>showed up</span></div><div><b>${t.noshows}</b><span>no-shows</span></div></div>
       ${signals(m.id)}
@@ -1526,9 +1563,9 @@ function modalHtml(){
       <h3>About you</h3>
       <label for="p_name" style="margin-top:0">First name</label><input id="p_name" maxlength="40" autocomplete="given-name" value="${esc(me.name)}">
       <label for="p_last">Last name</label><input id="p_last" maxlength="40" autocomplete="family-name" value="${esc(me.last||'')}">
-      <label for="p_dob">Date of birth</label><input id="p_dob" type="date" value="${esc(me.dob)}" ${me.kyc?'disabled':''}>
-      <label for="p_gender">Gender identity</label><select id="p_gender" ${me.kyc?'disabled':''}>${GENDERS.map(g=>`<option ${g===me.gender?'selected':''}>${g}</option>`).join('')}</select>
-      <p class="small mute" style="margin-top:6px">${me.kyc?`Confirmed by your ID check. To change these, email ${esc(CFG.CONTACT_EMAIL||'the beta team')}.`:'Decides which audience-limited plans you can see.'}</p>
+      <label for="p_dob">Date of birth</label><input id="p_dob" type="date" value="${esc(me.dob)}" ${me.dob?'disabled':''}>
+      <label for="p_gender">Gender identity</label><select id="p_gender" ${me.gender?'disabled':''}>${GENDERS.map(g=>`<option ${g===me.gender?'selected':''}>${g}</option>`).join('')}</select>
+      <p class="small mute" style="margin-top:6px">${me.dob&&me.gender?`These can't be changed. If one is wrong, email ${esc(CFG.CONTACT_EMAIL||'the beta team')}.`:'Decides which audience-limited plans you can see.'}</p>
       <label for="p_hood">Home area</label>${placeBox('p_hood','Search your area or city',me.hood,'Areas in India')}
       ${locBtn('p_hood','Use my current location')}
       <p class="small mute" style="margin-top:6px">Anywhere in India. You see plans within ${NEAR_KM} km of here, and distances are measured from it. With your current location, only the area is saved (to about 1 km), never your exact spot.</p>
@@ -1556,7 +1593,7 @@ function modalHtml(){
       <button class="ib" data-a="mute" data-id="${a.id}" title="${muted?'Unmute':'Mute'} chat notifications" aria-label="${muted?'Unmute':'Mute'} chat notifications" aria-pressed="${muted}">${I(muted?'bell-off':'bell',17)}</button>
       <button class="sosb" data-a="sos" data-id="${a.id}" aria-label="SOS: get help now">SOS</button>
       <button class="ib" data-a="close" title="Close">${I('x',18)}</button></div>
-      <p class="small mute" style="padding:8px 18px;margin:0">Members: ${esc([a.host,...a.members].map(uname).join(', '))} · full history visible to everyone${muted?' · notifications muted':''}${isSample(a.host)?' · <b>Sample plan: the host\'s messages are pre-written and nobody will be there</b>':''}</p>
+      <p class="small mute" style="padding:8px 18px;margin:0">Members: ${esc([a.host,...a.members].map(uname).join(', '))} · full history visible to everyone${muted?' · notifications muted':''}</p>
       <div class="msgs" id="msgs">${closed?'':tips}${msgs}</div>${closed?`<div class="cin closed" role="status">${I('lock',15)}<span>This chat closed ${CHAT_OPEN_H} hours after the plan ended. You can still read it.</span></div>`:`<div class="cin"><button class="ib" data-a="newpoll" data-id="${a.id}" title="Create a poll" aria-label="Create a poll">${I('bar-chart',18)}</button><input id="c_in" placeholder="Message the group" autocomplete="off" aria-label="Message the group"><button class="btn sm" data-a="send" data-id="${a.id}" aria-label="Send">${I('send',15)}</button></div>`}</div></div>`;
   }
   if(m.type==='members'){
@@ -1587,10 +1624,22 @@ function modalHtml(){
       <p class="small mute">Reports are confidential. Our safety team reviews them within 24 hours.</p>
       <button class="btn bad" data-a="domsgrep" data-id="${m.id}" data-m="${m.m}">Send report</button></div>`);
   }
+  /* email accounts from before phones were part of sign-up add their number here (the app's add-phone.tsx) */
+  if(m.type==='addphone'){
+    if(m.step==='code')return sheet('Add your phone number',`<div class="sb"><p class="small" style="margin-top:0">Enter the code we sent to <b>+91 ${esc(fmtPhone(m.phone.slice(3)))}</b>.</p>
+      <label for="ap_code">Code</label><input id="ap_code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6">
+      <div style="height:12px"></div><button class="btn" data-a="apconfirm">Confirm number</button>
+      <p class="small" style="text-align:center;margin-top:12px"><button class="lnk" data-a="apsend" data-k="again">Resend code</button> · <button class="lnk" data-a="addphone">Change number</button></p></div>`);
+    return sheet('Add your phone number',`<div class="sb"><p class="small mute" style="margin-top:0">We'll text a 6-digit code to confirm it. Nobody else sees your number.</p>
+      <label for="ap_phone">Mobile number</label><div class="fi tel"><span class="cc">${I('phone',16)}+91</span><input id="ap_phone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="16" placeholder="98765 43210"></div>
+      <div style="height:12px"></div><button class="btn" data-a="apsend">Send code</button></div>`);
+  }
   if(m.type==='sos'){
     const a=actOf(m.id),t=S.me.trusted,loc=m.loc;
     const where=loc?`https://maps.google.com/?q=${loc.lat.toFixed(5)},${loc.lng.toFixed(5)}`:'';
-    const text=`SOS from Overhere: I need help.${a?` I'm at "${a.desc}" (${a.venue}).`:''}${where?' My location: '+where:''} Please call me now.`;
+    /* the same message as the app's SOS screen, one line per part */
+    const at=a?(a.host==='me'?`I'm hosting an activity at ${a.venue}.`:`I'm attending an activity with ${uname(a.host)} at ${a.venue}.`):'';
+    const text=[`SOS from Overhere: I need help.${at?' '+at:''}`,where?'My location: '+where:'','Please call me now.'].filter(Boolean).join('\n');
     const enc=encodeURIComponent(text),ph=t?t.phone.replace(/[^\d+]/g,''):'';
     const st=m.locState==='wait'?'Finding your location…':loc?`${I('map-pin',13)} Location found (within about ${Math.max(5,Math.round(loc.acc))} m)`:`${I('alert-triangle',13)} Couldn't get your location, so the message names the venue instead. <button class="lnk" data-a="sosloc">Try again</button>`;
     return sheet(backB(m)+'Get help',`<div class="sb">
@@ -1644,6 +1693,9 @@ function authHtml(){
   if(!ONLINE)return `<div class="ob">${LOGO}<h1 class="pt">Open the live site</h1><p class="sub">Overhere keeps plans, requests and chats in its online database, so it only works from the published site (an https:// address), not from a file on your computer.</p></div>`;
   if(ME&&!loaded)return `<div class="ob">${LOGO}<p class="mute">${ui.err?esc(ui.err)+' <button class="lnk" data-a="retry">Try again</button> · <button class="lnk" data-a="signout">Sign out</button>':'Loading…'}</p></div>`;
   const md=ui.auth.mode;
+  /* a new account answers sign-up screens 1-4 first, then gives its phone number (screen 5; the email form where there's no SMS) */
+  if(md==='up'&&suOn())return startStepsHtml();
+  if(md==='up'&&CFG.PHONE_LOGIN){ui.auth={...ui.auth,mode:'phone',was:'up'};return authHtml()}
   if(md==='check'){
     const email=ui.auth.email||'',reset=ui.auth.kind==='reset',left=Math.ceil(((ui.auth.sent||0)+RESEND_MS-Date.now())/1000),box=inboxOf(email);
     return `<div class="ob">${LOGO}<div class="mailic">${I('mail',30)}</div><h1 class="pt">Check your email</h1><p class="sub">We sent a link to <b>${esc(email)}</b>. Open it on this device to ${reset?'choose a new password':'confirm your account, then sign in'}. It can take a minute, and sometimes lands in spam.</p>
@@ -1660,17 +1712,17 @@ function authHtml(){
   /* Phone: one flow for new and returning people. The code signs you in, and makes the account the first time. */
   if(md==='phone'){
     const up=ui.auth.was==='up';
-    return `<div class="ob">${LOGO}<div class="mailic">${I('phone',28)}</div><h1 class="pt">${up?'Sign up with phone':'Sign in with phone'}</h1><p class="sub">We'll text you a 6-digit code to confirm it's you.${up?" Next you'll add your email and a password.":''}</p>
+    return `<div class="ob">${LOGO}${up?suBar():''}<div class="mailic">${I('phone',28)}</div><h1 class="pt">${up?'Sign up with phone':'Sign in with phone'}</h1><p class="sub">We'll text you a 6-digit code to confirm it's you.${up?" Next you'll add your email and a password.":''}</p>
     <form id="a_form" data-submit="sendcode" novalidate><label for="a_phone">Mobile number</label>
     <div class="fi tel"><span class="cc">${I('phone',16)}+91</span><input id="a_phone" type="tel" inputmode="numeric" autocomplete="tel-national" maxlength="16" placeholder="98765 43210" value="${esc(ui.auth.phone?fmtPhone(ui.auth.phone.slice(3)):'')}" aria-describedby="a_phone_err a_phone_note"></div>
     <p class="ferr" id="a_phone_err" aria-live="polite"></p><p class="fhint" id="a_phone_note">Indian mobile numbers only.</p>
     ${up?agebox():''}<div style="height:18px"></div>${ERRBOX}${goBtn('Send code')}</form>
-    <div style="height:8px"></div><button class="btn ghost" data-a="authmode" data-k="${up?'up':'in'}">Back</button>
+    <div style="height:8px"></div><button class="btn ghost" ${up?'data-a="sustep" data-k="3"':'data-a="authmode" data-k="in"'}>Back</button>
     <p class="small mute" style="text-align:center;margin-top:12px">${up?'':'By signing in you agree to our <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a>. '}Standard SMS rates may apply.</p></div>`;
   }
   if(md==='code'){
     const left=Math.ceil((ui.auth.sent+RESEND_MS-Date.now())/1000);
-    return `<div class="ob">${LOGO}<div class="mailic">${I('message-circle',28)}</div><h1 class="pt">Enter the code</h1><p class="sub">We sent a 6-digit code to <b>+91 ${esc(fmtPhone(ui.auth.phone.slice(3)))}</b>. <button class="lnk" style="padding:0" data-a="authmode" data-k="phone">Edit</button></p>
+    return `<div class="ob">${LOGO}${ui.auth.was==='up'?suBar():''}<div class="mailic">${I('message-circle',28)}</div><h1 class="pt">Enter the code</h1><p class="sub">We sent a 6-digit code to <b>+91 ${esc(fmtPhone(ui.auth.phone.slice(3)))}</b>. <button class="lnk" style="padding:0" data-a="authmode" data-k="phone">Edit</button></p>
     <form id="a_form" data-submit="checkcode" novalidate><label for="a_code">Verification code</label>
     <div class="otp"><input id="a_code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" spellcheck="false" aria-describedby="a_code_err"><div class="otpc" aria-hidden="true">${'<span></span>'.repeat(6)}</div></div>
     <p class="ferr" id="a_code_err" aria-live="polite"></p>
@@ -1697,7 +1749,7 @@ function authHtml(){
 function emailStepHtml(){
   if(ui.auth.mode==='ecode'){
     const left=Math.ceil(((ui.auth.sent||0)+RESEND_MS-Date.now())/1000),box=inboxOf(ui.auth.email||'');
-    return `<div class="ob">${LOGO}<div class="mailic">${I('mail',30)}</div><h1 class="pt">Enter the code</h1><p class="sub">We sent a 6-digit code to <b>${esc(ui.auth.email)}</b>. <button class="lnk" style="padding:0" data-a="emailstep">Edit</button> It can take a minute, and sometimes lands in spam.</p>
+    return `<div class="ob">${LOGO}${suBar()}<div class="mailic">${I('mail',30)}</div><h1 class="pt">Enter the code</h1><p class="sub">We sent a 6-digit code to <b>${esc(ui.auth.email)}</b>. <button class="lnk" style="padding:0" data-a="emailstep">Edit</button> It can take a minute, and sometimes lands in spam.</p>
     <form id="a_form" data-submit="checkecode" novalidate><label for="a_code">Code from the email</label>
     <div class="otp"><input id="a_code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" spellcheck="false" aria-describedby="a_code_err"><div class="otpc" aria-hidden="true">${'<span></span>'.repeat(6)}</div></div>
     <p class="ferr" id="a_code_err" aria-live="polite"></p>
@@ -1705,61 +1757,103 @@ function emailStepHtml(){
     ${box?`<div style="height:8px"></div><a class="btn ghost" href="${box[1]}" target="_blank" rel="noopener">${I('mail',16)} Open ${box[0]}</a>`:''}
     <p class="small" style="text-align:center;margin-top:14px">Didn't get it? <button class="lnk" id="a_resend" data-a="resendecode"${left>0?' disabled':''}>${left>0?`Resend code in ${left}s`:'Resend code'}</button> · <button class="lnk" data-a="emailstep">Use a different email</button></p></div>`;
   }
-  return `<div class="ob">${LOGO}<div class="mailic">${I('mail',30)}</div><h1 class="pt">Add your email</h1><p class="sub">Your phone number is confirmed. Now add your email and confirm it with a code. It's for account emails only, and nobody else sees it.</p>
+  return `<div class="ob">${LOGO}${suBar()}<div class="mailic">${I('mail',30)}</div><h1 class="pt">Add your email</h1><p class="sub">Your phone number is confirmed. Now add your email and confirm it with a code. It's for account emails only, and nobody else sees it.</p>
     <form id="a_form" data-submit="addemail" novalidate>${emailField()}<div style="height:16px"></div>${ERRBOX}${goBtn('Send code')}</form>
     <p class="small mute" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p></div>`;
 }
 /* Phone sign-ups, after the email: choose a password. Then they can also sign in with that email and password.
    Older phone accounts see this once too. */
 function pwStepHtml(){
-  return `<div class="ob">${LOGO}<div class="mailic">${I('lock',30)}</div><h1 class="pt">Create a password</h1><p class="sub">Your email is confirmed. Now choose a password, so you can also sign in with <b>${esc(AUTHU.mail)}</b> and this password.</p>
+  return `<div class="ob">${LOGO}${suBar()}<div class="mailic">${I('lock',30)}</div><h1 class="pt">Create a password</h1><p class="sub">Your email is confirmed. Now choose a password, so you can also sign in with <b>${esc(AUTHU.mail)}</b> and this password.</p>
     <form id="a_form" data-submit="phonepw" novalidate><input type="email" name="username" autocomplete="username" value="${esc(AUTHU.mail)}" readonly hidden>
     ${pwField('a_pw','Password','new-password')}${pwMeter()}${pwField('a_pw2','Confirm password','new-password')}
     <div style="height:16px"></div>${ERRBOX}${goBtn('Save password')}</form>
     <p class="small mute" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p></div>`;
 }
-/* "Create your profile" in three short pages (who you are, where you're based, what you like), as in the app.
-   OBF keeps the answers between pages, starting empty; nothing is saved until the last page. */
-const OB_STEPS=3;let OBF={};
+/* ---------- sign-up, in the order of the 19 Nov spec (the same as the app's lib/signup.ts) ----------
+     1 interests · 2 when you're free · 3 date of birth · 4 gender   (before the account exists: kept in this browser)
+     5 phone · 6 SMS code · 7 email · 8 email code · 8b password     (authHtml 'phone' and 'code', emailStepHtml, pwStepHtml)
+     9 name, what you do, about you, home area                       (onboardHtml: saves the profile with 1-4)
+     10 two photos · 11 face check                                   (onboardHtml: both can be skipped)
+   From screen 5 a bar shows how much is done (suPct), the same score as the card on Profile. ui.su is the screen of
+   1-4 on show, or null to show the first one still unanswered (if any). */
+const SU_KEY='overhere_signup',SU_STEPS=4;
+function suLoad(){
+  try{const d=JSON.parse(localStorage.getItem(SU_KEY)||'null')||{};
+    return {ints:Array.isArray(d.ints)?d.ints.filter(x=>typeof x==='string').slice(0,60):[],avail:Array.isArray(d.avail)?d.avail.filter(x=>typeof x==='string').slice(0,10):[],
+      dob:/^\d{4}-\d{2}-\d{2}$/.test(d.dob||'')?d.dob:'',gender:GENDERS.includes(d.gender)?d.gender:''}}
+  catch(e){return {ints:[],avail:[],dob:'',gender:''}}
+}
+function suSave(d){try{localStorage.setItem(SU_KEY,JSON.stringify(d))}catch(e){}}
+function suClear(){try{localStorage.removeItem(SU_KEY)}catch(e){}}
+const suStep=d=>d.ints.length<MIN_INTS?0:!d.avail.length?1:!d.dob?2:!d.gender?3:4;
+const suOn=()=>ui.su!=null||suStep(suLoad())<SU_STEPS;
+/* 30 for screens 1-4, then phone, email, the details, two photos and the face check: 100 with everything */
+function suItems(){
+  const m=S.me;
+  return [['about','Interests, free times, age and gender',30,!!m||suStep(suLoad())===SU_STEPS],['phone','Phone number',10,!!AUTHU.phone],['email','Email',10,!!AUTHU.email],
+    ['details','Name and home area',10,!!m],['job','What you do',5,!!m?.job?.trim()],['bio','About you',5,!!m?.bio?.trim()],['photos','Two photos',15,twoPhotos()],['face','Face check',15,!!m?.face]]
+    .map(([key,label,pts,done])=>({key,label,pts,done}));
+}
+const suPct=()=>suItems().reduce((n,x)=>n+(x.done?x.pts:0),0);
+const pctBar=(p,label=true)=>`<div class="supb" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p}" aria-label="Profile ${p}% done"><div class="supt"><i style="width:${p}%"></i></div>${label?`<span>${p}% done</span>`:''}</div>`;
+const suBar=()=>pctBar(suPct());
+/* Screens 1-4. Each answer is kept in this browser as it's given (suKeep), so leaving and coming back keeps them. */
+function startStepsHtml(){
+  const d=suLoad(),st=Math.min(ui.su??suStep(d),SU_STEPS-1),today=new Date().toISOString().slice(0,10);
+  ui.su=st;   // the screen on show stays put while its answers change, until Next or Back
+  const bars=`<div class="obbar" role="img" aria-label="Step ${st+1} of ${SU_STEPS}">${Array.from({length:SU_STEPS},(_,k)=>`<i class="${k<=st?'on':''}"></i>`).join('')}</div>`;
+  const body=st===0?`<h1 class="pt">What do you like doing?</h1><p class="sub">Pick at least ${MIN_INTS}. We use them to show you plans you'll like.</p>${intOpts('s_int',d.ints)}`
+    :st===1?`<h1 class="pt">When are you usually free?</h1><p class="sub">Pick all that fit.</p>${opts('s_avail',TIMES,d.avail)}`
+    :st===2?`<h1 class="pt">When were you born?</h1><p class="sub">Overhere is for people aged 18 and over. People see your age, never the date. <b>You can't change it later.</b></p>
+      <label for="s_dob">Date of birth</label><input id="s_dob" type="date" max="${today}" value="${esc(d.dob)}">`
+    :`<h1 class="pt">What's your gender?</h1><p class="sub">Hosts can open a plan to some genders only. <b>You can't change it later.</b></p>
+      <div class="opts" role="radiogroup" aria-label="Gender">${GENDERS.map(g=>`<label class="opt"><input type="radio" name="s_gender" value="${g}" ${d.gender===g?'checked':''}>${g}</label>`).join('')}</div>`;
+  const back=st>0||!ME?'<div style="height:8px"></div><button class="btn sec" data-a="suback">Back</button>':'';
+  return `<div class="ob">${LOGO}${bars}${body}<div style="height:18px"></div><button class="btn" data-a="sunext">Next</button>${back}
+    ${ME?'<p class="small" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p>':''}</div>`;
+}
+/* what's on screen 1-4 right now, into the draft */
+function suKeep(){
+  const d=suLoad();
+  if(document.getElementById('s_int_n'))d.ints=many('s_int');
+  if(document.querySelector('input[name=s_avail]'))d.avail=many('s_avail');
+  if(document.querySelector('input[name=s_gender]'))d.gender=document.querySelector('input[name=s_gender]:checked')?.value||'';
+  suSave(d);return d;
+}
+/* Screen 9's answers between redraws (a place picked, a failed save), starting empty. */
+let OBF={};
 function obKeep(){
   const d=OBF;
-  if(document.getElementById('o_name')){d.name=val('o_name');d.last=val('o_last');d.dob=val('o_dob');d.gender=val('o_gender')}
-  if(document.getElementById('o_hood'))d.hood=val('o_hood');
-  if(document.getElementById('o_usage')){d.ints=many('o_int');d.avail=many('o_avail');d.ok=AUTHU.terms||!!document.getElementById('o_ok')?.checked;d.usage=!!document.getElementById('o_usage').checked}
+  if(document.getElementById('o_name')){d.name=val('o_name');d.last=val('o_last');d.job=val('o_job');d.bio=(document.getElementById('o_bio')?.value||'').trim();d.hood=val('o_hood');
+    d.ok=AUTHU.terms||!!document.getElementById('o_ok')?.checked;d.usage=!!document.getElementById('o_usage')?.checked}
   return d;
 }
 function onboardHtml(){
   let body;
+  const out='<p class="small" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p>';
   if(!S.me){
-    const d=OBF,st=ui.obStep||0,tgt='target="_blank" rel="noopener" style="color:inherit"';
-    const back='<div style="height:8px"></div><button class="btn sec" data-a="obback">Back</button>';
-    body=`<div class="logo" style="margin-bottom:18px"><span class="dots"><i></i><i></i></span>Overhere</div>
-    <div class="obbar" role="img" aria-label="Step ${st+1} of ${OB_STEPS}">${Array.from({length:OB_STEPS},(_,k)=>`<i class="${k<=st?'on':''}"></i>`).join('')}</div>`+(st===0?`<h1 class="pt">About you</h1>
+    if(suOn())return startStepsHtml();
+    const d=OBF,tgt='target="_blank" rel="noopener" style="color:inherit"';
+    body=`${LOGO}${suBar()}<h1 class="pt">About you</h1>
     <label for="o_name">First name</label><input id="o_name" maxlength="40" autocomplete="given-name" value="${esc(d.name||'')}">
     <label for="o_last">Last name</label><input id="o_last" maxlength="40" autocomplete="family-name" value="${esc(d.last||'')}">
-    <label for="o_dob">Date of birth</label><input id="o_dob" type="date" value="${esc(d.dob||'')}">
-    <label for="o_gender">Gender</label><select id="o_gender"><option value="">Select…</option>${GENDERS.map(g=>`<option ${g===d.gender?'selected':''}>${g}</option>`).join('')}</select>
-    <div style="height:18px"></div><button class="btn" data-a="obnext">Next</button>
-    <p class="small" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p>`
-    :st===1?`<h1 class="pt">Where are you based?</h1>
+    <label for="o_job">What you do <span class="mute" style="font-weight:400">(optional)</span></label><input id="o_job" maxlength="40" placeholder="e.g. Designer, student" value="${esc(d.job||'')}">
+    <label for="o_bio">About you <span class="mute" style="font-weight:400">(optional)</span></label><textarea id="o_bio" maxlength="300" placeholder="Hosts see this when you ask to join">${esc(d.bio||'')}</textarea>
     <label for="o_hood">Home area</label>${placeBox('o_hood','Search your area or city, e.g. Indiranagar, Bengaluru',d.hood,'Areas in India')}
-    ${locBtn('o_hood','Use my current location')}
-    <div style="height:18px"></div><button class="btn" data-a="obnext">Next</button>${back}`
-    :`<h1 class="pt">What do you like doing?</h1>${intOpts('o_int',d.ints)}
-    <label>When are you usually free?</label>${opts('o_avail',TIMES,d.avail)}
+    ${locBtn('o_hood','Use my current location')}<p class="small mute" style="margin-top:6px">You'll see plans within ${NEAR_KM} km.</p>
     ${AUTHU.terms?'':`<label class="chk top" style="margin-top:18px"><input type="checkbox" id="o_ok" ${d.ok?'checked':''}> <span>I agree to the <a href="terms.html" ${tgt}>Terms</a> and <a href="privacy.html" ${tgt}>Privacy policy</a></span></label>`}
     <label class="chk top" style="margin-top:${AUTHU.terms?18:10}px"><input type="checkbox" id="o_usage" ${d.usage?'checked':''}> <span>Share usage statistics to help improve Overhere (optional)</span></label>
-    <div style="height:18px"></div><button class="btn" data-a="ob2">Continue</button>${back}`);
-  }else if(!S.me.face&&!ui.faceSkip&&!twoPhotos())body=`<h1 class="pt">Add two photos of you</h1><p class="sub">The first is your profile picture. The face check compares your face with both.</p>${photoPair()}
+    <div style="height:18px"></div><button class="btn" data-a="ob2">Continue</button><div style="height:8px"></div><button class="btn sec" data-a="sustep" data-k="3">Back</button>${out}`;
+  }else if(S.me.face||ui.faceSkip){
+    /* face check passed, or skipped: sign-up is finished, which opens the app */
+    if(!ui.obFin){ui.obFin=true;setTimeout(()=>A.obdone(),0)}
+    body=`${LOGO}<p class="mute">Loading…</p>`;
+  }else if(!twoPhotos())body=`${LOGO}${suBar()}<h1 class="pt">Add two photos of you</h1><p class="sub">The first is your profile picture. The face check compares your face with both.</p>${photoPair()}
     <div style="height:8px"></div><button class="btn sec" data-a="obfaceskip">Skip for now</button>
-    <p class="small mute" style="text-align:center;margin-top:10px">You can skip this and browse. Posting and joining plans need the photos and the face check.</p>
-    <p class="small" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p>`;
-  else if(!S.me.face&&!ui.faceSkip)body=`<h1 class="pt">Quick face check</h1><p class="sub">Shows people you're real and the person in your photos. You need it to post or join plans.</p><div class="ob-av">${av('me','lg')}</div><button class="btn" data-a="obface">Start face check</button>
-    <div style="height:8px"></div><button class="btn sec" data-a="obfaceskip">Skip for now</button>
-    <p class="small" style="text-align:center;margin-top:14px"><button class="lnk" data-a="signout">Sign out</button></p>`;
-  else body=`<h1 class="pt">Tell us more</h1><p class="sub">Optional. Hosts see this when you ask to join.</p>
-    <label for="o_job">What you do</label><input id="o_job" maxlength="40" placeholder="e.g. Designer, student"><label for="o_bio">About you</label><textarea id="o_bio" maxlength="300"></textarea>
-    <div style="height:16px"></div><button class="btn" data-a="obdone" data-save="1">Save and start browsing</button><div style="height:8px"></div><button class="btn sec" data-a="obdone">Skip for now</button>`;
+    <p class="small mute" style="text-align:center;margin-top:10px">You can skip this and browse. Posting and joining plans need the photos and the face check.</p>${out}`;
+  else body=`${LOGO}${suBar()}<h1 class="pt">Quick face check</h1><p class="sub">Shows people you're real and the person in your photos. You need it to post or join plans.</p><div class="ob-av">${av('me','lg')}</div><button class="btn" data-a="obface">Start face check</button>
+    <div style="height:8px"></div><button class="btn sec" data-a="obfaceskip">Skip for now</button>${out}`;
   return `<div class="ob">${body}</div>`;
 }
 
@@ -1922,7 +2016,7 @@ function render(){
   if(!S.me.terms&&ui.modal?.type!=='terms')ui.modal={type:'terms'};   // accounts made before the terms: agree once
   /* a hosted plan whose three attendance reminders went unanswered comes before anything else */
   else{const due=DUE.find(x=>x.overdue&&actOf(x.act)&&!actOf(x.act).attDone);if(due&&ui.modal?.type!=='verify'&&!(ui.modal?.type==='mustrate'&&ui.modal.id===due.act))ui.modal={type:'mustrate',id:due.act}}
-  const unread=S.notes.filter(n=>!n.read).length;
+  const unread=bellCount();
   const view={swipe:tabSwipe,discover:tabDiscover,acts:tabActs,reqs:tabReqs,profile:tabProfile,notes:tabNotes,chats:tabChats}[ui.tab]();
   const pend=S.reqs.filter(r=>r.status==='pending'&&actOf(r.act)?.host==='me').length;
   const TT=(k,l)=>`<button class="tt ${ui.tab===k?'on':''}" data-a="tab" data-t="${k}">${l}</button>`;
@@ -2222,6 +2316,7 @@ const A={
      a notification is read when you open it, or with "Mark all as read". */
   bell:()=>{
     if(ui.tab==='notes'&&!ui.modal){ui.tab=ui.prevTab||'swipe';ui.seen=null;render();return}
+    noteSeenNow();
     if(ui.tab!=='notes')ui.prevTab=ui.tab;
     ui.tab='notes';ui.modal=null;render();
   },
@@ -2388,9 +2483,11 @@ const A={
     mapView=null;await refresh();track('city_picked',{city:d.k});
     toast(viewCity()?`Showing plans in ${viewName()}`:`Showing plans near ${homeName()}`);
   },
-  pickplace:d=>{
+  pickplace:async d=>{
     const i=document.getElementById(d.f);if(i){i.value=d.v;i.focus()}placeList(d.f,false);
-    if(d.f==='f_area')areaPicked(d.v);track(d.f==='f_venue'?'venue_picked':'area_picked');
+    track(d.f==='f_venue'?'venue_picked':'area_picked');
+    const ll=await placeResolve(d.v);   // a Google suggestion's spot (already known for the others)
+    if(d.f==='f_area'&&ll)areaPicked(d.v);
   },
   /* "Use my current location": the browser asks first. A home area keeps only about 1 km of precision. */
   myloc:async(d,e)=>{
@@ -2400,8 +2497,7 @@ const A={
       const ll=await myPosition();
       if(!inIndia(ll))return toast('That location is outside India. Overhere is only in India for now.');
       const home=id==='o_hood'||id==='p_hood',spot=home?ll.map(x=>Math.round(x*100)/100):ll;
-      const r=await geoFetch('/reverse',{lat:ll[0].toFixed(5),lon:ll[1].toFixed(5),lang:'en',limit:1},id==='f_venue'?'venue':'here').catch(()=>[]);
-      const label=r[0]?.label||`Near ${spot[0].toFixed(2)}, ${spot[1].toFixed(2)}`;
+      const label=await placeName(ll,id==='f_venue'?'venue':'here')||`Near ${spot[0].toFixed(2)}, ${spot[1].toFixed(2)}`;
       PLACE_AT[label.toLowerCase()]=spot;
       const i=document.getElementById(id);if(i){i.value=label;placeList(id,false)}
       if(id==='f_area')areaPicked(label);
@@ -2418,7 +2514,7 @@ const A={
     const ed=ui.modal?.id&&actOf(ui.modal.id),cap=+(document.querySelector('[name=f_cap]:checked')?.value||2),rep=val('f_rep');
     if(!desc||!venue)return toast('Add a description and a venue');
     const bw=badWord(desc);if(bw){descWarn();document.getElementById('f_desc')?.focus();return toast(`"${bw}" isn't allowed in a plan. Please reword it.`)}
-    const vll=placeLL(venue,'f_venue');
+    const vll=await placeResolve(venue)||placeLL(venue,'f_venue');
     if(!vll){askArea();return toast('Pick which area the venue is in, so it shows on the map')}
     if(!(when>now()))return toast('Pick a future date and time');
     if(!all&&!gs.length)return toast('Choose Everyone or at least one identity');
@@ -2508,7 +2604,7 @@ const A={
   unblock:async d=>{if(await run('unblock_user',{p_user:d.id})!==undefined)toast(`Unblocked ${uname(d.id)}`)},
   share:d=>{track('share_opened',{kind:d.k});ui.modal={type:'share',id:d.id,k:d.k,back:ui.modal};render()},
   mapfit:()=>{mapPreview(null);mapFit(true)},
-  maphome:()=>{mapPreview(null);liveMap?.flyTo(kmBetween(homeLL(),viewLL())<=NEAR_KM?homeLL():viewLL(),14,{duration:.5})},
+  maphome:()=>{mapPreview(null);liveMap?.flyTo(kmBetween(homeLL(),viewLL())<=NEAR_KM?homeLL():viewLL(),14)},
   mapclose:()=>mapPreview(null),
   save:d=>{const on=isSaved(d.id);if(!on)learn(actOf(d.id)?.cat,0.5);S.saved=on?S.saved.filter(x=>x!==d.id):[...S.saved,d.id].slice(-100);save();track(on?'unsave':'save_plan');toast(on?'Removed from saved':'Saved. Find it under Requests.');render()},
   follow:d=>{const on=S.following.includes(d.id);S.following=on?S.following.filter(x=>x!==d.id):[...S.following,d.id];save();track(on?'unfollow':'follow');toast(on?`Unfollowed ${uname(d.id)}`:`Following ${uname(d.id)}. You'll hear when they post.`);render()},
@@ -2601,9 +2697,11 @@ const A={
     if(!dob||!(ageOf(dob)>=18))return toast('Check your date of birth: you must be 18 or over');
     if((tn||tp)&&(!tn||tp.replace(/\D/g,'').length<7))return toast('Add a name and a valid phone for your trusted contact, or leave both empty');
     if(tp&&ownPhone(tp))return toast("Your trusted contact can't be the number you signed in with");
-    const hood=val('p_hood'),hll=placeLL(hood,'p_hood');
+    const hood=val('p_hood'),hll=await placeResolve(hood)||placeLL(hood,'p_hood');
     if(!hll)return toast('Pick your home area from the list, or use your current location');
     const p={name,dob,gender:val('p_gender'),hood,lat:hll[0],lng:hll[1],job:val('p_job'),bio:document.getElementById('p_bio').value.trim(),ints:many('p_int'),avail:many('p_avail'),last_name:last};
+    /* fixed once given at sign-up (the database refuses a change), so only sent by an older account that never gave one */
+    if(S.me.dob)delete p.dob;if(S.me.gender)delete p.gender;
     if(p.ints.length<MIN_INTS)return toast(`Pick at least ${MIN_INTS} things you like doing`);
     if(!p.avail.length)return toast("Pick when you're usually free");
     if(ui.modal?.emo)p.emo=ui.modal.emo;
@@ -2627,31 +2725,70 @@ const A={
   pickphoto:d=>{photoMenu(false);cropSlot=d.k==='2'&&S.me.photo?2:1;(document.getElementById('p_photo')||photoInput()).click()},
   rmphoto:async()=>{photoMenu(false);if(!await setPhoto(null))return;if(!S.me.face)toast('Photos removed. Showing your emoji.');if(ui.modal?.type==='editprofile')render();else refreshMyPhoto()},
   /* onboarding */
-  obnext:()=>{
-    const d=obKeep(),st=ui.obStep||0;
-    if(st===0){
-      if(!d.name)return toast('Add your first name');
-      if(!d.last)return toast('Add your last name');
-      if(!d.dob)return toast('Add your date of birth');
-      if(!d.gender)return toast('Pick your gender');
-      if(!(ageOf(d.dob)>=18)){ui.modal={type:'under18',dob:d.dob};render();return}
-    }else if(!placeLL(d.hood,'o_hood'))return toast('Pick your home area from the list, or use your current location');
-    ui.obStep=st+1;render();scrollTo(0,0);
+  addphone:()=>{ui.modal={type:'addphone'};render();document.getElementById('ap_phone')?.focus()},
+  apsend:async d=>{
+    const again=d.k==='again',n=again?ui.modal.phone.slice(3):phoneDigits(val('ap_phone')),bad=phoneProblem(n);
+    if(bad)return toast(bad);
+    const wait=again?Math.ceil(((ui.modal.sent||0)+RESEND_MS-Date.now())/1000):0;
+    if(wait>0)return toast(`Please wait ${wait}s before asking for a new code`);
+    /* pw_set: this account already has a password (it signs in by email); without it, accounts from before 7 Nov
+       would be asked to make one once their phone is confirmed */
+    const {error}=await SB.auth.updateUser({phone:'+91'+n,data:{pw_set:true}});
+    if(error)return toast(friendly(error));
+    ui.modal={type:'addphone',step:'code',phone:'+91'+n,sent:Date.now()};render();document.getElementById('ap_code')?.focus();
+    if(again)toast('Code sent again');
   },
-  obback:()=>{obKeep();ui.obStep=Math.max(0,(ui.obStep||0)-1);render();scrollTo(0,0)},
+  apconfirm:async()=>{
+    const token=val('ap_code');
+    if(!/^d{6}$/.test(token))return toast('Enter the 6-digit code');
+    const {data,error}=await SB.auth.verifyOtp({phone:ui.modal.phone,token,type:'phone_change'});
+    if(error)return toast(friendly(error));
+    if(data?.user)AUTHU=authOf(data.user);
+    ui.modal=null;render();toast('Phone number added');track('phone_added');
+  },
+  /* sign-up screens 1-4 (startStepsHtml) */
+  sunext:()=>{
+    const d=suKeep(),st=Math.min(ui.su??suStep(d),SU_STEPS-1);
+    if(st===0&&d.ints.length<MIN_INTS)return toast(`Pick at least ${MIN_INTS} things you like doing`);
+    if(st===1&&!d.avail.length)return toast("Pick when you're usually free");
+    if(st===2){
+      const dob=val('s_dob');
+      if(!dob)return toast('Add your date of birth');
+      if(!(ageOf(dob)>=18)){
+        /* signed in already (answered after signing in): the server removes the login, as before. Otherwise there's
+           no account yet, so there's nothing to remove. */
+        if(ME){ui.modal={type:'under18',dob};render();return}
+        d.dob='';suSave(d);render();return toast("Overhere is only for people aged 18 and over, so you can't sign up.");
+      }
+      d.dob=dob;suSave(d);
+    }
+    if(st===3&&!d.gender)return toast('Pick your gender');
+    if(st<SU_STEPS-1){ui.su=st+1;render();scrollTo(0,0);return}
+    ui.su=null;track('signup_basics_done');
+    /* no account yet: on to the phone number (screen 5), or the email form where there's no SMS */
+    if(!ME)ui.auth=CFG.PHONE_LOGIN?{mode:'phone',was:'up',ok:ui.auth?.ok}:{mode:'up'};
+    render();scrollTo(0,0);
+  },
+  suback:()=>{
+    const d=suKeep(),st=Math.min(ui.su??suStep(d),SU_STEPS-1);
+    if(st>0){ui.su=st-1;render();scrollTo(0,0);return}
+    ui.su=null;ui.auth={mode:'in'};render();scrollTo(0,0);   // before screen 1: back to sign in / create account
+  },
+  sustep:d=>{obKeep();ui.su=+d.k;if(!ME)ui.auth={...ui.auth,mode:'up'};render();scrollTo(0,0)},   // back from the phone number or screen 9
+  /* screen 9: saves the profile with the answers to screens 1-4 */
   ob2:async(d,e)=>{
-    const f=obKeep(),hll=placeLL(f.hood,'o_hood');
-    if(!f.name||!f.last||!f.dob||!f.gender){ui.obStep=0;render();return toast('Add your name, date of birth and gender')}
-    if(!hll){ui.obStep=1;render();return toast('Pick your home area from the list, or use your current location')}
-    if(f.ints.length<MIN_INTS)return toast(`Pick at least ${MIN_INTS} things you like doing`);
-    if(!f.avail.length)return toast("Pick when you're usually free");
+    const f=obKeep(),s=suLoad(),hll=await placeResolve(f.hood)||placeLL(f.hood,'o_hood');
+    if(!f.name)return toast('Add your first name');
+    if(!f.last)return toast('Add your last name');
+    if(!hll)return toast('Pick your home area from the list, or use your current location');
     if(!f.ok)return toast('Please agree to the Terms to continue');
-    const p={name:f.name,last_name:f.last,dob:f.dob,gender:f.gender,hood:f.hood,lat:hll[0],lng:hll[1],ints:f.ints,avail:f.avail,
-      emo:defEmo(f.gender),consent:true,terms:true,usage_ok:f.usage};
+    if(suStep(s)<SU_STEPS){ui.su=suStep(s);render();return}
+    const p={name:f.name,last_name:f.last,dob:s.dob,gender:s.gender,hood:f.hood,lat:hll[0],lng:hll[1],ints:s.ints,avail:s.avail,job:f.job||'',bio:f.bio||'',
+      emo:defEmo(s.gender),consent:true,terms:true,usage_ok:f.usage};
     e.target.closest('button').disabled=true;
     let r;try{r=await call('save_profile',{p})}catch(err){e.target.closest('button').disabled=false;return}
-    if(r?.error==='under18')return gone18();
-    OBF={};ui.obStep=0;
+    if(r?.error==='under18'){suClear();return gone18()}
+    OBF={};suClear();
     await refresh();
     track('profile_created');
   },
@@ -2664,10 +2801,10 @@ const A={
   obface:()=>openVerify('face',()=>render()),
   obfaceskip:()=>{ui.faceSkip=true;track('face_skipped');render()},
   doface:()=>openVerify('face',()=>render()),
-  obdone:async d=>{
-    const p={onboarded:true,...(d.save?{job:val('o_job'),bio:val('o_bio')}:{})};
-    if(await run('save_profile',{p})===undefined)return;
-    track('onboarding_done',{details:!!d.save});ui.tab='swipe';render();
+  /* sign-up finished (face check passed or skipped: onboardHtml calls this) */
+  obdone:async()=>{
+    if(await run('save_profile',{p:{onboarded:true}})===undefined){ui.obFin=false;ui.faceSkip=false;render();return}
+    track('onboarding_done',{face:!!S.me?.face});ui.tab='swipe';render();
   }
 };
 document.addEventListener('click',e=>{
@@ -2721,7 +2858,7 @@ document.addEventListener('keyup',e=>{if(e.target.classList?.contains('pwi'))cap
 document.addEventListener('mousedown',e=>{if(e.target.closest('.vopt'))e.preventDefault()});
 document.addEventListener('focusout',e=>{const id=e.target.id,box=PF[id]&&e.target.closest('.vbox');if(box)setTimeout(()=>{if(!box.contains(document.activeElement))placeList(id,false)},200)});
 document.addEventListener('change',e=>{
-  if(e.target.name==='o_int'||e.target.name==='p_int'){const el=document.getElementById(e.target.name+'_n'),n=many(e.target.name).length;if(el){el.textContent=intCount(n);el.classList.toggle('ok',n>=MIN_INTS)}}
+  if(e.target.name==='s_int'||e.target.name==='p_int'){const el=document.getElementById(e.target.name+'_n'),n=many(e.target.name).length;if(el){el.textContent=intCount(n);el.classList.toggle('ok',n>=MIN_INTS)}}
   if(e.target.name==='rt_ok'){const w=document.getElementById('rt_wrong');if(w)w.hidden=e.target.value!=='no'}   // "Something went wrong": still in danger, or report it
   if(e.target.id==='d_from'||e.target.id==='d_to'){
     const f=ui.f;f[e.target.id==='d_from'?'dfrom':'dto']=e.target.value;

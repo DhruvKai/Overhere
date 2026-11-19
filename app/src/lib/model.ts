@@ -159,6 +159,10 @@ export const trustedOf = (m: Model): { name: string; phone: string } | null => {
   const t = m.priv.trusted as { name?: unknown; phone?: unknown } | null | undefined;
   return t && typeof t.name === 'string' && typeof t.phone === 'string' && t.name && t.phone ? { name: t.name, phone: t.phone } : null;
 };
+/* The bell's number: unread updates newer than when you last opened Updates (priv.noteSeen, the newest one's time
+   then), so opening the list clears it until something new comes in. The same as bellCount() in web/app.js. */
+export const noteSeen = (m: Model): number => (typeof m.priv.noteSeen === 'number' ? m.priv.noteSeen : 0);
+export const bellCount = (m: Model): number => m.notes.filter(n => !n.read && (+n.at || 0) > noteSeen(m)).length;
 export const saved = (m: Model): string[] => (Array.isArray(m.priv.saved) ? (m.priv.saved as unknown[]).filter(isUuid) : []);
 export const audOK = (m: Model, a: Plan) => a.aud === 'everyone' || (!!m.profile && a.aud.includes(m.profile.gender));
 export const homeLL = (m: Model): [number, number] =>

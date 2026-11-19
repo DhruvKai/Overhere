@@ -3,7 +3,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Linking, ScrollView, Text, View } from 'react-native';
 import { Btn, Field, H, Icon, P } from '@/components/ui';
-import { trustedOf } from '@/lib/model';
+import { trustedOf, uname } from '@/lib/model';
 import { useModel, useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 
@@ -37,7 +37,9 @@ export default function Sos() {
   const findMe = () => { setLocState('wait'); locate(); };
 
   const where = loc ? `https://maps.google.com/?q=${loc.lat.toFixed(5)},${loc.lng.toFixed(5)}` : '';
-  const text = `SOS from Overhere: I need help.${a ? ` I'm at "${a.desc}" (${a.venue}).` : ''}${where ? ' My location: ' + where : ''} Please call me now.`;
+  /* the same message as the website's SOS sheet, one line per part */
+  const at = a ? (a.host === m.me ? `I'm hosting an activity at ${a.venue}.` : `I'm attending an activity with ${uname(m, a.host)} at ${a.venue}.`) : '';
+  const text = [`SOS from Overhere: I need help.${at ? ' ' + at : ''}`, where ? 'My location: ' + where : '', 'Please call me now.'].filter(Boolean).join('\n');
   const ph = tc ? tc.phone.replace(/[^\d+]/g, '') : '';
   const wa = ph.replace('+', '').replace(/^0?(\d{10})$/, '91$1');   // WhatsApp wants the country code
   const open = (url: string) => Linking.openURL(url).catch(() => toast("Couldn't open that on this phone"));

@@ -5,12 +5,15 @@ import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { CATS, canSave, homeLL, saved, whenStr, type Model, type Plan } from '@/lib/model';
 import { geo } from '@/lib/spots';
 import { useToggleSave } from '@/lib/store';
-import { SITE } from '@/lib/supabase';
+import { MAPKIT_JS } from '@/lib/mapkit-source';
+import { GOOGLE_MAPS_KEY, SITE } from '@/lib/supabase';
 import { R, useTheme } from '@/lib/theme';
 import { Btn, Icon, PlanRow, SaveToggle } from './ui';
 
-/* Discover's map, the same as the website's (drawMap in web/app.js): OpenStreetMap under Leaflet, in a WebView whose
-   page claims overhere.social as its address (Leaflet is loaded from the site). Pins closer than a finger's width
+/* Discover's map, the same as the website's (drawMap in web/app.js): Google Maps, or OpenStreetMap under Leaflet without
+   a key, through the site's map engine (web/mapkit.js, copied into the app as lib/mapkit-source.ts so it never depends on the
+   live site's version), in a WebView whose page claims overhere.social as its address (Leaflet loads from the site,
+   and Google sees the site's address, which the browser key allows). Pins closer than a finger's width
    merge into a numbered bubble that zooms in when tapped, or lists the plans when they share a spot. A tapped pin
    shows a preview card here, drawn natively; the WebView only tells us which plans were tapped. */
 const ICON: Record<string, string> = {   // the website's icons (lucide), inside the pins
@@ -20,45 +23,49 @@ const ICON: Record<string, string> = {   // the website's icons (lucide), inside
 };
 
 const page = (home: [number, number]) => `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<link rel="stylesheet" href="/vendor/leaflet/leaflet.css">
 <style>html,body,#m{margin:0;height:100%;background:#E8E4DA}
 .p{width:34px;height:34px;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 4px 10px rgba(0,0,0,.3)}
 .p svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .c{display:flex;align-items:center;justify-content:center;border-radius:50%;background:#3F7D4E;color:#fff;font:800 14px system-ui,sans-serif;border:3px solid #fff;box-shadow:0 0 0 6px rgba(63,125,78,.25),0 4px 10px rgba(0,0,0,.25)}
 .y{display:block;width:18px;height:18px;border-radius:50%;background:#3B82F6;border:3px solid #fff;box-shadow:0 0 0 7px rgba(59,130,246,.25)}
 .leaflet-control-attribution{font-size:10px}</style></head><body><div id="m"></div>
-<script src="/vendor/leaflet/leaflet.js" onerror="send({t:'err'})"></script>
+<script>${MAPKIT_JS.replace(/<\/script/gi, '<\\/script')}</script>
 <script>
 function send(o){window.ReactNativeWebView.postMessage(JSON.stringify(o))}
-var ICON=${JSON.stringify(ICON)},HOME=${JSON.stringify(home)},pins=[],m,layer;
+var ICON=${JSON.stringify(ICON)},HOME=${JSON.stringify(home)},KEY=${JSON.stringify(GOOGLE_MAPS_KEY)},pins=[],m=null;
 function draw(){
-  if(!m)return;layer.clearLayers();var groups=[];
-  pins.forEach(function(a){var p=m.latLngToLayerPoint([a.lat,a.lng]);var g=null;for(var i=0;i<groups.length;i++){if(groups[i].p.distanceTo(p)<40){g=groups[i];break}}if(g)g.items.push(a);else groups.push({p:p,items:[a]})});
+  if(!m)return;m.clearPins();var groups=[];
+  pins.forEach(function(a){var p=m.point([a.lat,a.lng]);var g=null;for(var i=0;i<groups.length;i++){if(groups[i].p.distanceTo(p)<40){g=groups[i];break}}if(g)g.items.push(a);else groups.push({p:p,items:[a]})});
   groups.forEach(function(g){
     if(g.items.length===1){var a=g.items[0];
-      L.marker([a.lat,a.lng],{icon:L.divIcon({className:'',iconSize:[34,34],iconAnchor:[17,17],html:'<span class="p" style="background:'+a.color+'"><svg viewBox="0 0 24 24">'+(ICON[a.cat]||'')+'</svg></span>'})})
-        .addTo(layer).on('click',function(){send({t:'pick',ids:[a.id]})});return}
-    var lat=0,lng=0;g.items.forEach(function(a){lat+=a.lat;lng+=a.lng});lat/=g.items.length;lng/=g.items.length;
-    var n=g.items.length,size=n<10?38:n<50?44:50,b=L.latLngBounds(g.items.map(function(a){return [a.lat,a.lng]}));
-    L.marker([lat,lng],{icon:L.divIcon({className:'',iconSize:[size,size],iconAnchor:[size/2,size/2],html:'<span class="c" style="width:'+size+'px;height:'+size+'px">'+n+'</span>'})})
-      .addTo(layer).on('click',function(){
-        if(m.getZoom()>=17||b.getNorthEast().distanceTo(b.getSouthWest())<30)send({t:'pick',ids:g.items.map(function(a){return a.id})});
-        else m.flyToBounds(b.pad(0.4),{maxZoom:17,duration:.5});
-      });
+      m.pin([a.lat,a.lng],{size:34,html:'<span class="p" style="background:'+a.color+'"><svg viewBox="0 0 24 24">'+(ICON[a.cat]||'')+'</svg></span>',onClick:function(){send({t:'pick',ids:[a.id]})}});return}
+    var lat=0,lng=0,lls=g.items.map(function(a){lat+=a.lat;lng+=a.lng;return [a.lat,a.lng]});lat/=g.items.length;lng/=g.items.length;
+    var n=g.items.length,size=n<10?38:n<50?44:50;
+    var span=MapKit.meters([Math.min.apply(null,lls.map(function(x){return x[0]})),Math.min.apply(null,lls.map(function(x){return x[1]}))],
+      [Math.max.apply(null,lls.map(function(x){return x[0]})),Math.max.apply(null,lls.map(function(x){return x[1]}))]);
+    m.pin([lat,lng],{size:size,z:10,html:'<span class="c" style="width:'+size+'px;height:'+size+'px">'+n+'</span>',onClick:function(){
+      if(m.zoom()>=17||span<30)send({t:'pick',ids:g.items.map(function(a){return a.id})});
+      else m.fit(lls,{maxZoom:17,fly:true,pad:0.4});
+    }});
   });
 }
-function fit(fly){var pts=[HOME].concat(pins.map(function(a){return [a.lat,a.lng]}));if(pts.length<2){m.setView(HOME,13);return}
-  var b=L.latLngBounds(pts).pad(0.12);if(fly)m.flyToBounds(b,{maxZoom:15,duration:.5});else m.fitBounds(b,{maxZoom:15})}
-function home(){m.flyTo(HOME,14,{duration:.5})}
+function fit(fly){if(m)m.fit([HOME].concat(pins.map(function(a){return [a.lat,a.lng]})),{maxZoom:15,fly:fly})}
+function home(){if(m)m.flyTo(HOME,14)}
 window.setPins=function(p,refit){pins=p;if(refit)fit(true);draw()};
-if(window.L){
-  m=L.map('m',{zoomControl:false}).setView(HOME,13);
-  m.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(m);
-  L.marker(HOME,{interactive:false,keyboard:false,icon:L.divIcon({className:'',iconSize:[18,18],iconAnchor:[9,9],html:'<span class="y"></span>'})}).addTo(m);
-  layer=L.layerGroup().addTo(m);m.on('zoomend',draw);m.on('click',function(){send({t:'clear'})});
-  send({t:'ready'});
+/* the map engine (web/mapkit.js): Google when the app has a key, Leaflet over OpenStreetMap otherwise or if Google
+   refuses the key (then the map is drawn again) */
+function start(){
+  MapKit.load(KEY).then(function(){
+    var el=document.getElementById('m');
+    if(m){m.remove();m=null}
+    m=MapKit.create(el,{center:HOME,zoom:13,zoomControl:false});
+    m.dot(HOME,{size:18,html:'<span class="y"></span>'});
+    m.on('zoom',draw);m.on('click',function(){send({t:'clear'})});
+    if(pins.length){fit(false);draw()}
+    send({t:'ready'});
+  },function(){send({t:'err'})});
 }
+if(window.MapKit){MapKit.onFail(start);start()}
 </script></body></html>`;
 
 export function PlanMap({ m, list }: { m: Model; list: Plan[] }) {

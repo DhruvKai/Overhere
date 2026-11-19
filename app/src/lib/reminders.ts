@@ -32,11 +32,11 @@ function due(m: Model): { notes: Note[]; actf: Record<string, Flags>; seenPost?:
       if (!f.reminded && left <= 2 * 3600e3) {
         set(a.id, { reminded: true, remind24: true });
         out.push({ kind: 'remind', title: 'Activity in 2 hours', tag: 'Soon', tone: 'warn', act: a.id, flags: [], key: 'remind2:' + a.id,
-          body: `"${d}" at ${a.venue} starts at ${new Date(a.when).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}. Don't be late!` });
+          body: `"${d}" starts at ${new Date(a.when).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.` });
       } else if (!f.remind24 && left <= 24 * 3600e3) {
         set(a.id, { remind24: true });
         out.push({ kind: 'remind', title: 'Coming up', tag: 'Within 24h', tone: 'warn', act: a.id, flags: [], key: 'remind24:' + a.id,
-          body: `"${d}" is ${whenStr(a.when).replace(/^(Today|Tomorrow)/, w => w.toLowerCase())} at ${a.venue}.` });
+          body: `"${d}" is ${whenStr(a.when).replace(/^(Today|Tomorrow)/, w => w.toLowerCase())} at ${a.venue.split(',')[0]}.` });
       }
     }
     /* After the plan the database asks: the host to record attendance (and reminds them daily), and the people the host
@@ -80,7 +80,7 @@ export function useReminders() {
         ...(seenPost !== undefined ? { seenPost } : {}),
       }));
       if (notes.length) {
-        toast(notes[0].title + ' · ' + notes[0].body);
+        toast(notes[0].body);   // the message alone: each one makes sense without its title
         Promise.all(notes.map(n => api.addNotification(n).catch(() => {}))).then(() => refresh());
       }
     };
