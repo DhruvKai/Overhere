@@ -1,17 +1,3 @@
--- =====================================================================================
--- Overhere shared app: accounts, activities, requests, chat and notifications.
--- Run this once in the Supabase SQL editor, after schema.sql. Running it again is safe:
--- it only replaces the functions, and the sample people and plans are added only once.
---
--- How it is protected: every table has row level security turned on and NO policies, so the
--- browser cannot read or change a table directly. The app only calls the functions at the
--- bottom of this file. Each one checks who is signed in (auth.uid()) and what they may do,
--- for example that a women-only plan is never sent to someone whose profile says Man.
--- =====================================================================================
-
--- ---------- tables ----------
-
--- One row per person. Real people use their login id; the 12 sample hosts have fixed ids and no login.
 create table if not exists profiles (
   id          uuid primary key,
   is_sample   boolean not null default false,
@@ -62,7 +48,6 @@ create table if not exists activities (
 create index if not exists activities_starts_idx on activities (starts_at);
 create index if not exists activities_host_idx on activities (host);
 
--- Join requests. Accepted requests are the members of an activity.
 create table if not exists requests (
   id         uuid primary key default gen_random_uuid(),
   act        uuid not null references activities(id) on delete cascade,
@@ -73,14 +58,10 @@ create table if not exists requests (
   unique (act, user_id)
 );
 create index if not exists requests_user_idx on requests (user_id);
--- 'monthly' repeats came later: widen the check on databases made before it.
 alter table activities drop constraint if exists activities_repeat_check;
 alter table activities add constraint activities_repeat_check check (repeat in ('weekly','biweekly','monthly'));
--- 'removed' (taken out of the group by the host) came later: widen the check on databases made before it.
 alter table requests drop constraint if exists requests_status_check;
 alter table requests add constraint requests_status_check check (status in ('pending','accepted','rejected','waitlist','left','removed'));
--- All of India came later (the beta started in three Chandigarh sectors): any home area, and coordinates for
--- homes and venues. Widen the checks and add the columns on databases made before it.
 alter table profiles drop constraint if exists profiles_hood_check;
 alter table profiles add constraint profiles_hood_check check (char_length(hood) between 1 and 80);
 alter table activities drop constraint if exists activities_hood_check;
@@ -96,18 +77,11 @@ update profiles set hood = hood || ', Chandigarh',
   lng = case hood when 'Sector 7' then 76.80 when 'Sector 22' then 76.77 else 76.78 end
 where hood in ('Sector 17','Sector 7','Sector 22') and lat is null;
 update activities set hood = hood || ', Chandigarh' where hood in ('Sector 17','Sector 7','Sector 22');
--- A home area named with its city twice ("Sector 17, Chandigarh, Chandigarh"): keep it once.
 update profiles set hood = regexp_replace(hood, ', ([^,]+), \1$', ', \1') where hood ~ ', ([^,]+), \1$';
 
--- ---------- the 7 Nov 2026 spec ----------
--- 13 categories. The first three keep their old keys: movies is Movie, cafe is Food, concerts is Concert.
--- Keep this list the same as CATS in web/app.js and app/src/lib/model.ts.
 alter table activities drop constraint if exists activities_cat_check;
 alter table activities add constraint activities_cat_check check (cat in ('fitness','movies','theatre','comedy','concerts','hangout',
   'cafe','adventure','outdoor','errands','work','selfcare','nightlife'));
--- Interests: the categories' own names and more specific ones, each counting towards a category in the apps
--- (INT_GROUPS in web/app.js and app/src/lib/model.ts). 'Fitness and sport' is now 'Fitness' (next to 'Sports'):
--- saved profiles are renamed here, and save_profile renames it when an older app sends it.
 alter table profiles drop constraint if exists profiles_ints_check;
 update profiles set ints = array_replace(ints, 'Fitness and sport', 'Fitness') where 'Fitness and sport' = any(ints);
 alter table profiles add constraint profiles_ints_check check (ints <@ array[
@@ -116,18 +90,13 @@ alter table profiles add constraint profiles_ints_check check (ints <@ array[
   'New restaurants','Coffee','Brunch','Cooking','Movies','Theatre','Stand-up comedy','Concerts','Live music',
   'Karaoke','Dancing','Nightlife','Hangout','Board games','Video games','Art and craft','Books','Volunteering',
   'Work and study','Co-working','Language exchange','Chores and errands','Shopping','Self care','Meditation']);
--- How long the plan takes, in hours (1 to 24). It sets when the host is asked to record attendance (_plan_end).
--- Plans from before get 2 hours.
 alter table activities add column if not exists duration_h int not null default 2;
 alter table activities drop constraint if exists activities_duration_check;
 alter table activities add constraint activities_duration_check check (duration_h between 1 and 24);
--- Every plan is platonic. The field is there so the data model says so; nothing else is allowed at launch.
 alter table activities add column if not exists intent text not null default 'platonic';
 alter table activities drop constraint if exists activities_intent_check;
 alter table activities add constraint activities_intent_check check (intent in ('platonic'));
 
--- Every time someone leaves a group: opting out (with their reason), removed by the host (with the host's reason),
--- or marked a no-show after the plan.
 create table if not exists exit_events (
   id         uuid primary key default gen_random_uuid(),
   act        uuid not null references activities(id) on delete cascade,
@@ -139,8 +108,6 @@ create table if not exists exit_events (
 );
 create index if not exists exit_events_act_idx on exit_events (act);
 
--- Someone left a plan that was full: the host is asked whether to put the spot back in discovery ('yes') or keep the
--- group as it is ('no': capacity drops to the people still going). Unanswered, the plan stays full.
 create table if not exists relist_prompts (
   id          uuid primary key default gen_random_uuid(),
   act         uuid not null references activities(id) on delete cascade,
@@ -152,8 +119,6 @@ create table if not exists relist_prompts (
 );
 create index if not exists relist_prompts_act_idx on relist_prompts (act);
 
--- Attendance, recorded by the host after the plan: 'show' or 'noshow' per member. Someone marked a no-show can say
--- what happened (reply) or dispute it (disputed, which also goes to the reports queue).
 create table if not exists attendance (
   act        uuid not null references activities(id) on delete cascade,
   user_id    uuid not null references profiles(id) on delete cascade,
@@ -166,12 +131,6 @@ create table if not exists attendance (
 );
 create index if not exists attendance_user_idx on attendance (user_id);
 
--- Words and phrases a plan's description can't contain (_bad_word). Add more in the SQL editor:
---   insert into blocked_terms (term) values ('some phrase');
--- A term ending in * also matches longer words that start with it ("fuck*" catches "fucking"). Matching ignores case,
--- look-alike characters (@ for a, 0 for o...), letters stretched out ("fuuuck") and letters spaced out ("s e x"), and
--- only matches whole words, so "Sussex" or "cocktail" are fine. The apps have a copy of the starting list
--- (BAD_TERMS in web/app.js and app/src/lib/words.ts) to warn while typing; this table is what decides.
 create table if not exists blocked_terms (
   term     text primary key check (char_length(term) between 2 and 60),
   added_at timestamptz not null default now()
@@ -226,8 +185,6 @@ create table if not exists notifications (
 );
 create index if not exists notifications_user_idx on notifications (user_id, created_at desc);
 
--- Phones that get push notifications (the Overhere app, expo-notifications). A token belongs to whoever signed in
--- last on that phone. Signing out unlinks it (user_id null) instead of deleting the row.
 create table if not exists push_tokens (
   token      text primary key check (char_length(token) <= 200),
   user_id    uuid references profiles(id) on delete cascade,
@@ -236,7 +193,6 @@ create table if not exists push_tokens (
 );
 create index if not exists push_tokens_user_idx on push_tokens (user_id);
 
--- After a meetup: did it go OK, how much you enjoyed it, and who showed up.
 create table if not exists ratings (
   act        uuid not null references activities(id) on delete cascade,
   rater      uuid not null references profiles(id) on delete cascade,
@@ -246,7 +202,6 @@ create table if not exists ratings (
   created_at timestamptz not null default now(),
   primary key (act, rater)
 );
--- After the plan, people the host marked as there rate the host as well as the plan.
 alter table ratings add column if not exists host_stars int;
 alter table ratings drop constraint if exists ratings_host_stars_check;
 alter table ratings add constraint ratings_host_stars_check check (host_stars is null or host_stars between 1 and 5);
@@ -269,14 +224,11 @@ create table if not exists blocks (
   primary key (blocker, blocked)
 );
 
--- Demo accounts (Kajal, Arjun, Neha): when someone signs in with one of these emails, the profile is made from here.
 create table if not exists profile_presets (
   email text primary key,
   data  jsonb not null
 );
 
--- A tiny table the app listens to (Supabase Realtime). A row changes when something changed for that
--- person, and the app reloads. The all-zero id is for everyone, e.g. when a new plan is posted.
 create table if not exists pings (
   user_id uuid primary key,
   at      timestamptz not null default now()
@@ -287,27 +239,17 @@ create table if not exists app_meta (
   v timestamptz not null
 );
 
--- Settings you change by hand in the SQL editor (see the comments on each).
 create table if not exists app_config (
   k text primary key,
   v text not null
 );
 insert into app_config (k, v) values
-  -- 'simulated': the check is pretend (anyone passes). 'live': only the Edge Functions in
-  -- supabase/functions, talking to a real provider, can mark it as passed. See face-scan.md.
   ('face_check', 'simulated'),
   ('id_check', 'simulated'),
-  -- 'on' only once Authentication -> Sign In / Providers -> Email has "Confirm email" switched on
-  -- (with your own SMTP). Then someone who signed up with the old beta form and makes an account with
-  -- the same email gets their details filled in. Google sign-ins always get it, because Google has
-  -- confirmed the email. Left 'off', nobody can claim someone else's email to see their details.
   ('prefill_email_signups', 'off'),
-  -- 'on' once the app's push notifications are set up (Firebase + EAS credentials, see app/PUSH-SETUP.md).
-  -- Then every notification also goes to the person's phones through Expo's push service.
   ('push', 'off')
 on conflict (k) do nothing;
 
--- Every face / ID check attempt. Never images or ID numbers, only the outcome.
 create table if not exists verifications (
   id         uuid primary key default gen_random_uuid(),
   seq        bigint generated always as identity,          -- order of attempts
@@ -322,26 +264,16 @@ create table if not exists verifications (
 );
 create index if not exists verifications_user_idx on verifications (user_id, kind, created_at desc);
 
--- Sign-ups from the old beta form are linked to the account made with the same email.
 alter table participants add column if not exists user_id uuid;
--- Usage statistics are opt-in: nothing is logged unless the person ticks "Share usage statistics" (onboarding or Profile).
 alter table profiles add column if not exists usage_ok boolean not null default false;
 
--- Profile photos (optional; the emoji shows when there are none). Files in the Storage bucket "avatars" at
--- <user id>/<16 random characters>.jpg, set only through set_photo. photo is the profile picture, photo2 a second
--- photo shown on the profile. The face check needs both and compares the live face with each.
 alter table profiles add column if not exists photo text;
 alter table profiles drop constraint if exists profiles_photo_check;
 alter table profiles add constraint profiles_photo_check check (photo is null or photo ~ '^[0-9a-f-]{36}/[0-9a-z]{16}\.jpg$');
 alter table profiles add column if not exists photo2 text;
--- Last name: asked at sign-up and in Edit profile. Only you see it: other people get `name` (the first name) from
--- app_state, never this column, and the table itself is closed to clients (revoke below). '' on accounts made before it.
 alter table profiles add column if not exists last_name text not null default '' check (char_length(last_name) <= 40);
 alter table profiles drop constraint if exists profiles_photo2_check;
 alter table profiles add constraint profiles_photo2_check check (photo2 is null or photo2 ~ '^[0-9a-f-]{36}/[0-9a-z]{16}\.jpg$');
--- The bucket: readable by link (the paths are only sent to signed-in people, in app_state), at most 200 KB a file
--- (the apps upload about 50 KB), JPEG only. People can add and delete files in their own folder only, never change
--- them: a new photo is a new file. The apps delete the old file after set_photo, and the photos on "Delete my account".
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('avatars', 'avatars', true, 204800, array['image/jpeg'])
 on conflict (id) do nothing;
@@ -349,7 +281,6 @@ drop policy if exists avatars_insert_own on storage.objects;
 create policy avatars_insert_own on storage.objects for insert to authenticated
   with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text
               and name ~ '^[0-9a-f-]{36}/[0-9a-z]{16}\.jpg$');
--- Storage only deletes files a person can also list, so they may list their own folder (everyone else reads by link).
 drop policy if exists avatars_select_own on storage.objects;
 create policy avatars_select_own on storage.objects for select to authenticated
   using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
@@ -377,8 +308,6 @@ alter table relist_prompts  enable row level security;
 alter table attendance      enable row level security;
 alter table blocked_terms   enable row level security;
 
--- Belt and braces: the browser roles get no table rights at all (reading pings is the one exception,
--- for Realtime). Without this, Supabase's default grants would rely on row level security alone.
 revoke all on table profiles, activities, requests, messages, poll_votes, notifications, ratings, reports, blocks,
   profile_presets, pings, app_meta, app_config, verifications, push_tokens, exit_events, relist_prompts, attendance,
   blocked_terms from anon, authenticated;
@@ -389,8 +318,6 @@ create policy "see your own pings" on pings for select to authenticated
   using (user_id = auth.uid() or user_id = '00000000-0000-0000-0000-000000000000');
 do $$ begin alter publication supabase_realtime add table pings; exception when others then null; end $$;
 
--- The old beta tables accept no direct writes from the browser any more: the sign-up form is gone, and usage
--- events and feedback go through log_event() and send_feedback() below, which set who sent them and limit how many.
 drop policy if exists "anyone can sign up" on participants;
 drop policy if exists "anyone can send feedback" on feedback;
 drop policy if exists "anyone can log events" on events;
@@ -398,17 +325,12 @@ drop policy if exists "signed-in people can log events" on events;
 revoke insert, update, delete on table participants, feedback, events from anon, authenticated;
 create index if not exists events_session_idx on events (session_id, created_at);
 create index if not exists events_participant_idx on events (participant_id, created_at);
--- Where each piece of feedback came from: 'landing' (the form on the home page), 'app:<way in>' (the feedback sheet in
--- the app: header, beta, profile, card or meetup), or 'micro:<moment>' (a line on why, after a quick question). Rows from
--- before this column are from the landing page. A line on why has no rating, so rating may be empty.
 alter table feedback add column if not exists source text;
 alter table feedback alter column rating drop not null;
 do $$ begin
   alter table feedback add constraint f_source check (source ~ '^(landing|app:[a-z]{1,12}|micro:[a-z_]{1,20})$');
 exception when duplicate_object then null; end $$;
 
--- Dashboard password: stored as a bcrypt hash (a plain one set with insert/update is hashed on save), and after
--- 20 wrong tries in 15 minutes the dashboard refuses every password until the 15 minutes pass.
 create extension if not exists pgcrypto with schema extensions;
 create table if not exists admin_fails (at timestamptz not null default now());
 alter table admin_fails enable row level security;
@@ -424,8 +346,6 @@ end $$;
 drop trigger if exists admin_secret_hash on admin_secret;
 create trigger admin_secret_hash before insert or update on admin_secret for each row execute function _admin_hash();
 update admin_secret set pass = pass where pass !~ '^\$2[abxy]\$[0-9]{2}\$';   -- hashes a password saved before this
-
--- ---------- internal helpers (not callable from the browser) ----------
 
 create or replace function _uid() returns uuid language plpgsql stable as $$
 declare u uuid := auth.uid();
@@ -464,14 +384,10 @@ create or replace function _spots(p_act uuid) returns int language sql stable as
 create or replace function _blocked(x uuid, y uuid) returns boolean language sql stable as $$
   select exists (select 1 from blocks where (blocker = x and blocked = y) or (blocker = y and blocked = x)) $$;
 
--- Is this activity open to this person? Audience (gender) and blocks in either direction.
--- Plans limited to some genders (e.g. women-only) are shown only to people whose face check has passed.
--- The ID check is switched off for now, so the gender is what the person typed in; the host still approves every request.
 create or replace function _eligible(a activities, viewer uuid) returns boolean language sql stable as $$
   select (a.audience is null or exists (select 1 from profiles p where p.id = viewer and p.face and p.gender = any (a.audience)))
      and not _blocked(viewer, a.host) $$;
 
--- A notification for one person. Sample people never get any. With a key, the same one is not sent twice.
 create or replace function _note(p_user uuid, p_kind text, p_title text, p_tag text, p_tone text, p_act uuid,
                                  p_body text, p_flags text[] default '{}', p_key text default null)
 returns void language plpgsql as $$
@@ -490,7 +406,6 @@ create or replace function _fill_up(p_act uuid) returns void language plpgsql as
 declare a activities; r record;
 begin
   select * into a from activities where id = p_act;
-  -- full: the plan leaves discovery, and requests still waiting are closed (nobody waits for a spot)
   update activities set status = 'full' where id = p_act;
   for r in select * from requests where act = p_act and status in ('pending', 'waitlist') loop
     update requests set status = 'rejected' where id = r.id;
@@ -500,19 +415,13 @@ begin
   perform _note(a.host, 'update', 'Activity full', 'Full', 'acc', p_act, format('Your activity "%s" is now full.', _short(a.description)));
 end $$;
 
--- When a plan ends: its start plus how long the host said it takes.
 create or replace function _plan_end(a activities) returns timestamptz language sql immutable as $$
   select a.starts_at + make_interval(hours => a.duration_h) $$;
 
--- Attendance reminders only for plans that end after this feature arrived, so older plans never block anyone.
 insert into app_meta (k, v) values ('attendance_since', now()) on conflict (k) do nothing;
 create or replace function _attendance_since() returns timestamptz language sql stable as $$
   select coalesce((select v from app_meta where k = 'attendance_since'), now()) $$;
 
--- Text reduced to plain words for _bad_word: lower case, look-alike characters swapped back (@ -> a, 0 -> o, 1 -> i,
--- 3 -> e, 5 and $ -> s, 7 -> t, ! -> i, | -> l), everything else a space, a letter repeated 3+ times kept once
--- ("fuuuck"), and letters spaced out one by one joined up ("s e x"). Wrapped in spaces for whole-word matching.
--- normWords in web/app.js and app/src/lib/words.ts do the same.
 create or replace function _norm_words(t text) returns text language sql immutable as $$
   select ' ' || btrim(regexp_replace(regexp_replace(regexp_replace(
            translate(lower(coalesce(t, '')), '@40135$7!|', 'aaoiesstil'),
@@ -520,7 +429,6 @@ create or replace function _norm_words(t text) returns text language sql immutab
            '([a-z])\1{2,}', '\1', 'g'),
            '\m([a-z]) (?=[a-z]\M)', '\1', 'g')) || ' ' $$;
 
--- The first blocked term (blocked_terms) in a text, or null when it's clean.
 create or replace function _bad_word(t text) returns text language plpgsql stable as $$
 declare n text := _norm_words(t); b record; w text;
 begin
@@ -558,7 +466,6 @@ begin
   perform _ping(array[a.host] || _members(a.id));
 end $$;
 
--- The host made room (edit_activity): reopen a full plan, unless a "relist the spot?" question is still open.
 create or replace function _spot_opened(p_act uuid) returns void language plpgsql as $$
 begin
   update activities a set status = 'open'
@@ -566,8 +473,6 @@ begin
     and not exists (select 1 from relist_prompts p where p.act = p_act and p.answer is null);
 end $$;
 
--- Someone leaves a group, by opting out or being removed. If the plan was full, the host is asked whether to relist
--- the spot (relist_prompts, answered with relist_spot); until then it stays full. Sample hosts relist straight away.
 create or replace function _exit(p_act uuid, p_user uuid, p_kind text, p_reason text, p_by uuid) returns void language plpgsql as $$
 declare a activities; eid uuid; was_full boolean;
 begin
@@ -588,7 +493,6 @@ begin
   end if;
 end $$;
 
--- One chat notification per chat per person: it is updated (and marked unread) instead of piling up.
 create or replace function _chat_note(p_act uuid, p_from uuid, p_text text) returns void language plpgsql as $$
 declare a activities; p uuid;
 begin
@@ -603,7 +507,6 @@ begin
   end loop;
 end $$;
 
--- Clock helpers for the sample plans (Chandigarh time).
 create or replace function _t_next(hr int, mi int default 0) returns timestamptz language sql stable as $$
   select case when t < now() + interval '1 hour' then t + interval '1 day' else t end
   from (select (((now() at time zone 'Asia/Kolkata')::date + make_time(hr, mi, 0)) at time zone 'Asia/Kolkata') t) x $$;
@@ -611,10 +514,6 @@ create or replace function _t_next(hr int, mi int default 0) returns timestamptz
 create or replace function _t_at(d int, hr int, mi int default 0) returns timestamptz language sql stable as $$
   select ((((now() at time zone 'Asia/Kolkata')::date + d) + make_time(hr, mi, 0)) at time zone 'Asia/Kolkata') $$;
 
--- Runs at most every 2 minutes, from app_state():
---  * repeating plans get their next occurrence once they pass
---  * sample plans move forward so the app never runs empty; if real people joined one, it stays in
---    their history and a fresh copy is posted instead
 create or replace function _housekeeping() returns void language plpgsql as $$
 declare a activities; nid uuid; nxt timestamptz; step interval; n_step int; n_rem int;
 begin
@@ -624,7 +523,6 @@ begin
 
   for a in select * from activities where repeat is not null and next_id is null and sample_period is null and starts_at <= now() loop
     step := case a.repeat when 'monthly' then interval '1 month' when 'biweekly' then interval '14 days' else interval '7 days' end;
-    -- months differ in length, so step from the first date (the 31st stays the 31st or the month's last day)
     n_step := greatest(1, floor(extract(epoch from now() - a.starts_at) / extract(epoch from step))::int - 1);
     loop nxt := a.starts_at + step * n_step; exit when nxt > now(); n_step := n_step + 1; end loop;
     insert into activities (host, cat, description, cap, starts_at, audience, venue, cost, total, hood, lat, lng, repeat, duration_h)
@@ -652,8 +550,6 @@ begin
     end if;
   end loop;
 
-  -- After the plan: the host is asked to rate it and record attendance once it ends, then reminded every 24 hours,
-  -- three times (keys close:<plan>:0 to 3). Three reminders on, the apps block until it's done (app_state 'due').
   for a in select x.* from activities x
            where x.starts_at > now() - interval '32 days' and x.starts_at <= now()
              and _plan_end(x) <= now() and _plan_end(x) >= _attendance_since() and not _is_sample(x.host)
@@ -666,8 +562,6 @@ begin
       '{check}', 'close:' || a.id || ':' || n_rem);
   end loop;
 
-  -- Logins that never finished sign-up (no profile after 7 days, for example someone under 18 who stopped at the
-  -- date of birth) are deleted, so nothing from the attempt is kept. Demo accounts (profile_presets) are kept.
   delete from auth.users x where x.created_at < now() - interval '7 days'
     and not exists (select 1 from profiles p where p.id = x.id)
     and not exists (select 1 from profile_presets pp where pp.email = lower(coalesce(x.email, '')));
@@ -685,8 +579,6 @@ begin
     (p_act, other,   false, 'You can make polls and share plans here.',    now() - interval '50 minutes');
 end $$;
 
--- ---------- verification (face scan and ID check) ----------
-
 create or replace function _simulated(p_kind text) returns boolean language sql stable as $$
   select coalesce((select v from app_config where k = case p_kind when 'face' then 'face_check' else 'id_check' end), 'simulated') = 'simulated' $$;
 
@@ -694,25 +586,15 @@ create or replace function _modes() returns jsonb language sql stable as $$
   select jsonb_build_object('face', case when _simulated('face') then 'simulated' else 'live' end,
                             'kyc',  case when _simulated('kyc')  then 'simulated' else 'live' end) $$;
 
--- May this sign-in see details from the old beta sign-up form with the same email? Only when the email is proven.
 create or replace function _may_prefill() returns boolean language sql stable as $$
   select coalesce(auth.jwt() -> 'app_metadata' ->> 'provider', '') = 'google'
       or (coalesce((select v from app_config where k = 'prefill_email_signups'), 'off') = 'on'
           and exists (select 1 from auth.users where id = auth.uid() and email_confirmed_at is not null)) $$;
 
--- Tries allowed per check before a person on the team has to review it. Every try counts: a live check counts when
--- it starts (so cancelled, abandoned or broken scans count too), a simulated one when it fails.
 create or replace function _verify_max() returns int language sql immutable as $$ select 5 $$;
 
--- How long the check is paused after the last allowed try. The person also goes to the /addmin review queue; if
--- nobody has decided by then, they get _verify_max() fresh tries (and stay in the queue until someone decides).
 create or replace function _verify_block() returns interval language sql immutable as $$ select interval '24 hours' $$;
 
--- Per check:
---   attempts, fails: tries and failures since the last pass, reviewer decision or pause (a pause that has run out
---                    gives fresh tries)
---   review:          paused right now (the last allowed try was less than _verify_block() ago); until: when it ends
---   pending:         waiting in the /addmin review queue (paused at least once since the last pass or decision)
 create or replace function _verify_state(p_user uuid) returns jsonb language sql volatile as $$
   select jsonb_object_agg(k, jsonb_build_object(
     'fails', (select count(*) from verifications v where v.user_id = p_user and v.kind = k and v.status = 'failed' and v.seq > b.reset),
@@ -728,8 +610,6 @@ create or replace function _verify_state(p_user uuid) returns jsonb language sql
   cross join lateral (select greatest(d.dec, coalesce(max(w.seq), 0)) reset, max(w.created_at) paused_at
                       from verifications w where w.user_id = p_user and w.kind = k and w.status = 'review' and w.seq > d.dec) b $$;
 
--- Pause further tries for _verify_block() and put the person in the /addmin review queue, telling them what happens
--- next. The face-start / face-result Edge Functions then email the team (verify_alert_claim_service).
 create or replace function _verify_to_review(p_user uuid, p_kind text, p_provider text) returns void language plpgsql as $$
 begin
   if (_verify_state(p_user) -> p_kind ->> 'review')::boolean then return; end if;
@@ -741,7 +621,6 @@ begin
   perform _ping(array[p_user]);
 end $$;
 
--- Record one attempt. A pass sets the profile flag; a failure on the last allowed try sends it to human review.
 create or replace function _verify_record(p_user uuid, p_kind text, p_passed boolean, p_provider text, p_session text,
                                           p_score numeric, p_detail jsonb) returns text language plpgsql as $$
 declare st text;
@@ -761,9 +640,6 @@ begin
   return st;
 end $$;
 
--- ---------- functions the app calls ----------
-
--- Simulated checks, only while app_config face_check / id_check = 'simulated'. p_pass = false lets you test failures.
 drop function if exists verify_simulated(text, boolean);
 create or replace function verify_simulated(p_kind text, p_pass boolean default true, p_consent boolean default false) returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -783,11 +659,6 @@ begin
   return jsonb_build_object('status', st, 'verify', _verify_state(u));
 end $$;
 
--- Set or clear (null) one of your two photos, after uploading the file to your folder in "avatars": slot 1 is the
--- profile picture, slot 2 the second photo. Clearing slot 1 clears both (you're back to your emoji), and slot 2 can
--- only be set once there is a slot 1. A passed face check was matched against the old photos, so any change clears
--- the check (it has to be done again). The verification history is kept. Returns the old paths, which the app then
--- deletes from Storage.
 drop function if exists set_photo(text);
 create or replace function set_photo(p_path text, p_slot int default 1) returns jsonb language plpgsql security definer set search_path = public as $$
 declare u uuid := _uid(); old text; old2 text; was_face boolean;
@@ -813,10 +684,6 @@ begin
   return jsonb_build_object('old', old, 'old2', old2, 'face_reset', was_face);
 end $$;
 
--- Called only by the Edge Functions (service role), never by the browser. See supabase/functions.
--- verify_precheck_service runs before anything is asked of the provider, so refused attempts cost nothing.
--- Returns {status: 'ok'} to go ahead, or {status: 'review', verify} once the tries are used up: the person is then
--- blocked and put in the review queue (recorded here, so it is not an error that would undo it).
 drop function if exists verify_precheck_service(uuid, text);
 create or replace function verify_precheck_service(p_user uuid, p_kind text) returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -825,7 +692,6 @@ begin
   if p_kind not in ('face', 'kyc') then raise exception 'Unknown check'; end if;
   if _simulated(p_kind) then raise exception 'This check is set to simulated in app_config'; end if;
   if not exists (select 1 from profiles where id = p_user) then raise exception 'Finish your profile first'; end if;
-  -- the live face is compared with both photos (face-result), so there have to be two
   if p_kind = 'face' and exists (select 1 from profiles where id = p_user and (photo is null or photo2 is null)) then
     raise exception 'Add two photos of your face first';
   end if;
@@ -844,7 +710,6 @@ end $$;
 create or replace function verify_start_service(p_user uuid, p_kind text, p_provider text, p_session text) returns void
 language plpgsql security definer set search_path = public as $$
 begin
-  -- one start at a time per person, so two tabs can't both take the last try
   perform pg_advisory_xact_lock(hashtext('verify:' || p_user::text));
   if (verify_precheck_service(p_user, p_kind) ->> 'status') <> 'ok'
      or (_verify_state(p_user) -> p_kind ->> 'attempts')::int >= _verify_max() then
@@ -857,7 +722,6 @@ end $$;
 create or replace function verify_finish_service(p_user uuid, p_kind text, p_session text, p_passed boolean, p_score numeric, p_detail jsonb)
 returns text language plpgsql security definer set search_path = public as $$
 begin
-  -- the session must be one this person started in the last 30 minutes, and not already used
   if not exists (select 1 from verifications where user_id = p_user and kind = p_kind and session_id = p_session
                  and status = 'started' and created_at > now() - interval '30 minutes') then
     raise exception 'Unknown or expired check';
@@ -869,23 +733,18 @@ begin
                         p_session, p_score, p_detail);
 end $$;
 
--- Distance in km between two points (haversine).
 create or replace function _km(lat1 float8, lng1 float8, lat2 float8, lng2 float8) returns float8 language sql immutable as $$
   select 12742 * asin(least(1, sqrt(power(sin(radians(lat2 - lat1) / 2), 2)
                                     + cos(radians(lat1)) * cos(radians(lat2)) * power(sin(radians(lng2 - lng1) / 2), 2)))) $$;
 
--- Is plan a within 50 km of home? People and plans from before coordinates were all in Chandigarh.
 create or replace function _near(a activities, h_lat float8, h_lng float8) returns boolean language sql immutable as $$
   select _km(coalesce(h_lat, 30.74), coalesce(h_lng, 76.78), coalesce(a.lat, 30.74), coalesce(a.lng, 76.78)) <= 50 $$;
 
--- The cities with sample plans. Someone whose home area is more than 50 km from all of them also sees the nearest
--- city's plans, and anyone can pick a city to browse (saved in profiles.state as 'city': a key below, or 'home').
 create or replace function _cities() returns table (k text, name text, lat float8, lng float8) language sql immutable as $$
   values ('chd', 'Chandigarh', 30.7333::float8, 76.7794::float8), ('del', 'Delhi NCR', 28.6139, 77.2090),
          ('mum', 'Mumbai', 19.0760, 72.8777), ('pun', 'Pune', 18.5204, 73.8567), ('blr', 'Bengaluru', 12.9716, 77.5946),
          ('hyd', 'Hyderabad', 17.3850, 78.4867), ('chn', 'Chennai', 13.0827, 80.2707), ('amd', 'Ahmedabad', 23.0225, 72.5714) $$;
 
--- Everything the signed-in person may see, in one go. p_act: a plan opened from an invite link, included even when far away.
 drop function if exists app_state();
 drop function if exists app_state(uuid);
 create or replace function app_state(p_act uuid default null) returns jsonb language plpgsql security definer set search_path = public as $$
@@ -903,7 +762,6 @@ begin
   if not found then
     select data into pre from profile_presets where email = em;
     if pre is not null then
-      -- Demo accounts start verified only while checks are simulated; in live mode they verify like anyone else.
       insert into profiles (id, email, name, dob, gender, hood, lat, lng, job, bio, ints, avail, emo, face, kyc, onboarded, trust_met, trust_shows, hist)
       values (u, em, pre->>'name', (pre->>'dob')::date, pre->>'gender', pre->>'hood', (pre->>'lat')::float8, (pre->>'lng')::float8,
               coalesce(pre->>'job', ''), coalesce(pre->>'bio', ''),
@@ -924,10 +782,6 @@ begin
     end if;
   end if;
 
-  -- Anyone can browse; posting and asking to join need the face check (post_activity, request_join).
-
-  -- Plans near home are always included. Besides those: the city picked to browse, or, when no city is within 50 km
-  -- of home and nothing was picked, the nearest city (v_auto).
   pick := prof.state ->> 'city';
   select c.k, c.lat, c.lng into v_city, v_lat, v_lng from _cities() c where c.k = pick;
   if v_city is null and pick is distinct from 'home'
@@ -937,13 +791,11 @@ begin
     v_auto := true;
   end if;
 
-  -- Upcoming plans near this person and open to them, plus anything they host or asked to join (up to 90 days back).
   select coalesce(array_agg(a.id), '{}') into act_ids from activities a
   where (a.starts_at > now() and a.host <> u and _eligible(a, u)
          and (_near(a, prof.lat, prof.lng) or (v_city is not null and _near(a, v_lat, v_lng)) or a.id = p_act))
      or ((a.host = u or exists (select 1 from requests r where r.act = a.id and r.user_id = u)) and a.starts_at > now() - interval '90 days');
 
-  -- Plans whose members and chat this person may see: hosting, or accepted.
   select coalesce(array_agg(a.id), '{}') into chat_ids from activities a
   where a.id = any (act_ids)
     and (a.host = u or exists (select 1 from requests r where r.act = a.id and r.user_id = u and r.status = 'accepted'));
@@ -952,10 +804,8 @@ begin
       'id', a.id, 'host', a.host, 'cat', a.cat, 'desc', a.description, 'cap', a.cap, 'when', _ms(a.starts_at),
       'aud', a.audience, 'venue', a.venue, 'cost', a.cost, 'total', a.total, 'hood', a.hood, 'lat', a.lat, 'lng', a.lng, 'repeat', a.repeat,
       'status', a.status, 'created', _ms(a.created_at), 'mcount', cardinality(m.ms), 'dur', a.duration_h,
-      -- the host: open "relist the spot?" questions, and whether attendance is recorded
       'relist', case when a.host = u then (select count(*) from relist_prompts p where p.act = a.id and p.answer is null) else 0 end,
       'att_done', exists (select 1 from ratings g where g.act = a.id and g.rater = a.host),
-      -- a member: how the host marked them ('show' / 'noshow'), and whether a no-show already replied
       'my_att', (select t.status from attendance t where t.act = a.id and t.user_id = u),
       'my_reply', exists (select 1 from attendance t where t.act = a.id and t.user_id = u and t.replied_at is not null),
       'members', case when a.id = any (chat_ids) then to_jsonb(m.ms) else '[]'::jsonb end,
@@ -983,7 +833,6 @@ begin
       union all select blocked from blocks where blocker = u
       union all select (f.v)::uuid from jsonb_array_elements_text(coalesce(prof.state -> 'following', '[]')) f(v)
         where f.v ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-          -- only people who host a plan this person could see, so a made-up follow can't reveal someone's profile
           and exists (select 1 from activities a where a.host = (f.v)::uuid and _eligible(a, u)
                       and (_near(a, prof.lat, prof.lng) or (v_city is not null and _near(a, v_lat, v_lng))))
       union all select u) s where x is not null)
@@ -996,10 +845,6 @@ begin
       'noshows', greatest(p.trust_met - p.trust_shows, 0) + coalesce(t.noshows, 0))), '[]')
   into j_people from profiles p
   left join lateral (
-    -- Reliability, no formula: meetups (plans that have ended where they were an accepted member, or the host with
-    -- people going), and how often the host marked them there or a no-show. Meetups count as soon as the plan ends;
-    -- the other two once the host records attendance. Plans from before attendance existed count by the old check-ins,
-    -- where the majority of the people who rated decided.
     select (select count(*)::int from requests r join activities x on x.id = r.act
              where r.user_id = p.id and r.status = 'accepted' and _plan_end(x) <= now())
          + (select count(*)::int from activities x where x.host = p.id and _plan_end(x) <= now()
@@ -1018,14 +863,11 @@ begin
 
   select coalesce(jsonb_agg(jsonb_build_object('act', act, 'ok', ok, 'stars', stars, 'host_stars', host_stars, 'people', people, 'at', _ms(created_at))), '[]')
   into j_rat from ratings where rater = u;
-  -- Plans this person hosted that ended and still need a rating and attendance. overdue: three reminders have gone
-  -- (one a day) with no answer, so the apps ask for it before anything else.
   select coalesce(jsonb_agg(jsonb_build_object('act', x.id, 'overdue', now() >= _plan_end(x) + interval '96 hours')), '[]') into j_due
   from activities x
   where x.host = u and x.starts_at > now() - interval '90 days' and _plan_end(x) <= now() and _plan_end(x) >= _attendance_since()
     and exists (select 1 from requests r where r.act = x.id and r.status = 'accepted')
     and not exists (select 1 from ratings g where g.act = x.id and g.rater = u);
-  -- how many audience-limited plans unlock after the face check (the app says so, without showing them)
   select count(*) into n_locked from activities a
   where not prof.face and a.audience is not null and prof.gender = any (a.audience) and a.starts_at > now()
     and not _blocked(u, a.host) and (_near(a, prof.lat, prof.lng) or (v_city is not null and _near(a, v_lat, v_lng)));
@@ -1041,9 +883,6 @@ begin
     'terms_v', 'app-v2');   -- the Terms version the app asks people to agree to (see accept_terms)
 end $$;
 
--- Why a plan from an invite link isn't in someone's app_state, so the app can say so instead of "no longer available":
--- 'gone' (cancelled, or the host blocked them), 'past', 'audience' (limited to other groups), 'verify' (limited to their
--- group, which they see after the face check), or 'ok'.
 create or replace function invite_info(p_act uuid) returns text language plpgsql security definer set search_path = public as $$
 declare u uuid := _uid(); a activities; me profiles;
 begin
@@ -1056,9 +895,6 @@ begin
   return 'ok';
 end $$;
 
--- Create or update your own profile. Only the fields sent are changed. Returns null when saved.
--- Age: Overhere is 18+. A first profile with a date of birth under 18 is refused, and the login made a moment
--- earlier (phone or email) is deleted, so nothing from the attempt is kept. Returns {"error":"under18"}.
 drop function if exists save_profile(jsonb);
 create or replace function save_profile(p jsonb) returns jsonb language plpgsql security definer set search_path = public as $$
 declare u uuid := _uid(); em text := lower(coalesce(auth.jwt() ->> 'email', '')); cur profiles; b date;
@@ -1071,27 +907,21 @@ begin
     delete from auth.users where id = u;    -- no profile exists yet, so this removes everything from the attempt
     return jsonb_build_object('error', 'under18');
   end if;
-  -- older apps still send 'Fitness and sport', which is now 'Fitness'
   if jsonb_typeof(p->'ints') = 'array' then
     p := jsonb_set(p, '{ints}', (select coalesce(jsonb_agg(case when v = 'Fitness and sport' then 'Fitness' else v end order by o), '[]'::jsonb)
                                  from jsonb_array_elements_text(p->'ints') with ordinality e(v, o)));
   end if;
-  -- at least 3 interests and one time you're usually free: at sign-up, and whenever a save sends the list (saves of
-  -- other fields leave it alone). Not a table check, so older accounts with none stay valid until they next edit.
   if (not found or p ? 'ints') and jsonb_array_length(coalesce(p->'ints', '[]')) < 3 then
     raise exception 'Pick at least 3 things you like doing';
   end if;
   if (not found or p ? 'avail') and jsonb_array_length(coalesce(p->'avail', '[]')) = 0 then
     raise exception 'Pick when you''re usually free';
   end if;
-  -- a last name can't be blank when one is sent; apps from before it don't send one, so they can still sign people up
   if p ? 'last_name' and btrim(coalesce(p->>'last_name', '')) = '' then
     raise exception 'Add your last name';
   end if;
   if found then
     if b is not null and b > current_date - interval '18 years' then raise exception 'You must be 18 or over to use Overhere'; end if;
-    -- Gender and date of birth are fixed once given at sign-up (sign-up says so); a mistake is fixed by a person, by
-    -- email. An older account without one can still add it, once.
     if (p ? 'gender' and cur.gender is not null and p->>'gender' is distinct from cur.gender)
        or (p ? 'dob' and cur.dob is not null and (p->>'dob')::date is distinct from cur.dob) then
       raise exception 'Your date of birth and gender can''t be changed. If one is wrong, please email us.';
@@ -1110,10 +940,8 @@ begin
       avail  = case when p ? 'avail' then array(select jsonb_array_elements_text(p->'avail')) else avail end,
       emo    = coalesce(p->>'emo', emo),
       usage_ok = coalesce((p->>'usage_ok')::boolean, usage_ok),
-      -- the face check is optional at sign-up; face and kyc themselves are never set here
       onboarded = onboarded or coalesce((p->>'onboarded')::boolean, false)
     where id = u;
-    -- turning usage statistics off also deletes the ones already collected
     if p->>'usage_ok' = 'false' then delete from events where participant_id = u; end if;
   else
     if coalesce(p->>'consent', '') <> 'true' then raise exception 'Please tick the consent box to continue'; end if;
@@ -1130,13 +958,11 @@ begin
   return null;
 end $$;
 
--- Accounts made before the Terms existed agree to them once (the app asks). Bump the version with any change to terms.html.
 create or replace function accept_terms() returns void language plpgsql security definer set search_path = public as $$
 begin
   update profiles set consent_version = 'app-v2', consent_at = now() where id = _uid();
 end $$;
 
--- Private settings: alerts, who you follow, muted chats, trusted contact, dismissed cards...
 create or replace function save_state(s jsonb) returns void language plpgsql security definer set search_path = public as $$
 begin
   if jsonb_typeof(s) <> 'object' then raise exception 'Bad settings'; end if;
@@ -1155,17 +981,14 @@ begin
   st := to_timestamp((p->>'when')::double precision / 1000);
   if st <= now() then raise exception 'Pick a future date and time'; end if;
   if st > now() + interval '1 year' then raise exception 'Pick a date within the next year'; end if;
-  -- capacity counts guests only (the host comes on top): 2 to 10
   v_cap := (p->>'cap')::int;
   if v_cap is null or v_cap not between 2 and 10 then raise exception 'Pick between 2 and 10 people'; end if;
-  -- older apps don't send a duration: 2 hours
   v_dur := coalesce(nullif(p->>'dur', '')::int, 2);
   if v_dur not between 1 and 24 then raise exception 'Pick a duration between 1 and 24 hours'; end if;
   perform _check_words(p->>'desc');
   insert into activities (host, cat, description, cap, starts_at, audience, venue, cost, total, hood, lat, lng, repeat, duration_h)
   values (u, p->>'cat', trim(p->>'desc'), v_cap, st,
           case when jsonb_typeof(p->'aud') = 'array' then array(select jsonb_array_elements_text(p->'aud')) end,
-          -- no venue spot (an app still open from before venues had one): pin it at the host's home area
           trim(p->>'venue'), p->>'cost', nullif((p->>'total')::int, 0), me.hood,
           case when p->>'lat' is null or p->>'lng' is null then me.lat else (p->>'lat')::float8 end,
           case when p->>'lat' is null or p->>'lng' is null then me.lng else (p->>'lng')::float8 end,
@@ -1186,7 +1009,6 @@ begin
   if st > now() + interval '1 year' then raise exception 'Pick a date within the next year'; end if;
   ms := _members(p_act);
   v_cap := (p->>'cap')::int;
-  -- 2 to 10, or what it already is (keeping the group as it was can leave a plan with fewer than 2)
   if v_cap is null or (v_cap not between 2 and 10 and v_cap <> a.cap) then raise exception 'Pick between 2 and 10 people'; end if;
   if v_cap < cardinality(ms) then raise exception 'Capacity can''t be less than the people already going'; end if;
   v_dur := coalesce(nullif(p->>'dur', '')::int, a.duration_h);
@@ -1208,7 +1030,6 @@ begin
   if _spots(p_act) <= 0 then
     if a.status = 'open' then perform _fill_up(p_act); end if;
   else
-    -- making room answers any open "relist the spot?" question with yes
     update relist_prompts set answer = 'yes', answered_at = now() where act = p_act and answer is null;
     perform _spot_opened(p_act);
   end if;
@@ -1231,7 +1052,6 @@ begin
   perform _ping(others || '00000000-0000-0000-0000-000000000000'::uuid);
 end $$;
 
--- Ask to join. Returns 'pending', or 'accepted' (sample hosts say yes straight away).
 create or replace function request_join(p_act uuid, p_note text) returns text language plpgsql security definer set search_path = public as $$
 declare u uuid := _uid(); me profiles; a activities; rid uuid;
 begin
@@ -1246,7 +1066,6 @@ begin
   if a.host = u then raise exception 'This is your own activity'; end if;
   if not _eligible(a, u) then raise exception 'This activity isn''t open to you'; end if;
   if exists (select 1 from requests where act = p_act and user_id = u) then raise exception 'You already asked to join this one'; end if;
-  -- no waitlist: a full plan isn't in discovery, and can't be asked to join
   if a.status = 'full' or _spots(p_act) <= 0 then raise exception 'This plan is full'; end if;
   insert into requests (act, user_id, note, status) values (p_act, u, left(coalesce(p_note, ''), 100), 'pending') returning id into rid;
   perform _note(a.host, 'req', 'New join request', 'Pending', 'warn', p_act, format('%s wants to join "%s".', me.name, _short(a.description)));
@@ -1276,15 +1095,11 @@ begin
     if _spots(a.id) <= 0 then raise exception 'This activity is full'; end if;
     perform _accept(p_req);
   else
-    -- a rejection is silent: the requester gets no message (their app shows the request as closed)
     update requests set status = 'rejected' where id = p_req;
   end if;
   perform _ping(array[u, r.user_id]);
 end $$;
 
--- Opt out, with a reason from the list in the apps or the person's own words. The host and the group chat are told,
--- with the reason. The two safety reasons are kept private (the group, which may include whoever made them feel that
--- way, only sees that they left) and flag the plan for review in the reports queue.
 drop function if exists leave_activity(uuid);
 create or replace function leave_activity(p_act uuid, p_reason text default null) returns void language plpgsql security definer set search_path = public as $$
 declare u uuid := _uid(); a activities; why text := left(btrim(coalesce(p_reason, '')), 200); private boolean;
@@ -1306,8 +1121,6 @@ begin
   perform _ping(array[u, a.host] || _members(p_act));
 end $$;
 
--- The host takes someone out of the group, with a reason, which the person and the group chat see. They can't ask to
--- join this plan again. If it was full, the host is asked whether to relist the spot.
 drop function if exists remove_member(uuid, uuid);
 create or replace function remove_member(p_act uuid, p_user uuid, p_reason text default null) returns void language plpgsql security definer set search_path = public as $$
 declare u uuid := _uid(); a activities; why text := left(btrim(coalesce(p_reason, '')), 200);
@@ -1328,8 +1141,6 @@ begin
   perform _ping(array[u, p_user] || _members(p_act));
 end $$;
 
--- The host's answer to "Relist the spot?": yes puts the spot back into discovery; no keeps the group as it is, so
--- capacity drops to the people still going and the plan stays full. Answers every open prompt for the plan.
 create or replace function relist_spot(p_act uuid, p_relist boolean) returns void language plpgsql security definer set search_path = public as $$
 declare u uuid := _uid(); a activities; n int;
 begin
@@ -1350,8 +1161,6 @@ begin
   perform _ping(array[u, '00000000-0000-0000-0000-000000000000'::uuid] || _members(p_act));
 end $$;
 
--- A group chat becomes read-only 3 hours after its plan ends (start + duration): the meetup is over, so no more
--- messages or votes (the apps show the history with a note). Change the hours here and in CHAT_OPEN_H in web/app.js and the app.
 create or replace function _chat_closed(a activities) returns boolean language sql stable as $$
   select _plan_end(a) < now() - interval '3 hours' $$;
 
@@ -1393,8 +1202,6 @@ begin
   perform _ping(array[a.host] || _members(a.id));
 end $$;
 
--- After the plan. The host records attendance (record_attendance; older apps send it here). Members the host marked as
--- there rate the plan and the host.
 drop function if exists rate_activity(uuid, text, int, jsonb);
 create or replace function rate_activity(p_act uuid, p_ok text, p_stars int, p_people jsonb default null, p_host_stars int default null)
 returns void language plpgsql security definer set search_path = public as $$
@@ -1415,9 +1222,6 @@ begin
   perform _ping(array[u, a.host]);
 end $$;
 
--- The host, once the plan has ended (_plan_end): an overall rating, and every member marked 'show' or 'noshow' in
--- p_people ({"<member id>": "show"}). People marked there are asked to rate the host and the plan; people marked a
--- no-show are asked, kindly, what happened (noshow_reply). It can be changed later; the counts follow.
 create or replace function record_attendance(p_act uuid, p_ok text, p_stars int, p_people jsonb) returns void language plpgsql security definer set search_path = public as $$
 declare u uuid := _uid(); a activities; ms uuid[]; m uuid; st text; first boolean;
 begin
@@ -1453,7 +1257,6 @@ begin
   perform _ping(array[u] || ms);
 end $$;
 
--- Someone the host marked a no-show says what happened, or disputes it (which also goes to the reports queue).
 create or replace function noshow_reply(p_act uuid, p_reply text, p_dispute boolean default false) returns void language plpgsql security definer set search_path = public as $$
 declare u uuid := _uid(); a activities; why text := left(btrim(coalesce(p_reply, '')), 300); dis boolean := coalesce(p_dispute, false);
 begin
@@ -1479,7 +1282,6 @@ begin
     raise exception 'You have sent a lot of reports today. Please email us instead.';
   end if;
   if p_msg is not null then
-    -- you can only report a message from a chat you are in
     select act into ma from messages where id = p_msg;
     if ma is null or not exists (select 1 from activities a where a.id = ma and (a.host = u or u = any (_members(a.id)))) then
       raise exception 'That message is gone';
@@ -1494,7 +1296,6 @@ declare u uuid := _uid();
 begin
   if p_user = u then raise exception 'You can''t block yourself'; end if;
   insert into blocks (blocker, blocked) values (u, p_user) on conflict do nothing;
-  -- their open requests on my activities are quietly declined
   update requests set status = 'rejected'
   where user_id = p_user and status in ('pending', 'waitlist') and act in (select id from activities where host = u);
   perform _ping(array[u, p_user]);
@@ -1506,7 +1307,6 @@ begin
   perform _ping(array[_uid(), p_user]);
 end $$;
 
--- Reminders the app makes for you (e.g. "Activity in 2 hours"). The key stops duplicates.
 create or replace function add_notification(p_kind text, p_title text, p_tag text, p_tone text, p_act uuid, p_body text, p_flags text[], p_key text)
 returns void language plpgsql security definer set search_path = public as $$
 begin
@@ -1515,13 +1315,11 @@ begin
                 array(select f from unnest(coalesce(p_flags, '{}')) f where f in ('check', 'safe', 'chat')), left(p_key, 80));
 end $$;
 
--- Mark some (or, with null, all) of your notifications as read.
 create or replace function read_notifications(p_ids uuid[]) returns void language plpgsql security definer set search_path = public as $$
 begin
   update notifications set read = true where user_id = _uid() and not read and (p_ids is null or id = any (p_ids));
 end $$;
 
--- The app's push token for this phone. Signing in on a phone someone else used moves the token to you.
 create or replace function save_push_token(p_token text, p_platform text) returns void language plpgsql security definer set search_path = public as $$
 begin
   if p_token is null or p_token !~ '^ExponentPushToken\[[A-Za-z0-9_-]{1,180}\]$' then raise exception 'Bad push token'; end if;
@@ -1530,13 +1328,9 @@ begin
   on conflict (token) do update set user_id = excluded.user_id, platform = excluded.platform, updated_at = now();
 end $$;
 
--- Signing out on a phone: it stops getting this person's notifications. The row stays, with no owner.
 create or replace function forget_push_token(p_token text) returns void language sql security definer set search_path = public as $$
   update push_tokens set user_id = null, updated_at = now() where token = p_token and user_id = _uid() $$;
 
--- Push: each new notification (and each chat note brought back to the top) also goes to the person's phones through
--- Expo's push service, once app_config push is 'on'. pg_net sends it after the transaction commits, and any error
--- here is swallowed, so push can never stop a notification (or the action behind it) from being saved.
 create extension if not exists pg_net with schema extensions;
 create or replace function _push_note() returns trigger language plpgsql security definer set search_path = public as $$
 declare msgs jsonb;
@@ -1557,9 +1351,6 @@ create trigger notifications_push after insert or update of created_at on notifi
   for each row execute function _push_note();
 revoke all on function _push_note() from public, anon, authenticated;
 
--- Human review, from the /addmin page. The dashboard password (schema.sql, admin_secret) is checked by the database.
--- Returns null when the password is right, otherwise what to tell the dashboard. It doesn't raise an error,
--- because that would also undo the record of the wrong try.
 drop function if exists _admin_ok(text);
 create or replace function _admin_err(p_pass text) returns text language plpgsql as $$
 begin
@@ -1573,10 +1364,6 @@ begin
   return 'wrong password';
 end $$;
 
--- The dashboard's totals (first made in schema.sql). Totals only, never names or emails; feedback text only where
--- the person agreed to be quoted. Sign-ups are app accounts (profiles, without the sample people), not the old
--- beta waitlist (participants), which nothing adds to any more. Usage events count only for those accounts, which
--- leaves out the events from the old sample app.
 create or replace function admin_stats(pass text) returns jsonb language plpgsql security definer set search_path = public as $$
 declare e text := _admin_err(pass);
 begin
@@ -1584,11 +1371,9 @@ begin
   return jsonb_build_object(
     'participants',   (select count(*) from profiles where not is_sample),
     'by_gender',      (select coalesce(jsonb_object_agg(gender, n), '{}') from (select gender, count(*) n from profiles where not is_sample group by gender) x),
-    -- the city part of the home area ("Koramangala, Bengaluru" -> "Bengaluru")
     'by_city',        (select coalesce(jsonb_object_agg(c, n), '{}') from (select trim(regexp_replace(hood, '^.*,', '')) c, count(*) n from profiles where not is_sample group by 1) x),
     'by_interest',    (select coalesce(jsonb_object_agg(i, n), '{}') from (select unnest(ints) i, count(*) n from profiles where not is_sample group by 1) x),
     'signups_by_day', (select coalesce(jsonb_object_agg(d, n), '{}') from (select to_char(created_at at time zone 'Asia/Kolkata', 'YYYY-MM-DD') d, count(*) n from profiles where not is_sample and created_at > now() - interval '30 days' group by 1) x),
-    -- every piece of feedback counts; ratings and "would use" only come from the full forms, not the lines on why
     'feedback',       (select count(*) from feedback),
     'rated',          (select count(*) from feedback where rating is not null),
     'avg_rating',     (select round(avg(rating)::numeric, 2) from feedback),
@@ -1604,7 +1389,6 @@ begin
                          from (select props->>'moment' m, round(avg((props->>'score')::int), 2) a, count(*) n from events v
                                where v.participant_id in (select id from profiles where not is_sample)
                                  and name = 'micro_feedback' and props->>'score' ~ '^[1-4]$' and props->>'moment' ~ '^[a-z_]{1,20}$' group by 1) x),
-    -- signing up now happens inside the app, so "tried it" means posted a plan or asked to join one
     'tried',          (select count(*) from profiles p where not p.is_sample
                          and (exists (select 1 from activities a where a.host = p.id) or exists (select 1 from requests r where r.user_id = p.id))),
     'sessions_30d',   (select count(distinct session_id) from events v
@@ -1612,16 +1396,10 @@ begin
   );
 end $$;
 
--- Everyone waiting for a person to look at their face or ID check.
 create or replace function admin_reviews(pass text) returns jsonb language plpgsql security definer set search_path = public as $$
 declare e text := _admin_err(pass);
 begin
   if e is not null then return jsonb_build_object('error', e); end if;
-  -- tries, failures and the best provider score (0-100) since the last decision, to help judge "real person, bad light"
-  -- photo, photo2: the two photos the face check is matched against, to compare by eye (paths in the "avatars" bucket).
-  -- The frames from their failed face scans come from the face-review Edge Function (private bucket).
-  -- since: first pause since the last decision; rounds: how many times they used up their tries; until: end of the
-  -- current pause (null once it has run out and they can try again)
   return (select coalesce(jsonb_agg(jsonb_build_object('user', p.id, 'name', p.name, 'kind', k.kind, 'since', _ms(c.first_at), 'photo', p.photo, 'photo2', p.photo2,
                                       'attempts', c.attempts, 'fails', c.fails, 'best', c.best, 'rounds', c.rounds,
                                       'until', (s -> k.kind -> 'until'))
@@ -1661,10 +1439,6 @@ begin
   return jsonb_build_object('ok', true);
 end $$;
 
--- ---------- face check alerts and scan frames (Edge Functions only) ----------
-
--- Called by face-start / face-result after a check was paused: claims the email to the team for that pause, so
--- it goes out once however many functions see it. Returns what the email needs, or {claim: false}.
 create or replace function verify_alert_claim_service(p_user uuid, p_kind text) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare r verifications; vs jsonb := _verify_state(p_user);
@@ -1679,9 +1453,6 @@ begin
                                      and x.status in ('passed','approved','rejected')), 0)));
 end $$;
 
--- People whose face scan frames must be kept: they have failed a live face check since their last pass or reviewer
--- decision (so a reviewer may still need the frames). Frames of everyone else (passed, decided, deleted accounts)
--- are removed by the Edge Functions: Storage files can't be deleted from SQL.
 create or replace function face_frames_keep_service() returns uuid[]
 language sql security definer set search_path = public as $$
   select coalesce(array_agg(distinct v.user_id), '{}') from verifications v
@@ -1689,15 +1460,10 @@ language sql security definer set search_path = public as $$
     and v.seq > coalesce((select max(x.seq) from verifications x where x.user_id = v.user_id and x.kind = 'face'
                           and x.status in ('passed','approved','rejected')), 0) $$;
 
--- The private bucket for those frames: only the Edge Functions (service role) read or write it, so no policies.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('face-review', 'face-review', false, 2097152, array['image/jpeg'])
 on conflict (id) do update set public = false, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
 
--- ---------- phone code lockout (otp-verify Edge Function only) ----------
-
--- Wrong sign-in codes per phone number (stored as a SHA-256 hash, never the number). 5 wrong codes within an hour
--- pause that number for an hour, and the team gets an email. Only counters: no account data.
 create table if not exists otp_guard (
   phone_hash    text primary key check (phone_hash ~ '^[0-9a-f]{64}$'),
   fails         int not null default 0,
@@ -1711,13 +1477,10 @@ revoke all on table otp_guard from anon, authenticated;
 create or replace function _otp_max() returns int language sql immutable as $$ select 5 $$;
 create or replace function _otp_block() returns interval language sql immutable as $$ select interval '1 hour' $$;
 
--- Paused right now? Returns the end of the pause in ms, or null.
 create or replace function otp_guard_check_service(p_hash text) returns bigint
 language sql security definer set search_path = public as $$
   select _ms(blocked_until) from otp_guard where phone_hash = p_hash and blocked_until > now() $$;
 
--- One wrong code. Returns {blocked, until, fresh}: fresh is true only for the wrong code that started the pause, so
--- the email goes out once.
 create or replace function otp_guard_fail_service(p_hash text) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare g otp_guard;
@@ -1736,19 +1499,15 @@ begin
   return jsonb_build_object('blocked', false, 'left', _otp_max() - g.fails, 'fresh', false);
 end $$;
 
--- A right code: start counting again.
 create or replace function otp_guard_ok_service(p_hash text) returns void
 language sql security definer set search_path = public as $$
   update otp_guard set fails = 0, window_start = null, updated_at = now() where phone_hash = p_hash $$;
 
--- Usage events (button taps, never content). Who sent it comes from the login, not the browser, and one session,
--- one person, and signed-out visitors together can only send so many, so nobody can flood the table.
 create or replace function log_event(p_session uuid, p_name text, p_props jsonb default '{}') returns void
 language plpgsql security definer set search_path = public as $$
 declare u uuid := auth.uid();
 begin
   if p_session is null or coalesce(p_name, '') !~ '^[a-z_]{2,40}$' or pg_column_size(coalesce(p_props, '{}')) > 2000 then return; end if;
-  -- opt-in only: nothing before sign-in, and nothing unless "Share usage statistics" is on
   if u is null or not exists (select 1 from profiles where id = u and usage_ok) then return; end if;
   if (select count(*) from events where session_id = p_session and created_at > now() - interval '10 minutes') >= 120 then return; end if;
   if u is null and (select count(*) from events where participant_id is null and created_at > now() - interval '1 hour') >= 1000 then return; end if;
@@ -1756,13 +1515,10 @@ begin
   insert into events (id, participant_id, session_id, name, props) values (gen_random_uuid(), u, p_session, p_name, coalesce(p_props, '{}'));
 end $$;
 
--- Feedback from the landing page's form and the app's feedback sheet and quick questions (source says which).
--- Linked to the login when there is one; at most 60 an hour from everyone.
 create or replace function send_feedback(p jsonb) returns void language plpgsql security definer set search_path = public as $$
 declare src text := coalesce(nullif(p->>'source', ''), 'landing'); why text := nullif(left(trim(p->>'improve'), 1000), '');
 begin
   if not coalesce((p->>'consent_store')::boolean, false) then raise exception 'Please tick the required consent box to send feedback.'; end if;
-  -- a line on why (after a quick question) is just the text; everything else needs a rating
   if src like 'micro:%' and why is null then raise exception 'Please write a few words first.'; end if;
   if src not like 'micro:%' and p->>'rating' is null then raise exception 'Please pick a rating.'; end if;
   if (select count(*) from feedback where created_at > now() - interval '1 hour') >= 60 then
@@ -1774,8 +1530,6 @@ begin
           left(coalesce(p->>'consent_version', 'v1'), 20), src);
 end $$;
 
--- "Delete my account" in the app. Plans this person hosts are cancelled (members are told), they leave the groups
--- they're in (hosts are told, spots reopen), then the login is deleted, which removes the rest (see the trigger below).
 create or replace function delete_my_account() returns void language plpgsql security definer set search_path = public as $$
 declare u uuid := _uid(); a record;
 begin
@@ -1784,16 +1538,11 @@ begin
   for a in select r.act from requests r join activities x on x.id = r.act where r.user_id = u and r.status = 'accepted' and x.starts_at > now() loop
     perform leave_activity(a.act, 'Deleted their account');
   end loop;
-  -- usage records go too, and feedback is kept without the link to this account
   delete from events where participant_id = u;
   update feedback set participant_id = null where participant_id = u;
   delete from auth.users where id = u;
 end $$;
 
--- Sign-up age gate, run by Supabase Auth before it creates a login (Authentication -> Hooks -> Before User Created ->
--- Postgres -> public._before_user_created). Email and phone sign-ups must carry "I'm 18 or older" from the sign-up
--- screen (user_metadata.age_18), or no login is made. Google sign-ups can't carry it: those are checked at the date of
--- birth step (save_profile) instead.
 create or replace function _before_user_created(event jsonb) returns jsonb language plpgsql as $$
 begin
   if coalesce(event->'user'->'app_metadata'->>'provider', '') in ('email', 'phone')
@@ -1804,7 +1553,6 @@ begin
   return '{}'::jsonb;
 end $$;
 
--- Who may call what. Supabase gives new functions to everyone by default, so this takes that away first.
 do $$ declare f record; begin
   for f in select p.oid::regprocedure sig, p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
            where n.nspname = 'public' and (p.proname like '\_%' or p.proname in ('app_state','save_profile','save_state','post_activity',
@@ -1832,9 +1580,6 @@ do $$ declare f record; begin
   grant execute on function _before_user_created(jsonb) to supabase_auth_admin;   -- Supabase Auth only
 end $$;
 
--- Deleting someone in Authentication -> Users also deletes their profile, plans, requests, notifications,
--- ratings, checks and usage records (their chat messages stay, shown without a name), and unlinks their old beta
--- sign-up and their feedback.
 create or replace function _on_auth_user_deleted() returns trigger language plpgsql security definer set search_path = public as $$
 begin
   delete from profiles where id = old.id and not is_sample;
@@ -1846,8 +1591,6 @@ end $$;
 revoke all on function _on_auth_user_deleted() from public, anon, authenticated;
 drop trigger if exists overhere_user_deleted on auth.users;
 create trigger overhere_user_deleted after delete on auth.users for each row execute function _on_auth_user_deleted();
-
--- ---------- sample people and plans (added once) ----------
 
 insert into profile_presets (email, data) values
   ('kajal@overhere.test', '{"name":"Kajal","gender":"Woman","dob":"1998-02-02","hood":"Sector 17, Chandigarh","lat":30.74,"lng":76.78,"job":"UX Researcher","bio":"Weekend brunches, indie gigs and the occasional horror movie. Always on time.","ints":["Movies","Cafe / Food","Concerts"],"avail":["Weekday evenings","Late nights"],"emo":"👩🏽‍🔬","kyc":true,"met":18,"shows":18,"hist":[["Sunday brunch club","cafe",5,"Hosted",4.9,6],["Indie night in Sector 26","concerts",16,"Joined",4.7,1],["Horror double bill","movies",31,"Hosted",4.8,4]]}'),
@@ -1899,7 +1642,6 @@ begin
     (12,'Sam','Non-binary',29,'Copywriter','Crosswords, filter coffee, early mornings.','{"Cafe / Food"}','{"Weekend days"}','🧑🏼',true,2,2,'[["Crossword and coffee","cafe",14,"Hosted",4.8,2]]')
   ) v(n, name, gender, age, job, bio, ints, avail, emo, kyc, met, shows, hist);
 
-  -- Happening soon (within about a day): these move forward a day at a time.
   perform _seed_act(9,'concerts','Sunset acoustic set by Sukhna Lake',4,_t_next(18,30),null,'Sukhna Lake, near the boat club','host',S17,null,D,4000);
   perform _seed_act(2,'movies','Catching the 8pm show of the new sci-fi release, chai after',3,_t_next(20),null,'PVR, Elante Mall','split',S17,'{1}',D,1600);
   perform _seed_act(5,'movies','Late-night horror double feature',4,_t_next(22,30),mn,'Elante Mall multiplex','split',S17,null,D,2000);
@@ -1917,7 +1659,6 @@ begin
   perform _seed_act(4,'cafe','Book swap over cold coffee',5,_t_next(17),null,'Café, Sector 9 market','own',S17,'{6}',D);
   perform _seed_act(10,'cafe','Midnight Maggi and chai at the dhaba',4,_t_next(0,30),null,'Dhaba, Sector 22','split',S17,'{8}',D,600);
 
-  -- Plan ahead (3 to 13 days out): these move forward two weeks once they pass.
   perform _seed_act(5,'concerts','Rock night, local bands',4,_t_at(7,19),null,'Music café, Sector 7','own','Sector 7',null,W);
   perform _seed_act(6,'cafe','Tea tasting flight',3,_t_at(6,17),null,'Tea room, Sector 22 market','split','Sector 22',null,W,900);
   perform _seed_act(11,'movies','Anime movie night, subtitles on',5,_t_at(7,18,30),null,'Government Museum auditorium, Sector 10','own',S17,null,W);
@@ -1950,24 +1691,16 @@ begin
   perform _seed_act(9,'cafe','Picnic at Sukhna Lake, bring one snack',6,_t_at(5,12),null,'Sukhna Lake lawns','own','Sector 7','{2}',W);
   perform _seed_act(3,'concerts','Le Corbusier heritage walk and a sitar recital',4,_t_at(6,17),null,'Capitol Complex, Sector 1','own','Sector 22',null,W);
 end $$;
--- Only the popcorn is on the host, so everyone pays for their own ticket (fixes databases seeded before).
 update activities set cost = 'own' where host = _sid(1) and description = 'Re-release of a 90s classic, popcorn on me' and cost = 'host';
--- Sample plans: no false urgency, and no scripted meeting point in their chats (fixes databases seeded before).
 update activities set description = 'Trying the new ramen place' where description = 'Trying the new ramen place (only 1 spot left)';
 update messages set body = 'Sample plan: these messages are examples, and nobody will actually be there.', sender = null, sys = true
 where body = 'Let us meet 15 min before at the entrance.' and act in (select a.id from activities a join profiles p on p.id = a.host where p.is_sample);
--- A few sample plans moved from "happening soon" to about a week out, so Discover has more (fixes databases seeded before).
 update activities set starts_at = _t_at(7,19,0), sample_period = interval '14 days' where host = _sid(5) and description = 'Rock night, local bands' and sample_period = interval '1 day';
 update activities set starts_at = _t_at(6,17,0), sample_period = interval '14 days' where host = _sid(6) and description = 'Tea tasting flight' and sample_period = interval '1 day';
 update activities set starts_at = _t_at(7,18,30), sample_period = interval '14 days' where host = _sid(11) and description = 'Anime movie night, subtitles on' and sample_period = interval '1 day';
 update activities set starts_at = _t_at(8,20,30), sample_period = interval '14 days' where host = _sid(3) and description = 'Vinyl listening evening, bring a record' and sample_period = interval '1 day';
 update activities set starts_at = _t_at(7,21,0), sample_period = interval '14 days' where host = _sid(7) and description = 'Retro Bollywood karaoke' and sample_period = interval '1 day';
 update activities set starts_at = _t_at(8,14,0), sample_period = interval '14 days' where host = _sid(6) and description = 'Pictionary and pizza, beginners welcome' and sample_period = interval '1 day';
-
--- ---------- sample people and plans in the other cities (added once per city) ----------
--- Six sample hosts per city (ids from _sid(101) for Delhi NCR, _sid(201) for Mumbai, and so on) and 16 plans:
--- nine happening soon (they move forward a day at a time) and seven planned ahead (they move forward two weeks).
--- The venues are real places, pinned where they are.
 
 create or replace function _seed_host(n int, p_hood text, p_lat float8, p_lng float8, p_name text, p_gender text, p_age int,
                                       p_job text, p_bio text, p_ints text[], p_avail text[], p_emo text, p_met int, p_hist text)
