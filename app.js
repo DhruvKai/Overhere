@@ -1047,7 +1047,7 @@ const empty=(ic,t,sub,btn)=>`<div class="empty"><div class="big">${I(ic,30)}</di
 /* Audience-limited plans (e.g. women-only) are only sent to people whose ID check passed. */
 const lockedNote=()=>LOCKED&&!S.me.face?`<div class="dn" style="margin:0 0 14px;text-align:left">${I('shield-check',14)} ${LOCKED} ${LOCKED===1?'plan near you is':'plans near you are'} only open to certain groups, like women-only plans. <button class="lnk" data-a="unlock">Do the face check to see ${LOCKED===1?'it':'them'}</button></div>`:'';
 const whereBar=()=>`<div class="wbar"><button class="where" data-a="citymenu" aria-haspopup="dialog" aria-label="Showing plans ${esc(whereTxt())}. Change city">${I('map-pin',14)}<span>${viewCity()?esc(viewName()):'Near '+esc(homeName())}</span>${I('chevron-down',14)}</button></div>
-  ${VIEW.auto&&viewCity()?`<div class="dn" style="margin:0 0 14px;text-align:left">${I('compass',14)} Overhere is new in ${esc(homeName())}, so you're also seeing plans in ${esc(viewName())} (${Math.round(kmBetween(homeLL(),viewLL()))} km away). <button class="lnk" data-a="citymenu">Pick another city</button></div>`:''}`;
+  ${VIEW.auto&&viewCity()&&!S.tips['city_'+VIEW.city]?`<div class="dn" style="margin:0 0 14px;text-align:left;display:flex;gap:6px;align-items:flex-start"><span style="flex:1">${I('compass',14)} Overhere is new in ${esc(homeName())}, so you're also seeing plans in ${esc(viewName())} (${Math.round(kmBetween(homeLL(),viewLL()))} km away). <button class="lnk" data-a="citymenu">Pick another city</button></span><button class="ib" style="width:30px;height:30px;flex:0 0 auto" data-a="citynoteoff" title="Close" aria-label="Close">${I('x',15)}</button></div>`:''}`;
 function tabSwipe(){
   const d=deck();
   if(!d.length)return whereBar()+fbCard()+lockedNote()+empty('compass','Nothing new right now',`You have gone through all plans in the next 7 days ${esc(whereTxt())}. Check Discover for plans further out, or pick another city.`,'<button class="btn" data-a="tab" data-t="discover">Go to Discover</button>');
@@ -2505,6 +2505,8 @@ const A={
     }catch(err){toast(err?.code===1?'Location is blocked for this site. Allow it in your browser settings, or search instead.':"Couldn't get your location. Search for the place instead.")}
     finally{if(b.isConnected){b.disabled=false;b.innerHTML=t}}
   },
+  /* the "also seeing plans in <city>" note: closed for that city (profiles.state.tips, shared with the app) */
+  citynoteoff:()=>{S.tips['city_'+VIEW.city]=true;save();render()},
   /* hosting */
   newpost:()=>safetyOnce(()=>gate(()=>{ui.modal={type:'post'};render()})),
   unlock:()=>gate(()=>{toast('Face check passed. Plans for your group now show too.');render()}),
@@ -2516,6 +2518,8 @@ const A={
     const bw=badWord(desc);if(bw){descWarn();document.getElementById('f_desc')?.focus();return toast(`"${bw}" isn't allowed in a plan. Please reword it.`)}
     const vll=await placeResolve(venue)||placeLL(venue,'f_venue');
     if(!vll){askArea();return toast('Pick which area the venue is in, so it shows on the map')}
+    /* plans go up near your home area only (post_activity checks it too); an edit that keeps the venue is fine */
+    if((!ed||venue!==ed.venue)&&kmBetween(homeLL(),vll)>NEAR_KM)return toast(`You can only post plans within ${NEAR_KM} km of ${homeName()}. To post somewhere else, change your home area in Profile.`);
     if(!(when>now()))return toast('Pick a future date and time');
     if(!all&&!gs.length)return toast('Choose Everyone or at least one identity');
     const tot=Math.max(0,Math.min(1e6,Math.round(+val('f_total')||0)));

@@ -18,7 +18,7 @@
 // (OpenStreetMap), as they did before. Only signed-in people can search, so the key can't be used by anyone else.
 import { createClient } from 'npm:@supabase/supabase-js@2.117.2';
 import { corsHeaders, env, guard, json, smallJson } from '../_shared/common.ts';
-import { hereFromAddress, hereLabel, hitOf, isAreaLike, olaHit, type Hit } from '../_shared/places-format.ts';
+import { hereFromAddress, hereLabel, hitOf, isAreaLike, olaHit, tidyHits, type Hit } from '../_shared/places-format.ts';
 
 const KEY = () => Deno.env.get('GOOGLE_PLACES_KEY') ?? '';
 const OLA_ID = () => Deno.env.get('OLA_CLIENT_ID') ?? '', OLA_SECRET = () => Deno.env.get('OLA_CLIENT_SECRET') ?? '';
@@ -82,11 +82,8 @@ async function suggest(q: string, mode: 'venue' | 'area', near: [number, number]
   };
   const d = await google('https://places.googleapis.com/v1/places:autocomplete',
     { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  const seen = new Set<string>();
-  return ((d.suggestions ?? []) as { placePrediction?: Record<string, unknown> }[])
-    .map((s) => s.placePrediction ? hitOf(s.placePrediction, mode) : null)
-    .filter((h): h is Hit => !!h && !seen.has(h.label.toLowerCase()) && !!seen.add(h.label.toLowerCase()))
-    .slice(0, 8);
+  return tidyHits(((d.suggestions ?? []) as { placePrediction?: Record<string, unknown> }[])
+    .map((s) => s.placePrediction ? hitOf(s.placePrediction, mode) : null), mode);
 }
 
 async function spot(id: string, session: string): Promise<[number, number] | null> {
@@ -147,10 +144,7 @@ async function olaSuggest(q: string, mode: 'venue' | 'area', near: [number, numb
   let preds = (d.predictions ?? []) as { types?: string[] }[];
   /* the home-area box: only areas and cities (with the addresses Ola files areas under), when there are any */
   if (mode === 'area' && preds.some((p) => isAreaLike(p.types))) preds = preds.filter((p) => isAreaLike(p.types));
-  const seen = new Set<string>();
-  return preds.map((p) => olaHit(p, mode))
-    .filter((h): h is Hit => !!h && !seen.has(h.label.toLowerCase()) && !!seen.add(h.label.toLowerCase()))
-    .slice(0, 8);
+  return tidyHits(preds.map((p) => olaHit(p, mode)), mode);
 }
 async function olaSpot(id: string): Promise<[number, number] | null> {
   const d = await ola('/places/v1/details', { place_id: id });

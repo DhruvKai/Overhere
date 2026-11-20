@@ -9,7 +9,7 @@ import { WhenPicker } from '@/components/WhenPicker';
 import { BottomBar, Btn, Chip, Empty, Field, Label, Note, P, Stepper, Wrap } from '@/components/ui';
 import { api } from '@/lib/api';
 import { registerPush } from '@/lib/push';
-import { CATS, COST, durTxt, GENDERS, homeLL, REPEAT, short, type Plan } from '@/lib/model';
+import { CATS, COST, durTxt, GENDERS, homeLL, homeName, kmBetween, NEAR_KM, REPEAT, short, type Plan } from '@/lib/model';
 import { badWord, badWordMsg } from '@/lib/words';
 import { useModel, useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
@@ -74,6 +74,9 @@ export default function Post() {
     const bw = badWord(desc);
     const problem = !desc.trim() ? 'Say what the plan is' : bw ? badWordMsg(bw) : !venue.trim() ? 'Add where you\'ll meet'
       : !ll ? 'Pick which area the venue is in, so it shows on the map'
+      /* plans go up near your home area only (post_activity checks it too); an edit that keeps the venue is fine */
+      : (!edit || venue.trim() !== edit.venue) && kmBetween(homeLL(m), ll) > NEAR_KM
+        ? `You can only post plans within ${NEAR_KM} km of ${homeName(m)}. To post somewhere else, change your home area in Profile.`
       : when.getTime() <= Date.now() ? 'Pick a future date and time' : aud && !aud.length ? 'Pick who it\'s for' : '';
     setErr(problem);
     if (problem) return;

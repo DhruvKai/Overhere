@@ -105,6 +105,28 @@ export function olaHit(p: OlaPrediction, mode: 'venue' | 'area'): Hit | null {
   if (mode === 'area' && /^(Address|Street)$/.test(h.kind)) h.kind = 'Area';   // see isAreaLike
   return typeof loc?.lat === 'number' && typeof loc?.lng === 'number' ? { ...h, ll: [loc.lat, loc.lng] } : h;
 }
+/* The cities with plans (_cities() in schema-app.sql), as [lat, lng]. */
+const CITY_LL: [number, number][] = [[30.7333, 76.7794], [28.6139, 77.209], [19.076, 72.8777], [18.5204, 73.8567],
+  [12.9716, 77.5946], [17.385, 78.4867], [13.0827, 80.2707], [23.0225, 72.5714]];
+const kmBetween = ([a1, o1]: [number, number], [a2, o2]: [number, number]) => {
+  const r = Math.PI / 180, x = Math.sin(((a2 - a1) * r) / 2) ** 2 + Math.cos(a1 * r) * Math.cos(a2 * r) * Math.sin(((o2 - o1) * r) / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(x));
+};
+const inACity = (h: Hit) => !!h.ll && CITY_LL.some((c) => kmBetween(c, h.ll!) <= 50);
+
+/** The list as shown: one row per place, at most 8. Two places can share a name and differ only by state
+ *  ("Chandigarh" in Tripura and the city; Hyderabad in Uttar Pradesh and Telangana), so both stay. In the
+ *  home-area box, places in the cities with plans come first; venues keep the provider's order (nearest first). */
+export function tidyHits(hits: (Hit | null)[], mode: 'venue' | 'area'): Hit[] {
+  const seen = new Set<string>();
+  const list = hits.filter((h): h is Hit => {
+    const k = (h?.label + '|' + h?.state).toLowerCase();
+    return !!h && !seen.has(k) && !!seen.add(k);
+  });
+  if (mode === 'area') list.sort((a, b) => Number(inACity(b)) - Number(inACity(a)));   // stable: otherwise in the provider's order
+  return list.slice(0, 8);
+}
+
 /* Types that are an area or a city: the home-area box lists those first. */
 const AREA_TYPES = new Set(['locality', 'sublocality', 'sublocality_level_1', 'sublocality_level_2', 'sublocality_level_3', 'neighborhood',
   'administrative_area_level_1', 'administrative_area_level_2', 'administrative_area_level_3', 'administrative_area_level_4', 'colloquial_area',

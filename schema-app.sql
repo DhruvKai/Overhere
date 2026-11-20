@@ -969,6 +969,10 @@ begin
   update profiles set state = s where id = _uid();
 end $$;
 
+create or replace function _far_from_home(me profiles, p jsonb) returns boolean language sql stable as $$
+  select me.lat is not null and me.lng is not null and p->>'lat' is not null and p->>'lng' is not null
+     and _km(me.lat, me.lng, (p->>'lat')::float8, (p->>'lng')::float8) > 50 $$;
+
 create or replace function post_activity(p jsonb) returns uuid language plpgsql security definer set search_path = public as $$
 declare u uuid := _uid(); me profiles; st timestamptz; nid uuid; v_cap int; v_dur int;
 begin
@@ -985,6 +989,9 @@ begin
   if v_cap is null or v_cap not between 2 and 10 then raise exception 'Pick between 2 and 10 people'; end if;
   v_dur := coalesce(nullif(p->>'dur', '')::int, 2);
   if v_dur not between 1 and 24 then raise exception 'Pick a duration between 1 and 24 hours'; end if;
+  if _far_from_home(me, p) then
+    raise exception 'You can only post plans within 50 km of %. To post somewhere else, change your home area in Profile.', split_part(me.hood, ',', 1);
+  end if;
   perform _check_words(p->>'desc');
   insert into activities (host, cat, description, cap, starts_at, audience, venue, cost, total, hood, lat, lng, repeat, duration_h)
   values (u, p->>'cat', trim(p->>'desc'), v_cap, st,
@@ -999,7 +1006,7 @@ begin
 end $$;
 
 create or replace function edit_activity(p_act uuid, p jsonb) returns void language plpgsql security definer set search_path = public as $$
-declare u uuid := _uid(); a activities; st timestamptz; moved boolean; ms uuid[]; m uuid; v_cap int; v_dur int;
+declare u uuid := _uid(); a activities; me profiles; st timestamptz; moved boolean; ms uuid[]; m uuid; v_cap int; v_dur int;
 begin
   select * into a from activities where id = p_act for update;
   if not found or a.host <> u then raise exception 'Only the host can edit this activity'; end if;
@@ -1013,6 +1020,10 @@ begin
   if v_cap < cardinality(ms) then raise exception 'Capacity can''t be less than the people already going'; end if;
   v_dur := coalesce(nullif(p->>'dur', '')::int, a.duration_h);
   if v_dur not between 1 and 24 then raise exception 'Pick a duration between 1 and 24 hours'; end if;
+  select * into me from profiles where id = u;
+  if ((p->>'lat')::float8 is distinct from a.lat or (p->>'lng')::float8 is distinct from a.lng) and _far_from_home(me, p) then
+    raise exception 'You can only post plans within 50 km of %. To post somewhere else, change your home area in Profile.', split_part(me.hood, ',', 1);
+  end if;
   perform _check_words(p->>'desc');
   moved := st <> a.starts_at or trim(p->>'venue') <> a.venue;
   update activities set cat = p->>'cat', description = trim(p->>'desc'), cap = v_cap, starts_at = st,

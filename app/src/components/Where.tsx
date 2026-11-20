@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { api } from '@/lib/api';
+import { tipsOf } from '@/lib/feedback';
 import { homeLL, homeName, kmBetween, NEAR_KM, viewCity, viewName } from '@/lib/model';
 import { useModel, useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
@@ -32,9 +33,12 @@ export function WhereButton() {
 /* When Overhere is new near you, the nearest city is picked for you, and this says so (above the plans). */
 export function CityNote() {
   const m = useModel();
+  const { savePriv } = useStore();
   const c = viewCity(m);
-  if (!m.cityAuto || !c) return null;
-  return <Note icon="compass" tone="info">Overhere is new in {homeName(m)}, so you&apos;re also seeing plans in {viewName(m)} ({Math.round(kmBetween(homeLL(m), [c[2], c[3]]))} km away).</Note>;
+  /* closed for that city (profiles.state.tips, shared with the website) */
+  const k = 'city_' + c?.[0];
+  if (!m.cityAuto || !c || tipsOf(m)[k]) return null;
+  return <Note icon="compass" tone="info" onClose={() => savePriv(p => ({ tips: { ...(p.tips as object), [k]: true } }))}>Overhere is new in {homeName(m)}, so you&apos;re also seeing plans in {viewName(m)} ({Math.round(kmBetween(homeLL(m), [c[2], c[3]]))} km away).</Note>;
 }
 
 function CitySheet({ onClose }: { onClose: () => void }) {

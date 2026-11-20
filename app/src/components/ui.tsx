@@ -201,13 +201,18 @@ export function Check({ on, onPress, children }: { on: boolean; onPress: () => v
 }
 
 /* A yellow (or blue) box for something to watch out for. */
-export function Note({ icon = 'alert-triangle', tone = 'warn', style, children }: { icon?: IconName; tone?: 'warn' | 'info'; style?: ViewStyle; children: ReactNode }) {
+export function Note({ icon = 'alert-triangle', tone = 'warn', style, onClose, children }: { icon?: IconName; tone?: 'warn' | 'info'; style?: ViewStyle; onClose?: () => void; children: ReactNode }) {
   const t = useTheme();
   const [bg, fg] = tone === 'info' ? [t.infobg, t.info] : [t.warnbg, t.warn];
   return (
     <View style={[{ flexDirection: 'row', gap: 10, backgroundColor: bg, borderRadius: 14, padding: 12, marginBottom: 14 }, style]}>
       <Feather name={icon} size={16} color={fg} style={{ marginTop: 2 }} />
       <Text style={{ flex: 1, color: fg, fontSize: 14, lineHeight: 20 }}>{children}</Text>
+      {onClose ? (
+        <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} hitSlop={10} style={{ marginTop: 1 }}>
+          <Feather name="x" size={18} color={fg} />
+        </Pressable>
+      ) : null}
     </View>
   );
 }
