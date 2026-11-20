@@ -3,6 +3,8 @@
 //   A venue reads "Name, Locality, City", e.g. "Elante Mall, Industrial Area Phase I, Chandigarh".
 //   An area reads "Area, City", e.g. "Koramangala, Bengaluru"; its state is shown separately under it.
 
+import { INDIA_PLACES } from './india-places.ts';
+
 /* ll: the spot, when the search already gives it (Ola does; Google needs a Place Details call once it's picked) */
 export type Hit = { id: string; label: string; kind: string; state: string; km: number | null; ll?: [number, number] };
 
@@ -105,26 +107,109 @@ export function olaHit(p: OlaPrediction, mode: 'venue' | 'area'): Hit | null {
   if (mode === 'area' && /^(Address|Street)$/.test(h.kind)) h.kind = 'Area';   // see isAreaLike
   return typeof loc?.lat === 'number' && typeof loc?.lng === 'number' ? { ...h, ll: [loc.lat, loc.lng] } : h;
 }
-/* The cities with plans (_cities() in schema-app.sql), as [lat, lng]. */
-const CITY_LL: [number, number][] = [[30.7333, 76.7794], [28.6139, 77.209], [19.076, 72.8777], [18.5204, 73.8567],
-  [12.9716, 77.5946], [17.385, 78.4867], [13.0827, 80.2707], [23.0225, 72.5714]];
 const kmBetween = ([a1, o1]: [number, number], [a2, o2]: [number, number]) => {
   const r = Math.PI / 180, x = Math.sin(((a2 - a1) * r) / 2) ** 2 + Math.cos(a1 * r) * Math.cos(a2 * r) * Math.sin(((o2 - o1) * r) / 2) ** 2;
   return 12742 * Math.asin(Math.sqrt(x));
 };
-const inACity = (h: Hit) => !!h.ll && CITY_LL.some((c) => kmBetween(c, h.ll!) <= 50);
 
-/** The list as shown: one row per place, at most 8. Two places can share a name and differ only by state
- *  ("Chandigarh" in Tripura and the city; Hyderabad in Uttar Pradesh and Telangana), so both stay. In the
- *  home-area box, places in the cities with plans come first; venues keep the provider's order (nearest first). */
-export function tidyHits(hits: (Hit | null)[], mode: 'venue' | 'area'): Hit[] {
+/** At most 8 rows, each with its own label: the website finds a picked place again by its label, so two rows that
+ *  read the same would mix up their spots. A later row with a taken label gets its state added ("Chandigarh,
+ *  Tripura"); if that doesn't make it different, it's left out. */
+function uniqueLabels(list: Hit[]): Hit[] {
+  const used = new Set<string>(), out: Hit[] = [];
+  for (const h of list) {
+    let label = h.label;
+    if (used.has(label.toLowerCase())) {
+      if (!h.state || label.toLowerCase().includes(h.state.toLowerCase())) continue;
+      label = `${label}, ${h.state}`;
+      if (used.has(label.toLowerCase())) continue;
+    }
+    used.add(label.toLowerCase());
+    out.push({ ...h, label });
+    if (out.length === 8) break;
+  }
+  return out;
+}
+
+/** The venue box: in the provider's order (it already puts places near you first), each place once. */
+export function tidyVenues(hits: (Hit | null)[]): Hit[] {
   const seen = new Set<string>();
-  const list = hits.filter((h): h is Hit => {
-    const k = (h?.label + '|' + h?.state).toLowerCase();
-    return !!h && !seen.has(k) && !!seen.add(k);
+  return uniqueLabels(hits.filter((h): h is Hit => !!h && !seen.has(h.id) && !!seen.add(h.id)));
+}
+
+/* ---------- the home-area box ----------
+   Ola's suggestions alone get well-known places wrong: "Jaipur" puts a town in Jaipur district before the city,
+   "Kanpur" the one in West Bengal, and some it doesn't give at all (Aurangabad in Maharashtra, now Chhatrapati
+   Sambhajinagar). So every town of 15,000 people or more (INDIA_PLACES, with old names like Bombay and Baroda) is
+   searched too, and the two are ranked together. */
+/** Letters and digits only, lower case, without accents: how names are compared. */
+export const nameKey = (s: string) =>
+  s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+const TOWNS = INDIA_PLACES.map(([name, state, lat, lng, pop, alts]) => ({
+  name, state, ll: [lat, lng] as [number, number], pop, keys: [nameKey(name), ...(alts ? alts.split('|').map(nameKey) : [])],
+}));
+/** How well a name answers what was typed: 3 it's the same, 2 it starts with it, 1 a later word does, 0 not at all. */
+function fit(q: string, keys: string[]): number {
+  let best = 0;
+  for (const k of keys) {
+    if (k === q) return 3;
+    if (k.startsWith(q)) best = 2;
+    else if (best < 1 && (' ' + k).includes(' ' + q)) best = 1;
+  }
+  return best;
+}
+/** A city this big comes before a smaller place of the same name, even one near your home area. */
+const BIG = 500_000;
+
+/** One Ola (or Google) suggestion for the home-area box; area: whether it's an area or city rather than a venue. */
+export type Found = { hit: Hit | null; area: boolean };
+
+/** The home-area list for what was typed: towns from INDIA_PLACES and the provider's suggestions (the ones without
+ *  a home area first, then the ones near it), ranked by
+ *    1. the name is it or starts with it, before a later word starting with it
+ *    2. cities of BIG people or more ("Raipur" is the city, even from a village called Raipur)
+ *    3. an area of exactly that name within 50 km of your home area ("Dwarka" from Delhi)
+ *    4. a town of exactly that name ("Patiala" before "Patiala Road" near home)
+ *    5. areas and cities before buildings and venues
+ *    6. within 50 km of your home area ("Sector 22B, Chandigarh" before "Sector 22, Gurugram" from Chandigarh)
+ *    7. the same name before starting with it, then more people, then the provider's order. */
+export function rankAreas(q: string, found: Found[], near: [number, number] | null): Hit[] {
+  const k = nameKey(q);
+  type C = { hit: Hit; fit: number; pop: number; area: boolean; near: boolean; order: number };
+  const isNear = (ll?: [number, number]) => !!near && !!ll && kmBetween(near, ll) <= 50;
+  const km = (ll?: [number, number]) => (near && ll ? Math.round(kmBetween(near, ll) * 10) / 10 : null);
+  const towns: C[] = [];
+  if (k.length >= 2) {
+    TOWNS.forEach((t, i) => {
+      const f = fit(k, t.keys);
+      if (f >= 2) towns.push({ hit: { id: `town-${i}`, label: t.name, kind: 'City', state: t.state, km: km(t.ll), ll: t.ll },
+        fit: f, pop: t.pop, area: true, near: isNear(t.ll), order: -1 });
+    });
+  }
+  towns.sort((a, b) => b.fit - a.fit || b.pop - a.pop);
+  const list: C[] = towns.slice(0, 8);
+  const seen = new Set<string>();
+  found.forEach(({ hit, area }, order) => {
+    if (!hit || seen.has(hit.id)) return;
+    seen.add(hit.id);
+    const main = nameKey(hit.label.split(',')[0]);
+    // the same town as one from the list: keep the list's (it has the right name and state)
+    if (hit.ll && list.some((t) => t.order === -1 && t.hit.ll && t.hit.label && nameKey(t.hit.label) === main && kmBetween(t.hit.ll, hit.ll!) <= 25)) return;
+    list.push({ hit: { ...hit, km: hit.ll ? km(hit.ll) : hit.km }, fit: fit(k, [main]), pop: 0, area, near: isNear(hit.ll), order });
   });
-  if (mode === 'area') list.sort((a, b) => Number(inACity(b)) - Number(inACity(a)));   // stable: otherwise in the provider's order
-  return list.slice(0, 8);
+  const rank = (c: C) => [Number(c.fit >= 2), Number(c.pop >= BIG), Number(c.fit === 3 && c.near && c.area),
+    Number(c.fit === 3 && c.order === -1), Number(c.area), Number(c.near), c.fit, c.pop, -c.order];
+  list.sort((a, b) => {
+    const x = rank(a), y = rank(b);
+    for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return y[i] - x[i];
+    return 0;
+  });
+  // same label and state twice (Ola with and without the home area): once
+  const twice = new Set<string>();
+  return uniqueLabels(list.map((c) => c.hit).filter((h) => {
+    const key = (h.label + '|' + h.state).toLowerCase();
+    return !twice.has(key) && !!twice.add(key);
+  }));
 }
 
 /* Types that are an area or a city: the home-area box lists those first. */

@@ -18,7 +18,7 @@
 // (OpenStreetMap), as they did before. Only signed-in people can search, so the key can't be used by anyone else.
 import { createClient } from 'npm:@supabase/supabase-js@2.117.2';
 import { corsHeaders, env, guard, json, smallJson } from '../_shared/common.ts';
-import { hereFromAddress, hereLabel, hitOf, isAreaLike, olaHit, tidyHits, type Hit } from '../_shared/places-format.ts';
+import { type Found, hereFromAddress, hereLabel, hitOf, isAreaLike, olaHit, rankAreas, tidyVenues, type Hit } from '../_shared/places-format.ts';
 
 const KEY = () => Deno.env.get('GOOGLE_PLACES_KEY') ?? '';
 const OLA_ID = () => Deno.env.get('OLA_CLIENT_ID') ?? '', OLA_SECRET = () => Deno.env.get('OLA_CLIENT_SECRET') ?? '';
@@ -82,8 +82,9 @@ async function suggest(q: string, mode: 'venue' | 'area', near: [number, number]
   };
   const d = await google('https://places.googleapis.com/v1/places:autocomplete',
     { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  return tidyHits(((d.suggestions ?? []) as { placePrediction?: Record<string, unknown> }[])
-    .map((s) => s.placePrediction ? hitOf(s.placePrediction, mode) : null), mode);
+  const hits = ((d.suggestions ?? []) as { placePrediction?: Record<string, unknown> }[])
+    .map((s) => s.placePrediction ? hitOf(s.placePrediction, mode) : null);
+  return mode === 'area' ? rankAreas(q, hits.map((hit) => ({ hit, area: true })), near) : tidyVenues(hits);
 }
 
 async function spot(id: string, session: string): Promise<[number, number] | null> {
@@ -138,13 +139,28 @@ async function ola(path: string, params: Record<string, string>, again = true): 
   }
   return d;
 }
+const olaAsk = (q: string, near: [number, number] | null) =>
+  ola('/places/v1/autocomplete', { input: q, ...(near ? { location: `${near[0]},${near[1]}`, origin: `${near[0]},${near[1]}` } : {}) })
+    .then((d) => (d.predictions ?? []) as Parameters<typeof olaHit>[0][]);
 async function olaSuggest(q: string, mode: 'venue' | 'area', near: [number, number] | null): Promise<Hit[]> {
-  const at = near ? `${near[0]},${near[1]}` : '';
-  const d = await ola('/places/v1/autocomplete', { input: q, ...(at ? { location: at, origin: at } : {}) });
-  let preds = (d.predictions ?? []) as { types?: string[] }[];
-  /* the home-area box: only areas and cities (with the addresses Ola files areas under), when there are any */
-  if (mode === 'area' && preds.some((p) => isAreaLike(p.types))) preds = preds.filter((p) => isAreaLike(p.types));
-  return tidyHits(preds.map((p) => olaHit(p, mode)), mode);
+  if (mode === 'venue') return tidyVenues((await olaAsk(q, near)).map((p) => olaHit(p, mode)));
+  /* the home-area box asks twice, without and with the home area: with it alone, Ola fills the list with places
+     near home ("Connaught Place" from Chandigarh gives a building in Mohali). (Asking a third time with the home
+     city's name added was tried: Ola then makes up local matches, like "Electronic City, Delhi" from Delhi.) */
+  const asks = await Promise.allSettled([olaAsk(q, null), ...(near ? [olaAsk(q, near)] : [])]);
+  const found: Found[] = [];
+  for (const a of asks) {
+    if (a.status !== 'fulfilled') continue;
+    let preds = a.value;
+    /* only areas and cities (with the addresses Ola files areas under), when there are any */
+    const areas = preds.some((p) => isAreaLike(p.types));
+    if (areas) preds = preds.filter((p) => isAreaLike(p.types));
+    preds.forEach((p) => found.push({ hit: olaHit(p, mode), area: areas }));
+  }
+  const hits = rankAreas(q, found, near);
+  const failed = asks.find((a): a is PromiseRejectedResult => a.status === 'rejected');
+  if (failed && !hits.length) throw failed.reason;   // Ola is down and no town fits: the apps fall back to Photon
+  return hits;
 }
 async function olaSpot(id: string): Promise<[number, number] | null> {
   const d = await ola('/places/v1/details', { place_id: id });
