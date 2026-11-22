@@ -1,10 +1,10 @@
 import { goBack } from '@/lib/nav';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PhotoPair } from '@/components/PhotoPair';
 import { PlacePicker } from '@/components/PlacePicker';
-import { Avatar, BottomBar, Btn, Chip, Field, Label, P, Wrap } from '@/components/ui';
+import { Avatar, BottomBar, Btn, Chip, Field, Icon, Label, P, Wrap } from '@/components/ui';
 import { api } from '@/lib/api';
 import { setPhoto } from '@/lib/avatar';
 import { isoDob, maskDob, showDob } from '@/lib/dob';
@@ -13,6 +13,7 @@ import { InterestPicker } from '@/components/InterestPicker';
 import type { Gender } from '@/lib/types';
 import { useModel, useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
+import { FormScroll, KeyboardSafe } from '@/components/KeyboardSafe';
 
 const toggle = (l: string[], v: string) => (l.includes(v) ? l.filter(x => x !== v) : [...l, v]);
 
@@ -79,8 +80,8 @@ export default function EditProfile() {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 24 + insets.bottom }} keyboardShouldPersistTaps="handled">
+    <KeyboardSafe>
+      <FormScroll contentContainerStyle={{ padding: 20, paddingBottom: 24 + insets.bottom }}>
         <Label>Your photos</Label>
         <P mute small style={{ marginBottom: 10 }}>
           Photo 1 is your profile picture. The face check needs both and matches your live face against each.{p.face && p.photo ? ' A new photo means doing the face check again.' : ''}
@@ -106,13 +107,20 @@ export default function EditProfile() {
         </View>
         <Field label="First name" value={name} onChangeText={setName} maxLength={40} autoComplete="given-name" textContentType="givenName" />
         <Field label="Last name" value={last} onChangeText={setLast} maxLength={40} autoComplete="family-name" textContentType="familyName" />
-        <Field label="Date of birth" value={dob} onChangeText={v => setDob(maskDob(v))} placeholder="DD/MM/YYYY" keyboardType="number-pad" maxLength={10} editable={!p.dob} />
-        <Label>Gender</Label>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-          {GENDERS.map(g => <Chip key={g} label={g} on={gender === g} onPress={() => { if (!p.gender) setGender(g); }} />)}
-        </View>
+        {/* Once given, date of birth and gender are fixed: shown as locked rows (no field background, a lock, muted text)
+            so they read as read-only at a glance, not as fields that don't respond. */}
+        {p.dob ? <Locked label="Date of birth" value={dob} /> : (
+          <Field label="Date of birth" value={dob} onChangeText={v => setDob(maskDob(v))} placeholder="DD/MM/YYYY" keyboardType="number-pad" maxLength={10} />
+        )}
+        {p.gender ? <Locked label="Gender" value={gender} /> : (<>
+          <Label>Gender</Label>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+            {GENDERS.map(g => <Chip key={g} label={g} on={gender === g} onPress={() => setGender(g)} />)}
+          </View>
+        </>)}
         <P mute small style={{ marginBottom: 14 }}>
-          {p.dob && p.gender ? "These can't be changed. If one is wrong, email admin@overhere.social." : 'Used for plans that are only for some people, like women-only plans.'}
+          {p.dob && p.gender ? "Your date of birth and gender can't be changed. If either is wrong, email admin@overhere.social."
+            : 'Used for plans that are only for some people, like women-only plans.'}
         </P>
         <PlacePicker label="Home area" mode="area" value={hood} picked={!!ll} near={homeLL(m)} placeholder="Search your area or city"
           onChange={v => { setHood(v); setLl(null); }} onPick={x => { setHood(x.label); setLl(x.ll); }}
@@ -127,11 +135,32 @@ export default function EditProfile() {
         <P mute small style={{ marginBottom: 10 }}>SOS can alert them in one tap, with your location. Only you see this.</P>
         <Field label="Name" value={tName} onChangeText={setTName} placeholder="e.g. Mum, Riya" maxLength={40} />
         <Field label="Phone" value={tPhone} onChangeText={setTPhone} placeholder="+91 98765 43210" keyboardType="phone-pad" maxLength={20} />
-      </ScrollView>
+      </FormScroll>
       <BottomBar>
         {err ? <Text accessibilityLiveRegion="polite" style={{ color: t.bad, fontSize: 14 }}>{err}</Text> : null}
         <Btn title="Save" onPress={save} busy={busy} />
       </BottomBar>
-    </KeyboardAvoidingView>
+    </KeyboardSafe>
+  );
+}
+
+/* A detail that can't be edited: the label with "Locked", then the value in a dashed outline with no field fill and a lock,
+   so it can't be mistaken for a text box or a choice. */
+function Locked({ label, value }: { label: string; value: string }) {
+  const t = useTheme();
+  return (
+    <View style={{ marginBottom: 14 }} accessible accessibilityLabel={`${label}: ${value}. Locked, can't be changed.`}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+        <Text style={{ color: t.ink, fontWeight: '700', fontSize: 14 }}>{label}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: t.field, borderRadius: 99, paddingHorizontal: 7, paddingVertical: 2 }}>
+          <Icon name="lock" size={10} color={t.mute} />
+          <Text style={{ color: t.mute, fontSize: 11, fontWeight: '700' }}>Locked</Text>
+        </View>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 48, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed', borderColor: t.line }}>
+        <Text style={{ color: t.mute, fontSize: 16, flex: 1 }}>{value}</Text>
+        <Icon name="lock" size={16} color={t.mute} />
+      </View>
+    </View>
   );
 }

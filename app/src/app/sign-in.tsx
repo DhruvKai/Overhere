@@ -1,6 +1,6 @@
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
-import { Alert, BackHandler, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { Alert, BackHandler, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCaptcha } from '@/components/Captcha';
 import { Btn, Check, CodeBoxes, Field, H, Logo, P, PwField, TextLink } from '@/components/ui';
@@ -16,6 +16,7 @@ import { draftStep, loadDraft } from '@/lib/signup';
 import { useStore } from '@/lib/store';
 import { SITE, supabase } from '@/lib/supabase';
 import { useTheme } from '@/lib/theme';
+import { FormScroll, KeyboardSafe } from '@/components/KeyboardSafe';
 
 type Mode = 'phone' | 'code' | 'email' | 'reset' | 'resetSent';
 const RESEND_MS = 30000;
@@ -205,8 +206,8 @@ export default function SignIn() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
       {captcha}
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={[{ padding: 24, paddingTop: 48 }, column]} keyboardShouldPersistTaps="handled">
+      <KeyboardSafe>
+        <FormScroll contentContainerStyle={[{ padding: 24, paddingTop: 48 }, column]}>
           {signUp ? (
             /* screen 5 on: back to the gender screen, and how much of sign-up is done (30% here) */
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 22 }}>
@@ -223,7 +224,7 @@ export default function SignIn() {
               hint={signUp ? "+91 · we'll text you a code. Then you'll add your email and a password." : "+91 · we'll text you a 6-digit code"} />
             {Agree}
             {errLine}
-            <Btn title="Send code" onPress={() => sendCode()} busy={busy} />
+            <Btn title="Send code" onPress={() => sendCode()} busy={busy} off={!!phoneProblem(phoneDigits(phone)) || (signUp && !agreed)} />
             {switchMode}
           </>)}
 
@@ -231,7 +232,7 @@ export default function SignIn() {
             <P style={{ marginBottom: 14 }}>Enter the code we sent to +91 {phoneDigits(phone)}.</P>
             <CodeBoxes label="6-digit code" value={code} onChange={v => { setCode(v); setErr(''); }} onDone={checkCode} error={!!err} sms />
             {errLine}
-            <Btn title="Sign in" onPress={() => checkCode()} busy={busy} />
+            <Btn title="Sign in" onPress={() => checkCode()} busy={busy} off={!/^\d{6}$/.test(code)} />
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
               <TextLink title="Change number" onPress={() => { setMode('phone'); setErr(''); }} />
               <TextLink title="Resend code" onPress={() => sendCode(true)} />
@@ -254,7 +255,8 @@ export default function SignIn() {
               </View>
             )}
             {errLine}
-            <Btn title={signUp ? 'Create account' : 'Sign in'} onPress={emailGo} busy={busy} />
+            <Btn title={signUp ? 'Create account' : 'Sign in'} onPress={emailGo} busy={busy}
+              off={!!emailProblem(email) || !pw || (signUp && (!!pwProblem(pw, email) || pw2 !== pw || !agreed))} />
             {switchMode}
           </>)}
 
@@ -262,7 +264,7 @@ export default function SignIn() {
             <P style={{ marginBottom: 14 }}>Enter the email you signed up with and we&apos;ll send you a link to choose a new password.</P>
             {emailField(true)}
             {errLine}
-            <Btn title="Send reset link" onPress={() => sendReset()} busy={busy} />
+            <Btn title="Send reset link" onPress={() => sendReset()} busy={busy} off={!!emailProblem(email)} />
             <TextLink title="Back to sign in" onPress={() => { setMode('email'); clearFe(); }} style={{ marginTop: 6 }} />
           </>)}
 
@@ -285,8 +287,8 @@ export default function SignIn() {
               <TextLink inline title="Privacy policy" onPress={() => open('/privacy.html')} />.
             </P>
           ) : null}
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </FormScroll>
+      </KeyboardSafe>
     </SafeAreaView>
   );
 }

@@ -1,7 +1,7 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { goBack } from '@/lib/nav';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PlacePicker } from '@/components/PlacePicker';
 import { SafetyFirst, safetySeen } from '@/components/SafetyFirst';
@@ -13,6 +13,7 @@ import { CATS, COST, durTxt, GENDERS, homeLL, homeName, kmBetween, NEAR_KM, REPE
 import { badWord, badWordMsg } from '@/lib/words';
 import { useModel, useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
+import { FormScroll, KeyboardSafe } from '@/components/KeyboardSafe';
 import type { Cat, Cost, Gender } from '@/lib/types';
 
 /* A sensible first time: tomorrow at 7 pm, like the website. */
@@ -95,9 +96,9 @@ export default function Post() {
 
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+    <KeyboardSafe>
       <Stack.Screen options={{ title: edit ? 'Edit plan' : 'Post a plan' }} />
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 + insets.bottom }} keyboardShouldPersistTaps="handled">
+      <FormScroll contentContainerStyle={{ padding: 20, paddingBottom: 40 + insets.bottom }}>
         {edit && edit.members.length ? <Note tone="info" icon="users">{edit.members.length} {edit.members.length === 1 ? 'person is' : 'people are'} already going. They&apos;ll see a note about your changes in the group chat.</Note> : null}
         {!edit && mine.length ? (
           <>
@@ -154,11 +155,12 @@ export default function Post() {
         </Wrap>
         {repeat ? <P small mute style={{ marginTop: -8, marginBottom: 14 }}>The next one is posted automatically when this one ends.</P> : null}
 
-      </ScrollView>
+      </FormScroll>
       <View><BottomBar>
         {err ? <Text accessibilityLiveRegion="polite" style={{ color: t.bad, fontSize: 14 }}>{err}</Text> : null}
-        <Btn title={edit ? 'Save changes' : 'Post plan'} icon={edit ? 'check' : 'send'} onPress={post} busy={busy} />
+        <Btn title={edit ? 'Save changes' : 'Post plan'} icon={edit ? 'check' : 'send'} onPress={post} busy={busy}
+          off={!desc.trim() || !venue.trim() || !ll || (!!aud && !aud.length)} />
       </BottomBar></View>
-    </KeyboardAvoidingView>
+    </KeyboardSafe>
   );
 }

@@ -86,6 +86,9 @@ const hash = createHash('sha256');
 hash.update(profileName + JSON.stringify(profile.env || {}));
 for (const f of ['app.json', 'app.config.js', 'package.json', 'package-lock.json']) if (existsSync(join(ROOT, f))) hash.update(readFileSync(join(ROOT, f)));
 for (const f of readdirSync(join(ROOT, 'plugins'))) hash.update(readFileSync(join(ROOT, 'plugins', f)));
+/* prebuild turns these into the launcher, notification and splash images in android/, so a new icon needs a new android/ */
+for (const f of ['icon.png', 'android-icon-foreground.png', 'notification-icon.png', 'splash-blank.png', 'splash-icon.png', 'favicon.png'])
+  if (existsSync(join(ROOT, 'assets', f))) hash.update(readFileSync(join(ROOT, 'assets', f)));
 const stamp = hash.digest('hex');
 if (!existsSync(stampFile) || readFileSync(stampFile, 'utf8') !== stamp) {
   say(`Generating android/ for "${profileName}"`);

@@ -5,7 +5,8 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type T
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { introClock, introLogo } from '@/components/Intro';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CATS, defEmo, type Model, type Plan, placeLine, spotTxt, whenStr, kmAway } from '@/lib/model';
+import { CATS, defEmo, type Model, type Plan, placeLine, spotTxt, whenStr, kmAway, kmBetween } from '@/lib/model';
+import { geo } from '@/lib/spots';
 import { avatarUrl } from '@/lib/avatar';
 import { photoOf } from '@/lib/photos';
 import { R, useTheme } from '@/lib/theme';
@@ -17,16 +18,18 @@ export const Icon = ({ name, size = 16, color }: { name: IconName; size?: number
   return <Feather name={name} size={size} color={color ?? t.ink} />;
 };
 
-export function Btn({ title, onPress, kind = 'primary', icon, busy, disabled, style }: {
-  /* alarm: solid red with white text, for getting help (SOS, call 112) */
-  title: string; onPress: () => void; kind?: 'primary' | 'ghost' | 'danger' | 'alarm' | 'soft'; icon?: IconName; busy?: boolean; disabled?: boolean; style?: ViewStyle;
+export function Btn({ title, onPress, kind = 'primary', icon, busy, disabled, off, style }: {
+  /* alarm: solid red with white text, for getting help (SOS, call 112)
+     off: looks disabled (grey, muted text) until a form's required fields are filled, but still takes a tap, so the
+     form can say what's missing */
+  title: string; onPress: () => void; kind?: 'primary' | 'ghost' | 'danger' | 'alarm' | 'soft'; icon?: IconName; busy?: boolean; disabled?: boolean; off?: boolean; style?: ViewStyle;
 }) {
   const t = useTheme();
-  const bg = kind === 'primary' ? t.acc : kind === 'danger' ? t.badbg : kind === 'alarm' ? '#B91C1C' : kind === 'soft' ? t.acc2 : 'transparent';
-  const fg = kind === 'primary' ? t.onAcc : kind === 'danger' ? t.bad : kind === 'alarm' ? '#FFFFFF' : kind === 'soft' ? t.accink : t.ink;
+  const bg = off ? t.field : kind === 'primary' ? t.acc : kind === 'danger' ? t.badbg : kind === 'alarm' ? '#B91C1C' : kind === 'soft' ? t.acc2 : 'transparent';
+  const fg = off ? t.mute : kind === 'primary' ? t.onAcc : kind === 'danger' ? t.bad : kind === 'alarm' ? '#FFFFFF' : kind === 'soft' ? t.accink : t.ink;
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={title} onPress={onPress} disabled={disabled || busy}
-      style={({ pressed }) => [s.btn, { backgroundColor: bg, borderColor: kind === 'ghost' ? t.line : bg, opacity: disabled ? 0.5 : pressed ? 0.8 : 1 }, style]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled: !!(disabled || off) }} onPress={onPress} disabled={disabled || busy}
+      style={({ pressed }) => [s.btn, { backgroundColor: bg, borderColor: kind === 'ghost' && !off ? t.line : bg, opacity: disabled ? 0.5 : pressed ? 0.8 : 1 }, style]}>
       {busy ? <ActivityIndicator color={fg} /> : (<>{icon ? <Feather name={icon} size={17} color={fg} /> : null}<Text style={[s.btnT, { color: fg }]}>{title}</Text></>)}
     </Pressable>
   );
@@ -176,11 +179,12 @@ export function PwField(p: Omit<ComponentProps<typeof Field>, 'secureTextEntry' 
   );
 }
 
-export function Chip({ label, on, onPress, icon }: { label: string; on?: boolean; onPress?: () => void; icon?: IconName }) {
+/* disabled: greyed out and not tappable (e.g. distance while location is off) */
+export function Chip({ label, on, onPress, icon, disabled }: { label: string; on?: boolean; onPress?: () => void; icon?: IconName; disabled?: boolean }) {
   const t = useTheme();
   return (
-    <Pressable accessibilityRole="button" accessibilityState={{ selected: !!on }} onPress={onPress}
-      style={[s.chip, { backgroundColor: on ? t.acc2 : t.chip, borderColor: on ? t.acc : t.line }]}>
+    <Pressable accessibilityRole="button" accessibilityState={{ selected: !!on, disabled: !!disabled }} onPress={onPress} disabled={disabled}
+      style={[s.chip, { backgroundColor: on ? t.acc2 : t.chip, borderColor: on ? t.acc : t.line }, disabled && { opacity: 0.4 }]}>
       {icon ? <Feather name={icon} size={13} color={on ? t.accink : t.ink2} /> : null}
       <Text style={[s.chipT, { color: on ? t.accink : t.ink2 }]}>{label}</Text>
     </Pressable>
@@ -307,10 +311,11 @@ export function SaveToggle({ on, onPress }: { on: boolean; onPress: () => void }
   );
 }
 
-/* A plan in a list: photo, category, title, when and where. */
-export function PlanRow({ m, a, onPress, right }: { m: Model; a: Plan; onPress: () => void; right?: ReactNode }) {
+/* A plan in a list: photo, category, title, when and where. here: where the phone is (Discover, with location on),
+   so the distance shown is from you, the same one the distance filter and sort use; otherwise from your home area. */
+export function PlanRow({ m, a, onPress, right, here }: { m: Model; a: Plan; onPress: () => void; right?: ReactNode; here?: [number, number] | null }) {
   const t = useTheme();
-  const km = kmAway(m, a);
+  const km = here ? kmBetween(here, geo(a)) : kmAway(m, a);
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={a.desc} onPress={onPress}
       style={({ pressed }) => [s.row, { backgroundColor: t.card, borderColor: t.line, opacity: pressed ? 0.85 : 1 }]}>

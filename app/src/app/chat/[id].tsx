@@ -1,7 +1,7 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { goBack } from '@/lib/nav';
 import { useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ReasonSheet } from '@/components/ReasonSheet';
 import { ReportSheet } from '@/components/ReportSheet';
@@ -14,6 +14,7 @@ import { CHAT_OPEN_H, CHAT_REASONS, chatClosed, inChat, isPast, mutedOf, OPT_OUT
 import { useModel, useStore } from '@/lib/store';
 import { tidyWhen } from '@/lib/when';
 import { useTheme } from '@/lib/theme';
+import { KeyboardSafe } from '@/components/KeyboardSafe';
 
 export default function Chat() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -83,7 +84,7 @@ export default function Chat() {
           </View>
         ),
       }} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      <KeyboardSafe>
         <Text style={{ color: t.mute, fontSize: 12.5, paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: 1, borderColor: t.line }}>
           Members: {[a.host, ...a.members].map(u => uname(m, u)).join(', ')} · full history visible to everyone{muted ? ' · notifications muted' : ''}
         </Text>
@@ -158,7 +159,7 @@ export default function Chat() {
           </Pressable>
         </View>
         )}
-      </KeyboardAvoidingView>
+      </KeyboardSafe>
       <ReportSheet open={!!reportMsg} title="Report this message" reasons={CHAT_REASONS} target={reportMsg?.from} act={a.id} msg={reportMsg?.id}
         onClose={() => setReportMsg(null)} />
       {sheet === 'members' ? (

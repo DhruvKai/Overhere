@@ -44,7 +44,7 @@ export function ReportSheet({ open, title, reasons, target, act, msg, onClose }:
               {reasons.map(r => <Chip key={r} label={r} on={reason === r} onPress={() => setReason(r)} />)}
             </View>
             <Field label="What happened? (optional)" value={note} onChangeText={setNote} maxLength={500} multiline />
-            <Btn title="Send report" onPress={send} busy={busy} />
+            <Btn title="Send report" onPress={send} busy={busy} off={!reason} />
             <View style={{ height: 8 }} />
             <Btn title="Cancel" kind="ghost" onPress={onClose} />
           </ScrollView>

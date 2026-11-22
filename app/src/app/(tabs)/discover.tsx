@@ -11,9 +11,11 @@ import { Sheet } from '@/components/Sheet';
 import { Btn, Chip, Empty, Icon, PlanRow, SaveToggle, type IconName } from '@/components/ui';
 import { CityNote, LockedNote } from '@/components/Where';
 import {
-  alertLabel, alertsOf, canSave, CATS, datePresets, dayKey, DISTS, feed, filterLabels, kmAway, matchF, myReq, NO_FILTERS, reasons, saved,
+  alertLabel, alertsOf, canSave, CATS, datePresets, dayKey, DISTS, feed, filterLabels, kmBetween, matchF, myReq, NO_FILTERS, reasons, saved,
   nowOf, savedFOf, score, spots, type Filters, type Plan, type Sort, type Tod,
 } from '@/lib/model';
+import { askHere, useHere, type LL } from '@/lib/here';
+import { geo } from '@/lib/spots';
 import { useModel, useStore, useToggleSave } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 import type { Cat } from '@/lib/types';
@@ -35,8 +37,13 @@ export default function Discover() {
   const m = useModel();
   const { refresh, savePriv, toast } = useStore();
   const toggleSave = useToggleSave();
-  const [f, setF] = useState<Filters>(NO_FILTERS);
-  const [sort, setSort] = useState<Sort>('for');
+  const [chosen, setF] = useState<Filters>(NO_FILTERS);
+  const [chosenSort, setSort] = useState<Sort>('for');
+  /* Distance (the filter and the sort) counts from where the phone is. While location is off both are greyed out and
+     set aside, not forgotten: they come back on their own when location does. */
+  const here = useHere();
+  const f: Filters = useMemo(() => (here ? chosen : { ...chosen, dist: 0 }), [here, chosen]);
+  const sort: Sort = !here && chosenSort === 'near' ? 'for' : chosenSort;
   const [pulling, setPulling] = useState(false);
   const [view, setView] = useState<'list' | 'map'>('list');
   const [sheet, setSheet] = useState<'filters' | 'sort' | null>(null);
@@ -44,11 +51,11 @@ export default function Discover() {
 
   const all = feed(m);
   const list = useMemo(() => {
-    const l = all.filter(a => matchF(m, a, f));
+    const l = all.filter(a => matchF(m, a, f, here));
     if (sort === 'for') return [...l].sort((a, b) => score(m, b) - score(m, a) || a.when - b.when);
-    if (sort === 'near') return [...l].sort((a, b) => kmAway(m, a) - kmAway(m, b) || a.when - b.when);
+    if (sort === 'near' && here) return [...l].sort((a, b) => kmBetween(here, geo(a)) - kmBetween(here, geo(b)) || a.when - b.when);
     return l;
-  }, [m, all, f, sort]);
+  }, [m, all, f, sort, here]);
   const act = filterLabels(f), sf = savedFOf(m), al = alertsOf(m);
   const label = act.map(x => x[1]).join(' · ').slice(0, 60);
   const alertable = act.some(([k]) => k !== 'date'), alerted = al.some(x => x.label === alertLabel(f));
@@ -134,7 +141,7 @@ export default function Discover() {
   return (
     <View style={{ flex: 1 }}>
       <Header title="Discover" where />
-      {view === 'map' ? <View style={{ flex: 1 }}><View style={{ paddingHorizontal: 16 }}>{head}</View><PlanMap m={m} list={list} /></View> : (
+      {view === 'map' ? <View style={{ flex: 1 }}><View style={{ paddingHorizontal: 16 }}>{head}</View><PlanMap m={m} list={list} here={here} /></View> : (
       <FlashList<Plan>
         data={list}
         keyExtractor={a => a.id}
@@ -149,7 +156,7 @@ export default function Discover() {
           return (
             <View>
               {why ? <Text style={{ color: t.accink, fontSize: 12, fontWeight: '700', marginBottom: 4 }}>★ {why}</Text> : null}
-              <PlanRow m={m} a={item} onPress={() => router.push({ pathname: '/plan/[id]', params: { id: item.id } })}
+              <PlanRow m={m} a={item} here={here} onPress={() => router.push({ pathname: '/plan/[id]', params: { id: item.id } })}
                 right={(
                   <View style={{ alignItems: 'flex-end', gap: 8 }}>
                     {canSave(m, item) ? <SaveToggle on={saved(m).includes(item.id)} onPress={() => toggleSave(item.id)} /> : null}
@@ -175,20 +182,24 @@ export default function Discover() {
       <JoinSheet plan={asking} onClose={() => setAsking(null)} />
       {sheet === 'sort' ? (
         <Sheet title="Sort by" onClose={() => setSheet(null)}>
-          {(Object.keys(SORTS) as Sort[]).map(k => (
-            <Pressable key={k} accessibilityRole="radio" accessibilityState={{ checked: sort === k }} onPress={() => { setSort(k); setSheet(null); }}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 14, borderWidth: 1.5, borderColor: sort === k ? t.acc : t.line, backgroundColor: sort === k ? t.acc2 : t.card, marginBottom: 8 }}>
-              <Icon name={SORTS[k][0]} size={18} color={t.accink} />
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: t.ink, fontWeight: '700', fontSize: 15 }}>{SORTS[k][1]}</Text>
-                <Text style={{ color: t.mute, fontSize: 13 }}>{SORTS[k][2]}</Text>
-              </View>
-              {sort === k ? <Icon name="check" size={18} color={t.accink} /> : null}
-            </Pressable>
-          ))}
+          {(Object.keys(SORTS) as Sort[]).map(k => {
+            const off = k === 'near' && !here;   // needs your location
+            return (
+              <Pressable key={k} accessibilityRole="radio" accessibilityState={{ checked: sort === k, disabled: off }} disabled={off} onPress={() => { setSort(k); setSheet(null); }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 14, borderWidth: 1.5, borderColor: sort === k ? t.acc : t.line, backgroundColor: sort === k ? t.acc2 : t.card, marginBottom: 8, opacity: off ? 0.4 : 1 }}>
+                <Icon name={SORTS[k][0]} size={18} color={t.accink} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: t.ink, fontWeight: '700', fontSize: 15 }}>{SORTS[k][1]}</Text>
+                  <Text style={{ color: t.mute, fontSize: 13 }}>{off ? 'Needs your location' : SORTS[k][2]}</Text>
+                </View>
+                {sort === k ? <Icon name="check" size={18} color={t.accink} /> : null}
+              </Pressable>
+            );
+          })}
+          {!here ? <LocOff what="sort by distance" /> : null}
         </Sheet>
       ) : null}
-      {sheet === 'filters' ? <FiltersSheet f={f} setF={setF} count={all.filter(a => matchF(m, a, f)).length} onClose={() => setSheet(null)} /> : null}
+      {sheet === 'filters' ? <FiltersSheet f={f} set={p => setF(x => ({ ...x, ...p }))} reset={() => setF(NO_FILTERS)} here={here} count={all.filter(a => matchF(m, a, f, here)).length} onClose={() => setSheet(null)} /> : null}
     </View>
   );
 }
@@ -198,11 +209,32 @@ function H3({ children }: { children: string }) {
   return <Text style={{ color: t.ink, fontWeight: '700', fontSize: 15, marginTop: 6, marginBottom: 8 }}>{children}</Text>;
 }
 
-function FiltersSheet({ f, setF, count, onClose }: { f: Filters; setF: (f: Filters) => void; count: number; onClose: () => void }) {
+/* Location is off: why the distance options are greyed out, and a way to turn it on right there. */
+function LocOff({ what }: { what: string }) {
+  const t = useTheme();
+  const { toast } = useStore();
+  const [busy, setBusy] = useState(false);
+  const turnOn = async () => {
+    if (busy) return;
+    setBusy(true);
+    const r = await askHere();
+    setBusy(false);
+    if (r === 'nofix') toast("Location is on, but your phone hasn't found where you are yet. Try again in a moment.");
+    else if (r === 'denied') toast('Allow location for Overhere in your phone settings to use distance.');
+  };
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+      <Icon name="navigation" size={14} color={t.mute} />
+      <Text style={{ color: t.mute, fontSize: 13, flex: 1 }}>Turn on location to {what}.</Text>
+      <Text accessibilityRole="button" onPress={turnOn} style={{ color: t.accink, fontWeight: '700', fontSize: 13 }}>{busy ? 'Finding you…' : 'Turn on location'}</Text>
+    </View>
+  );
+}
+
+function FiltersSheet({ f, set, reset, here, count, onClose }: { f: Filters; set: (p: Partial<Filters>) => void; reset: () => void; here: LL | null; count: number; onClose: () => void }) {
   const m = useModel();
   const presets = datePresets(m), first = dayKey(nowOf(m));
   const [iosPick, setIosPick] = useState<'dfrom' | 'dto' | null>(null);
-  const set = (p: Partial<Filters>) => setF({ ...f, ...p });
   const toDate = (k: string) => new Date((k || first) + 'T12:00:00');
   const pick = (which: 'dfrom' | 'dto') => {
     if (Platform.OS === 'ios') return setIosPick(which);
@@ -237,12 +269,13 @@ function FiltersSheet({ f, setF, count, onClose }: { f: Filters; setF: (f: Filte
         {TODS.map(([k, l]) => <Chip key={k} icon={k === 'any' ? 'clock' : undefined} label={l} on={f.tod === k} onPress={() => set({ tod: k })} />)}
       </View>
       <H3>Distance</H3>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-        <Chip icon="map-pin" label="Any distance" on={!f.dist} onPress={() => set({ dist: 0 })} />
-        {DISTS.map(k => <Chip key={k} label={`Within ${k} km`} on={f.dist === k} onPress={() => set({ dist: k })} />)}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: here ? 16 : 10 }}>
+        <Chip icon="map-pin" label="Any distance" on={!f.dist} disabled={!here} onPress={() => set({ dist: 0 })} />
+        {DISTS.map(k => <Chip key={k} label={`Within ${k} km`} on={f.dist === k} disabled={!here} onPress={() => set({ dist: k })} />)}
       </View>
+      {!here ? <LocOff what="filter by distance" /> : null}
       <View style={{ flexDirection: 'row', gap: 8 }}>
-        {filterLabels(f).length ? <Btn title="Reset" kind="ghost" onPress={() => setF(NO_FILTERS)} style={{ flex: 1 }} /> : null}
+        {filterLabels(f).length ? <Btn title="Reset" kind="ghost" onPress={reset} style={{ flex: 1 }} /> : null}
         <Btn title={`Show ${count} ${count === 1 ? 'plan' : 'plans'}`} onPress={onClose} style={{ flex: 2 }} />
       </View>
     </Sheet>

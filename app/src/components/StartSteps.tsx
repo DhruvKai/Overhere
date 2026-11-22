@@ -25,6 +25,8 @@ export function StartSteps({ onDone, onBack, at, right, onUnder18 }: { onDone: (
   const [err, setErr] = useState('');
   const keep = (patch: Partial<Draft>) => setD(x => { const n = { ...x, ...patch }; saveDraft(n); return n; });
 
+  /* this screen's required answer is given: until then Next looks off (a tap still says what's missing) */
+  const ready = step === 0 ? d.ints.length >= MIN_INTS : step === 1 ? d.avail.length > 0 : step === 2 ? !!isoDob(dob) : !!d.gender;
   function next() {
     const iso = isoDob(dob);
     const problem = step === 0 ? (d.ints.length < MIN_INTS ? `Pick at least ${MIN_INTS} things you like doing` : '')
@@ -86,7 +88,7 @@ export function StartSteps({ onDone, onBack, at, right, onUnder18 }: { onDone: (
   return (
     <SignupPage top={<SignupTop onBack={back} steps={[step, STEPS]} right={right} />} buttons={<>
       {err ? <Text accessibilityLiveRegion="polite" style={{ color: t.bad, fontSize: 14 }}>{err}</Text> : null}
-      <Btn title="Next" onPress={next} />
+      <Btn title="Next" onPress={next} off={!ready} />
     </>}>
       {body}
       <View style={{ height: 8 }} />

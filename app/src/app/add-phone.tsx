@@ -1,11 +1,12 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { Btn, CodeBoxes, Field, P, TextLink } from '@/components/ui';
 import { friendly } from '@/lib/api';
 import { useStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/lib/theme';
+import { FormScroll, KeyboardSafe } from '@/components/KeyboardSafe';
 
 /* Accounts made with an email before phones were part of sign-up add their number here, from the progress card on
    Profile (the same as the website's addphone sheet). Supabase texts a code to the new number; once it's confirmed
@@ -53,24 +54,24 @@ export default function AddPhone() {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: t.bg }}>
-      <ScrollView contentContainerStyle={{ padding: 24 }} keyboardShouldPersistTaps="handled">
+    <KeyboardSafe style={{ backgroundColor: t.bg }}>
+      <FormScroll contentContainerStyle={{ padding: 24 }}>
         {step === 'add' ? (<>
           <P mute style={{ marginBottom: 20 }}>We&apos;ll text a 6-digit code to confirm it. Nobody else sees your number.</P>
           <Field label="Mobile number" value={phone} onChangeText={v => { setErr(''); setPhone(digits(v)); }} keyboardType="phone-pad"
             placeholder="98765 43210" textContentType="telephoneNumber" autoComplete="tel" hint="+91" autoFocus />
-          <Btn title="Send code" onPress={() => send()} busy={busy} />
+          <Btn title="Send code" onPress={() => send()} busy={busy} off={!!problem(digits(phone))} />
         </>) : (<>
           <P style={{ marginBottom: 14 }}>Enter the code we sent to +91 {digits(phone)}.</P>
           <CodeBoxes label="6-digit code" value={code} onChange={v => { setCode(v); setErr(''); }} onDone={confirm} error={!!err} sms />
-          <Btn title="Confirm number" onPress={() => confirm()} busy={busy} />
+          <Btn title="Confirm number" onPress={() => confirm()} busy={busy} off={!/^\d{6}$/.test(code)} />
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
             <TextLink title="Change number" onPress={() => { setStep('add'); setErr(''); }} />
             <TextLink title="Resend code" onPress={() => send(true)} />
           </View>
         </>)}
         {err ? <Text accessibilityLiveRegion="polite" style={{ color: t.bad, marginTop: 14, fontSize: 14 }}>{err}</Text> : null}
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </FormScroll>
+    </KeyboardSafe>
   );
 }

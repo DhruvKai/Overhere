@@ -1,7 +1,7 @@
 import Feather from '@expo/vector-icons/Feather';
 import { router, Tabs } from 'expo-router';
 import { useEffect } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MicroAsk } from '@/components/Feedback';
 import { Avatar, Btn, Empty, Icon } from '@/components/ui';
@@ -63,15 +63,15 @@ export default function TabLayout() {
       }}>
         <Tabs.Screen name="index" options={{ title: 'Swipe', tabBarIcon: icon('layers') }} />
         <Tabs.Screen name="discover" options={{ title: 'Discover', tabBarIcon: icon('compass') }} />
-        {/* Post sits in the middle: a green button that opens the post screen, not a tab */}
+        {/* Post sits in the middle: a round green + button that opens the post screen, not a tab */}
         <Tabs.Screen name="new" options={{
           title: 'Post',
           tabBarButton: () => (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
               <Pressable accessibilityRole="button" accessibilityLabel="Post a plan" onPress={() => router.push('/post')}
-                style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: t.acc, borderRadius: 99, paddingHorizontal: 15, height: 42, opacity: pressed ? 0.85 : 1 })}>
-                <Icon name="plus" size={18} color={t.onAcc} />
-                <Text style={{ color: t.onAcc, fontWeight: '700', fontSize: 15 }}>Post</Text>
+                style={({ pressed }) => ({ width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: t.acc,
+                  opacity: pressed ? 0.85 : 1, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 4 })}>
+                <Icon name="plus" size={26} color={t.onAcc} />
               </Pressable>
             </View>
           ),

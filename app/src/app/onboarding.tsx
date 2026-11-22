@@ -163,7 +163,7 @@ function AboutYou() {
   return (
     <SignupPage top={<SignupTop onBack={() => setPre(3)} right={out} />} buttons={<>
       {err ? <Text accessibilityLiveRegion="polite" style={{ color: t.bad, fontSize: 14 }}>{err}</Text> : null}
-      <Btn title="Continue" onPress={save} busy={busy} />
+      <Btn title="Continue" onPress={save} busy={busy} off={!name.trim() || !last.trim() || !ll || !consent} />
     </>}>
       <H size={26}>About you</H>
       <View style={{ height: 22 }} />

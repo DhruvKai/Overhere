@@ -1,24 +1,3397 @@
 {
- "note": "Plan photos: generated into web/app.js and app/src/lib/photoFiles.ts by tools/plan-photos.py. Every photo is CC0, CC BY or CC BY-SA, shows no identifiable person, and is labelled illustrative in the apps.",
+ "note": "Plan photos: generated into web/app.js and app/src/lib/photoFiles.ts by tools/plan-photos.py. Each activity type has two photos with the same tags (chosen by the team, 22 Nov 2026, from Pexels and Pixabay); older ones are CC0, CC BY or CC BY-SA from Wikimedia Commons. The apps label every photo illustrative.",
  "photos": [
   {
-   "k": "outdoorfilm",
+   "k": "gym_1",
+   "cats": [
+    "fitness"
+   ],
+   "tags": [
+    "gym",
+    "workout",
+    "weights",
+    "lifting",
+    "strength",
+    "dumbbell",
+    "kettlebell",
+    "barbell",
+    "training",
+    "crossfit"
+   ],
+   "def": [
+    "fitness"
+   ],
+   "title": "Barbell and Kettle Bell on a Black Mat",
+   "by": "Arturo EG",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/barbell-and-kettle-bell-on-a-black-mat-6628962/"
+  },
+  {
+   "k": "gym_2",
+   "cats": [
+    "fitness"
+   ],
+   "tags": [
+    "gym",
+    "workout",
+    "weights",
+    "lifting",
+    "strength",
+    "dumbbell",
+    "kettlebell",
+    "barbell",
+    "training",
+    "crossfit"
+   ],
+   "def": [
+    "fitness"
+   ],
+   "title": "Running shoes and dumbbells",
+   "by": "stevepb",
+   "lic": "Pixabay Content License",
+   "licUrl": "https://pixabay.com/service/license-summary/",
+   "src": "https://pixabay.com/photos/dumbbells-shoes-sneakers-2465478/"
+  },
+  {
+   "k": "running_1",
+   "cats": [
+    "fitness",
+    "outdoor"
+   ],
+   "tags": [
+    "run",
+    "running",
+    "runner",
+    "jog",
+    "jogging",
+    "marathon",
+    "sprint",
+    "5k",
+    "10k",
+    "half marathon"
+   ],
+   "def": [],
+   "title": "Runner on an open road at sunrise",
+   "by": "kinkate",
+   "lic": "Pixabay Content License",
+   "licUrl": "https://pixabay.com/service/license-summary/",
+   "src": "https://pixabay.com/photos/jogging-run-sport-jog-sporty-race-2343558/"
+  },
+  {
+   "k": "running_2",
+   "cats": [
+    "fitness",
+    "outdoor"
+   ],
+   "tags": [
+    "run",
+    "running",
+    "runner",
+    "jog",
+    "jogging",
+    "marathon",
+    "sprint",
+    "5k",
+    "10k",
+    "half marathon"
+   ],
+   "def": [],
+   "title": "Woman running in a park",
+   "by": "Fotorech",
+   "lic": "Pixabay Content License",
+   "licUrl": "https://pixabay.com/service/license-summary/",
+   "src": "https://pixabay.com/photos/running-woman-race-athlete-sport-4782722/"
+  },
+  {
+   "k": "cycling_1",
+   "cats": [
+    "fitness",
+    "outdoor",
+    "adventure"
+   ],
+   "tags": [
+    "cycle",
+    "cycling",
+    "cyclist",
+    "cyclists",
+    "bike ride",
+    "biking",
+    "bicycle",
+    "cycle ride"
+   ],
+   "def": [],
+   "title": "Cyclist on the Bicycles",
+   "by": "대정 김",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/cyclist-on-the-bicycles-14226402/"
+  },
+  {
+   "k": "cycling_2",
+   "cats": [
+    "fitness",
+    "outdoor",
+    "adventure"
+   ],
+   "tags": [
+    "cycle",
+    "cycling",
+    "cyclist",
+    "cyclists",
+    "bike ride",
+    "biking",
+    "bicycle",
+    "cycle ride"
+   ],
+   "def": [],
+   "title": "People Cycling Together",
+   "by": "Long Nguyen",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/people-cycling-together-22765381/"
+  },
+  {
+   "k": "swimming_1",
+   "cats": [
+    "fitness"
+   ],
+   "tags": [
+    "swim",
+    "swimming",
+    "pool",
+    "laps",
+    "backstroke",
+    "freestyle"
+   ],
+   "def": [],
+   "title": "Woman Swimming in a Pool",
+   "by": "Jan van der Wolf",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/woman-swimming-in-a-pool-19095452/"
+  },
+  {
+   "k": "swimming_2",
+   "cats": [
+    "fitness"
+   ],
+   "tags": [
+    "swim",
+    "swimming",
+    "pool",
+    "laps",
+    "backstroke",
+    "freestyle"
+   ],
+   "def": [],
+   "title": "Competitive Swimmer Performing Backstroke in Pool",
+   "by": "Miguel Guerra",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/competitive-swimmer-performing-backstroke-in-pool-38642646/"
+  },
+  {
+   "k": "yoga_1",
+   "cats": [
+    "fitness",
+    "selfcare"
+   ],
+   "tags": [
+    "yoga",
+    "stretch",
+    "stretching",
+    "yoga mat",
+    "asana",
+    "surya namaskar"
+   ],
+   "def": [],
+   "title": "Crop sportswoman unfolding sport mat on wooden floor",
+   "by": "kaboompics",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/crop-sportswoman-unfolding-sport-mat-on-wooden-floor-4498609/"
+  },
+  {
+   "k": "yoga_2",
+   "cats": [
+    "fitness",
+    "selfcare"
+   ],
+   "tags": [
+    "yoga",
+    "stretch",
+    "stretching",
+    "yoga mat",
+    "asana",
+    "surya namaskar"
+   ],
+   "def": [],
+   "title": "Rolled Yoga Mats Beside a Pair of Red Dumbbells",
+   "by": "Pavel Danilyuk",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/rolled-yoga-mats-beside-a-pair-of-red-dumbbells-6339731/"
+  },
+  {
+   "k": "pilates_1",
+   "cats": [
+    "fitness",
+    "selfcare"
+   ],
+   "tags": [
+    "pilates",
+    "reformer",
+    "core workout",
+    "mat pilates"
+   ],
+   "def": [],
+   "title": "Exercise ball and resistance band",
+   "by": "ArsAdAstra",
+   "lic": "Pixabay Content License",
+   "licUrl": "https://pixabay.com/service/license-summary/",
+   "src": "https://pixabay.com/photos/workout-ball-pilates-fitness-gym-1931107/"
+  },
+  {
+   "k": "pilates_2",
+   "cats": [
+    "fitness",
+    "selfcare"
+   ],
+   "tags": [
+    "pilates",
+    "reformer",
+    "core workout",
+    "mat pilates"
+   ],
+   "def": [],
+   "title": "Women Doing Yoga in the Room",
+   "by": "Anna Shvets",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/women-doing-yoga-in-the-room-4587320/"
+  },
+  {
+   "k": "boxing_1",
+   "cats": [
+    "fitness"
+   ],
+   "tags": [
+    "boxing",
+    "boxer",
+    "kickboxing",
+    "sparring",
+    "mma",
+    "muay thai",
+    "punching bag"
+   ],
+   "def": [],
+   "title": "Boxing gloves on paved street",
+   "by": "Griffin Wooldridge",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/boxing-gloves-on-paved-street-5580064/"
+  },
+  {
+   "k": "boxing_2",
+   "cats": [
+    "fitness"
+   ],
+   "tags": [
+    "boxing",
+    "boxer",
+    "kickboxing",
+    "sparring",
+    "mma",
+    "muay thai",
+    "punching bag"
+   ],
+   "def": [],
+   "title": "A Close-Up Shot of a Person Wearing White Hand Wrap",
+   "by": "KoolShooters",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/a-close-up-shot-of-a-person-wearing-white-hand-wrap-9944009/"
+  },
+  {
+   "k": "cricket_1",
+   "cats": [
+    "fitness",
+    "outdoor"
+   ],
+   "tags": [
+    "cricket",
+    "nets",
+    "wicket",
+    "box cricket",
+    "gully cricket",
+    "batting",
+    "bowling"
+   ],
+   "def": [],
+   "title": "Cricket batter at the crease",
+   "by": "u_g5kzowan0q",
+   "lic": "Pixabay Content License",
+   "licUrl": "https://pixabay.com/service/license-summary/",
+   "src": "https://pixabay.com/photos/cricket-sports-athlete-game-8444899/"
+  },
+  {
+   "k": "cricket_2",
+   "cats": [
+    "fitness",
+    "outdoor"
+   ],
+   "tags": [
+    "cricket",
+    "nets",
+    "wicket",
+    "box cricket",
+    "gully cricket",
+    "batting",
+    "bowling"
+   ],
+   "def": [],
+   "title": "Cricket bowler in action",
+   "by": "Stewardesign",
+   "lic": "Pixabay Content License",
+   "licUrl": "https://pixabay.com/service/license-summary/",
+   "src": "https://pixabay.com/photos/cricket-sport-throwing-player-6625451/"
+  },
+  {
+   "k": "badminton_1",
+   "cats": [
+    "fitness"
+   ],
+   "tags": [
+    "badminton",
+    "shuttle",
+    "shuttlecock",
+    "smash"
+   ],
+   "def": [],
+   "title": "People Playing Badminton",
+   "by": "Vlad Vasnetsov",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/people-playing-badminton-2202685/"
+  },
+  {
+   "k": "badminton_2",
+   "cats": [
+    "fitness"
+   ],
+   "tags": [
+    "badminton",
+    "shuttle",
+    "shuttlecock",
+    "smash"
+   ],
+   "def": [],
+   "title": "Close-up of a Badminton Racket on a Sports Court Floor",
+   "by": "Erica Opoku",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/close-up-of-a-badminton-racket-on-a-sports-court-floor-36815793/"
+  },
+  {
+   "k": "football_1",
+   "cats": [
+    "fitness",
+    "outdoor"
+   ],
+   "tags": [
+    "football",
+    "soccer",
+    "futsal",
+    "five a side",
+    "5 a side",
+    "7 a side"
+   ],
+   "def": [],
+   "title": "Football on stadium grass",
+   "by": "jarmoluk",
+   "lic": "Pixabay Content License",
+   "licUrl": "https://pixabay.com/service/license-summary/",
+   "src": "https://pixabay.com/photos/ball-grass-soccer-football-488717/"
+  },
+  {
+   "k": "football_2",
+   "cats": [
+    "fitness",
+    "outdoor"
+   ],
+   "tags": [
+    "football",
+    "soccer",
+    "futsal",
+    "five a side",
+    "5 a side",
+    "7 a side"
+   ],
+   "def": [],
+   "title": "Leg Holding Soccer Ball",
+   "by": "Ravi Roshan",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/leg-holding-soccer-ball-18798601/"
+  },
+  {
+   "k": "basketball_1",
+   "cats": [
+    "fitness",
+    "outdoor"
+   ],
+   "tags": [
+    "basketball",
+    "hoops",
+    "3x3",
+    "shootaround"
+   ],
+   "def": [],
+   "title": "Basketball Hoop and Net Against Cloudy Sky",
+   "by": "Sami Abdullah",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/basketball-hoop-and-net-against-cloudy-sky-33219229/"
+  },
+  {
+   "k": "basketball_2",
+   "cats": [
+    "fitness",
+    "outdoor"
+   ],
+   "tags": [
+    "basketball",
+    "hoops",
+    "3x3",
+    "shootaround"
+   ],
+   "def": [],
+   "title": "Close Up Photo of a Basketball",
+   "by": "cottonbro studio",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/close-up-photo-of-a-basketball-7201551/"
+  },
+  {
+   "k": "tennis_1",
+   "cats": [
+    "fitness"
+   ],
+   "tags": [
+    "tennis",
+    "lawn tennis",
+    "doubles"
+   ],
+   "def": [],
+   "title": "Sitting Woman with Tennis Racket and Balls",
+   "by": "Ahmed ؜",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/sitting-woman-with-tennis-racket-and-balls-23379621/"
+  },
+  {
+   "k": "tennis_2",
+   "cats": [
+    "fitness"
+   ],
+   "tags": [
+    "tennis",
+    "lawn tennis",
+    "doubles"
+   ],
+   "def": [],
+   "title": "A Person Holding a Tennis Racket",
+   "by": "ROMAN ODINTSOV",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/a-person-holding-a-tennis-racket-8542744/"
+  },
+  {
+   "k": "tabletennis_1",
+   "cats": [
+    "fitness",
+    "hangout"
+   ],
+   "tags": [
+    "table tennis",
+    "ping pong",
+    "tt"
+   ],
+   "def": [],
+   "title": "Table Tennis Rackets",
+   "by": "Anna Shvets",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/table-tennis-rackets-3846048/"
+  },
+  {
+   "k": "tabletennis_2",
+   "cats": [
+    "fitness",
+    "hangout"
+   ],
+   "tags": [
+    "table tennis",
+    "ping pong",
+    "tt"
+   ],
+   "def": [],
+   "title": "Table Tennis Rackets and Ball",
+   "by": "Martina Martinez",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/table-tennis-rackets-and-ball-16686174/"
+  },
+  {
+   "k": "pickleball_1",
+   "cats": [
+    "fitness"
+   ],
+   "tags": [
+    "pickleball",
+    "pickle ball"
+   ],
+   "def": [],
+   "title": "Close-up of Two Pickleball Paddles Outdoors",
+   "by": "LUXE Pickleball",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/close-up-of-two-pickleball-paddles-outdoors-29775349/"
+  },
+  {
+   "k": "pickleball_2",
+   "cats": [
+    "fitness"
+   ],
+   "tags": [
+    "pickleball",
+    "pickle ball"
+   ],
+   "def": [],
+   "title": "Pickleball Player Holding Paddle and Ball",
+   "by": "Gunel Huseynova",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/pickleball-player-holding-paddle-and-ball-39603001/"
+  },
+  {
+   "k": "volleyball_1",
+   "cats": [
+    "fitness",
+    "outdoor"
+   ],
+   "tags": [
+    "volleyball",
+    "beach volleyball",
+    "volley"
+   ],
+   "def": [],
+   "title": "Indoor Volleyball on a Court Line",
+   "by": "Critical Smith",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/indoor-volleyball-on-a-court-line-32602955/"
+  },
+  {
+   "k": "volleyball_2",
+   "cats": [
+    "fitness",
+    "outdoor"
+   ],
+   "tags": [
+    "volleyball",
+    "beach volleyball",
+    "volley"
+   ],
+   "def": [],
+   "title": "Outdoor Volleyball Courts in New York City",
+   "by": "Matheus Natan",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/outdoor-volleyball-courts-in-new-york-city-30101120/"
+  },
+  {
+   "k": "squash_1",
+   "cats": [
+    "fitness"
+   ],
+   "tags": [
+    "squash"
+   ],
+   "def": [],
+   "title": "Squash rackets and balls",
+   "by": "Firmbee",
+   "lic": "Pixabay Content License",
+   "licUrl": "https://pixabay.com/service/license-summary/",
+   "src": "https://pixabay.com/photos/squash-sport-man-game-racket-ball-793063/"
+  },
+  {
+   "k": "squash_2",
+   "cats": [
+    "fitness"
+   ],
+   "tags": [
+    "squash"
+   ],
+   "def": [],
+   "title": "Squash Rackets in Close Up Shot",
+   "by": "Jenny K.",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/squash-rackets-in-close-up-shot-14629511/"
+  },
+  {
+   "k": "zumba_1",
+   "cats": [
+    "fitness",
+    "selfcare"
+   ],
+   "tags": [
+    "zumba",
+    "aerobics",
+    "dance workout",
+    "dance fitness",
+    "group fitness",
+    "bollywood dance"
+   ],
+   "def": [],
+   "title": "A Woman in Pink Tank Top Raising Her Hands",
+   "by": "Kate Trysh",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/a-woman-in-pink-tank-top-raising-her-hands-4090012/"
+  },
+  {
+   "k": "zumba_2",
+   "cats": [
+    "fitness",
+    "selfcare"
+   ],
+   "tags": [
+    "zumba",
+    "aerobics",
+    "dance workout",
+    "dance fitness",
+    "group fitness",
+    "bollywood dance"
+   ],
+   "def": [],
+   "title": "Group Fitness Class in Sunny Outdoor Park",
+   "by": "Yazid N",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/group-fitness-class-in-sunny-outdoor-park-40198180/"
+  },
+  {
+   "k": "boardgames_1",
+   "cats": [
+    "hangout",
+    "cafe"
+   ],
+   "tags": [
+    "board game",
+    "boardgame",
+    "pictionary",
+    "catan",
+    "ludo",
+    "chess",
+    "monopoly",
+    "scrabble",
+    "games night",
+    "game night"
+   ],
+   "def": [],
+   "title": "Hands Playing Board Games",
+   "by": "Pavel Danilyuk",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/hands-playing-board-games-8111328/"
+  },
+  {
+   "k": "boardgames_2",
+   "cats": [
+    "hangout",
+    "cafe"
+   ],
+   "tags": [
+    "board game",
+    "boardgame",
+    "pictionary",
+    "catan",
+    "ludo",
+    "chess",
+    "monopoly",
+    "scrabble",
+    "games night",
+    "game night"
+   ],
+   "def": [],
+   "title": "Person in Black Shirt and Black Pants Sitting on Brown and Blue Rug",
+   "by": "cottonbro studio",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/person-in-black-shirt-and-black-pants-sitting-on-brown-and-blue-rug-4691555/"
+  },
+  {
+   "k": "tabletop_1",
+   "cats": [
+    "hangout"
+   ],
+   "tags": [
+    "tabletop",
+    "table top",
+    "dnd",
+    "dungeons",
+    "rpg",
+    "dice",
+    "warhammer",
+    "campaign"
+   ],
+   "def": [],
+   "title": "Close-up of People Playing Board Game",
+   "by": "Egidijus Bielskis",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/close-up-of-people-playing-board-game-4967339/"
+  },
+  {
+   "k": "tabletop_2",
+   "cats": [
+    "hangout"
+   ],
+   "tags": [
+    "tabletop",
+    "table top",
+    "dnd",
+    "dungeons",
+    "rpg",
+    "dice",
+    "warhammer",
+    "campaign"
+   ],
+   "def": [],
+   "title": "Triangle and Decagon Shaped Dice",
+   "by": "Nika Benedictova",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/triangle-and-decagon-shaped-dice-7150643/"
+  },
+  {
+   "k": "cards_1",
+   "cats": [
+    "hangout"
+   ],
+   "tags": [
+    "card game",
+    "cards",
+    "uno",
+    "poker",
+    "rummy",
+    "teen patti",
+    "bluff"
+   ],
+   "def": [],
+   "title": "Men Playing Cards",
+   "by": "Korhan Erdol",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/men-playing-cards-26525217/"
+  },
+  {
+   "k": "cards_2",
+   "cats": [
+    "hangout"
+   ],
+   "tags": [
+    "card game",
+    "cards",
+    "uno",
+    "poker",
+    "rummy",
+    "teen patti",
+    "bluff"
+   ],
+   "def": [],
+   "title": "Person Shuffling Uno Cards",
+   "by": "Edgar Colomba",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/person-shuffling-uno-cards-3986042/"
+  },
+  {
+   "k": "trivia_1",
+   "cats": [
+    "hangout",
+    "nightlife"
+   ],
+   "tags": [
+    "trivia",
+    "quiz",
+    "quiz night",
+    "pub quiz",
+    "trivia night"
+   ],
+   "def": [],
+   "title": "Colorful Indoor Lights",
+   "by": "Sean Patrick",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/colorful-indoor-lights-1801106/"
+  },
+  {
+   "k": "trivia_2",
+   "cats": [
+    "hangout",
+    "nightlife"
+   ],
+   "tags": [
+    "trivia",
+    "quiz",
+    "quiz night",
+    "pub quiz",
+    "trivia night"
+   ],
+   "def": [],
+   "title": "Popcorn and Games on Table",
+   "by": "MART PRODUCTION",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/popcorn-and-games-on-table-8885491/"
+  },
+  {
+   "k": "bookclub_1",
+   "cats": [
+    "hangout",
+    "work"
+   ],
+   "tags": [
+    "book club",
+    "book discussion",
+    "book swap",
+    "book exchange",
+    "books",
+    "novel",
+    "reading circle"
+   ],
+   "def": [],
+   "title": "Person in Gray Jacket Holding White Paper",
+   "by": "cottonbro studio",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/person-in-gray-jacket-holding-white-paper-4861364/"
+  },
+  {
+   "k": "bookclub_2",
+   "cats": [
+    "hangout",
+    "work"
+   ],
+   "tags": [
+    "book club",
+    "book discussion",
+    "book swap",
+    "book exchange",
+    "books",
+    "novel",
+    "reading circle"
+   ],
+   "def": [],
+   "title": "Refreshing Mojito Cocktail and Open Book on Table",
+   "by": "N G",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/refreshing-mojito-cocktail-and-open-book-on-table-34042168/"
+  },
+  {
+   "k": "filmclub_1",
+   "cats": [
+    "hangout",
+    "movies"
+   ],
+   "tags": [
+    "film discussion",
+    "film club",
+    "movie discussion",
+    "film society",
+    "cinephile",
+    "film buffs"
+   ],
+   "def": [],
+   "title": "Black and White Card on Brown Table",
+   "by": "cottonbro studio",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/black-and-white-card-on-brown-table-3945320/"
+  },
+  {
+   "k": "filmclub_2",
+   "cats": [
+    "hangout",
+    "movies"
+   ],
+   "tags": [
+    "film discussion",
+    "film club",
+    "movie discussion",
+    "film society",
+    "cinephile",
+    "film buffs"
+   ],
+   "def": [],
+   "title": "Close-up of Film Strip with Soft Bokeh",
+   "by": "DΛVΞ GΛRCIΛ",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/close-up-of-film-strip-with-soft-bokeh-32728011/"
+  },
+  {
+   "k": "openmic_1",
+   "cats": [
+    "hangout",
+    "concerts",
+    "comedy"
+   ],
+   "tags": [
+    "open mic",
+    "openmic",
+    "poetry",
+    "spoken word",
+    "songwriting",
+    "shayari"
+   ],
+   "def": [],
+   "title": "Black Microphone",
+   "by": "Teemu R",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/black-microphone-1840320/"
+  },
+  {
+   "k": "openmic_2",
+   "cats": [
+    "hangout",
+    "concerts",
+    "comedy"
+   ],
+   "tags": [
+    "open mic",
+    "openmic",
+    "poetry",
+    "spoken word",
+    "songwriting",
+    "shayari"
+   ],
+   "def": [],
+   "title": "Black and White Microphone on Stand Indoors",
+   "by": "juliane Monari",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/black-and-white-microphone-on-stand-indoors-29546544/"
+  },
+  {
+   "k": "karaoke_1",
+   "cats": [
+    "hangout",
+    "nightlife",
+    "concerts"
+   ],
+   "tags": [
+    "karaoke",
+    "sing",
+    "singing",
+    "singalong",
+    "sing along"
+   ],
+   "def": [],
+   "title": "Close-up of Hand Holding Microphone in Dramatic Lighting",
+   "by": "Burçin Altınyay",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/close-up-of-hand-holding-microphone-in-dramatic-lighting-34409887/"
+  },
+  {
+   "k": "karaoke_2",
+   "cats": [
+    "hangout",
+    "nightlife",
+    "concerts"
+   ],
+   "tags": [
+    "karaoke",
+    "sing",
+    "singing",
+    "singalong",
+    "sing along"
+   ],
+   "def": [],
+   "title": "Man Holding a Microphone on a Concert in Black and White",
+   "by": "Víctor C.",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/man-holding-a-microphone-on-a-concert-in-black-and-white-17345123/"
+  },
+  {
+   "k": "jamming_1",
+   "cats": [
+    "hangout",
+    "concerts"
+   ],
+   "tags": [
+    "jam",
+    "jamming",
+    "jam session",
+    "acoustic",
+    "guitar",
+    "ukulele",
+    "unplugged"
+   ],
+   "def": [],
+   "title": "A Man Playing Ukulele",
+   "by": "Ivan S",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/a-man-playing-ukulele-9630162/"
+  },
+  {
+   "k": "jamming_2",
+   "cats": [
+    "hangout",
+    "concerts"
+   ],
+   "tags": [
+    "jam",
+    "jamming",
+    "jam session",
+    "acoustic",
+    "guitar",
+    "ukulele",
+    "unplugged"
+   ],
+   "def": [],
+   "title": "People Sitting on the Floor While Playing Acoustic Guitar",
+   "by": "Pavel Danilyuk",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/people-sitting-on-the-floor-while-playing-acoustic-guitar-7521076/"
+  },
+  {
+   "k": "painting_1",
+   "cats": [
+    "hangout",
+    "selfcare"
+   ],
+   "tags": [
+    "painting",
+    "paint",
+    "drawing",
+    "draw",
+    "sketch",
+    "sketching",
+    "art",
+    "canvas",
+    "watercolour",
+    "watercolor"
+   ],
+   "def": [],
+   "title": "A Painter Doing Abstract Painting",
+   "by": "Antoni Shkraba",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/a-painter-doing-abstract-painting-4442078/"
+  },
+  {
+   "k": "painting_2",
+   "cats": [
+    "hangout",
+    "selfcare"
+   ],
+   "tags": [
+    "painting",
+    "paint",
+    "drawing",
+    "draw",
+    "sketch",
+    "sketching",
+    "art",
+    "canvas",
+    "watercolour",
+    "watercolor"
+   ],
+   "def": [],
+   "title": "Friends Painting at a Picnic",
+   "by": "Alexander Mass",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/friends-painting-at-a-picnic-26585809/"
+  },
+  {
+   "k": "pottery_1",
+   "cats": [
+    "hangout",
+    "selfcare"
+   ],
+   "tags": [
+    "pottery",
+    "clay",
+    "ceramics",
+    "pottery wheel",
+    "wheel throwing"
+   ],
+   "def": [],
+   "title": "Close-up of a Person Forming the Clay on a Pottery Wheel",
+   "by": "igovar igovar",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/close-up-of-a-person-forming-the-clay-on-a-pottery-wheel-18486386/"
+  },
+  {
+   "k": "pottery_2",
+   "cats": [
+    "hangout",
+    "selfcare"
+   ],
+   "tags": [
+    "pottery",
+    "clay",
+    "ceramics",
+    "pottery wheel",
+    "wheel throwing"
+   ],
+   "def": [],
+   "title": "Woman Making a Clay Pot",
+   "by": "Rüveyda",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/woman-making-a-clay-pot-16303094/"
+  },
+  {
+   "k": "crafts_1",
+   "cats": [
+    "hangout",
+    "selfcare"
+   ],
+   "tags": [
+    "arts and crafts",
+    "craft",
+    "crafts",
+    "diy",
+    "origami",
+    "embroidery",
+    "crochet",
+    "knitting",
+    "sewing",
+    "scrapbooking"
+   ],
+   "def": [],
+   "title": "Person Holding White and Pink Floral Textile",
+   "by": "cottonbro studio",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/person-holding-white-and-pink-floral-textile-4690306/"
+  },
+  {
+   "k": "crafts_2",
+   "cats": [
+    "hangout",
+    "selfcare"
+   ],
+   "tags": [
+    "arts and crafts",
+    "craft",
+    "crafts",
+    "diy",
+    "origami",
+    "embroidery",
+    "crochet",
+    "knitting",
+    "sewing",
+    "scrapbooking"
+   ],
+   "def": [],
+   "title": "Creative Art Supplies on Sunlit Table",
+   "by": "Sedanur Kunuk",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/creative-art-supplies-on-sunlit-table-30698567/"
+  },
+  {
+   "k": "clubbing_1",
+   "cats": [
+    "hangout",
+    "nightlife",
+    "concerts"
+   ],
+   "tags": [
+    "clubbing",
+    "club",
+    "nightclub",
+    "dance",
+    "dancing",
+    "party",
+    "rave",
+    "dj",
+    "edm",
+    "techno",
+    "house music",
+    "night out"
+   ],
+   "def": [],
+   "title": "Crowd in Nightclub during Concert",
+   "by": "Kei Scampa",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/crowd-in-nightclub-during-concert-18466691/"
+  },
+  {
+   "k": "clubbing_2",
+   "cats": [
+    "hangout",
+    "nightlife",
+    "concerts"
+   ],
+   "tags": [
+    "clubbing",
+    "club",
+    "nightclub",
+    "dance",
+    "dancing",
+    "party",
+    "rave",
+    "dj",
+    "edm",
+    "techno",
+    "house music",
+    "night out"
+   ],
+   "def": [],
+   "title": "People Raising Their Hands during Nighttime",
+   "by": "Павел Гавриков",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/people-raising-their-hands-during-nighttime-11003596/"
+  },
+  {
+   "k": "drinks_1",
+   "cats": [
+    "hangout",
+    "nightlife"
+   ],
+   "tags": [
+    "drinks",
+    "pub",
+    "beer",
+    "beers",
+    "pint",
+    "pints",
+    "bar hopping",
+    "pub crawl"
+   ],
+   "def": [],
+   "title": "People Holding Glasses of Beer",
+   "by": "Pavel Danilyuk",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/people-holding-glasses-of-beer-5858172/"
+  },
+  {
+   "k": "drinks_2",
+   "cats": [
+    "hangout",
+    "nightlife"
+   ],
+   "tags": [
+    "drinks",
+    "pub",
+    "beer",
+    "beers",
+    "pint",
+    "pints",
+    "bar hopping",
+    "pub crawl"
+   ],
+   "def": [],
+   "title": "Hands Holding Glasses of Beer",
+   "by": "Pavel Danilyuk",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/hands-holding-glasses-of-beer-5858194/"
+  },
+  {
+   "k": "picnic_1",
+   "cats": [
+    "hangout",
+    "outdoor",
+    "cafe"
+   ],
+   "tags": [
+    "picnic",
+    "picnic blanket",
+    "snacks in the park"
+   ],
+   "def": [],
+   "title": "A Person Holding a Plate of Chips",
+   "by": "Kampus Production",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/a-person-holding-a-plate-of-chips-8380022/"
+  },
+  {
+   "k": "picnic_2",
+   "cats": [
+    "hangout",
+    "outdoor",
+    "cafe"
+   ],
+   "tags": [
+    "picnic",
+    "picnic blanket",
+    "snacks in the park"
+   ],
+   "def": [],
+   "title": "Basket with Bread and Fruits on Picnic Blanket",
+   "by": "MART PRODUCTION",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/basket-with-bread-and-fruits-on-picnic-blanket-8122051/"
+  },
+  {
+   "k": "cafe_1",
+   "cats": [
+    "cafe",
+    "hangout",
+    "work"
+   ],
+   "tags": [
+    "cafe",
+    "coffee",
+    "latte",
+    "cappuccino",
+    "filter coffee",
+    "cold coffee",
+    "espresso"
+   ],
+   "def": [
+    "cafe"
+   ],
+   "title": "Interior Design of a Restaurant",
+   "by": "Aleksandar J. Popovic",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/interior-design-of-a-restaurant-5391411/"
+  },
+  {
+   "k": "cafe_2",
+   "cats": [
+    "cafe",
+    "hangout",
+    "work"
+   ],
+   "tags": [
+    "cafe",
+    "coffee",
+    "latte",
+    "cappuccino",
+    "filter coffee",
+    "cold coffee",
+    "espresso"
+   ],
+   "def": [
+    "cafe"
+   ],
+   "title": "Modern Café Interior with Colorful Decor",
+   "by": "Chrislyn Dsouza",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/modern-cafe-interior-with-colorful-decor-30644204/"
+  },
+  {
+   "k": "brunch_1",
+   "cats": [
+    "cafe"
+   ],
+   "tags": [
+    "brunch",
+    "breakfast",
+    "pancake",
+    "pancakes",
+    "waffles",
+    "eggs"
+   ],
+   "def": [],
+   "title": "Hand Dipping Nugget into Creamy Sauce",
+   "by": "Anil Sharma",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/hand-dipping-nugget-into-creamy-sauce-33428757/"
+  },
+  {
+   "k": "brunch_2",
+   "cats": [
+    "cafe"
+   ],
+   "tags": [
+    "brunch",
+    "breakfast",
+    "pancake",
+    "pancakes",
+    "waffles",
+    "eggs"
+   ],
+   "def": [],
+   "title": "Close up of Food",
+   "by": "Saveurs Secretes",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/close-up-of-food-10810650/"
+  },
+  {
+   "k": "dinner_1",
+   "cats": [
+    "cafe",
+    "hangout"
+   ],
+   "tags": [
+    "dinner",
+    "lunch",
+    "thali",
+    "biryani",
+    "meal",
+    "restaurant",
+    "feast"
+   ],
+   "def": [],
+   "title": "Platter of Foods",
+   "by": "Chan Walrus",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/platter-of-foods-941869/"
+  },
+  {
+   "k": "dinner_2",
+   "cats": [
+    "cafe",
+    "hangout"
+   ],
+   "tags": [
+    "dinner",
+    "lunch",
+    "thali",
+    "biryani",
+    "meal",
+    "restaurant",
+    "feast"
+   ],
+   "def": [],
+   "title": "Delicious Indian Cuisine Platter with Variety Dishes",
+   "by": "Valeria Boltneva",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/delicious-indian-cuisine-platter-with-variety-dishes-32083371/"
+  },
+  {
+   "k": "streetfood_1",
+   "cats": [
+    "cafe"
+   ],
+   "tags": [
+    "street food",
+    "food walk",
+    "chaat",
+    "golgappa",
+    "pani puri",
+    "vada pav",
+    "pav bhaji",
+    "food stall",
+    "food truck"
+   ],
+   "def": [],
+   "title": "People At The Market",
+   "by": "Aarti Krishnan",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/people-at-the-market-984533/"
+  },
+  {
+   "k": "streetfood_2",
+   "cats": [
+    "cafe"
+   ],
+   "tags": [
+    "street food",
+    "food walk",
+    "chaat",
+    "golgappa",
+    "pani puri",
+    "vada pav",
+    "pav bhaji",
+    "food stall",
+    "food truck"
+   ],
+   "def": [],
+   "title": "A Man Cooking on the Street",
+   "by": "Shamim Hossain",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/a-man-cooking-on-the-street-18072764/"
+  },
+  {
+   "k": "bar_1",
+   "cats": [
+    "cafe",
+    "nightlife"
+   ],
+   "tags": [
+    "bar",
+    "cocktail",
+    "cocktails",
+    "mixology",
+    "whisky",
+    "wine",
+    "happy hour",
+    "lounge bar"
+   ],
+   "def": [
+    "nightlife"
+   ],
+   "title": "Bottles with Alcohol on Shelves in Bar",
+   "by": "Barış Karagöz",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/bottles-with-alcohol-on-shelves-in-bar-17903469/"
+  },
+  {
+   "k": "bar_2",
+   "cats": [
+    "cafe",
+    "nightlife"
+   ],
+   "tags": [
+    "bar",
+    "cocktail",
+    "cocktails",
+    "mixology",
+    "whisky",
+    "wine",
+    "happy hour",
+    "lounge bar"
+   ],
+   "def": [
+    "nightlife"
+   ],
+   "title": "Bottles of Alcohol on a Bar Counter",
+   "by": "Ayberk Mirza",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/bottles-of-alcohol-on-a-bar-counter-15311407/"
+  },
+  {
+   "k": "pub_1",
+   "cats": [
+    "cafe",
+    "nightlife"
+   ],
+   "tags": [
+    "pub",
+    "beer",
+    "brewery",
+    "brewpub",
+    "craft beer",
+    "pint",
+    "shots",
+    "tap"
+   ],
+   "def": [],
+   "title": "Toasting with Beer in Bar",
+   "by": "Manav Chahal",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/toasting-with-beer-in-bar-19750080/"
+  },
+  {
+   "k": "pub_2",
+   "cats": [
+    "cafe",
+    "nightlife"
+   ],
+   "tags": [
+    "pub",
+    "beer",
+    "brewery",
+    "brewpub",
+    "craft beer",
+    "pint",
+    "shots",
+    "tap"
+   ],
+   "def": [],
+   "title": "Shot Glasses on a Table",
+   "by": "Shivanshu Sharma",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/shot-glasses-on-a-table-10810574/"
+  },
+  {
+   "k": "cooking_1",
+   "cats": [
+    "cafe",
+    "hangout"
+   ],
+   "tags": [
+    "cooking",
+    "cook",
+    "cook along",
+    "cooking class",
+    "curry"
+   ],
+   "def": [],
+   "title": "Sizzling Indian Curry in Traditional Pan",
+   "by": "Bilal Moazzam",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/sizzling-indian-curry-in-traditional-pan-37180955/"
+  },
+  {
+   "k": "cooking_2",
+   "cats": [
+    "cafe",
+    "hangout"
+   ],
+   "tags": [
+    "cooking",
+    "cook",
+    "cook along",
+    "cooking class",
+    "curry"
+   ],
+   "def": [],
+   "title": "Soup with Vegetables",
+   "by": "Dainik Tales",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/soup-with-vegetables-19834446/"
+  },
+  {
+   "k": "baking_1",
+   "cats": [
+    "cafe",
+    "hangout"
+   ],
+   "tags": [
+    "baking",
+    "bake",
+    "cake",
+    "cakes",
+    "cookies",
+    "cupcakes",
+    "brownies",
+    "bake off"
+   ],
+   "def": [],
+   "title": "Chocolate Cake Batter Being Poured into a Pan",
+   "by": "İdil Ceren Çelikler",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/chocolate-cake-batter-being-poured-into-a-pan-37823183/"
+  },
+  {
+   "k": "baking_2",
+   "cats": [
+    "cafe",
+    "hangout"
+   ],
+   "tags": [
+    "baking",
+    "bake",
+    "cake",
+    "cakes",
+    "cookies",
+    "cupcakes",
+    "brownies",
+    "bake off"
+   ],
+   "def": [],
+   "title": "Freshly Baked Chocolate Chip Cookies in Oven",
+   "by": "Lisa Fotios",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/freshly-baked-chocolate-chip-cookies-in-oven-29461931/"
+  },
+  {
+   "k": "potluck_1",
+   "cats": [
+    "cafe",
+    "hangout"
+   ],
+   "tags": [
+    "potluck",
+    "pot luck",
+    "buffet"
+   ],
+   "def": [],
+   "title": "Vibrant Outdoor Buffet with Diverse Cuisine",
+   "by": "Sergei Starostin",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/vibrant-outdoor-buffet-with-diverse-cuisine-39388384/"
+  },
+  {
+   "k": "potluck_2",
+   "cats": [
+    "cafe",
+    "hangout"
+   ],
+   "tags": [
+    "potluck",
+    "pot luck",
+    "buffet"
+   ],
+   "def": [],
+   "title": "Cooked Food on the Table",
+   "by": "Ruxanda Spatari",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/cooked-food-on-the-table-9443903/"
+  },
+  {
+   "k": "trekking_1",
+   "cats": [
+    "adventure",
+    "outdoor"
+   ],
+   "tags": [
+    "trek",
+    "trekking",
+    "himalaya",
+    "himalayas",
+    "triund",
+    "kasauli",
+    "jungle"
+   ],
+   "def": [
+    "adventure"
+   ],
+   "title": "Men Doing Hiking",
+   "by": "kumar dulal",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/men-doing-hiking-14663618/"
+  },
+  {
+   "k": "trekking_2",
+   "cats": [
+    "adventure",
+    "outdoor"
+   ],
+   "tags": [
+    "trek",
+    "trekking",
+    "himalaya",
+    "himalayas",
+    "triund",
+    "kasauli",
+    "jungle"
+   ],
+   "def": [
+    "adventure"
+   ],
+   "title": "Group of tourists walking through tropical forest",
+   "by": "Quang Nguyen Vinh",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/group-of-tourists-walking-through-tropical-forest-5118521/"
+  },
+  {
+   "k": "hiking_1",
+   "cats": [
+    "adventure",
+    "outdoor"
+   ],
+   "tags": [
+    "hike",
+    "hiking",
+    "trail",
+    "mountain",
+    "mountains",
+    "hills"
+   ],
+   "def": [],
+   "title": "A group of people walking through the woods",
+   "by": "stayhereforu",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/a-group-of-people-walking-through-the-woods-27681035/"
+  },
+  {
+   "k": "hiking_2",
+   "cats": [
+    "adventure",
+    "outdoor"
+   ],
+   "tags": [
+    "hike",
+    "hiking",
+    "trail",
+    "mountain",
+    "mountains",
+    "hills"
+   ],
+   "def": [],
+   "title": "Group Hiking on a Scenic Mountain Trail",
+   "by": "Hasan Hüseyin TURAN",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/group-hiking-on-a-scenic-mountain-trail-37054850/"
+  },
+  {
+   "k": "climbing_1",
+   "cats": [
+    "adventure",
+    "fitness"
+   ],
+   "tags": [
+    "climb",
+    "climbing",
+    "rock climbing",
+    "bouldering",
+    "climbing wall"
+   ],
+   "def": [],
+   "title": "Person Hand Holding on a Rock Climbing Wall",
+   "by": "cottonbro studio",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/person-hand-holding-on-a-rock-climbing-wall-6675620/"
+  },
+  {
+   "k": "climbing_2",
+   "cats": [
+    "adventure",
+    "fitness"
+   ],
+   "tags": [
+    "climb",
+    "climbing",
+    "rock climbing",
+    "bouldering",
+    "climbing wall"
+   ],
+   "def": [],
+   "title": "Anonymous determined climber gesturing on high artificial wall in gym",
+   "by": "Allan Mas",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/anonymous-determined-climber-gesturing-on-high-artificial-wall-in-gym-5384169/"
+  },
+  {
+   "k": "kayaking_1",
+   "cats": [
+    "adventure",
+    "outdoor"
+   ],
+   "tags": [
+    "kayak",
+    "kayaking",
+    "canoe",
+    "canoeing",
+    "paddling"
+   ],
+   "def": [],
+   "title": "Men Rowing on Lake",
+   "by": "Efrem Efre",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/kayak-27289964/"
+  },
+  {
+   "k": "kayaking_2",
+   "cats": [
+    "adventure",
+    "outdoor"
+   ],
+   "tags": [
+    "kayak",
+    "kayaking",
+    "canoe",
+    "canoeing",
+    "paddling"
+   ],
+   "def": [],
+   "title": "Red Kayak on Calm Ocean Water During Daytime",
+   "by": "betül",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/red-kayak-on-calm-ocean-water-during-daytime-32986095/"
+  },
+  {
+   "k": "park_1",
+   "cats": [
+    "outdoor",
+    "hangout"
+   ],
+   "tags": [
+    "park",
+    "open space",
+    "bench",
+    "lawn",
+    "garden walk"
+   ],
+   "def": [
+    "outdoor"
+   ],
+   "title": "Tranquil Park Pathway with Wooden Bench",
+   "by": "Netlenka",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/tranquil-park-pathway-with-wooden-bench-34230252/"
+  },
+  {
+   "k": "park_2",
+   "cats": [
+    "outdoor",
+    "hangout"
+   ],
+   "tags": [
+    "park",
+    "open space",
+    "bench",
+    "lawn",
+    "garden walk"
+   ],
+   "def": [
+    "outdoor"
+   ],
+   "title": "Serene Park Bench in Lush Munich Greenery",
+   "by": "Ilhami Enligün",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/serene-park-bench-in-lush-munich-greenery-33299599/"
+  },
+  {
+   "k": "morningwalk_1",
+   "cats": [
+    "outdoor",
+    "fitness"
+   ],
+   "tags": [
+    "morning walk",
+    "sunrise walk",
+    "walk",
+    "walking",
+    "stroll",
+    "heritage walk"
+   ],
+   "def": [],
+   "title": "Autumn Morning Walk Along Tree-Lined Path",
+   "by": "Mahesh Mohan",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/autumn-morning-walk-along-tree-lined-path-40502080/"
+  },
+  {
+   "k": "morningwalk_2",
+   "cats": [
+    "outdoor",
+    "fitness"
+   ],
+   "tags": [
+    "morning walk",
+    "sunrise walk",
+    "walk",
+    "walking",
+    "stroll",
+    "heritage walk"
+   ],
+   "def": [],
+   "title": "Man and Woman Walking in the Middle of Road",
+   "by": "Trevor Chris Hutchinson",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/man-and-woman-walking-in-the-middle-of-road-4749397/"
+  },
+  {
+   "k": "sunsetwalk_1",
+   "cats": [
+    "outdoor",
+    "fitness"
+   ],
+   "tags": [
+    "sunset walk",
+    "evening walk",
+    "sunset",
+    "golden hour",
+    "night walk"
+   ],
+   "def": [],
+   "title": "Golden Hour Stroll in The Hague Park",
+   "by": "Bráulio jardim",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/golden-hour-stroll-in-the-hague-park-38066094/"
+  },
+  {
+   "k": "sunsetwalk_2",
+   "cats": [
+    "outdoor",
+    "fitness"
+   ],
+   "tags": [
+    "sunset walk",
+    "evening walk",
+    "sunset",
+    "golden hour",
+    "night walk"
+   ],
+   "def": [],
+   "title": "Evening Walk in The Hague Park",
+   "by": "Bráulio jardim",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/evening-walk-in-the-hague-park-38066076/"
+  },
+  {
+   "k": "photography_1",
+   "cats": [
+    "outdoor",
+    "hangout"
+   ],
+   "tags": [
+    "photography",
+    "photo walk",
+    "photowalk",
+    "camera",
+    "photoshoot",
+    "photo shoot"
+   ],
+   "def": [],
+   "title": "Silhouette of a Photographer in Ajmer, India",
+   "by": "Untoldstories",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/silhouette-of-a-photographer-in-ajmer-india-35270215/"
+  },
+  {
+   "k": "photography_2",
+   "cats": [
+    "outdoor",
+    "hangout"
+   ],
+   "tags": [
+    "photography",
+    "photo walk",
+    "photowalk",
+    "camera",
+    "photoshoot",
+    "photo shoot"
+   ],
+   "def": [],
+   "title": "Man photographing the Sea during Dusk",
+   "by": "Farid Muhammad",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/man-photographing-the-sea-during-dusk-14002973/"
+  },
+  {
+   "k": "lake_1",
+   "cats": [
+    "outdoor",
+    "hangout"
+   ],
+   "tags": [
+    "lake",
+    "lakeside",
+    "lake front"
+   ],
+   "def": [],
+   "title": "Man Sitting on Stones on Lakeshore",
+   "by": "Shivansh Sharma",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/man-sitting-on-stones-on-lakeshore-7380202/"
+  },
+  {
+   "k": "lake_2",
+   "cats": [
+    "outdoor",
+    "hangout"
+   ],
+   "tags": [
+    "lake",
+    "lakeside",
+    "lake front"
+   ],
+   "def": [],
+   "title": "Serene Lake and Lush Hills Landscape",
+   "by": "Pornsiri Thetchutithamgull",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/serene-lake-and-lush-hills-landscape-34669556/"
+  },
+  {
+   "k": "beach_1",
+   "cats": [
+    "outdoor",
+    "adventure"
+   ],
+   "tags": [
+    "beach",
+    "seaside",
+    "goa",
+    "sea",
+    "coast"
+   ],
+   "def": [],
+   "title": "Peaceful sunset in Goa 02",
+   "by": "Karl Ahnee",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/peaceful-sunset-in-goa-02-27869489/"
+  },
+  {
+   "k": "beach_2",
+   "cats": [
+    "outdoor",
+    "adventure"
+   ],
+   "tags": [
+    "beach",
+    "seaside",
+    "goa",
+    "sea",
+    "coast"
+   ],
+   "def": [],
+   "title": "Golden Sunset Reflection on Serene Beach",
+   "by": "mitbg000",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/golden-sunset-reflection-on-serene-beach-30154483/"
+  },
+  {
+   "k": "gardening_1",
+   "cats": [
+    "outdoor",
+    "selfcare"
+   ],
+   "tags": [
+    "gardening",
+    "garden",
+    "plants",
+    "planting",
+    "greenhouse",
+    "nursery",
+    "composting"
+   ],
+   "def": [],
+   "title": "Vibrant Garden Scene with Watering Can and Plants",
+   "by": "Nina Krivitskaya",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/vibrant-garden-scene-with-watering-can-and-plants-31496481/"
+  },
+  {
+   "k": "gardening_2",
+   "cats": [
+    "outdoor",
+    "selfcare"
+   ],
+   "tags": [
+    "gardening",
+    "garden",
+    "plants",
+    "planting",
+    "greenhouse",
+    "nursery",
+    "composting"
+   ],
+   "def": [],
+   "title": "Potted Plants in Greenhouse",
+   "by": "Evija Ciematniece",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/potted-plants-in-greenhouse-17541565/"
+  },
+  {
+   "k": "petwalk_1",
+   "cats": [
+    "outdoor"
+   ],
+   "tags": [
+    "dog",
+    "dogs",
+    "dog walk",
+    "pet",
+    "pets",
+    "pet walk",
+    "puppy",
+    "puppies",
+    "walk the dog",
+    "walking the dog",
+    "dog walking"
+   ],
+   "def": [],
+   "title": "Man Walking in a Park with His Dog",
+   "by": "Radik 2707",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/man-walking-in-a-park-with-his-dog-14643630/"
+  },
+  {
+   "k": "petwalk_2",
+   "cats": [
+    "outdoor"
+   ],
+   "tags": [
+    "dog",
+    "dogs",
+    "dog walk",
+    "pet",
+    "pets",
+    "pet walk",
+    "puppy",
+    "puppies",
+    "walk the dog",
+    "walking the dog",
+    "dog walking"
+   ],
+   "def": [],
+   "title": "White Dog with Leash Walking on the Pavement Near the Lake",
+   "by": "Taras Chuiko",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/white-dog-with-leash-walking-on-the-pavement-near-the-lake-11886796/"
+  },
+  {
+   "k": "shopping_1",
+   "cats": [
+    "errands",
+    "hangout"
+   ],
+   "tags": [
+    "shopping",
+    "mall",
+    "clothes",
+    "store",
+    "thrift",
+    "sale",
+    "window shopping"
+   ],
+   "def": [],
+   "title": "People in Store with Handmade Fabrics",
+   "by": "Digital Feed",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/people-in-store-with-handmade-fabrics-15697436/"
+  },
+  {
+   "k": "shopping_2",
+   "cats": [
+    "errands",
+    "hangout"
+   ],
+   "tags": [
+    "shopping",
+    "mall",
+    "clothes",
+    "store",
+    "thrift",
+    "sale",
+    "window shopping"
+   ],
+   "def": [],
+   "title": "Colorful Clothing Store Display with Sale Signs",
+   "by": "Jahra Tasfia Reza",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/colorful-clothing-store-display-with-sale-signs-33276443/"
+  },
+  {
+   "k": "groceries_1",
+   "cats": [
+    "errands"
+   ],
+   "tags": [
+    "groceries",
+    "grocery",
+    "supermarket",
+    "dmart",
+    "ration"
+   ],
+   "def": [
+    "errands"
+   ],
+   "title": "Shopping Cart Filled with Packages in Empty Aisle",
+   "by": "Wallace Chuck",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/shopping-cart-filled-with-packages-in-empty-aisle-15491800/"
+  },
+  {
+   "k": "groceries_2",
+   "cats": [
+    "errands"
+   ],
+   "tags": [
+    "groceries",
+    "grocery",
+    "supermarket",
+    "dmart",
+    "ration"
+   ],
+   "def": [
+    "errands"
+   ],
+   "title": "Shopping Cart in a Supermarket",
+   "by": "Eduardo Soares",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/shopping-cart-in-a-supermarket-5498233/"
+  },
+  {
+   "k": "marketrun_1",
+   "cats": [
+    "errands",
+    "cafe"
+   ],
+   "tags": [
+    "market",
+    "market run",
+    "bazaar",
+    "sabzi",
+    "mandi",
+    "vegetables",
+    "veggies",
+    "flea market"
+   ],
+   "def": [],
+   "title": "Urban Shopping Street in Autumn Scene",
+   "by": "Oktay Köseoğlu",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/urban-shopping-street-in-autumn-scene-29838647/"
+  },
+  {
+   "k": "marketrun_2",
+   "cats": [
+    "errands",
+    "cafe"
+   ],
+   "tags": [
+    "market",
+    "market run",
+    "bazaar",
+    "sabzi",
+    "mandi",
+    "vegetables",
+    "veggies",
+    "flea market"
+   ],
+   "def": [],
+   "title": "Bustling Indian Street Market with Vendors and Shoppers",
+   "by": "Basit Manzoor",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/bustling-indian-street-market-with-vendors-and-shoppers-29911351/"
+  },
+  {
+   "k": "errandrun_1",
+   "cats": [
+    "errands"
+   ],
+   "tags": [
+    "errand",
+    "errand run",
+    "chores",
+    "pickup",
+    "post office",
+    "bank",
+    "pharmacy"
+   ],
+   "def": [],
+   "title": "Woman Walking on a Zebra Crossing Carrying Bags",
+   "by": "Kevin Malik",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/woman-walking-on-a-zebra-crossing-carrying-bags-9016552/"
+  },
+  {
+   "k": "errandrun_2",
+   "cats": [
+    "errands"
+   ],
+   "tags": [
+    "errand",
+    "errand run",
+    "chores",
+    "pickup",
+    "post office",
+    "bank",
+    "pharmacy"
+   ],
+   "def": [],
+   "title": "Person Pushing a Shopping Cart",
+   "by": "MART PRODUCTION",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/person-pushing-a-shopping-cart-8078362/"
+  },
+  {
+   "k": "cowork_1",
+   "cats": [
+    "work"
+   ],
+   "tags": [
+    "cowork",
+    "coworking",
+    "co working",
+    "work",
+    "laptop",
+    "wfh",
+    "freelance",
+    "remote work",
+    "deep work"
+   ],
+   "def": [
+    "work"
+   ],
+   "title": "Three Woman Sitting on White Chair in Front of Table",
+   "by": "CoWomen",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/three-woman-sitting-on-white-chair-in-front-of-table-2041627/"
+  },
+  {
+   "k": "cowork_2",
+   "cats": [
+    "work"
+   ],
+   "tags": [
+    "cowork",
+    "coworking",
+    "co working",
+    "work",
+    "laptop",
+    "wfh",
+    "freelance",
+    "remote work",
+    "deep work"
+   ],
+   "def": [
+    "work"
+   ],
+   "title": "High-Angle Shot of Two People Using Their Laptop while Working in the Office",
+   "by": "MART PRODUCTION",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/high-angle-shot-of-two-people-using-their-laptop-while-working-in-the-office-7255284/"
+  },
+  {
+   "k": "studygroup_1",
+   "cats": [
+    "work"
+   ],
+   "tags": [
+    "study",
+    "study group",
+    "group study",
+    "assignment",
+    "project",
+    "notes",
+    "study session"
+   ],
+   "def": [],
+   "title": "Creative Team Collaborating on Project in Office",
+   "by": "Vitaly Gariev",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/creative-team-collaborating-on-project-in-office-39190571/"
+  },
+  {
+   "k": "studygroup_2",
+   "cats": [
+    "work"
+   ],
+   "tags": [
+    "study",
+    "study group",
+    "group study",
+    "assignment",
+    "project",
+    "notes",
+    "study session"
+   ],
+   "def": [],
+   "title": "High-Angle Shot of Five People Working in the Office",
+   "by": "Kindel Media",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/high-angle-shot-of-five-people-working-in-the-office-7688340/"
+  },
+  {
+   "k": "examprep_1",
+   "cats": [
+    "work"
+   ],
+   "tags": [
+    "exam",
+    "exam prep",
+    "revision",
+    "upsc",
+    "neet",
+    "jee",
+    "gate",
+    "cat prep",
+    "mock test",
+    "boards"
+   ],
+   "def": [],
+   "title": "Woman in a Cafe Holding a Cup of Coffee, Writing in a Notebook and Using Laptop",
+   "by": "Mizuno K",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/woman-in-a-cafe-holding-a-cup-of-coffee-writing-in-a-notebook-and-using-laptop-13737052/"
+  },
+  {
+   "k": "examprep_2",
+   "cats": [
+    "work"
+   ],
+   "tags": [
+    "exam",
+    "exam prep",
+    "revision",
+    "upsc",
+    "neet",
+    "jee",
+    "gate",
+    "cat prep",
+    "mock test",
+    "boards"
+   ],
+   "def": [],
+   "title": "Freelancer browsing laptop and taking notes in notebook during work",
+   "by": "William Fortunato",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/freelancer-browsing-laptop-and-taking-notes-in-notebook-during-work-6393013/"
+  },
+  {
+   "k": "coding_1",
+   "cats": [
+    "work"
+   ],
+   "tags": [
+    "coding",
+    "code",
+    "programming",
+    "hackathon",
+    "developer",
+    "developers",
+    "leetcode",
+    "debugging",
+    "side project"
+   ],
+   "def": [],
+   "title": "Laptop Computer Showing C++ Application",
+   "by": "Lukas Blazek",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/laptop-computer-showing-c-application-574069/"
+  },
+  {
+   "k": "coding_2",
+   "cats": [
+    "work"
+   ],
+   "tags": [
+    "coding",
+    "code",
+    "programming",
+    "hackathon",
+    "developer",
+    "developers",
+    "leetcode",
+    "debugging",
+    "side project"
+   ],
+   "def": [],
+   "title": "Close-Up of Laptop Displaying Debugging Software",
+   "by": "Daniil Komov",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/close-up-of-laptop-displaying-debugging-software-34803990/"
+  },
+  {
+   "k": "language_1",
+   "cats": [
+    "work",
+    "hangout"
+   ],
+   "tags": [
+    "language exchange",
+    "language",
+    "spanish",
+    "french",
+    "german",
+    "japanese",
+    "korean",
+    "english speaking",
+    "conversation practice"
+   ],
+   "def": [],
+   "title": "Global Music Connection: Globe with Headphones",
+   "by": "syd.trgt",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/global-music-connection-globe-with-headphones-38128079/"
+  },
+  {
+   "k": "language_2",
+   "cats": [
+    "work",
+    "hangout"
+   ],
+   "tags": [
+    "language exchange",
+    "language",
+    "spanish",
+    "french",
+    "german",
+    "japanese",
+    "korean",
+    "english speaking",
+    "conversation practice"
+   ],
+   "def": [],
+   "title": "The word german is spelled out with scrabble letters",
+   "by": "Markus Winkler",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/the-word-german-is-spelled-out-with-scrabble-letters-19902307/"
+  },
+  {
+   "k": "resume_1",
+   "cats": [
+    "work"
+   ],
+   "tags": [
+    "resume",
+    "cv",
+    "resume review",
+    "interview prep",
+    "mock interview",
+    "job hunt",
+    "portfolio review"
+   ],
+   "def": [],
+   "title": "Person Holding Black Tablet Computer",
+   "by": "cottonbro studio",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/person-holding-black-tablet-computer-5989943/"
+  },
+  {
+   "k": "resume_2",
+   "cats": [
+    "work"
+   ],
+   "tags": [
+    "resume",
+    "cv",
+    "resume review",
+    "interview prep",
+    "mock interview",
+    "job hunt",
+    "portfolio review"
+   ],
+   "def": [],
+   "title": "Person in Black Long Sleeve Shirt Writing on White Paper",
+   "by": "cottonbro studio",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/person-in-black-long-sleeve-shirt-writing-on-white-paper-5989926/"
+  },
+  {
+   "k": "workshop_1",
+   "cats": [
+    "work",
+    "hangout"
+   ],
+   "tags": [
+    "workshop",
+    "seminar",
+    "masterclass",
+    "bootcamp",
+    "lecture"
+   ],
+   "def": [],
+   "title": "A Man In Black Jacket Reading A book",
+   "by": "Helena Lopes",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/a-man-in-black-jacket-reading-a-book-3471028/"
+  },
+  {
+   "k": "workshop_2",
+   "cats": [
+    "work",
+    "hangout"
+   ],
+   "tags": [
+    "workshop",
+    "seminar",
+    "masterclass",
+    "bootcamp",
+    "lecture"
+   ],
+   "def": [],
+   "title": "People Sitting at the Table",
+   "by": "Helena Lopes",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/people-sitting-at-the-table-3215526/"
+  },
+  {
+   "k": "networking_1",
+   "cats": [
+    "work",
+    "hangout"
+   ],
+   "tags": [
+    "networking",
+    "meetup",
+    "mixer",
+    "founders",
+    "community",
+    "professionals"
+   ],
+   "def": [],
+   "title": "Groups of People Talking in the Office",
+   "by": "Pavel Danilyuk",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/groups-of-people-talking-in-the-office-8761555/"
+  },
+  {
+   "k": "networking_2",
+   "cats": [
+    "work",
+    "hangout"
+   ],
+   "tags": [
+    "networking",
+    "meetup",
+    "mixer",
+    "founders",
+    "community",
+    "professionals"
+   ],
+   "def": [],
+   "title": "People Sitting on Brown Wooden Bench",
+   "by": "Helena Lopes",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/people-sitting-on-brown-wooden-bench-3700250/"
+  },
+  {
+   "k": "pitch_1",
+   "cats": [
+    "work"
+   ],
+   "tags": [
+    "pitch",
+    "pitch practice",
+    "pitching",
+    "startup",
+    "startups",
+    "demo day",
+    "investor",
+    "pitch deck"
+   ],
+   "def": [],
+   "title": "People Sitting inside the Auditorium",
+   "by": "Atlantic Ambience",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/people-sitting-inside-the-auditorium-9275222/"
+  },
+  {
+   "k": "pitch_2",
+   "cats": [
+    "work"
+   ],
+   "tags": [
+    "pitch",
+    "pitch practice",
+    "pitching",
+    "startup",
+    "startups",
+    "demo day",
+    "investor",
+    "pitch deck"
+   ],
+   "def": [],
+   "title": "People Sitting in Front of the Projector Screen",
+   "by": "Pavel Danilyuk",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/people-sitting-in-front-of-the-projector-screen-8761523/"
+  },
+  {
+   "k": "meditation_1",
+   "cats": [
+    "selfcare",
+    "fitness"
+   ],
+   "tags": [
+    "meditation",
+    "meditate",
+    "mindfulness",
+    "breathwork",
+    "breathing",
+    "sound bath"
+   ],
+   "def": [],
+   "title": "Man Sitting on Grass While Doing Yoga",
+   "by": "Murugadoss Arumugam",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/man-sitting-on-grass-while-doing-yoga-7721870/"
+  },
+  {
+   "k": "meditation_2",
+   "cats": [
+    "selfcare",
+    "fitness"
+   ],
+   "tags": [
+    "meditation",
+    "meditate",
+    "mindfulness",
+    "breathwork",
+    "breathing",
+    "sound bath"
+   ],
+   "def": [],
+   "title": "Man Sitting with Legs Crossed",
+   "by": "Kampus Production",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/man-sitting-with-legs-crossed-6698503/"
+  },
+  {
+   "k": "journaling_1",
+   "cats": [
+    "selfcare",
+    "work"
+   ],
+   "tags": [
+    "journal",
+    "journaling",
+    "diary",
+    "writing",
+    "gratitude"
+   ],
+   "def": [],
+   "title": "Close-Up Shot of Person Writing a Diary",
+   "by": "Anastasia Shuraeva",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/close-up-shot-of-person-writing-a-diary-7278584/"
+  },
+  {
+   "k": "journaling_2",
+   "cats": [
+    "selfcare",
+    "work"
+   ],
+   "tags": [
+    "journal",
+    "journaling",
+    "diary",
+    "writing",
+    "gratitude"
+   ],
+   "def": [],
+   "title": "Person Writing on a Notebook",
+   "by": "Ivan S",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/person-writing-on-a-notebook-4238524/"
+  },
+  {
+   "k": "spa_1",
+   "cats": [
+    "selfcare"
+   ],
+   "tags": [
+    "spa",
+    "spa day",
+    "massage",
+    "pamper",
+    "relax",
+    "wellness",
+    "sauna",
+    "self care",
+    "selfcare"
+   ],
+   "def": [
+    "selfcare"
+   ],
+   "title": "Women Getting a Massage",
+   "by": "Halosa Sapa",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/women-getting-a-massage-18120171/"
+  },
+  {
+   "k": "spa_2",
+   "cats": [
+    "selfcare"
+   ],
+   "tags": [
+    "spa",
+    "spa day",
+    "massage",
+    "pamper",
+    "relax",
+    "wellness",
+    "sauna",
+    "self care",
+    "selfcare"
+   ],
+   "def": [
+    "selfcare"
+   ],
+   "title": "Massage Therapist Using Mud on a Womans Back",
+   "by": "Jonathan Borba",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/massage-therapist-using-mud-on-a-womans-back-19641816/"
+  },
+  {
+   "k": "skincare_1",
+   "cats": [
+    "selfcare"
+   ],
+   "tags": [
+    "skincare",
+    "skin care",
+    "facial",
+    "face mask",
+    "sheet mask",
+    "skincare session"
+   ],
+   "def": [],
+   "title": "Applying of Cream on Hands",
+   "by": "Yan Krukau",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/applying-of-cream-on-hands-7020247/"
+  },
+  {
+   "k": "skincare_2",
+   "cats": [
+    "selfcare"
+   ],
+   "tags": [
+    "skincare",
+    "skin care",
+    "facial",
+    "face mask",
+    "sheet mask",
+    "skincare session"
+   ],
+   "def": [],
+   "title": "Elegant Skincare Routine with Minimalistic Aesthetic",
+   "by": "Pavel Danilyuk",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/person-hands-relaxation-faceless-6417924/"
+  },
+  {
+   "k": "tea_1",
+   "cats": [
+    "selfcare",
+    "cafe",
+    "hangout"
+   ],
+   "tags": [
+    "tea",
+    "tea tasting",
+    "tea room",
+    "herbal tea",
+    "green tea",
+    "tea flight",
+    "matcha"
+   ],
+   "def": [],
+   "title": "Colorful Assorted Herbal Tea in Glass Teapots",
+   "by": "Mediha Ekici",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/colorful-assorted-herbal-tea-in-glass-teapots-31474385/"
+  },
+  {
+   "k": "tea_2",
+   "cats": [
+    "selfcare",
+    "cafe",
+    "hangout"
+   ],
+   "tags": [
+    "tea",
+    "tea tasting",
+    "tea room",
+    "herbal tea",
+    "green tea",
+    "tea flight",
+    "matcha"
+   ],
+   "def": [],
+   "title": "Flat Lay of Herbal and Black Tea in Glass Mugs",
+   "by": "Consuelo Borroni",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/flat-lay-of-herbal-and-black-tea-in-glass-mugs-39863701/"
+  },
+  {
+   "k": "hairsalon_1",
+   "cats": [
+    "selfcare",
+    "errands"
+   ],
+   "tags": [
+    "salon",
+    "hair salon",
+    "hair",
+    "haircut",
+    "barber",
+    "hair spa",
+    "blow dry"
+   ],
+   "def": [],
+   "title": "Woman in Black and Gold Round Watch",
+   "by": "cottonbro studio",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/woman-in-black-and-gold-round-watch-3993467/"
+  },
+  {
+   "k": "hairsalon_2",
+   "cats": [
+    "selfcare",
+    "errands"
+   ],
+   "tags": [
+    "salon",
+    "hair salon",
+    "hair",
+    "haircut",
+    "barber",
+    "hair spa",
+    "blow dry"
+   ],
+   "def": [],
+   "title": "Black Leather Barber Chair in Front of Mirror",
+   "by": "cottonbro studio",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/black-leather-barber-chair-in-front-of-mirror-3993308/"
+  },
+  {
+   "k": "nailsalon_1",
+   "cats": [
+    "selfcare",
+    "errands"
+   ],
+   "tags": [
+    "nails",
+    "nail salon",
+    "manicure",
+    "pedicure",
+    "nail art",
+    "mani pedi"
+   ],
+   "def": [],
+   "title": "A Person Doing a Manicure",
+   "by": "Viktorya Sergeeva 🫂",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/a-person-doing-a-manicure-14267565/"
+  },
+  {
+   "k": "nailsalon_2",
+   "cats": [
+    "selfcare",
+    "errands"
+   ],
+   "tags": [
+    "nails",
+    "nail salon",
+    "manicure",
+    "pedicure",
+    "nail art",
+    "mani pedi"
+   ],
+   "def": [],
+   "title": "A Person Getting a Nail Polish",
+   "by": "Leeloo The First",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/a-person-getting-a-nail-polish-4677845/"
+  },
+  {
+   "k": "cinema_1",
+   "cats": [
+    "movies"
+   ],
+   "tags": [
+    "movie",
+    "film",
+    "cinema",
+    "pvr",
+    "inox",
+    "screening",
+    "premiere",
+    "imax",
+    "movie hall",
+    "first day first show"
+   ],
+   "def": [
+    "movies"
+   ],
+   "title": "3D Glasses on Popcorn",
+   "by": "Tima Miroshnichenko",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/3d-glasses-on-popcorn-7991378/"
+  },
+  {
+   "k": "cinema_2",
+   "cats": [
+    "movies"
+   ],
+   "tags": [
+    "movie",
+    "film",
+    "cinema",
+    "pvr",
+    "inox",
+    "screening",
+    "premiere",
+    "imax",
+    "movie hall",
+    "first day first show"
+   ],
+   "def": [
+    "movies"
+   ],
+   "title": "Photo of a Cinema Hall",
+   "by": "İNZİLE DAL",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/photo-of-a-cinema-hall-14746411/"
+  },
+  {
+   "k": "outdoorfilm_1",
    "cats": [
     "movies",
     "outdoor"
    ],
    "tags": [
     "outdoor movie",
-    "movie on the lawn",
+    "outdoor screening",
+    "open air",
     "open air screening",
-    "drive in"
+    "drive in",
+    "movie on the lawn",
+    "rooftop screening",
+    "movie under the stars"
    ],
    "def": [],
-   "title": "Drive-in cinema",
-   "by": "Michael Kilgore",
-   "lic": "CC BY 2.0",
-   "licUrl": "https://creativecommons.org/licenses/by/2.0",
-   "src": "https://commons.wikimedia.org/wiki/File:Skyline_Drive-In_Theater,_Barstow,_California_(47073564334).jpg"
+   "title": "People Sitting on the Floor Near Fire Pit",
+   "by": "cottonbro studio",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/people-sitting-on-the-floor-near-fire-pit-4881681/"
+  },
+  {
+   "k": "outdoorfilm_2",
+   "cats": [
+    "movies",
+    "outdoor"
+   ],
+   "tags": [
+    "outdoor movie",
+    "outdoor screening",
+    "open air",
+    "open air screening",
+    "drive in",
+    "movie on the lawn",
+    "rooftop screening",
+    "movie under the stars"
+   ],
+   "def": [],
+   "title": "People Sitting on Chairs in an Outdoor Cinema",
+   "by": "Son Tung Tran",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/people-sitting-on-chairs-in-an-outdoor-cinema-6521573/"
+  },
+  {
+   "k": "theatre_1",
+   "cats": [
+    "theatre"
+   ],
+   "tags": [
+    "play",
+    "drama",
+    "theatre",
+    "theater",
+    "musical",
+    "opera",
+    "natak",
+    "nukkad",
+    "shakespeare",
+    "rehearsal",
+    "acting",
+    "improv"
+   ],
+   "def": [
+    "theatre"
+   ],
+   "title": "Balcony on Theatre",
+   "by": "Fidan Nazim qizi",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/balcony-on-theatre-15473491/"
+  },
+  {
+   "k": "theatre_2",
+   "cats": [
+    "theatre"
+   ],
+   "tags": [
+    "play",
+    "drama",
+    "theatre",
+    "theater",
+    "musical",
+    "opera",
+    "natak",
+    "nukkad",
+    "shakespeare",
+    "rehearsal",
+    "acting",
+    "improv"
+   ],
+   "def": [
+    "theatre"
+   ],
+   "title": "Shadow Art Silhouette with Mask and Face",
+   "by": "Rachel Brooks",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/shadow-art-silhouette-with-mask-and-face-31220524/"
+  },
+  {
+   "k": "standup_1",
+   "cats": [
+    "comedy"
+   ],
+   "tags": [
+    "standup",
+    "stand up",
+    "comedy",
+    "comic",
+    "comedian",
+    "jokes",
+    "roast",
+    "improv",
+    "comedy night"
+   ],
+   "def": [
+    "comedy"
+   ],
+   "title": "Vintage microphone against a brick wall",
+   "by": "Tumisu",
+   "lic": "Pixabay Content License",
+   "licUrl": "https://pixabay.com/service/license-summary/",
+   "src": "https://pixabay.com/photos/microphone-vintage-brick-wall-retro-6046111/"
+  },
+  {
+   "k": "standup_2",
+   "cats": [
+    "comedy"
+   ],
+   "tags": [
+    "standup",
+    "stand up",
+    "comedy",
+    "comic",
+    "comedian",
+    "jokes",
+    "roast",
+    "improv",
+    "comedy night"
+   ],
+   "def": [
+    "comedy"
+   ],
+   "title": "Dimly Lit Theater Stage with Red Curtains",
+   "by": "Martin de Arriba",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/dimly-lit-theater-stage-with-red-curtains-29858812/"
+  },
+  {
+   "k": "concert_1",
+   "cats": [
+    "concerts",
+    "nightlife"
+   ],
+   "tags": [
+    "concert",
+    "show",
+    "festival",
+    "tour",
+    "gig",
+    "live music",
+    "live show"
+   ],
+   "def": [
+    "concerts"
+   ],
+   "title": "Vibrant Indoor Concert with Dynamic Lights",
+   "by": "Jeremy Li",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/vibrant-indoor-concert-with-dynamic-lights-30215324/"
+  },
+  {
+   "k": "concert_2",
+   "cats": [
+    "concerts",
+    "nightlife"
+   ],
+   "tags": [
+    "concert",
+    "show",
+    "festival",
+    "tour",
+    "gig",
+    "live music",
+    "live show"
+   ],
+   "def": [
+    "concerts"
+   ],
+   "title": "Energetic Music Concert with Light Show",
+   "by": "alexandreeliasfotografia elias",
+   "lic": "Pexels License",
+   "licUrl": "https://www.pexels.com/license/",
+   "src": "https://www.pexels.com/photo/energetic-music-concert-with-light-show-36257840/"
   },
   {
    "k": "jazz",
@@ -36,26 +3409,6 @@
    "lic": "CC BY-SA 4.0",
    "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
    "src": "https://commons.wikimedia.org/wiki/File:The_stage_of_Blues_Alley_%26_Jazz_in_Georgetown_(Washington,_D.C.).jpg"
-  },
-  {
-   "k": "karaoke",
-   "cats": [
-    "concerts",
-    "nightlife",
-    "comedy"
-   ],
-   "tags": [
-    "karaoke",
-    "sing",
-    "singing",
-    "mic"
-   ],
-   "def": [],
-   "title": "Microphone",
-   "by": "Derek Gavey from Medicine Hat, Canada",
-   "lic": "CC BY 2.0",
-   "licUrl": "https://creativecommons.org/licenses/by/2.0",
-   "src": "https://commons.wikimedia.org/wiki/File:Karaoke_Star!_(4917447111).jpg"
   },
   {
    "k": "sufi",
@@ -114,55 +3467,6 @@
    "src": "https://commons.wikimedia.org/wiki/File:Dhol_Rathaava_Community_Gujrat.jpg"
   },
   {
-   "k": "openmic",
-   "cats": [
-    "concerts",
-    "comedy"
-   ],
-   "tags": [
-    "open mic",
-    "openmic",
-    "songwriting",
-    "poetry",
-    "standup",
-    "stand up",
-    "comedy",
-    "comic",
-    "jokes",
-    "roast",
-    "spoken word"
-   ],
-   "def": [
-    "comedy"
-   ],
-   "title": "Open mic",
-   "by": "Carsten Stiller",
-   "lic": "CC BY 2.0",
-   "licUrl": "https://creativecommons.org/licenses/by/2.0",
-   "src": "https://commons.wikimedia.org/wiki/File:2013-09-28_Jena_Waiting_2_(10001985445).jpg"
-  },
-  {
-   "k": "club",
-   "cats": [
-    "nightlife",
-    "concerts"
-   ],
-   "tags": [
-    "techno",
-    "nightclub",
-    "dj",
-    "edm",
-    "rave",
-    "house music"
-   ],
-   "def": [],
-   "title": "DJ booth",
-   "by": "Arnold Jaeger Werner",
-   "lic": "CC BY 2.0",
-   "licUrl": "https://creativecommons.org/licenses/by/2.0",
-   "src": "https://commons.wikimedia.org/wiki/File:DJ_booth_with_DJ-Mixer,_two_turntables_and_two_CDJ-players_in_former_Bob_Beaman_nightclub_in_Munich.jpg"
-  },
-  {
    "k": "vinyl",
    "cats": [
     "concerts",
@@ -172,8 +3476,7 @@
    "tags": [
     "vinyl",
     "record store",
-    "records",
-    "thrift"
+    "records"
    ],
    "def": [],
    "title": "Record store",
@@ -270,88 +3573,6 @@
    "src": "https://commons.wikimedia.org/wiki/File:Sweets_Mithai_for_Diwali_and_other_Festivals_of_India.jpg"
   },
   {
-   "k": "cooking",
-   "cats": [
-    "cafe",
-    "hangout"
-   ],
-   "tags": [
-    "cook along",
-    "cooking",
-    "cook",
-    "potluck",
-    "dinner"
-   ],
-   "def": [],
-   "title": "Butter chicken",
-   "by": "Amar Nath Adak",
-   "lic": "CC BY-SA 4.0",
-   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-   "src": "https://commons.wikimedia.org/wiki/File:CreamyButterChicken.jpg"
-  },
-  {
-   "k": "tea",
-   "cats": [
-    "cafe",
-    "selfcare"
-   ],
-   "tags": [
-    "tea tasting",
-    "tea room",
-    "tea flight",
-    "green tea"
-   ],
-   "def": [],
-   "title": "Tea tasting",
-   "by": "Difference engine",
-   "lic": "CC BY-SA 4.0",
-   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-   "src": "https://commons.wikimedia.org/wiki/File:Two_small_tasting_cups_of_Lapsang_Souchong.jpg"
-  },
-  {
-   "k": "boardgames",
-   "cats": [
-    "hangout",
-    "cafe"
-   ],
-   "tags": [
-    "board game",
-    "boardgame",
-    "pictionary",
-    "catan",
-    "ludo",
-    "chess",
-    "cards",
-    "games night"
-   ],
-   "def": [],
-   "title": "Board game",
-   "by": "Tetzemann",
-   "lic": "CC0",
-   "licUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
-   "src": "https://commons.wikimedia.org/wiki/File:Brettspiel_Mensch_%C3%A4rger_dich_nicht.jpg"
-  },
-  {
-   "k": "books",
-   "cats": [
-    "hangout",
-    "work"
-   ],
-   "tags": [
-    "book swap",
-    "book club",
-    "book exchange",
-    "books",
-    "novel"
-   ],
-   "def": [],
-   "title": "Book swap",
-   "by": "Elitre",
-   "lic": "CC BY-SA 4.0",
-   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-   "src": "https://commons.wikimedia.org/wiki/File:Wikimania_2016_-_Book_swapping_05.jpg"
-  },
-  {
    "k": "dhaba",
    "cats": [
     "cafe"
@@ -359,14 +3580,9 @@
    "tags": [
     "maggi",
     "dhaba",
-    "thali",
     "rajma",
-    "lunch",
-    "biryani",
-    "street food",
-    "food walk",
-    "vada pav",
-    "pav bhaji",
+    "dal",
+    "roti",
     "pizza"
    ],
    "def": [],
@@ -375,49 +3591,6 @@
    "lic": "CC BY-SA 4.0",
    "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
    "src": "https://commons.wikimedia.org/wiki/File:Roti,_tadka,_and_onion.jpg"
-  },
-  {
-   "k": "coffee",
-   "cats": [
-    "cafe",
-    "hangout",
-    "work"
-   ],
-   "tags": [
-    "crossword",
-    "filter coffee",
-    "coffee",
-    "cafe",
-    "latte",
-    "cappuccino"
-   ],
-   "def": [
-    "cafe"
-   ],
-   "title": "Filter coffee",
-   "by": "K.Sreeram 2603",
-   "lic": "CC0",
-   "licUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
-   "src": "https://commons.wikimedia.org/wiki/File:Memorable_Coffee.jpg"
-  },
-  {
-   "k": "brunch",
-   "cats": [
-    "cafe"
-   ],
-   "tags": [
-    "brunch",
-    "pancake",
-    "pancakes",
-    "breakfast",
-    "waffles"
-   ],
-   "def": [],
-   "title": "Pancakes",
-   "by": "Bernard DUPONT",
-   "lic": "CC BY-SA 2.0",
-   "licUrl": "https://creativecommons.org/licenses/by-sa/2.0",
-   "src": "https://commons.wikimedia.org/wiki/File:Pancakes_for_Breakfast_-_Oxkutzkab_Yucatan.jpg"
   },
   {
    "k": "chai",
@@ -429,7 +3602,7 @@
     "chai",
     "samosa",
     "pakora",
-    "snacks"
+    "cutting chai"
    ],
    "def": [],
    "title": "Chai and samosa",
@@ -439,23 +3612,6 @@
    "src": "https://commons.wikimedia.org/wiki/File:Samosa_with_cutting_chai_-_1.jpg"
   },
   {
-   "k": "picnic",
-   "cats": [
-    "cafe",
-    "outdoor",
-    "hangout"
-   ],
-   "tags": [
-    "picnic"
-   ],
-   "def": [],
-   "title": "Picnic",
-   "by": "Personal Creations",
-   "lic": "CC BY 2.0",
-   "licUrl": "https://creativecommons.org/licenses/by/2.0",
-   "src": "https://commons.wikimedia.org/wiki/File:Wine_glasses_on_a_box_cutting_board_with_cheese_fruit_and_bread_chalkboard_and_personalized_pillows_on_a_picnic_blanket_(19924590745).jpg"
-  },
-  {
    "k": "liveband",
    "cats": [
     "concerts",
@@ -463,12 +3619,10 @@
    ],
    "tags": [
     "band",
-    "gig",
-    "live music",
-    "acoustic",
+    "live band",
     "rock",
     "indie",
-    "jam"
+    "gig"
    ],
    "def": [],
    "title": "Band gear on stage",
@@ -479,18 +3633,9 @@
   },
   {
    "k": "concert",
-   "cats": [
-    "concerts"
-   ],
-   "tags": [
-    "concert",
-    "show",
-    "festival",
-    "tour"
-   ],
-   "def": [
-    "concerts"
-   ],
+   "cats": [],
+   "tags": [],
+   "def": [],
    "title": "Concert stage",
    "by": "Kinglevel",
    "lic": "CC BY-SA 4.0",
@@ -519,30 +3664,6 @@
    "lic": "CC BY 2.0",
    "licUrl": "https://creativecommons.org/licenses/by/2.0",
    "src": "https://commons.wikimedia.org/wiki/File:Piccadilly_Cinema_screen,_Perth.jpg"
-  },
-  {
-   "k": "cinema",
-   "cats": [
-    "movies"
-   ],
-   "tags": [
-    "movie",
-    "film",
-    "cinema",
-    "pvr",
-    "inox",
-    "screening",
-    "premiere",
-    "imax"
-   ],
-   "def": [
-    "movies"
-   ],
-   "title": "Cinema hall",
-   "by": "Mojmir Churavy",
-   "lic": "CC0",
-   "licUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
-   "src": "https://commons.wikimedia.org/wiki/File:Kino_Atlas_Interier_J.jpg"
   },
   {
    "k": "sukhna",
@@ -705,153 +3826,6 @@
    "src": "https://commons.wikimedia.org/wiki/File:Elante_Mall,_Chandigarh.jpg"
   },
   {
-   "k": "gym",
-   "cats": [
-    "fitness",
-    "selfcare"
-   ],
-   "tags": [
-    "gym",
-    "workout",
-    "weights",
-    "lifting",
-    "strength",
-    "dumbbell",
-    "training",
-    "crossfit"
-   ],
-   "def": [
-    "fitness"
-   ],
-   "title": "Dumbbells in a gym",
-   "by": "Shixart1985",
-   "lic": "CC BY 2.0",
-   "licUrl": "https://creativecommons.org/licenses/by/2.0",
-   "src": "https://commons.wikimedia.org/wiki/File:Fitness_dumbbell_marked_with_a_green_logo_resting_on_a_gym_rack.jpg"
-  },
-  {
-   "k": "badminton",
-   "cats": [
-    "fitness"
-   ],
-   "tags": [
-    "badminton",
-    "shuttle",
-    "racket",
-    "racquet"
-   ],
-   "def": [],
-   "title": "Badminton racket and shuttlecock",
-   "by": "Vladimir Maftei, http://www.enciclopedie.info/",
-   "lic": "CC BY-SA 4.0",
-   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-   "src": "https://commons.wikimedia.org/wiki/File:Rachet%C4%83_de_badminton_%C5%9Fi_flutura%C5%9F.jpg"
-  },
-  {
-   "k": "cricket",
-   "cats": [
-    "fitness",
-    "outdoor"
-   ],
-   "tags": [
-    "cricket",
-    "nets",
-    "wicket",
-    "match"
-   ],
-   "def": [],
-   "title": "Cricket pitch",
-   "by": "Acabashi",
-   "lic": "CC BY-SA 4.0",
-   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-   "src": "https://commons.wikimedia.org/wiki/File:Church_Times_Cricket_Cup_final_2019,_Wicket_3.jpg"
-  },
-  {
-   "k": "running",
-   "cats": [
-    "fitness"
-   ],
-   "tags": [
-    "run",
-    "running",
-    "jog",
-    "jogging",
-    "marathon",
-    "sprint",
-    "track",
-    "5k",
-    "10k"
-   ],
-   "def": [],
-   "title": "Running track",
-   "by": "Petewarrior",
-   "lic": "CC BY 4.0",
-   "licUrl": "https://creativecommons.org/licenses/by/4.0",
-   "src": "https://commons.wikimedia.org/wiki/File:Brillia_Running_Stadium_track.jpg"
-  },
-  {
-   "k": "swim",
-   "cats": [
-    "fitness",
-    "selfcare"
-   ],
-   "tags": [
-    "swim",
-    "swimming",
-    "pool",
-    "laps"
-   ],
-   "def": [],
-   "title": "Swimming pool lanes",
-   "by": "Xander from Yellowknife, NT, Canada",
-   "lic": "CC BY 2.0",
-   "licUrl": "https://creativecommons.org/licenses/by/2.0",
-   "src": "https://commons.wikimedia.org/wiki/File:Swimming_pool_with_lane_ropes_in_place_cropped.jpg"
-  },
-  {
-   "k": "theatre",
-   "cats": [
-    "theatre"
-   ],
-   "tags": [
-    "play",
-    "drama",
-    "theatre",
-    "theater",
-    "musical",
-    "opera",
-    "natak"
-   ],
-   "def": [
-    "theatre"
-   ],
-   "title": "Theatre auditorium and curtain",
-   "by": "OlenaMuzychenko (WMUA)",
-   "lic": "CC BY-SA 4.0",
-   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-   "src": "https://commons.wikimedia.org/wiki/File:The_auditorium_of_the_Odessa_Opera_House_02.jpg"
-  },
-  {
-   "k": "stage",
-   "cats": [
-    "theatre"
-   ],
-   "tags": [
-    "shakespeare",
-    "classic",
-    "rehearsal",
-    "workshop",
-    "acting",
-    "improv"
-   ],
-   "def": [],
-   "title": "Empty theatre stage",
-   "by": "Didier Descouens",
-   "lic": "CC BY-SA 4.0",
-   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-   "src": "https://commons.wikimedia.org/wiki/File:Interior_of_Teatro_Olimpico_(Vicenza)_scena_.jpg"
-  },
-  {
    "k": "lounge",
    "cats": [
     "hangout",
@@ -895,51 +3869,6 @@
    "src": "https://commons.wikimedia.org/wiki/File:DZ6_2632_A_cozy_outdoor_corner_at_night_a_wicker_chair_beside_a_small_table_potted_plants_a_glowing_candle_and_twinkling_string_lights_welcoming_passersby.jpg"
   },
   {
-   "k": "trek",
-   "cats": [
-    "adventure",
-    "outdoor"
-   ],
-   "tags": [
-    "trek",
-    "trekking",
-    "hike",
-    "hiking",
-    "mountain",
-    "himalaya",
-    "trail",
-    "triund",
-    "kasauli"
-   ],
-   "def": [
-    "adventure"
-   ],
-   "title": "Himalayan valley trail",
-   "by": "Жанна Сорокина",
-   "lic": "CC0",
-   "licUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-   "src": "https://commons.wikimedia.org/wiki/File:%D0%9D%D0%B5%D0%BF%D0%B0%D0%BB_%D0%93%D0%B8%D0%BC%D0%B0%D0%BB%D0%B0%D0%B8_(211503667).jpeg"
-  },
-  {
-   "k": "climbing",
-   "cats": [
-    "adventure",
-    "fitness"
-   ],
-   "tags": [
-    "climb",
-    "climbing",
-    "bouldering",
-    "wall"
-   ],
-   "def": [],
-   "title": "Climbing wall",
-   "by": "Ka23 13",
-   "lic": "CC BY-SA 4.0",
-   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-   "src": "https://commons.wikimedia.org/wiki/File:ClimbingHolds_20211103_145113.jpg"
-  },
-  {
    "k": "camping",
    "cats": [
     "adventure",
@@ -968,7 +3897,6 @@
    "tags": [
     "raft",
     "rafting",
-    "kayak",
     "river",
     "rishikesh"
    ],
@@ -980,34 +3908,6 @@
    "src": "https://commons.wikimedia.org/wiki/File:River_rafting_at_Rishikesh_Photographed_By_Sumita_Roy.jpg"
   },
   {
-   "k": "parkwalk",
-   "cats": [
-    "outdoor",
-    "hangout",
-    "fitness",
-    "cafe"
-   ],
-   "tags": [
-    "park",
-    "walk",
-    "stroll",
-    "bench",
-    "evening walk",
-    "morning walk",
-    "sunrise walk",
-    "heritage walk",
-    "lake walk"
-   ],
-   "def": [
-    "outdoor"
-   ],
-   "title": "Park path and bench",
-   "by": "Humoyun Mehridinov",
-   "lic": "CC BY-SA 4.0",
-   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-   "src": "https://commons.wikimedia.org/wiki/File:Tashkent_Botanical_Garden_trees_and_a_path_03.jpg"
-  },
-  {
    "k": "boating",
    "cats": [
     "outdoor",
@@ -1016,8 +3916,7 @@
    "tags": [
     "boat",
     "boating",
-    "lake",
-    "paddle",
+    "pedal boat",
     "pedal"
    ],
    "def": [],
@@ -1034,7 +3933,6 @@
    ],
    "tags": [
     "fountain",
-    "garden",
     "botanical",
     "flowers"
    ],
@@ -1044,50 +3942,6 @@
    "lic": "CC BY-SA 2.0",
    "licUrl": "https://creativecommons.org/licenses/by-sa/2.0",
    "src": "https://commons.wikimedia.org/wiki/File:Fountain_at_path_junction,_Cambridge_University_Botanical_Garden_-_geograph.org.uk_-_6691018.jpg"
-  },
-  {
-   "k": "market",
-   "cats": [
-    "errands",
-    "cafe"
-   ],
-   "tags": [
-    "market",
-    "sabzi",
-    "vegetables",
-    "veggies",
-    "groceries",
-    "mandi",
-    "bazaar"
-   ],
-   "def": [
-    "errands"
-   ],
-   "title": "Vegetable market",
-   "by": "Timothy A. Gonsalves",
-   "lic": "CC BY-SA 4.0",
-   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-   "src": "https://commons.wikimedia.org/wiki/File:Onions_Veg_Stall_Ooty_Market_Nilgiris_Aug25_A7CR_07102.jpg"
-  },
-  {
-   "k": "supermarket",
-   "cats": [
-    "errands"
-   ],
-   "tags": [
-    "supermarket",
-    "grocery",
-    "shopping",
-    "store",
-    "mall",
-    "dmart"
-   ],
-   "def": [],
-   "title": "Supermarket aisle",
-   "by": "Wilfredor",
-   "lic": "CC BY-SA 4.0",
-   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-   "src": "https://commons.wikimedia.org/wiki/File:Aisle_in_L_Intermarche_supermarket_in_Quebec_City.jpg"
   },
   {
    "k": "laundry",
@@ -1109,44 +3963,14 @@
    "src": "https://commons.wikimedia.org/wiki/File:Laundromat_Washing_Machines_%26_Laundry_Equipment.jpg"
   },
   {
-   "k": "laptop",
-   "cats": [
-    "work"
-   ],
-   "tags": [
-    "work",
-    "laptop",
-    "cowork",
-    "coworking",
-    "coding",
-    "freelance",
-    "wfh",
-    "startup",
-    "hackathon"
-   ],
-   "def": [
-    "work"
-   ],
-   "title": "Laptop and coffee on a desk",
-   "by": "Lauren Mancke",
-   "lic": "CC0",
-   "licUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-   "src": "https://commons.wikimedia.org/wiki/File:Laptop_and_coffee_on_a_desk.jpg"
-  },
-  {
    "k": "library",
    "cats": [
     "work"
    ],
    "tags": [
-    "study",
     "library",
-    "exam",
     "reading",
-    "revision",
-    "upsc",
-    "notes",
-    "assignment"
+    "reading room"
    ],
    "def": [],
    "title": "Library study tables",
@@ -1154,114 +3978,6 @@
    "lic": "CC BY-SA 4.0",
    "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
    "src": "https://commons.wikimedia.org/wiki/File:Reading_room,_Ground_floor,_VW_Library,_Berlin.jpg"
-  },
-  {
-   "k": "bar",
-   "cats": [
-    "nightlife"
-   ],
-   "tags": [
-    "bar",
-    "lounge",
-    "club",
-    "clubbing",
-    "night out",
-    "party",
-    "dance",
-    "dancing"
-   ],
-   "def": [
-    "nightlife"
-   ],
-   "title": "Bar with neon lights",
-   "by": "PattayaPatrol",
-   "lic": "CC BY-SA 4.0",
-   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-   "src": "https://commons.wikimedia.org/wiki/File:DSC_7093_A_cozy_dimly_lit_cocktail_bar_with_purple_and_blue_mood_lighting_a_glassware-studded_ceiling_and_a_row_of_plush_bar_stools_lining_a_glossy_counter.jpg"
-  },
-  {
-   "k": "cocktail",
-   "cats": [
-    "nightlife"
-   ],
-   "tags": [
-    "cocktail",
-    "cocktails",
-    "drinks",
-    "mixology",
-    "happy hour",
-    "wine"
-   ],
-   "def": [],
-   "title": "Cocktails",
-   "by": "Shixart1985",
-   "lic": "CC BY 2.0",
-   "licUrl": "https://creativecommons.org/licenses/by/2.0",
-   "src": "https://commons.wikimedia.org/wiki/File:Refreshing_cocktail_served_in_a_glass_with_a_slice_of_citrus_and_ice_on_a_vibrant_bar_background.jpg"
-  },
-  {
-   "k": "pub",
-   "cats": [
-    "nightlife"
-   ],
-   "tags": [
-    "pub",
-    "beer",
-    "brewery",
-    "brewpub",
-    "craft",
-    "pint",
-    "tap"
-   ],
-   "def": [],
-   "title": "Beer taps in a pub",
-   "by": "JIP",
-   "lic": "CC BY-SA 4.0",
-   "licUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-   "src": "https://commons.wikimedia.org/wiki/File:Beer_taps_at_restaurant_P%C3%B5rgu,_Tallinn.jpg"
-  },
-  {
-   "k": "spa",
-   "cats": [
-    "selfcare"
-   ],
-   "tags": [
-    "spa",
-    "pamper",
-    "relax",
-    "facial",
-    "salon",
-    "self care",
-    "selfcare"
-   ],
-   "def": [
-    "selfcare"
-   ],
-   "title": "Towels and orchids",
-   "by": "Tim Reckmann from Hamm, Deutschland",
-   "lic": "CC BY 2.0",
-   "licUrl": "https://creativecommons.org/licenses/by/2.0",
-   "src": "https://commons.wikimedia.org/wiki/File:Handt%C3%BCcher_im_Spa_(53404561087).jpg"
-  },
-  {
-   "k": "yoga",
-   "cats": [
-    "selfcare",
-    "fitness"
-   ],
-   "tags": [
-    "yoga",
-    "stretch",
-    "stretching",
-    "pilates",
-    "mat"
-   ],
-   "def": [],
-   "title": "Rolled yoga mats",
-   "by": "Sha89sha",
-   "lic": "CC0",
-   "licUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-   "src": "https://commons.wikimedia.org/wiki/File:Cotton_Yoga_Mats.png"
   },
   {
    "k": "aroma",
@@ -1272,10 +3988,7 @@
     "aroma",
     "aromatherapy",
     "oils",
-    "massage",
-    "wellness",
-    "meditation",
-    "meditate"
+    "essential oils"
    ],
    "def": [],
    "title": "Essential oils and flowers",

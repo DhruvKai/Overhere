@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { goBack } from '@/lib/nav';
 import { useState } from 'react';
-import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { Linking, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FeedbackSheet } from '@/components/Feedback';
 import { ReportSheet } from '@/components/ReportSheet';
@@ -13,6 +13,7 @@ import { needRate, placeLine, REPORT_REASONS, uname, whenStr } from '@/lib/model
 import { photoOf } from '@/lib/photos';
 import { useModel, useStore } from '@/lib/store';
 import { R, useTheme } from '@/lib/theme';
+import { FormScroll, KeyboardSafe } from '@/components/KeyboardSafe';
 
 /* After a plan (the 7 Nov spec), one of three things, as needRate says:
    - the host rates it and marks everyone as there or a no-show (record_attendance); that's what reliability counts use
@@ -92,7 +93,8 @@ export default function Rate() {
   return (
     <>
       <Stack.Screen options={{ title: mode === 'host' ? 'Rate and record attendance' : mode === 'noshow' ? 'We missed you' : 'How did it go?' }} />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 6, paddingBottom: 40 + insets.bottom }}>
+      <KeyboardSafe>
+      <FormScroll contentContainerStyle={{ padding: 16, gap: 6, paddingBottom: 40 + insets.bottom }}>
         <View style={{ flexDirection: 'row', gap: 12, backgroundColor: t.field, borderRadius: R, padding: 12, marginBottom: 12 }}>
           <Image source={photoOf(a)} style={{ width: 64, height: 64, borderRadius: 14 }} contentFit="cover" />
           <View style={{ flex: 1, gap: 3 }}>
@@ -110,7 +112,7 @@ export default function Rate() {
             <View style={{ flexDirection: 'row', marginBottom: 14 }}>
               <Chip icon={dispute ? 'check-square' : 'square'} label="I was there. This mark isn't right." on={dispute} onPress={() => setDispute(x => !x)} />
             </View>
-            <Btn title="Send" onPress={submit} busy={busy} />
+            <Btn title="Send" onPress={submit} busy={busy} off={!reply.trim() && !dispute} />
           </>
         ) : (
           <>
@@ -157,10 +159,12 @@ export default function Rate() {
                 <P small mute style={{ marginBottom: 14 }}>Only our team sees ratings.</P>
               </>
             )}
-            <Btn title={mode === 'host' ? 'Save' : prev ? 'Update rating' : 'Submit'} onPress={submit} busy={busy} />
+            <Btn title={mode === 'host' ? 'Save' : prev ? 'Update rating' : 'Submit'} onPress={submit} busy={busy}
+              off={!stars || (mode === 'host' ? members.some(u => !people[u]) : !hostStars)} />
           </>
         )}
-      </ScrollView>
+      </FormScroll>
+      </KeyboardSafe>
       <ReportSheet open={!!reporting} title={`Report ${reporting ? uname(m, reporting) : ''}`} reasons={REPORT_REASONS} target={reporting} act={a.id} onClose={() => setReporting(null)} />
       {meetFb ? <FeedbackSheet from="meetup" onClose={() => { setMeetFb(false); goBack(); }} /> : null}
     </>

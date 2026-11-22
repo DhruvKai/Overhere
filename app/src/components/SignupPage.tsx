@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { column } from '@/lib/layout';
 import { loadDraft, progressItems, progressOf } from '@/lib/signup';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
+import { FormScroll } from './KeyboardSafe';
 import { BottomBar, Icon } from './ui';
 
 /* Every sign-up page: an optional back arrow and the progress at the top, the page in a scroll view, and its buttons
@@ -14,10 +15,10 @@ export function SignupPage({ top, children, buttons }: { top?: ReactNode; childr
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1, backgroundColor: t.bg }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={[{ padding: 24, paddingTop: 12 }, column]} keyboardShouldPersistTaps="handled">
+        <FormScroll contentContainerStyle={[{ padding: 24, paddingTop: 12 }, column]}>
           {top}
           {children}
-        </ScrollView>
+        </FormScroll>
         <View style={column}><BottomBar>{buttons}</BottomBar></View>
       </KeyboardAvoidingView>
     </SafeAreaView>

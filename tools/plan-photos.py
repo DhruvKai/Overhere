@@ -10,29 +10,36 @@ It writes
   - the "More plan photos" list in credits.html (between the marker comments), for photos the page doesn't list yet
 
 Each photo in bank.json: k (file img/plans/<k>.webp), cats (the categories whose bank it's in), tags (words and phrases
-matched against a plan's description and venue), def (categories it's the default photo of: exactly one per category),
+matched against a plan's description and venue), def (categories it's the default photo of: at least one per category),
 title, by, lic, licUrl, src (the attribution the activity view shows).
-Rules for the bank: licence CC0, CC BY or CC BY-SA only (never NC or ND: the apps crop and resize); no identifiable
-person; places, food, objects and scenes. Resized copies keep the original licence and attribution.
+Photos that tie for a plan (each activity type has two, with the same tags) are shared out by the plan's id, so plans
+of the same kind don't all look alike. A photo with no cats is never picked for a plan but stays available to the app
+(the welcome pages use 'concert').
+Rules for the bank: licence CC0, CC BY, CC BY-SA, the Pexels License or the Pixabay Content License (never NC or ND:
+the apps crop and resize). Since 22 Nov 2026 the bank also has photos with people in them, picked by the team from
+Pexels and Pixabay; those licences allow that, but never use them in a way that shows the people badly or as
+endorsing Overhere. Resized copies keep the original licence and attribution. Only Creative Commons photos are
+credited (in the apps and on credits.html); Pexels and Pixabay don't require it, so their by/src stay in the bank as a
+record of where each photo came from and aren't shown.
 """
 import html, json, os, re, shutil, sys
 
 WEB = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CATS = ['fitness', 'movies', 'theatre', 'comedy', 'concerts', 'hangout', 'cafe', 'adventure', 'outdoor', 'errands', 'work', 'selfcare', 'nightlife']
-LIC = re.compile(r'^(CC0( 1\.0)?|CC BY(-SA)? [0-9.]+)$', re.I)
+LIC = re.compile(r'^(CC0( 1\.0)?|CC BY(-SA)? [0-9.]+|Pexels License|Pixabay Content License)$', re.I)
 
 
 def load():
     bank = json.load(open(os.path.join(WEB, 'img/plans/bank.json'), encoding='utf-8'))['photos']
     bad = []
     for p in bank:
-        if not LIC.match(p['lic']): bad.append(f"{p['k']}: licence {p['lic']!r} isn't CC0, CC BY or CC BY-SA")
+        if not LIC.match(p['lic']): bad.append(f"{p['k']}: licence {p['lic']!r} isn't an allowed licence")
         if not os.path.exists(os.path.join(WEB, 'img/plans', p['k'] + '.webp')): bad.append(f"{p['k']}: no img/plans/{p['k']}.webp")
         if any(c not in CATS for c in p['cats'] + p['def']): bad.append(f"{p['k']}: unknown category")
         if any(c not in p['cats'] for c in p['def']): bad.append(f"{p['k']}: default for a category it isn't in")
     for c in CATS:
         n = [p['k'] for p in bank if c in p['def']]
-        if len(n) != 1: bad.append(f'{c}: needs exactly one default photo, has {n}')
+        if not n: bad.append(f'{c}: needs a default photo')
     if bad: sys.exit('\n'.join(bad))
     return bank
 
@@ -70,7 +77,7 @@ def main():
     outside = c[:c.index(start)] + c[c.index(end):]
     li = []
     for p in bank:
-        if f"img/plans/{p['k']}.webp" in outside: continue
+        if f"img/plans/{p['k']}.webp" in outside or not p['lic'].upper().startswith('CC'): continue  # Pexels/Pixabay need no credit
         e = lambda x: html.escape(x, quote=True)
         li.append(f'      <li><img src="img/plans/{e(p["k"])}.webp" alt="{e(p["title"])}" loading="lazy" width="96" height="64">\n'
                   f'        <div><b>{e(p["title"])}</b><br><span class="mute">{e(p["by"])} · <a href="{e(p["licUrl"])}" rel="license noopener" target="_blank">{e(p["lic"])}</a> ·\n'

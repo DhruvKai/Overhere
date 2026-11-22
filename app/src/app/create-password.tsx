@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ProgressBar, useProgress } from '@/components/SignupPage';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Btn, H, Icon, P, PwField } from '@/components/ui';
 import { friendly } from '@/lib/api';
@@ -9,6 +9,7 @@ import { pwProblem } from '@/lib/password';
 import { useStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/lib/theme';
+import { FormScroll, KeyboardSafe } from '@/components/KeyboardSafe';
 
 /* Phone accounts, after confirming their email (add-email.tsx): choose a password, the same step as pwStepHtml in
    web/app.js. Saving it sets user_metadata.pw_set; the session update then moves the root layout on. */
@@ -41,8 +42,8 @@ export default function CreatePassword() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 24 }} keyboardShouldPersistTaps="handled">
+      <KeyboardSafe>
+        <FormScroll contentContainerStyle={{ padding: 24, paddingTop: 24 }}>
           {/* sign-up screens 7, 8 and 8b: how much is done */}
           <View style={{ marginBottom: 24 }}><ProgressBar pct={pct} /></View>
           <View style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: t.acc2, alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
@@ -56,12 +57,13 @@ export default function CreatePassword() {
           <PwMeter pw={pw} email={email} />
           <PwField label="Confirm password" value={pw2} autoComplete="new-password" textContentType="newPassword" {...pw2Line}
             onChangeText={v => { setPw2(v); setErr(''); setFe(f => ({ ...f, pw2: '' })); }} onBlur={() => { if (pw2) setLeft2(true); }} onSubmitEditing={save} />
-          <Btn title="Save password" onPress={save} busy={busy} />
+          <Btn title="Save password" onPress={save} busy={busy} off={!pw || !!pwProblem(pw, email) || pw2 !== pw} />
           {err ? <Text accessibilityLiveRegion="polite" style={{ color: t.bad, marginTop: 14, fontSize: 14 }}>{err}</Text> : null}
           <View style={{ height: 1, backgroundColor: t.line, marginVertical: 24 }} />
-          <Btn title="Sign out" kind="ghost" icon="log-out" onPress={signOut} />
-        </ScrollView>
-      </KeyboardAvoidingView>
+          {/* only phone sign-ups reach this screen: signing out is how someone who typed the wrong number starts again */}
+          <Btn title="Wrong phone number? Start over" kind="ghost" icon="rotate-ccw" onPress={signOut} />
+        </FormScroll>
+      </KeyboardSafe>
     </SafeAreaView>
   );
 }

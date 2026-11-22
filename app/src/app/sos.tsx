@@ -1,11 +1,12 @@
 import * as Location from 'expo-location';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Linking, ScrollView, Text, View } from 'react-native';
+import { Linking, Text, View } from 'react-native';
 import { Btn, Field, H, Icon, P } from '@/components/ui';
 import { trustedOf, uname } from '@/lib/model';
 import { useModel, useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
+import { FormScroll, KeyboardSafe } from '@/components/KeyboardSafe';
 
 type Loc = { lat: number; lng: number; acc: number };
 async function getLoc(): Promise<Loc | null> {
@@ -54,7 +55,8 @@ export default function Sos() {
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 20, gap: 12 }}>
+    <KeyboardSafe>
+    <FormScroll contentContainerStyle={{ padding: 20, gap: 12 }}>
       <Btn title="Call emergency services (112)" icon="phone" kind="alarm" onPress={() => open('tel:112')} />
       <H size={18}>Alert your trusted contact</H>
       {tc ? (<>
@@ -72,9 +74,10 @@ export default function Sos() {
         <P mute>Add someone now so you can alert them in one tap. Only you see this.</P>
         <Field label="Name" value={name} onChangeText={setName} placeholder="e.g. Mum, Riya" maxLength={40} />
         <Field label="Phone" value={phone} onChangeText={setPhone} placeholder="+91 98765 43210" keyboardType="phone-pad" maxLength={20} />
-        <Btn title="Save contact" onPress={saveContact} />
+        <Btn title="Save contact" onPress={saveContact} off={!name.trim() || phone.replace(/\D/g, '').length < 7} />
       </>)}
       <P mute small style={{ marginTop: 8 }}>Nothing is sent until you press send in your own SMS or WhatsApp app.</P>
-    </ScrollView>
+    </FormScroll>
+    </KeyboardSafe>
   );
 }

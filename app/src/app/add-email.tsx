@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { ProgressBar, useProgress } from '@/components/SignupPage';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Btn, CodeBoxes, Field, H, Icon, P } from '@/components/ui';
 import { friendly } from '@/lib/api';
 import { useStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/lib/theme';
+import { FormScroll, KeyboardSafe } from '@/components/KeyboardSafe';
 
 /* Phone accounts also need a confirmed email (the same step as emailStepHtml in web/app.js): add it, then type the
    code from the "Change email address" email. Once Supabase confirms it, the session changes and the root layout
@@ -54,8 +55,8 @@ export default function AddEmail() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: t.bg }}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 24 }} keyboardShouldPersistTaps="handled">
+      <KeyboardSafe>
+        <FormScroll contentContainerStyle={{ padding: 24, paddingTop: 24 }}>
           {/* sign-up screens 7, 8 and 8b: how much is done */}
           <View style={{ marginBottom: 24 }}><ProgressBar pct={pct} /></View>
           <View style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: t.acc2, alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
@@ -65,12 +66,12 @@ export default function AddEmail() {
             <H size={28}>Add your email</H>
             <P mute style={{ marginTop: 6, marginBottom: 24 }}>Your phone number is confirmed. Now add your email and confirm it with a code. It&apos;s for account emails only, and nobody else sees it.</P>
             <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress" autoFocus />
-            <Btn title="Send code" onPress={send} busy={busy} />
+            <Btn title="Send code" onPress={send} busy={busy} off={!EMAIL_RE.test(email.trim())} />
           </>) : (<>
             <H size={28}>Enter the code</H>
             <P mute style={{ marginTop: 6, marginBottom: 24 }}>We sent a 6-digit code to {email.trim()}. It can take a minute, and sometimes lands in spam.</P>
             <CodeBoxes label="Code from the email" value={code} onChange={setCode} onDone={c => confirm(c)} error={!!err} />
-            <Btn title="Confirm email" onPress={() => confirm()} busy={busy} />
+            <Btn title="Confirm email" onPress={() => confirm()} busy={busy} off={!/^\d{6}$/.test(code)} />
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 14 }}>
               <Pressable onPress={() => { setStep('add'); setErr(''); }}><Text style={{ color: t.accink, fontWeight: '700', fontSize: 15 }}>Use a different email</Text></Pressable>
               <Pressable onPress={resend}><Text style={{ color: t.accink, fontWeight: '700', fontSize: 15 }}>Resend code</Text></Pressable>
@@ -78,9 +79,10 @@ export default function AddEmail() {
           </>)}
           {err ? <Text accessibilityLiveRegion="polite" style={{ color: t.bad, marginTop: 14, fontSize: 14 }}>{err}</Text> : null}
           <View style={{ height: 1, backgroundColor: t.line, marginVertical: 24 }} />
-          <Btn title="Sign out" kind="ghost" icon="log-out" onPress={signOut} />
-        </ScrollView>
-      </KeyboardAvoidingView>
+          {/* only phone sign-ups reach this screen: signing out is how someone who typed the wrong number starts again */}
+          <Btn title="Wrong phone number? Start over" kind="ghost" icon="rotate-ccw" onPress={signOut} />
+        </FormScroll>
+      </KeyboardSafe>
     </SafeAreaView>
   );
 }

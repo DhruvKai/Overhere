@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { CATS, canSave, homeLL, saved, whenStr, type Model, type Plan } from '@/lib/model';
+import type { LL } from '@/lib/here';
 import { geo } from '@/lib/spots';
 import { useToggleSave } from '@/lib/store';
 import { MAPKIT_JS } from '@/lib/mapkit-source';
@@ -22,7 +23,7 @@ const ICON: Record<string, string> = {   // the website's icons (lucide), inside
   concerts: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
 };
 
-const page = (home: [number, number]) => `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+const page = (home: [number, number], here: [number, number] | null) => `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <style>html,body,#m{margin:0;height:100%;background:#E8E4DA}
 .p{width:34px;height:34px;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 4px 10px rgba(0,0,0,.3)}
 .p svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -32,7 +33,9 @@ const page = (home: [number, number]) => `<!doctype html><html><head><meta name=
 <script>${MAPKIT_JS.replace(/<\/script/gi, '<\\/script')}</script>
 <script>
 function send(o){window.ReactNativeWebView.postMessage(JSON.stringify(o))}
-var ICON=${JSON.stringify(ICON)},HOME=${JSON.stringify(home)},KEY=${JSON.stringify(GOOGLE_MAPS_KEY)},pins=[],m=null;
+var ICON=${JSON.stringify(ICON)},HOME=${JSON.stringify(home)},HERE=${JSON.stringify(here)},KEY=${JSON.stringify(GOOGLE_MAPS_KEY)},pins=[],m=null;
+/* the map's middle: where you are when location is on (with the blue dot), else your profile's home area (no dot) */
+function mid(){return HERE||HOME}
 function draw(){
   if(!m)return;m.clearPins();var groups=[];
   pins.forEach(function(a){var p=m.point([a.lat,a.lng]);var g=null;for(var i=0;i<groups.length;i++){if(groups[i].p.distanceTo(p)<40){g=groups[i];break}}if(g)g.items.push(a);else groups.push({p:p,items:[a]})});
@@ -49,8 +52,10 @@ function draw(){
     }});
   });
 }
-function fit(fly){if(m)m.fit([HOME].concat(pins.map(function(a){return [a.lat,a.lng]})),{maxZoom:15,fly:fly})}
-function home(){if(m)m.flyTo(HOME,14)}
+function fit(fly){if(m)m.fit([mid()].concat(pins.map(function(a){return [a.lat,a.lng]})),{maxZoom:15,fly:fly})}
+function home(){if(m)m.flyTo(mid(),14)}
+/* location turned on or off, or you moved: draw the map again around the new middle, with or without the dot */
+window.setHere=function(ll){HERE=ll;start()};
 window.setPins=function(p,refit){pins=p;if(refit)fit(true);draw()};
 /* the map engine (web/mapkit.js): Google when the app has a key, Leaflet over OpenStreetMap otherwise or if Google
    refuses the key (then the map is drawn again) */
@@ -58,8 +63,8 @@ function start(){
   MapKit.load(KEY).then(function(){
     var el=document.getElementById('m');
     if(m){m.remove();m=null}
-    m=MapKit.create(el,{center:HOME,zoom:13,zoomControl:false});
-    m.dot(HOME,{size:18,html:'<span class="y"></span>'});
+    m=MapKit.create(el,{center:mid(),zoom:13,zoomControl:false});
+    if(HERE)m.dot(HERE,{size:18,html:'<span class="y"></span>'});
     m.on('zoom',draw);m.on('click',function(){send({t:'clear'})});
     if(pins.length){fit(false);draw()}
     send({t:'ready'});
@@ -68,15 +73,25 @@ function start(){
 if(window.MapKit){MapKit.onFail(start);start()}
 </script></body></html>`;
 
-export function PlanMap({ m, list }: { m: Model; list: Plan[] }) {
+export function PlanMap({ m, list, here }: { m: Model; list: Plan[]; here: LL | null }) {
   const t = useTheme();
   const toggleSave = useToggleSave();
   const web = useRef<ComponentRef<typeof WebView>>(null);
   const [picked, setPicked] = useState<string[]>([]);
   const [failed, setFailed] = useState(false);
-  const [html] = useState(() => page(homeLL(m)));   // built once, so the WebView never reloads
+  const [html] = useState(() => page(homeLL(m), here));   // built once, so the WebView never reloads
   const pins = useMemo(() => list.map(a => { const [lat, lng] = geo(a); return { id: a.id, lat, lng, cat: a.cat, color: CATS[a.cat].fg }; }), [list]);
   const [ready, setReady] = useState(false);
+
+  /* location turned on or off, or you moved more than about 100 m (not every small GPS wobble): move the dot */
+  const hereKey = here ? `${here[0].toFixed(3)},${here[1].toFixed(3)}` : '';
+  const shownKey = useRef(hereKey);
+  useEffect(() => {
+    if (!ready || hereKey === shownKey.current) return;
+    shownKey.current = hereKey;
+    setPicked([]);
+    web.current?.injectJavaScript(`window.setHere&&window.setHere(${JSON.stringify(here)});true;`);
+  }, [ready, hereKey, here]);
 
   /* hand the pins over once the map is ready, and again when the list changes (fitting the view to the new set) */
   useEffect(() => {
@@ -104,7 +119,7 @@ export function PlanMap({ m, list }: { m: Model; list: Plan[] }) {
         onError={() => setFailed(true)} style={{ flex: 1, backgroundColor: '#E8E4DA' }} containerStyle={{ borderRadius: R, overflow: 'hidden' }} />
       <View style={st.ctl}>
         <Pressable accessibilityRole="button" accessibilityLabel="Show all plans" onPress={() => { setPicked([]); web.current?.injectJavaScript('fit(true);true;'); }} style={[st.cb, { backgroundColor: t.card }]}><Icon name="layers" size={18} /></Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back to your area" onPress={() => { setPicked([]); web.current?.injectJavaScript('home();true;'); }} style={[st.cb, { backgroundColor: t.card }]}><Icon name="crosshair" size={18} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={here ? 'Show where you are' : 'Back to your home area'} onPress={() => { setPicked([]); web.current?.injectJavaScript('home();true;'); }} style={[st.cb, { backgroundColor: t.card }]}><Icon name="crosshair" size={18} /></Pressable>
       </View>
       {shown.length ? (
         <View style={[st.prev, { backgroundColor: t.card }]}>

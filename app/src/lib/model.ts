@@ -296,8 +296,9 @@ export const NO_FILTERS: Filters = { cat: 'all', dfrom: '', dto: '', tod: 'any',
 export const DISTS = [2, 5, 10, 25];
 export const dayKey = (t: number) => { const d = new Date(t); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 export const tod = (t: number): Tod => { const h = new Date(t).getHours(); return h >= 5 && h < 12 ? 'morning' : h >= 12 && h < 17 ? 'afternoon' : h >= 17 && h < 21 ? 'evening' : 'night'; };
-export const matchF = (m: Model, a: Plan, f: Filters) => (f.cat === 'all' || a.cat === f.cat) && (!f.dfrom || dayKey(a.when) >= f.dfrom)
-  && (!f.dto || dayKey(a.when) <= f.dto) && (f.tod === 'any' || tod(a.when) === f.tod) && (!f.dist || kmAway(m, a) <= f.dist);
+/* here: where the phone is (lib/here.ts). "Within N km" counts from there, and is skipped while location is off. */
+export const matchF = (m: Model, a: Plan, f: Filters, here?: [number, number] | null) => (f.cat === 'all' || a.cat === f.cat) && (!f.dfrom || dayKey(a.when) >= f.dfrom)
+  && (!f.dto || dayKey(a.when) <= f.dto) && (f.tod === 'any' || tod(a.when) === f.tod) && (!f.dist || !here || kmBetween(here, geo(a)) <= f.dist);
 function slotOf(t: number) {
   const d = new Date(t), h = d.getHours(), we = d.getDay() === 0 || d.getDay() === 6;
   if (h >= 23 || h < 5) return 'Late nights';

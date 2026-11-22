@@ -119,11 +119,12 @@ export default function PlanScreen() {
           </View>
           {tags(a, false).length ? <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>{tags(a, false).map(x => <Badge key={x} text={x} tone="acc" />)}</View> : null}
           {/* plan photos come from a bank of licensed photos, never the venue itself (lib/photos.ts) */}
-          {(() => { const p = photoFor(a); return (
+          {/* Creative Commons photos need their credit; Pexels and Pixabay photos don't, so they only get the note */}
+          {(() => { const p = photoFor(a); return /^CC/.test(p.lic) ? (
             <Pressable accessibilityRole="link" onPress={() => Linking.openURL(p.src)}>
               <Text style={{ color: t.mute, fontSize: 11.5 }}>Illustrative photo · {p.title} by {p.by}, {p.lic}</Text>
             </Pressable>
-          ); })()}
+          ) : <Text style={{ color: t.mute, fontSize: 11.5 }}>Illustrative photo, not the actual venue</Text>; })()}
 
         {inChat(m, a) && a.members.length ? (
           <Card>
