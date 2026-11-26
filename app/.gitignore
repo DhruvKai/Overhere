@@ -48,3 +48,7 @@ yarn-error.*
 /builds
 credentials.json
 /credentials
+
+# Firebase config for the Android app (PUSH-SETUP.md step 2): kept out of git. EAS cloud builds get it from the
+# EAS file variable GOOGLE_SERVICES_JSON instead (app.config.js).
+google-services.json

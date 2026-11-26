@@ -8,7 +8,13 @@ module.exports = ({ config }) => {
   const code = Number(process.env.OVERHERE_VERSION_CODE);
   config = {
     ...config,
-    android: { ...config.android, ...(code > 0 ? { versionCode: code } : {}) },
+    android: {
+      ...config.android,
+      ...(code > 0 ? { versionCode: code } : {}),
+      // google-services.json is kept out of git, so EAS cloud builds don't get the file: they get it from the EAS
+      // file variable GOOGLE_SERVICES_JSON (development, preview and production). Local builds use the file here.
+      googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? config.android?.googleServicesFile,
+    },
     plugins: [...(config.plugins || []), './plugins/with-local-signing'],
   };
   if (process.env.APP_VARIANT !== 'test') return config;
