@@ -44,6 +44,14 @@ Account: ${m.me}
       </Empty>
     );
   }
+  if (v.wait) {
+    /* the quiet wait after the first round of tries (_verify_wait in schema-app.sql): no end time, on purpose */
+    return (
+      <Empty icon="clock" title="Try again later" text="You've used all your tries for now. Please try again in a few hours, in good light, with your face filling the oval.">
+        <Btn title="Done" onPress={onDone} />
+      </Empty>
+    );
+  }
   if (!m.profile?.photo || !m.profile.photo2) {
     return (
       <ScrollView contentContainerStyle={{ padding: 20, gap: 10 }}>
@@ -68,7 +76,7 @@ Account: ${m.me}
       const s = await api.faceStart();
       if ('status' in s) await refresh();   // out of tries: the server filed it for review, no camera
       else setSes(s);
-    } catch (e) { setErr(friendly(e)); }
+    } catch (e) { setErr(friendly(e)); await refresh(); }   // refresh: a quiet wait shows its own screen
     setBusy(false);
   }
 

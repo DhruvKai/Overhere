@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
+import { useEffect, useImperativeHandle, useRef, useState, type ComponentRef, type ReactNode, type Ref } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, TextInput, View, type ScrollViewInstance, type ScrollViewProps, type StyleProp, type ViewStyle } from 'react-native';
 
 /* Every screen with a text field sits in this, so the keyboard never covers the field being typed in (or the button
@@ -23,9 +23,11 @@ export function KeyboardSafe({ children, style }: { children: ReactNode; style?:
    scroll the field you tapped back into sight (a field low on the screen ended up behind the Save bar). So once the
    keyboard is up, this scrolls the focused field, with a little room under it, into the part you can see. Moving to
    another field while the keyboard is up is handled by Android itself. */
-export function FormScroll({ onScroll, ...p }: ScrollViewProps) {
+export function FormScroll({ onScroll, ref, ...p }: ScrollViewProps & { ref?: Ref<ScrollViewInstance | null> }) {
   const sv = useRef<ScrollViewInstance>(null);
   const y = useRef(0);
+  /* a screen can scroll it too (edit-profile jumps to the field Profile sent you to fill) */
+  useImperativeHandle<ScrollViewInstance | null, ScrollViewInstance | null>(ref, () => sv.current, []);
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const reveal = () => {

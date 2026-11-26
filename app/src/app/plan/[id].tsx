@@ -114,7 +114,7 @@ export default function PlanScreen() {
           <View style={{ gap: 14, paddingTop: 2 }}>
             <Fact icon="calendar" text={`${day} · ${tm}`} sub={durTxt(a.dur)} />
             <Fact icon="map-pin" text={placeLine(a)} sub={km != null ? `${km.toFixed(1)} km` : ''} />
-            <Fact icon="users" text={spots(a) > 0 ? `${spots(a)} of ${a.cap} spots open` : 'Full'} sub={a.members.length ? `${a.members.length} going` : ''} />
+            <Fact icon="users" text={spots(a) > 0 && a.status !== 'full' ? `${spots(a)} of ${a.cap} spots open` : 'Full'} sub={a.members.length ? `${a.members.length} going` : ''} />
             <Fact icon="credit-card" text={COST_S[a.cost]} sub={costSub(m, a)} />
           </View>
           {tags(a, false).length ? <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>{tags(a, false).map(x => <Badge key={x} text={x} tone="acc" />)}</View> : null}

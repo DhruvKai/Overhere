@@ -30,7 +30,7 @@ create table if not exists activities (
   host          uuid not null references profiles(id) on delete cascade,
   cat           text not null check (cat in ('movies','cafe','concerts')),
   description   text not null check (char_length(description) between 1 and 160),
-  cap           int  not null check (cap between 1 and 10),  -- people who can join, not counting the host
+  cap           int  not null check (cap between 2 and 10),  -- people who can join, not counting the host (so 3 to 11 with them)
   starts_at     timestamptz not null,
   audience      text[] check (audience is null or (cardinality(audience) between 1 and 3 and audience <@ array['Woman','Man','Non-binary'])),  -- null = everyone
   venue         text not null check (char_length(venue) between 1 and 120),
@@ -93,6 +93,11 @@ alter table profiles add constraint profiles_ints_check check (ints <@ array[
 alter table activities add column if not exists duration_h int not null default 2;
 alter table activities drop constraint if exists activities_duration_check;
 alter table activities add constraint activities_duration_check check (duration_h between 1 and 24);
+/* A plan is at least 3 people: the host and 2 to 10 guests. Plans made when 1 guest was allowed (or shrunk to 1 by
+   "don't refill the spot") go up to 2, so the check below passes; nothing is deleted. */
+update activities set cap = 2 where cap < 2;
+alter table activities drop constraint if exists activities_cap_check;
+alter table activities add constraint activities_cap_check check (cap between 2 and 10);
 alter table activities add column if not exists intent text not null default 'platonic';
 alter table activities drop constraint if exists activities_intent_check;
 alter table activities add constraint activities_intent_check check (intent in ('platonic'));
@@ -255,7 +260,7 @@ create table if not exists verifications (
   seq        bigint generated always as identity,          -- order of attempts
   user_id    uuid not null references profiles(id) on delete cascade,
   kind       text not null check (kind in ('face','kyc')),
-  status     text not null check (status in ('started','passed','failed','review','approved','rejected')),
+  status     text not null check (status in ('started','passed','failed','review','approved','rejected','cooldown')),
   provider   text not null check (char_length(provider) <= 30),
   session_id text check (char_length(session_id) <= 200),
   score      numeric,
@@ -263,6 +268,10 @@ create table if not exists verifications (
   created_at timestamptz not null default now()
 );
 create index if not exists verifications_user_idx on verifications (user_id, kind, created_at desc);
+/* 'cooldown': the quiet pause after the first 5 failed tries (see _verify_pause). Adding a status keeps every row valid. */
+alter table verifications drop constraint if exists verifications_status_check;
+alter table verifications add constraint verifications_status_check
+  check (status in ('started','passed','failed','review','approved','rejected','cooldown'));
 
 alter table participants add column if not exists user_id uuid;
 alter table profiles add column if not exists usage_ok boolean not null default false;
@@ -595,6 +604,11 @@ create or replace function _verify_max() returns int language sql immutable as $
 
 create or replace function _verify_block() returns interval language sql immutable as $$ select interval '24 hours' $$;
 
+/* The first time someone uses up their tries (since their last pass or review decision) the check waits this long,
+   quietly: no team email, not in the review queue, and the app is never told how long (it says "a few hours").
+   The next time, it's the 24-hour pause with a review (_verify_block). */
+create or replace function _verify_wait() returns interval language sql immutable as $$ select interval '1 hour' $$;
+
 create or replace function _verify_state(p_user uuid) returns jsonb language sql volatile as $$
   select jsonb_object_agg(k, jsonb_build_object(
     'fails', (select count(*) from verifications v where v.user_id = p_user and v.kind = k and v.status = 'failed' and v.seq > b.reset),
@@ -603,11 +617,15 @@ create or replace function _verify_state(p_user uuid) returns jsonb language sql
     'max', _verify_max(),
     'review', coalesce(b.paused_at > now() - _verify_block(), false),
     'until', case when b.paused_at > now() - _verify_block() then _ms(b.paused_at + _verify_block()) end,
-    'pending', b.paused_at is not null))
+    'pending', b.paused_at is not null,
+    'wait', coalesce(c.wait_at > now() - _verify_wait() and b.paused_at is null, false),   -- no end time, on purpose
+    'waited', c.wait_at is not null))
   from unnest(array['face','kyc']) k
   cross join lateral (select coalesce(max(w.seq) filter (where w.status in ('passed','approved','rejected')), 0) dec
                       from verifications w where w.user_id = p_user and w.kind = k) d
-  cross join lateral (select greatest(d.dec, coalesce(max(w.seq), 0)) reset, max(w.created_at) paused_at
+  cross join lateral (select max(w.created_at) wait_at, max(w.seq) wait_seq
+                      from verifications w where w.user_id = p_user and w.kind = k and w.status = 'cooldown' and w.seq > d.dec) c
+  cross join lateral (select greatest(d.dec, coalesce(c.wait_seq, 0), coalesce(max(w.seq), 0)) reset, max(w.created_at) paused_at
                       from verifications w where w.user_id = p_user and w.kind = k and w.status = 'review' and w.seq > d.dec) b $$;
 
 create or replace function _verify_to_review(p_user uuid, p_kind text, p_provider text) returns void language plpgsql as $$
@@ -621,11 +639,27 @@ begin
   perform _ping(array[p_user]);
 end $$;
 
+/* Out of tries: the quiet wait the first time, the 24-hour pause and review after that. Returns 'wait' or 'review'. */
+create or replace function _verify_pause(p_user uuid, p_kind text, p_provider text) returns text language plpgsql as $$
+declare vs jsonb := _verify_state(p_user) -> p_kind;
+begin
+  if (vs ->> 'review')::boolean then return 'review'; end if;
+  if (vs ->> 'wait')::boolean then return 'wait'; end if;
+  if not (vs ->> 'waited')::boolean then
+    insert into verifications (user_id, kind, status, provider) values (p_user, p_kind, 'cooldown', left(p_provider, 30));
+    perform _ping(array[p_user]);
+    return 'wait';
+  end if;
+  perform _verify_to_review(p_user, p_kind, p_provider);
+  return 'review';
+end $$;
+
 create or replace function _verify_record(p_user uuid, p_kind text, p_passed boolean, p_provider text, p_session text,
                                           p_score numeric, p_detail jsonb) returns text language plpgsql as $$
 declare st text;
 begin
   if (_verify_state(p_user) -> p_kind ->> 'review')::boolean then return 'review'; end if;
+  if (_verify_state(p_user) -> p_kind ->> 'wait')::boolean then return 'wait'; end if;
   st := case when p_passed then 'passed' else 'failed' end;
   insert into verifications (user_id, kind, status, provider, session_id, score, detail)
   values (p_user, p_kind, st, p_provider, p_session, p_score, coalesce(p_detail, '{}'));
@@ -633,8 +667,7 @@ begin
     if p_kind = 'face' then update profiles set face = true where id = p_user;
     else update profiles set kyc = true where id = p_user; end if;
   elsif (_verify_state(p_user) -> p_kind ->> 'attempts')::int >= _verify_max() then
-    perform _verify_to_review(p_user, p_kind, p_provider);
-    st := 'review';
+    st := _verify_pause(p_user, p_kind, p_provider);   -- 'wait' (first time) or 'review'
   end if;
   perform _ping(array[p_user]);
   return st;
@@ -696,11 +729,13 @@ begin
     raise exception 'Add two photos of your face first';
   end if;
   vs := _verify_state(p_user);
-  if not (vs -> p_kind ->> 'review')::boolean and (vs -> p_kind ->> 'attempts')::int >= _verify_max() then
-    perform _verify_to_review(p_user, p_kind, 'limit');
+  if not (vs -> p_kind ->> 'review')::boolean and not (vs -> p_kind ->> 'wait')::boolean
+     and (vs -> p_kind ->> 'attempts')::int >= _verify_max() then
+    perform _verify_pause(p_user, p_kind, 'limit');
     vs := _verify_state(p_user);
   end if;
   if (vs -> p_kind ->> 'review')::boolean then return jsonb_build_object('status', 'review', 'verify', vs); end if;
+  if (vs -> p_kind ->> 'wait')::boolean then return jsonb_build_object('status', 'wait', 'verify', vs); end if;
   if (select count(*) from verifications where user_id = p_user and status = 'started' and created_at > now() - interval '1 hour') >= 10 then
     raise exception 'Too many attempts. Please try again in an hour.';
   end if;
@@ -1167,7 +1202,7 @@ begin
     end if;
   else
     n := cardinality(_members(p_act));
-    update activities set cap = greatest(n, 1), status = 'full' where id = p_act;
+    update activities set cap = greatest(n, 2), status = 'full' where id = p_act;   -- never under 2 guests; 'full' still stops new requests
   end if;
   perform _ping(array[u, '00000000-0000-0000-0000-000000000000'::uuid] || _members(p_act));
 end $$;
@@ -1461,7 +1496,12 @@ begin
   return jsonb_build_object('claim', true, 'name', _name(p_user), 'until', _when(r.created_at + _verify_block()),
     'rounds', (select count(*) from verifications w where w.user_id = p_user and w.kind = p_kind and w.status = 'review'
                and w.seq > coalesce((select max(x.seq) from verifications x where x.user_id = p_user and x.kind = p_kind
-                                     and x.status in ('passed','approved','rejected')), 0)));
+                                     and x.status in ('passed','approved','rejected')), 0)),
+    -- every try since their last pass or decision, including the round before the quiet wait
+    'tries', (select count(*) from verifications w where w.user_id = p_user and w.kind = p_kind
+              and (w.status = 'started' or (w.status = 'failed' and w.provider = 'simulated'))
+              and w.seq > coalesce((select max(x.seq) from verifications x where x.user_id = p_user and x.kind = p_kind
+                                    and x.status in ('passed','approved','rejected')), 0)));
 end $$;
 
 create or replace function face_frames_keep_service() returns uuid[]

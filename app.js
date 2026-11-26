@@ -956,7 +956,7 @@ const CHECKS={
   }
 };
 function openVerify(kind,next){
-  ui.modal={type:'verify',kind,next,state:VER[kind]?.review?'flagged':'idle'};render();
+  ui.modal={type:'verify',kind,next,state:VER[kind]?.review?'flagged':VER[kind]?.wait?'wait':'idle'};render();
 }
 async function scan(){
   const m=ui.modal;if(!m||m.state==='scanning')return;
@@ -975,7 +975,7 @@ async function scan(){
     if(r?.message)m.err=r.message;   // live check: why it failed (not live, or not the same face as the photo)
   }catch(e){m.state='fail';m.err=friendly(e)}
   await refresh();
-  if(ui.modal===m){if(VER[m.kind]?.review)m.state='flagged';render()}
+  if(ui.modal===m){if(VER[m.kind]?.review)m.state='flagged';else if(VER[m.kind]?.wait)m.state='wait';render()}
 }
 /* Browsing is open to everyone; posting and asking to join need the face check. The ID check is off for now. */
 const gate=fn=>{if(S.me.face)fn();else openVerify('face',fn)};
@@ -1309,12 +1309,16 @@ function modalHtml(){
     let inner;
     if(m.state==='flagged'||v.review)inner=`<div class="scan">${I('shield-check',56)}</div><p style="text-align:center"><strong>Check paused for 24 hours</strong></p><p class="mute" style="text-align:center">You have used all ${v.max||5} tries, so the check is paused${v.until?' until '+esc(new Date(v.until).toLocaleString([], {weekday:'short',hour:'numeric',minute:'2-digit'})):''}. Then you get ${v.max||5} new tries. A person on our team will also look at it, and you will get a notification if they approve it.</p>
       ${reviewMail(m.kind)}`;
+    /* the quiet wait after the first round of tries: no end time on purpose (see _verify_wait in schema-app.sql) */
+    else if(m.state==='wait'||v.wait)inner=`<div class="scan">${I('clock',56)}</div><p style="text-align:center"><strong>Try again later</strong></p><p class="mute" style="text-align:center">You've used all your tries for now. Please try again in a few hours, in good light, with your face filling the oval.</p>`;
     else if(face&&!twoPhotos())inner=`<p style="text-align:center;margin-top:0"><strong>First, add two photos of you</strong></p>
       <p class="mute" style="text-align:center">The face check compares your face with both, so people know the photos are really you. The first is your profile picture.</p>
       ${photoPair()}`;
     else if(m.state==='scanning')inner=(live&&face?'<div id="face_box" class="facebox"></div>':`<div class="scan go">${I(ic,56)}</div>`)+`<p style="text-align:center" class="mute">${face?'Checking liveness…':'Reading your ID…'}</p>`;
-    else if(!left)inner=`<div class="scan">${I('shield-check',56)}</div><p style="text-align:center"><strong>No tries left</strong></p><p class="mute" style="text-align:center">You have used all ${v.max||5} tries. The check is now paused for 24 hours, and a person on our team will look at it.</p>
-      <button class="btn" data-a="scan">Send for review</button>`;
+    else if(!left)inner=v.waited?`<div class="scan">${I('shield-check',56)}</div><p style="text-align:center"><strong>No tries left</strong></p><p class="mute" style="text-align:center">You have used all ${v.max||5} tries. The check is now paused for 24 hours, and a person on our team will look at it.</p>
+      <button class="btn" data-a="scan">Send for review</button>`
+      :`<div class="scan">${I('clock',56)}</div><p style="text-align:center"><strong>No tries left</strong></p><p class="mute" style="text-align:center">You've used all your tries for now.</p>
+      <button class="btn" data-a="scan">Continue</button>`;   // the call starts the quiet wait (no scan)
     else inner=`<div class="scan">${I(ic,56)}</div>
       <p style="text-align:center" class="mute">${face?'A few seconds of video selfie confirm you are a real person, and the person in your two photos. You need it to post a plan or ask to join one.':'Government ID check. Needed once, the first time you post or request. It unlocks both.'}</p>
       ${m.state==='fail'?`<p style="text-align:center;color:var(--bad)"><strong>${esc(m.err||'Verification failed.')}</strong> Please try again.</p>`:''}
@@ -1366,7 +1370,7 @@ function modalHtml(){
     const hero=`<div class="dphoto" style="background:${planBg(a)}"></div>
       <div style="margin-top:14px">${catPill(a.cat,true)}</div><h3 class="dtitle">${esc(a.desc)}</h3>${hostrow}
       <div class="dfacts">${fact('calendar',`${day} · ${tm}`,durTxt(a.dur||2))}${fact('map-pin',esc(placeLine(a)),a.host==='me'?'':`${distKm(a)} km`)}
-      ${fact('users',left>0?`${left} of ${a.cap} spots open`:'Full',[n?`${n} going`:'',wl?`${wl} on waitlist`:''].filter(Boolean).join(' · '))}${fact('wallet',COST_S[a.cost],costSub(a))}</div>
+      ${fact('users',left>0&&a.status!=='full'?`${left} of ${a.cap} spots open`:'Full',[n?`${n} going`:'',wl?`${wl} on waitlist`:''].filter(Boolean).join(' · '))}${fact('wallet',COST_S[a.cost],costSub(a))}</div>
       ${extra.length?`<div class="tg" style="margin-top:12px">${extra.map(x=>`<span>${x}</span>`).join('')}</div>`:''}${photoCredit(a)}`;
     /* asking: just enough to know which plan it is (the detail view has the rest), the note, and one short warning */
     const mini=`<div class="jmini">${planThumb(a)}<div style="min-width:0"><div class="t">${esc(a.desc)}</div>

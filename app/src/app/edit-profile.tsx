@@ -1,6 +1,8 @@
+import { useLocalSearchParams } from 'expo-router';
 import { goBack } from '@/lib/nav';
-import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Pressable, Text, View, type ScrollViewInstance, type TextInputInstance } from 'react-native';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withSequence, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PhotoPair } from '@/components/PhotoPair';
 import { PlacePicker } from '@/components/PlacePicker';
@@ -45,6 +47,22 @@ export default function EditProfile() {
   const [emoPicked, setEmoPicked] = useState(false);   // picking an emoji while you have photos removes them on Save
   const hasPhoto = !!p.photo && !emoPicked;
 
+  /* Profile's "Finish your profile" opens this with ?focus=job|bio|photos: scroll that part into view (Spot outlines
+     it for a moment) and, for a text field, put the cursor in it. Only once, on the first layout. */
+  const { focus } = useLocalSearchParams<{ focus?: 'job' | 'bio' | 'photos' }>();
+  const sv = useRef<ScrollViewInstance>(null);
+  const jobBox = useRef<TextInputInstance>(null), bioBox = useRef<TextInputInstance>(null);
+  const jumped = useRef(false);
+  const jumpTo = (y: number) => {
+    if (jumped.current) return;
+    jumped.current = true;
+    setTimeout(() => {
+      sv.current?.scrollTo({ y: Math.max(0, y - 24), animated: true });
+      const box = focus === 'job' ? jobBox : focus === 'bio' ? bioBox : null;
+      if (box) setTimeout(() => box.current?.focus(), 450);
+    }, 150);
+  };
+
   async function removePhotos() {
     setPhotoBusy(true);
     const reset = await run(() => setPhoto(null));
@@ -81,12 +99,14 @@ export default function EditProfile() {
 
   return (
     <KeyboardSafe>
-      <FormScroll contentContainerStyle={{ padding: 20, paddingBottom: 24 + insets.bottom }}>
-        <Label>Your photos</Label>
-        <P mute small style={{ marginBottom: 10 }}>
-          Photo 1 is your profile picture. The face check needs both and matches your live face against each.{p.face && p.photo ? ' A new photo means doing the face check again.' : ''}
-        </P>
-        <PhotoPair onSaved={() => setEmoPicked(false)} />
+      <FormScroll ref={sv} contentContainerStyle={{ padding: 20, paddingBottom: 24 + insets.bottom }}>
+        <Spot on={focus === 'photos'} onY={jumpTo}>
+          <Label>Your photos</Label>
+          <P mute small style={{ marginBottom: 10 }}>
+            Photo 1 is your profile picture. The face check needs both and matches your live face against each.{p.face && p.photo ? ' A new photo means doing the face check again.' : ''}
+          </P>
+          <PhotoPair onSaved={() => setEmoPicked(false)} />
+        </Spot>
         {p.photo && !emoPicked ? <Btn title="Remove photos" icon="trash-2" kind="ghost" onPress={removePhotos} busy={photoBusy} style={{ marginBottom: 16 }} /> : null}
         <Label>Or an emoji</Label>
         <View style={{ flexDirection: 'row', gap: 14, alignItems: 'center', marginBottom: 12 }}>
@@ -125,8 +145,12 @@ export default function EditProfile() {
         <PlacePicker label="Home area" mode="area" value={hood} picked={!!ll} near={homeLL(m)} placeholder="Search your area or city"
           onChange={v => { setHood(v); setLl(null); }} onPick={x => { setHood(x.label); setLl(x.ll); }}
           hint={`You see plans within ${NEAR_KM} km of here.`} locate="home" />
-        <Field label="What you do" value={job} onChangeText={setJob} maxLength={40} placeholder="e.g. Designer, student" />
-        <Field label="About you" value={bio} onChangeText={setBio} maxLength={300} multiline hint={`${bio.length}/300`} />
+        <Spot on={focus === 'job'} onY={jumpTo}>
+          <Field ref={jobBox} label="What you do" value={job} onChangeText={setJob} maxLength={40} placeholder="e.g. Designer, student" />
+        </Spot>
+        <Spot on={focus === 'bio'} onY={jumpTo}>
+          <Field ref={bioBox} label="About you" value={bio} onChangeText={setBio} maxLength={300} multiline hint={`${bio.length}/300`} />
+        </Spot>
         <Label>What you like doing</Label>
         <InterestPicker value={ints} onChange={setInts} />
         <Label>When you&apos;re usually free</Label>
@@ -141,6 +165,26 @@ export default function EditProfile() {
         <Btn title="Save" onPress={save} busy={busy} />
       </BottomBar>
     </KeyboardSafe>
+  );
+}
+
+/* Wraps a part of the form Profile can send you to. When it's the one (on), it reports where it sits in the scroll
+   view and glows: a green outline and tint behind it that fades in, holds for a couple of seconds, then fades out. */
+function Spot({ on, onY, children }: { on: boolean; onY: (y: number) => void; children: ReactNode }) {
+  const t = useTheme();
+  const glow = useSharedValue(0);
+  const still = useReducedMotion();
+  useEffect(() => {
+    if (!on) return;
+    const fade = still ? 0 : 1;
+    glow.value = withDelay(400, withSequence(withTiming(1, { duration: 250 * fade }), withDelay(2200, withTiming(0, { duration: 800 * fade }))));
+  }, [on, still, glow]);
+  const style = useAnimatedStyle(() => ({ opacity: glow.value }));
+  return (
+    <View onLayout={on ? e => onY(e.nativeEvent.layout.y) : undefined}>
+      {on ? <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: -8, left: -10, right: -10, bottom: 2, borderRadius: 16, borderWidth: 2, borderColor: t.acc, backgroundColor: t.acc2 }, style]} /> : null}
+      {children}
+    </View>
   );
 }
 

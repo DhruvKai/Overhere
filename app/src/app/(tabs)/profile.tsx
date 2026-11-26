@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ScrollView, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { Header, HeaderIcon } from '@/components/Header';
 import { genderTxt, IntChips, PastRow, PersonRow, Ph, Stats, TimeChips } from '@/components/ProfileParts';
 import { ProgressBar, useProgress } from '@/components/SignupPage';
@@ -11,35 +11,43 @@ import { useTheme } from '@/lib/theme';
 const ageOf = (dob: string) => { const d = new Date(dob); return isNaN(+d) ? '' : Math.floor((Date.now() - +d) / 31557600000); };
 
 /* Your profile, as other people see it, plus what's left to verify and who you follow. App settings, safety and the
-   account are in Settings (the gear). */
+   account are in Settings (the gear); sign out is also in the header so it's one tap away. */
 export default function Profile() {
   const t = useTheme();
   const m = useModel();
-  const { savePriv, toast } = useStore();
+  const { savePriv, toast, signOut } = useStore();
   const p = m.profile!;
   const fol = following(m), past = pastList(m, m.me).slice(0, 6);
   /* what's left of sign-up, the same score as the bar during sign-up (lib/signup.ts) and the website's profile */
   const { items, pct } = useProgress();
   const todo = items.filter(x => !x.done);
+  /* each one opens straight at the thing to fill: Edit profile scrolls to that field and outlines it (?focus) */
+  const edit = (focus?: 'job' | 'bio' | 'photos') => () => router.push(focus ? { pathname: '/edit-profile', params: { focus } } : '/edit-profile');
   const GO: Partial<Record<(typeof items)[number]['key'], [IconName, string, () => void]>> = {
     phone: ['phone', 'Add', () => router.push('/add-phone')],
-    details: ['user', 'Add', () => router.push('/edit-profile')],
-    job: ['briefcase', 'Add', () => router.push('/edit-profile')],
-    bio: ['edit-3', 'Add', () => router.push('/edit-profile')],
-    photos: ['camera', 'Add', () => router.push('/edit-profile')],
+    details: ['user', 'Add', edit()],
+    job: ['briefcase', 'Add', edit('job')],
+    bio: ['edit-3', 'Add', edit('bio')],
+    photos: ['camera', 'Add', edit('photos')],
     face: ['smile', 'Start', () => router.push('/verify')],
   };
+  /* tapping the percentage or the bar opens the first thing left */
+  const next = todo.map(x => GO[x.key]).find(Boolean);
   const unfollow = (id: string) => {
     savePriv(pv => ({ following: (Array.isArray(pv.following) ? pv.following as string[] : []).filter(x => x !== id) }));
     toast(`Unfollowed ${uname(m, id)}`);
   };
+  /* sign out from the header, asked first so a stray tap next to the gear doesn't log you out */
+  const confirmSignOut = () => Alert.alert('Sign out?', 'You can sign back in any time.',
+    [{ text: 'Cancel', style: 'cancel' }, { text: 'Sign out', style: 'destructive', onPress: signOut }]);
   return (
     <View style={{ flex: 1 }}>
-      {/* edit and settings at the top right */}
+      {/* edit, settings and sign out at the top right */}
       <Header title="Profile" right={
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <HeaderIcon icon="edit-2" label="Edit profile" onPress={() => router.push('/edit-profile')} />
           <HeaderIcon icon="settings" label="Settings" onPress={() => router.push('/settings')} />
+          <HeaderIcon icon="log-out" label="Sign out" onPress={confirmSignOut} />
         </View>
       } />
       <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, gap: 14, paddingBottom: 40 }}>
@@ -69,18 +77,22 @@ export default function Profile() {
 
         {pct < 100 ? (
           <Card>
-            <Ph icon="check-circle" title="Finish your profile" right={`${pct}%`} />
-            <View style={{ marginBottom: 8 }}><ProgressBar pct={pct} label={false} /></View>
+            <Pressable onPress={next?.[2]} disabled={!next} accessibilityRole="button" accessibilityLabel={`Profile ${pct}% done. Fill in what's next`}>
+              <Ph icon="check-circle" title="Finish your profile" right={`${pct}%`} />
+              <View style={{ marginBottom: 8 }}><ProgressBar pct={pct} label={false} /></View>
+            </Pressable>
             {todo.map(x => {
               const g = GO[x.key];
+              /* the whole row is the button, not just the word Add */
               return (
-                <View key={x.key} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }}>
+                <Pressable key={x.key} onPress={g?.[2]} disabled={!g} accessibilityRole={g ? 'button' : undefined} accessibilityLabel={g ? `${g[1]} ${x.label}` : undefined}
+                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6, opacity: pressed ? 0.6 : 1 })}>
                   <Icon name={g?.[0] ?? 'circle'} size={16} color={t.mute} />
                   <Text style={{ flex: 1, color: t.ink, fontSize: 15 }}>{x.label} <Text style={{ color: t.mute, fontSize: 13 }}>+{x.pts}%</Text></Text>
                   {g ? (x.key === 'face'
                     ? <Btn title={g[1]} kind="soft" onPress={g[2]} style={{ minHeight: 34, paddingHorizontal: 12 }} />
                     : <TextLink title={g[1]} onPress={g[2]} />) : null}
-                </View>
+                </Pressable>
               );
             })}
             {!p.face ? <P small mute style={{ marginTop: 4 }}>You need the face check to post plans and ask to join.</P> : null}

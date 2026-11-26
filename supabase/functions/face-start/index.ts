@@ -27,6 +27,11 @@ Deno.serve(async (req) => {
       await faceAlert(admin(), user.id);
       return json({ status: 'review', verify: pre.data.verify }, 200, h);
     }
+    // The quiet wait after the first 5 tries (_verify_pause). Sent as an error so every app version, old ones too,
+    // shows the words. Deliberately vague: people aren't told how long the wait is.
+    if (pre.data?.status === 'wait') {
+      return json({ status: 'wait', error: "You've used all your tries for now. Please try again in a few hours." }, 429, h);
+    }
 
     const region = env('AWS_REGION');
     const created = await rekognition().send(new CreateFaceLivenessSessionCommand({

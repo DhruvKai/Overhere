@@ -55,7 +55,7 @@ export async function faceAlert(db: SupabaseClient, user: string) {
   if (!data?.claim) return;
   const again = data.rounds > 1 ? ` This is the ${data.rounds}${data.rounds === 2 ? 'nd' : data.rounds === 3 ? 'rd' : 'th'} time they've used up their tries.` : '';
   await alertTeam(`Face check paused: ${data.name}`, [
-    `${data.name} didn't pass the face check after 5 tries, so it's paused until ${data.until}.${again}`,
+    `${data.name} didn't pass the face check after ${data.tries ?? 10} tries, so it's paused until ${data.until}.${again}`,
     'They are waiting in the review queue. The frames from their failed scans are there to compare with their two photos. Approve them, or ask them to try again.',
     `Review: ${ADMIN_URL}`,
     `Account: ${user}`,

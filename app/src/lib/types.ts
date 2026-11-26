@@ -41,7 +41,8 @@ export type RawNote = {
 
 /* review: paused right now after the last allowed try, until `until` (ms); pending: in the team's review queue.
    until/pending are missing on a database from before the 24-hour pause. */
-export type VerifyKind = { fails: number; attempts: number; max: number; review: boolean; until?: number | null; pending?: boolean };
+export type VerifyKind = { fails: number; attempts: number; max: number; review: boolean; until?: number | null; pending?: boolean;
+  wait?: boolean; waited?: boolean };   // wait: the quiet pause after the first round of tries, with no end time on purpose
 
 export type AppStateResponse = {
   me: string; email: string; now: number;

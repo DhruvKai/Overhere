@@ -1,6 +1,6 @@
 import Feather from '@expo/vector-icons/Feather';
 import { Image } from 'expo-image';
-import { useRef, useState, type ComponentProps, type ReactNode } from 'react';
+import { useRef, useState, type ComponentProps, type ReactNode, type Ref } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type TextInputInstance, type TextInputProps, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { introClock, introLogo } from '@/components/Intro';
@@ -114,7 +114,7 @@ export function Stepper({ value, label, min, max, onChange, unit }: { value: num
 /* Text fields are 16px or more (web/AGENTS.md: iOS zooms smaller ones, and they're hard to read). */
 /* error: red line with a warning icon, and a red border. ok: a green line with a tick ("Passwords match").
    right: something inside the box on the right (the show/hide button). below: more under the message line. */
-export function Field({ label, hint, error, ok, right, below, ...p }: TextInputProps & { label?: string; hint?: string; error?: string; ok?: string; right?: ReactNode; below?: ReactNode }) {
+export function Field({ label, hint, error, ok, right, below, ...p }: TextInputProps & { label?: string; hint?: string; error?: string; ok?: string; right?: ReactNode; below?: ReactNode; ref?: Ref<TextInputInstance> }) {
   const t = useTheme();
   const msg = error ? { text: error, color: t.bad, icon: 'alert-triangle' as const } : ok ? { text: ok, color: t.ok, icon: 'check-circle' as const } : null;
   return (
