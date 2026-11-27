@@ -99,6 +99,9 @@ const intCount=n=>n>=MIN_INTS?`${n} picked`:`Pick at least ${MIN_INTS}${n?` · $
 /* the interest chips, grouped, with a count that updates as you tick them (the change listener) */
 const intOpts=(name,sel)=>`<p class="icount${(sel||[]).length>=MIN_INTS?' ok':''}" id="${name}_n" aria-live="polite">${intCount((sel||[]).length)}</p>`
   +INT_GROUPS.map(([g,l])=>`<h4 class="igrp">${g}</h4>${opts(name,l.map(x=>x[0]),sel)}`).join('');
+/* the closed Interests row in Edit profile: the first few you picked as chips, then how many more */
+const intSum=sel=>{const l=sel||[],k=4;
+  return l.length?`<span class="soft">${l.slice(0,k).map(x=>`<span>${esc(x)}</span>`).join('')}${l.length>k?`<span class="more">+${l.length-k} more</span>`:''}</span>`:`<span class="small mute">Tap to pick at least ${MIN_INTS}</span>`};
 const TIMES=['Weekday evenings','Weekend days','Weekend evenings','Late nights'];
 const CATS={
   fitness:{label:'Fitness and sport',icon:'dumbbell',fg:'#B45309',bg:'#FEF3C7',g:'radial-gradient(80% 60% at 70% 20%,rgba(251,191,36,.6),transparent 60%),linear-gradient(160deg,#92400e,#2a1606)'},
@@ -166,10 +169,8 @@ const wordsOf=s=>' '+String(s||'').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ')
 const placeLine=a=>{const [name,...rest]=(a.venue||'').split(/\s*,\s*/);
   return rest.length&&wordsOf(name).trim()&&wordsOf(a.desc).includes(wordsOf(name))?rest.join(', '):a.venue};
 /* Dummy portraits for the demo; if one fails to load the initial shows instead. */
-/* Everyone gets an emoji avatar; your own can be an uploaded photo instead. */
-const defEmo=g=>g==='Woman'?'👩':g==='Man'?'👨':'🧑';
-const EMOJIS=['👩🏻','👩🏽','👩🏿','👨🏻','👨🏽','👨🏿','🧑🏼','🧑🏾','👩🏽‍🦱','👨🏻‍🦱','👩🏾‍🦳','🧔🏽','👱🏻‍♀️','👳🏽‍♂️','🧕🏽','👩🏽‍💻','👨🏾‍💻','👩🏻‍🎨','👨🏽‍🍳','🧑🏽‍🎤','👩🏾‍🏫','👨🏻‍🎓','👩🏽‍🔬','🧑🏻‍🚀','😀','😎','🤓','🥳','🦊','🐼','🐯','🐨','🦉','🌻','🎧','🎬','☕','🎸'];
-/* Other people, filled in from the database: name, gender, age, job, bio, emoji, verified, show-up record, past plans, likes. */
+/* Avatars are your profile photo; anyone without one shows the first letter of their name. */
+/* Other people, filled in from the database: name, gender, age, job, bio, photos, verified, show-up record, past plans, likes. */
 let USERS={};
 const CHAT_REASONS=['Harassment or threats','Sexual or unwanted messages','Spam or scam','Hate speech','Copyright infringement','Something else'];
 const MICRO={swipe:'Was swiping an easy way to find plans?',request:'How easy was it to ask to join?',post:'How easy was posting your plan?',rating:'Was rating the meetup quick enough?'};
@@ -218,7 +219,7 @@ function applyState(st){
   const priv=p.state||{};
   USERS={};let mine={};
   (st.people||[]).forEach(x=>{
-    const u={name:x.name,gender:x.gender,age:x.age,job:x.job||'',bio:x.bio||'',emo:x.emo||defEmo(x.gender),photo:avatarUrl(x.photo),photo2:avatarUrl(x.photo2),verified:!!x.face,trust:[x.met||0,x.shows||0,x.noshows??Math.max(0,(x.met||0)-(x.shows||0))],hist:x.hist||[],ints:x.ints||[],avail:x.avail||[],sample:!!x.sample};
+    const u={name:x.name,gender:x.gender,age:x.age,job:x.job||'',bio:x.bio||'',photo:avatarUrl(x.photo),photo2:avatarUrl(x.photo2),verified:!!x.face,trust:[x.met||0,x.shows||0,x.noshows??Math.max(0,(x.met||0)-(x.shows||0))],hist:x.hist||[],ints:x.ints||[],avail:x.avail||[],sample:!!x.sample};
     if(x.id===ME)mine=u;else USERS[x.id]=u;
   });
   S=blank();
@@ -229,7 +230,7 @@ function applyState(st){
   ['muted','tips','asked','actf','taste'].forEach(k=>{if(!S[k]||typeof S[k]!=='object'||Array.isArray(S[k]))S[k]={}});if(typeof S.seenPost!=='number')S.seenPost=0;if(typeof S.noteSeen!=='number')S.noteSeen=0;
   S.savedF=(Array.isArray(S.savedF)?S.savedF:[]).filter(x=>x&&/^sf[0-9a-z]+$/.test(x.id)&&typeof x.label==='string'&&x.f&&typeof x.f==='object').slice(0,10);
   S.alerts=(Array.isArray(S.alerts)?S.alerts:[]).filter(x=>x&&/^al[0-9a-z]+$/.test(x.id)&&typeof x.label==='string');
-  S.me={name:p.name,last:p.last_name||'',dob:p.dob,gender:p.gender,hood:p.hood,ll:p.lat!=null?[p.lat,p.lng]:null,job:p.job||'',bio:p.bio||'',ints:p.ints||[],avail:p.avail||[],emo:p.emo||defEmo(p.gender),
+  S.me={name:p.name,last:p.last_name||'',dob:p.dob,gender:p.gender,hood:p.hood,ll:p.lat!=null?[p.lat,p.lng]:null,job:p.job||'',bio:p.bio||'',ints:p.ints||[],avail:p.avail||[],
     usageOk:!!p.usage_ok,face:!!p.face,kyc:!!p.kyc,obDone:!!p.onboarded,terms:!TERMS_V||p.consent_version===TERMS_V,trusted:keepTrusted!==undefined?keepTrusted:(priv.trusted||null),trustv:mine.trust||[0,0],hist:mine.hist||[],photoPath:AVATAR_RE.test(p.photo||'')?p.photo:'',photo:avatarUrl(p.photo),photo2Path:AVATAR_RE.test(p.photo2||'')?p.photo2:'',photo2:avatarUrl(p.photo2)};
   if(first)dropOldPhoto();
   const t=now();
@@ -281,12 +282,32 @@ async function setPhoto(path,slot=1){
   return true;
 }
 const twoPhotos=()=>!!(S.me?.photo&&S.me?.photo2);
-/* The two photo slots, with what makes a photo pass. Tapping a slot picks a photo for it (photo 2 only after photo 1). */
+/* What makes a photo pass the face check. */
+const PHOTO_TIPS=`<ul class="ptips"><li>${I('scan-face',15)}<span><b>Your face must be clearly visible:</b> just you, facing the camera, nothing covering it</span></li><li>${I('sun',15)}Good light. No filters, sunglasses, masks or mirror selfies</li><li>${I('layers',15)}Two different, recent photos, like one close-up and one from another day</li></ul>`;
+/* The two photo slots (photo 2 only after photo 1). An empty slot opens the picker, with the tips shown under the
+   slots while a photo is still missing. A photo you already have just shows as itself; tapping Change gives the tips
+   in a popup first (photoRules). */
 function photoPair(){
   const slot=n=>{const ph=n===1?S.me.photo:S.me.photo2,off=n===2&&!S.me.photo;
-    return `<button class="pslot${ph?' on':''}" data-a="pickphoto" data-k="${n}" ${off?'disabled':''} aria-label="${ph?'Change':'Add'} photo ${n}">${ph?`<img src="${esc(ph)}" alt="">`:I('camera',26)}<span>${ph?'Change':n===1?'Add photo 1':'Add photo 2'}</span></button>`};
-  return `<div class="ppair">${slot(1)}${slot(2)}</div>
-  <ul class="ptips"><li>${I('scan-face',15)}<span><b>Your face must be clearly visible:</b> just you, facing the camera, nothing covering it</span></li><li>${I('sun',15)}Good light. No filters, sunglasses, masks or mirror selfies</li><li>${I('layers',15)}Two different, recent photos, like one close-up and one from another day</li></ul>`;
+    return `<button class="pslot${ph?' on':''}" data-a="${ph?'changephoto':'pickphoto'}" data-k="${n}" ${off?'disabled':''} aria-label="${ph?'Change':'Add'} photo ${n}">${ph?`<img src="${esc(ph)}" alt="">`:I('camera',26)}<span>${ph?'Change':n===1?'Add photo 1':'Add photo 2'}</span></button>`};
+  return `<div class="ppair">${slot(1)}${slot(2)}</div>${twoPhotos()?'':PHOTO_TIPS}`;
+}
+/* Before replacing a photo: what the new one needs, then the picker. Its own overlay, like the cropper, so the
+   edit sheet underneath keeps what you've typed. */
+function photoRules(slot){
+  document.getElementById('pr_ov')?.remove();
+  const ov=document.createElement('div');ov.className='ov';ov.id='pr_ov';
+  ov.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pr_t"><div class="sh"><h2 id="pr_t">Change photo ${slot}</h2><button class="ib" id="pr_x" title="Close">${I('x',18)}</button></div>
+  <div class="sb"><p class="small mute" style="margin:0 0 12px">Your face check is matched against both photos, so the new one needs to show you clearly.</p>${PHOTO_TIPS}
+  ${S.me.face?`<p class="small" style="margin:0 0 14px;color:var(--warn)">You're verified. A new photo means doing the face check again, so it matches.</p>`:''}
+  <div class="row"><button class="btn ghost" id="pr_no">Cancel</button><button class="btn" id="pr_ok">${I('camera',16)} Choose photo</button></div></div></div>`;
+  document.getElementById('shell').appendChild(ov);
+  const close=()=>ov.remove(),$$=id=>document.getElementById(id);
+  $$('pr_x').onclick=$$('pr_no').onclick=close;
+  $$('pr_ok').onclick=()=>{close();cropSlot=slot;(document.getElementById('p_photo')||photoInput()).click()};
+  ov.onclick=e=>{if(e.target===ov)close()};
+  ov.onkeydown=e=>{e.stopPropagation();if(e.key==='Escape')close()};
+  $$('pr_ok').focus();
 }
 
 /* Private settings are saved to your account a moment after the last change. */
@@ -307,10 +328,10 @@ async function pushState(){
 
 /* ---------- helpers ---------- */
 const now=()=>Date.now()+skew;
-/* A group chat is read-only from 3 hours after its plan starts (_chat_closed in schema-app.sql decides). */
-/* A plan ends its duration after it starts (the host picks 1 to 24 hours); the chat closes CHAT_OPEN_H after that. */
+/* A plan ends its duration after it starts (the host picks 1 to 24 hours); its group chat is read-only from CHAT_OPEN_H
+   hours after that (_chat_closed in schema-app.sql decides). */
 const durTxt=h=>h+' hour'+(h===1?'':'s'),endOf=a=>a.when+(a.dur||2)*3600e3,hasEnded=a=>endOf(a)<=now();
-const CHAT_OPEN_H=3,chatClosed=a=>endOf(a)+CHAT_OPEN_H*3600e3<now();
+const CHAT_OPEN_H=1,chatClosed=a=>endOf(a)+CHAT_OPEN_H*3600e3<now();
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uname=id=>id==='me'?'You':(USERS[id]?.name||'Someone');
 /* Host name + age; opens their profile unless it's you. */
@@ -411,7 +432,10 @@ const vf=(id,long)=>isVer(id)?`<span class="vf">${long?I('badge-check',14)+' Ver
 const waitlist=()=>[];
 const isPast=a=>a.status==='past'||a.when<=now();
 const attended=a=>a.host==='me'||a.members.includes('me');
-const actLink=a=>location.href.split('#')[0].split('?')[0]+'#act='+a.id;
+/* Invite links always use app.html, even when the page was opened at /app: the Android app opens links on /app.html
+   (app.json), and the website serves both. */
+const APP_URL=()=>new URL('app.html',location.href).href;
+const actLink=a=>APP_URL()+'#act='+a.id;
 /* Reliability, counted by the database: meetups (plans that have ended), and how often the host marked them there
    or a no-show. No formula: hosts see the counts. rate is only for the warning chip, from the marked ones. */
 function trust(id){
@@ -693,7 +717,7 @@ function microHtml(){
   if(ui.microWhy)return `<div class="micro" role="dialog" aria-label="Quick question"><div class="mq"><span>Thanks! One more thing</span><button class="ib" data-a="microx" aria-label="Skip">${I('x',15)}</button></div>
   <p><label for="mf_t" style="margin:0;font-size:inherit">${ui.microWhy===1?'What made it hard?':'What would have made it easier?'}</label></p>
   <textarea id="mf_t" class="mft" maxlength="1000" placeholder="A few words is plenty"></textarea>
-  <label class="chk top"><input type="checkbox" id="mf_ok"> <span><b>Required:</b> I agree this is stored and used to improve Overhere (<a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>).</span></label>
+  <label class="chk top"><input type="checkbox" id="mf_ok"> <span><b>Required:</b> I agree this is stored and used to improve Overhere (<a href="privacy" target="_blank" rel="noopener">Privacy policy</a>).</span></label>
   <div class="row" style="margin-top:8px"><button class="btn sm ghost" data-a="microx">Skip</button><button class="btn sm" id="mf_go" data-a="microsend" disabled><span class="spin" aria-hidden="true"></span>Send</button></div></div>`;
   return `<div class="micro" role="dialog" aria-label="Quick question"><div class="mq"><span>Quick question</span><button class="ib" data-a="microx" aria-label="Dismiss question">${I('x',15)}</button></div><p>${MICRO[k]}</p>
   <div class="mf">${[['😞','Hard',1],['😐','OK',2],['🙂','Easy',3],['😀','Very easy',4]].map(([e,l,n])=>`<button data-a="microans" data-n="${n}"><span aria-hidden="true">${e}</span>${l}</button>`).join('')}</div></div>`;
@@ -801,14 +825,11 @@ function profileOf(id){
   if(id==='me')return {name:S.me.name,gender:S.me.gender,age:ageOf(S.me.dob),job:S.me.job||'',bio:S.me.bio||''};
   return USERS[id]||{name:'Someone',gender:'',age:'',job:'',bio:''};
 }
-const PASTEL=['#E3EFDB','#E9E4FB','#D9F2E6','#FBE3EE','#DDEEFB','#FBF0D2'];
 function av(id,cls=''){
   const n=id==='me'?(S.me?.name||'?'):(USERS[id]?.name||'?'),hues=['#3F7D4E','#8B5CF6','#10B981','#EC4899','#0EA5E9','#EAB308'];
   const me=id==='me'?' data-me':'',ph=me?S.me?.photo:USERS[id]?.photo;
   if(ph)return `<span class="av ${cls}"${me}><img src="${esc(ph)}" alt="${esc(n)}" loading="lazy" decoding="async"></span>`;
   let h=0;for(const c of n)h+=c.charCodeAt(0);
-  const emo=me?(S.me?.emo||defEmo(S.me?.gender)):USERS[id]?.emo;
-  if(emo)return `<span class="av emo ${cls}"${me} style="background:${PASTEL[h%PASTEL.length]}" aria-hidden="true">${esc(emo)}</span>`;
   return `<span class="av ${cls}"${me} style="background:${hues[h%hues.length]}">${esc(n[0].toUpperCase())}</span>`;
 }
 const catPill=(k,tint)=>{const c=CATS[k];return `<span class="cat" style="color:${c.fg}${tint?';background:'+c.bg:''}">${I(c.icon,12)}${c.label}</span>`};
@@ -1279,7 +1300,7 @@ function settingsHtml(){
   ${m.trusted?`<div class="blk">${I('phone',15)}<span><b>${esc(m.trusted.name)}</b> · ${esc(m.trusted.phone)}</span><button class="lnk" data-a="editprofile" data-k="safety">Change</button></div>`:`<button class="btn sm sec" data-a="editprofile" data-k="safety">${I('user-plus',14)} Add a trusted contact</button>`}
   <label>Blocked people</label>${S.blocked.length?S.blocked.map(u=>`<div class="blk">${av(u,'sm')}${esc(uname(u))}<button class="lnk" data-a="unblock" data-id="${u}">Unblock</button></div>`).join(''):'<p class="small mute" style="margin:0">No one.</p>'}</div>
   <div class="panel"><div class="ph">${I('user',15)} Account</div>
-  <p class="small mute" style="margin-top:0"><a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> · <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a> · <a href="copyright.html" target="_blank" rel="noopener" style="color:inherit">Copyright</a> · <a href="credits.html" target="_blank" rel="noopener" style="color:inherit">Credits</a></p>
+  <p class="small mute" style="margin-top:0"><a href="terms" target="_blank" rel="noopener" style="color:inherit">Terms</a> · <a href="guidelines" target="_blank" rel="noopener" style="color:inherit">Community guidelines</a> · <a href="privacy" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a> · <a href="copyright" target="_blank" rel="noopener" style="color:inherit">Copyright</a> · <a href="credits" target="_blank" rel="noopener" style="color:inherit">Credits</a></p>
   <div class="row" style="gap:8px"><button class="btn sm ghost" data-a="signout">${I('log-out',14)} Sign out</button><button class="btn sm ghost" style="color:var(--bad)" data-a="delacct">${I('trash',14)} Delete my account</button></div></div>
 `;
 }
@@ -1300,7 +1321,7 @@ function modalHtml(){
       <div style="height:12px"></div>
       <label class="chk top"><input type="checkbox" id="fb_q"> <span>Optional: you may quote this publicly, without my name.</span></label>
       <label class="chk top"><input type="checkbox" id="fb_c"> <span>Optional: you may contact me with follow-up questions.</span></label>
-      <label class="chk top fbreq"><input type="checkbox" id="fb_ok"> <span><b>Required:</b> I agree my feedback is stored and used to improve Overhere (<a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>).</span></label>
+      <label class="chk top fbreq"><input type="checkbox" id="fb_ok"> <span><b>Required:</b> I agree my feedback is stored and used to improve Overhere (<a href="privacy" target="_blank" rel="noopener">Privacy policy</a>).</span></label>
       <div style="height:12px"></div><button class="btn" id="fb_go" data-a="sendfb" disabled><span class="spin" aria-hidden="true"></span>Send feedback</button>
       <p class="small mute" id="fb_why" aria-live="polite" style="text-align:center;margin:8px 0 0">Pick a face and tick the required box to send.</p></div>`);
   }
@@ -1392,17 +1413,17 @@ function modalHtml(){
       ${acc&&!past?`<div style="height:8px"></div><button class="btn sec" data-a="chat" data-id="${a.id}">${I('message-circle',16)} Open group chat</button>
         <div style="height:8px"></div><button class="btn ghost" data-a="share" data-k="trust" data-id="${a.id}">${I('shield-check',16)} Share plan with trusted contact</button>`:''}
       ${needRate(a)?`<div style="height:12px"></div><button class="btn" data-a="rate" data-id="${a.id}">${I('star',16)} ${needRate(a)==='noshow'?'Tell the host what happened':'Rate the meetup'}</button>`:attended(a)&&past&&S.ratings[a.id]?`<p class="small mute" style="margin-top:14px">${I('circle-check',14)} You rated this meetup. Thanks!</p>`:''}
-      <div class="dlinks">${canSave(a)?`<button class="lnk" data-a="save" data-id="${a.id}" aria-pressed="${isSaved(a.id)}">${I('bookmark',13)} ${isSaved(a.id)?'Saved':'Save for later'}</button>`:''}${!past&&(a.status==='open'||a.status==='full')?`<button class="lnk" data-a="share" data-k="invite" data-id="${a.id}">${I('share',13)} Share</button>`:''}${rq&&(rq.status==='pending'||rq.status==='waitlist')?`<button class="lnk m" data-a="withdraw" data-id="${a.id}">${I('x',13)} Withdraw request</button>`:''}${acc&&!past?`<button class="lnk m" data-a="leave" data-id="${a.id}">Leave activity</button>`:''}${a.host!=='me'?`<a class="lnk m" href="copyright.html#notice" target="_blank" rel="noopener">Report copyright infringement</a>`:''}</div>
+      <div class="dlinks">${canSave(a)?`<button class="lnk" data-a="save" data-id="${a.id}" aria-pressed="${isSaved(a.id)}">${I('bookmark',13)} ${isSaved(a.id)?'Saved':'Save for later'}</button>`:''}${!past&&(a.status==='open'||a.status==='full')?`<button class="lnk" data-a="share" data-k="invite" data-id="${a.id}">${I('share',13)} Share</button>`:''}${rq&&(rq.status==='pending'||rq.status==='waitlist')?`<button class="lnk m" data-a="withdraw" data-id="${a.id}">${I('x',13)} Withdraw request</button>`:''}${acc&&!past?`<button class="lnk m" data-a="leave" data-id="${a.id}">Leave activity</button>`:''}${a.host!=='me'?`<a class="lnk m" href="copyright#notice" target="_blank" rel="noopener">Report copyright infringement</a>`:''}</div>
       </div>`);
   }
   if(m.type==='terms')return `<div class="ov"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="tm_t"><div class="sh"><h2 id="tm_t">Our terms and community guidelines</h2></div><div class="sb">
-      <p style="margin-top:0">To keep using Overhere, please read and agree to our <a href="terms.html" target="_blank" rel="noopener" style="color:var(--acch)">Terms and community guidelines</a>. In short:</p>
+      <p style="margin-top:0">To keep using Overhere, please read and agree to our <a href="terms" target="_blank" rel="noopener" style="color:var(--acch)">Terms</a> and <a href="guidelines" target="_blank" rel="noopener" style="color:var(--acch)">Community guidelines</a>. In short:</p>
       <ul class="small" style="padding-left:20px;margin:0 0 12px"><li>You're 18 or over, and you are who you say you are.</li><li>Be respectful, show up, and cancel early if you can't.</li><li>Not a dating app: no sexual messages, pressure, selling or spam.</li><li>Overhere introduces people but doesn't check everyone or run the meetups. Meet in public and look after yourself.</li></ul>
       <button class="btn" data-a="acceptterms">I agree</button><div style="height:8px"></div><button class="btn ghost" data-a="signout">Sign out</button></div></div></div>`;
   if(m.type==='safety1')return sheet('Before your first meetup',`<div class="sb">
       <p style="margin-top:0">You'll be meeting people you don't know yet. A few things that keep meetups good:</p>
       <ul style="padding-left:20px;margin:0 0 12px"><li>Meet in a busy public place, and make your own way there and back.</li><li>Tell someone you trust where you'll be. You can send them your plan in one tap.</li><li>Keep your home address and workplace to yourself until you know people.</li><li>Never send money to someone you met here.</li><li>Leave whenever you like. In an emergency call 112, or tap SOS in the group chat.</li></ul>
-      <p class="small mute">The face check confirms a real person made each account. It doesn't tell you what they're like. More in the <a href="terms.html#safety" target="_blank" rel="noopener" style="color:inherit">Terms</a>.</p>
+      <p class="small mute">The face check confirms a real person made each account. It doesn't tell you what they're like. More in the <a href="terms#safety" target="_blank" rel="noopener" style="color:inherit">Terms</a>.</p>
       <button class="btn" data-a="safetyok">I understand, continue</button></div>`);
   if(m.type==='swipeask'){
     const a=actOf(m.id);if(!a)return '';
@@ -1560,16 +1581,12 @@ function modalHtml(){
       <div class="sfoot">${any?'<button class="btn ghost" data-a="freset">Reset</button>':''}<button class="btn" data-a="close">Show ${n} ${n===1?'activity':'activities'}</button></div></div></div>`;
   }
   if(m.type==='editprofile'){
-    const me=S.me,cur=m.emo||me.emo||defEmo(me.gender),photo=!!me.photo&&!m.emo;
+    const me=S.me;
     return sheet('Edit profile',`<div class="sb">
       <h3 style="margin-top:0">Your photos</h3>
-      <p class="small mute" style="margin:0 0 10px">Photo 1 is your profile picture. The face check needs both and matches your live face against each.</p>
+      <p class="small mute" style="margin:0 0 10px">Photo 1 is your profile picture.</p>
       <div id="ep_photos">${photoPair()}</div>
-      ${photo?`<button class="btn sm bad" data-a="rmphoto">${I('trash',14)} Remove photos</button>`:''}
-      <h3>Or an emoji</h3>
-      <div class="epav"><span id="ep_av">${photo?av('me','lg'):`<span class="av emo lg" style="background:${PASTEL[0]}" aria-hidden="true">${esc(cur)}</span>`}</span>
-        <p class="small mute" style="margin:0">${photo?`Picking an emoji removes your photos${me.face?' and means redoing your face check':''}.`:'Other people see this next to your name until you add photos.'}</p></div>
-      <div class="emogrid" role="radiogroup" aria-label="Emoji">${EMOJIS.map(e=>`<button role="radio" aria-checked="${!photo&&e===cur}" class="${!photo&&e===cur?'on':''}" data-a="pickemo" data-e="${esc(e)}" aria-label="${esc(e)}">${esc(e)}</button>`).join('')}</div>
+      ${me.photo?`<button class="btn sm bad" data-a="rmphoto">${I('trash',14)} Remove photos</button>`:''}
       <h3>About you</h3>
       <label for="p_name" style="margin-top:0">First name</label><input id="p_name" maxlength="40" autocomplete="given-name" value="${esc(me.name)}">
       <label for="p_last">Last name</label><input id="p_last" maxlength="40" autocomplete="family-name" value="${esc(me.last||'')}">
@@ -1581,18 +1598,14 @@ function modalHtml(){
       <p class="small mute" style="margin-top:6px">Anywhere in India. You see plans within ${NEAR_KM} km of here, and distances are measured from it. With your current location, only the area is saved (to about 1 km), never your exact spot.</p>
       <label for="p_job">Profession</label><input id="p_job" maxlength="40" value="${esc(me.job||'')}" placeholder="e.g. Designer">
       <label for="p_bio">Bio</label><textarea id="p_bio" maxlength="300" placeholder="A line or two so hosts know who you are">${esc(me.bio||'')}</textarea>
-      <label>What do you like doing?</label>${intOpts('p_int',me.ints)}
+      <details class="epx" id="ep_int"><summary><span class="epxt"><b>Interests</b><span id="p_int_s">${intSum(me.ints)}</span></span>${I('chevron-down',18)}</summary>
+        <div class="epxb">${intOpts('p_int',me.ints)}</div></details>
       <label>When are you usually free?</label>${opts('p_avail',TIMES,me.avail)}
       <h3 id="ep_safety">Safety</h3>
       <p class="small mute" style="margin-top:0">Trusted contact: someone you can send your plans to, or alert with SOS. Leave both empty to remove.</p>
       <div class="row"><input id="t_name" placeholder="Name" aria-label="Trusted contact name" value="${esc(me.trusted?.name||'')}"><input id="t_phone" type="tel" placeholder="Phone" aria-label="Trusted contact phone" value="${esc(me.trusted?.phone||'')}"></div>
       <div style="height:18px"></div><button class="btn" data-a="saveprofile">Save changes</button>
       <div style="height:8px"></div><button class="btn ghost" data-a="close">Cancel</button></div>`,'full wide');
-  }
-  if(m.type==='emoji'){
-    const cur=S.me.photo?'':(S.me.emo||defEmo(S.me.gender));
-    return sheet('Choose your emoji',`<div class="sb"><p class="small mute" style="margin-top:0">This is what other people see next to your name.</p>
-      <div class="emogrid" role="radiogroup" aria-label="Emoji">${EMOJIS.map(e=>`<button role="radio" aria-checked="${e===cur}" class="${e===cur?'on':''}" data-a="setemo" data-e="${esc(e)}" aria-label="${esc(e)}">${esc(e)}</button>`).join('')}</div></div>`);
   }
   if(m.type==='chat'){
     const a=actOf(m.id);if(!a)return '';
@@ -1604,7 +1617,7 @@ function modalHtml(){
       <button class="sosb" data-a="sos" data-id="${a.id}" aria-label="SOS: get help now">SOS</button>
       <button class="ib" data-a="close" title="Close">${I('x',18)}</button></div>
       <p class="small mute" style="padding:8px 18px;margin:0">Members: ${esc([a.host,...a.members].map(uname).join(', '))} · full history visible to everyone${muted?' · notifications muted':''}</p>
-      <div class="msgs" id="msgs">${closed?'':tips}${msgs}</div>${closed?`<div class="cin closed" role="status">${I('lock',15)}<span>This chat closed ${CHAT_OPEN_H} hours after the plan ended. You can still read it.</span></div>`:`<div class="cin"><button class="ib" data-a="newpoll" data-id="${a.id}" title="Create a poll" aria-label="Create a poll">${I('bar-chart',18)}</button><input id="c_in" placeholder="Message the group" autocomplete="off" aria-label="Message the group"><button class="btn sm" data-a="send" data-id="${a.id}" aria-label="Send">${I('send',15)}</button></div>`}</div></div>`;
+      <div class="msgs" id="msgs">${closed?'':tips}${msgs}</div>${closed?`<div class="cin closed" role="status">${I('lock',15)}<span>This chat closed an hour after the plan ended. You can still read it.</span></div>`:`<div class="cin"><button class="ib" data-a="newpoll" data-id="${a.id}" title="Create a poll" aria-label="Create a poll">${I('bar-chart',18)}</button><input id="c_in" placeholder="Message the group" autocomplete="off" aria-label="Message the group"><button class="btn sm" data-a="send" data-id="${a.id}" aria-label="Send">${I('send',15)}</button></div>`}</div></div>`;
   }
   if(m.type==='members'){
     const a=actOf(m.id);if(!a)return '';
@@ -1728,7 +1741,7 @@ function authHtml(){
     <p class="ferr" id="a_phone_err" aria-live="polite"></p><p class="fhint" id="a_phone_note">Indian mobile numbers only.</p>
     ${up?agebox():''}<div style="height:18px"></div>${ERRBOX}${goBtn('Send code')}</form>
     <div style="height:8px"></div><button class="btn ghost" ${up?'data-a="sustep" data-k="3"':'data-a="authmode" data-k="in"'}>Back</button>
-    <p class="small mute" style="text-align:center;margin-top:12px">${up?'':'By signing in you agree to our <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a>. '}Standard SMS rates may apply.</p></div>`;
+    <p class="small mute" style="text-align:center;margin-top:12px">${up?'':'By signing in you agree to our <a href="terms" target="_blank" rel="noopener" style="color:inherit">Terms</a> and <a href="privacy" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a>. '}Standard SMS rates may apply.</p></div>`;
   }
   if(md==='code'){
     const left=Math.ceil((ui.auth.sent+RESEND_MS-Date.now())/1000);
@@ -1752,7 +1765,7 @@ function authHtml(){
     <div style="height:18px"></div>${ERRBOX}${goBtn(up?'Create account':'Sign in')}</form>
     <p class="small" style="text-align:center;margin-top:14px">${up?'Already have an account? <button class="lnk" data-a="authmode" data-k="in">Sign in</button>'
       :'New here? <button class="lnk" data-a="authmode" data-k="up">Create an account</button>'}</p>
-    <p class="small mute" style="text-align:center;margin-top:10px"><a href="terms.html" target="_blank" rel="noopener" style="color:inherit">Terms</a> · <a href="privacy.html" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a> · <a href="copyright.html" target="_blank" rel="noopener" style="color:inherit">Copyright</a> · <a href="credits.html" target="_blank" rel="noopener" style="color:inherit">Credits</a></p></div></div>`;
+    <p class="small mute" style="text-align:center;margin-top:10px"><a href="terms" target="_blank" rel="noopener" style="color:inherit">Terms</a> · <a href="guidelines" target="_blank" rel="noopener" style="color:inherit">Community guidelines</a> · <a href="privacy" target="_blank" rel="noopener" style="color:inherit">Privacy policy</a> · <a href="copyright" target="_blank" rel="noopener" style="color:inherit">Copyright</a> · <a href="credits" target="_blank" rel="noopener" style="color:inherit">Credits</a></p></div></div>`;
 }
 /* Phone accounts also need a confirmed email: add it, then type the code Supabase emails ("Change email address"
    template, supabase/templates/change-email.html). Comes before onboarding, and once for older phone accounts. */
@@ -1852,7 +1865,7 @@ function onboardHtml(){
     <label for="o_bio">About you <span class="mute" style="font-weight:400">(optional)</span></label><textarea id="o_bio" maxlength="300" placeholder="Hosts see this when you ask to join">${esc(d.bio||'')}</textarea>
     <label for="o_hood">Home area</label>${placeBox('o_hood','Search your area or city, e.g. Indiranagar, Bengaluru',d.hood,'Areas in India')}
     ${locBtn('o_hood','Use my current location')}<p class="small mute" style="margin-top:6px">You'll see plans within ${NEAR_KM} km.</p>
-    ${AUTHU.terms?'':`<label class="chk top" style="margin-top:18px"><input type="checkbox" id="o_ok" ${d.ok?'checked':''}> <span>I agree to the <a href="terms.html" ${tgt}>Terms</a> and <a href="privacy.html" ${tgt}>Privacy policy</a></span></label>`}
+    ${AUTHU.terms?'':`<label class="chk top" style="margin-top:18px"><input type="checkbox" id="o_ok" ${d.ok?'checked':''}> <span>I agree to the <a href="terms" ${tgt}>Terms</a> and <a href="privacy" ${tgt}>Privacy policy</a></span></label>`}
     <label class="chk top" style="margin-top:${AUTHU.terms?18:10}px"><input type="checkbox" id="o_usage" ${d.usage?'checked':''}> <span>Share usage statistics to help improve Overhere (optional)</span></label>
     <div style="height:18px"></div><button class="btn" data-a="ob2">Continue</button><div style="height:8px"></div><button class="btn sec" data-a="sustep" data-k="3">Back</button>${out}`;
   }else if(S.me.face||ui.faceSkip){
@@ -1987,21 +2000,72 @@ async function commitCrop(){
   if(ui.modal?.type==='editprofile'){
     refreshMyPhoto();
     const pp=document.getElementById('ep_photos');if(pp)pp.innerHTML=photoPair();
-    const pv=document.getElementById('ep_av');if(pv){pv.innerHTML=av('me','lg');delete ui.modal.emo;document.querySelectorAll('[data-a=pickemo]').forEach(b=>{b.classList.remove('on');b.setAttribute('aria-checked','false')})}
   }else render();
   toast(cropSlot===1&&!S.me.photo2?'Photo 1 saved. Now add photo 2.':`Photo ${cropSlot} saved (${Math.max(1,Math.round(blob.size/1024))} KB)`);
 }
 /* Swap my avatars in place so unsaved edits in the profile form are kept. */
 function refreshMyPhoto(){
-  document.querySelectorAll('.av[data-me]').forEach(el=>{el.outerHTML=av('me',[...el.classList].filter(c=>c!=='av'&&c!=='emo').join(' '))});
+  document.querySelectorAll('.av[data-me]').forEach(el=>{el.outerHTML=av('me',[...el.classList].filter(c=>c!=='av').join(' '))});
 }
 /* The file input lives on the Profile tab; make one when uploading from elsewhere (the edit sheet). */
 function photoInput(){const i=document.createElement('input');i.type='file';i.id='p_photo';i.accept='image/jpeg,image/png,image/webp,image/*';i.hidden=true;document.getElementById('screen').appendChild(i);return i}
 function photoMenu(open){
   const mn=document.getElementById('p_menu'),pe=document.getElementById('p_pe');if(!mn)return;
-  if(open)mn.innerHTML=`<button role="menuitem" data-a="emojipick">${I('user',15)} Choose emoji</button><button role="menuitem" data-a="pickphoto" data-k="1">${I('camera',15)} ${S.me.photo?'Change photo 1':'Add photo 1'}</button>${S.me.photo?`<button role="menuitem" data-a="pickphoto" data-k="2">${I('camera',15)} ${S.me.photo2?'Change photo 2':'Add photo 2'}</button><button role="menuitem" class="bad" data-a="rmphoto">${I('trash',15)} Remove photos</button>`:''}`;
+  if(open)mn.innerHTML=`<button role="menuitem" data-a="${S.me.photo?'changephoto':'pickphoto'}" data-k="1">${I('camera',15)} ${S.me.photo?'Change photo 1':'Add photo 1'}</button>${S.me.photo?`<button role="menuitem" data-a="${S.me.photo2?'changephoto':'pickphoto'}" data-k="2">${I('camera',15)} ${S.me.photo2?'Change photo 2':'Add photo 2'}</button><button role="menuitem" class="bad" data-a="rmphoto">${I('trash',15)} Remove photos</button>`:''}`;
   mn.hidden=!open;pe?.setAttribute('aria-expanded',String(open));
   if(open)mn.querySelector('button')?.focus();
+}
+
+/* ---------- a plan card grows into its plan ---------- */
+/* Opening a plan from its card (Discover, Activities, the swipe deck): a stand-in with the card's photo grows from the
+   card's box to the plan sheet's box while the list dims, and the sheet's own content fades in over it. Closing runs
+   it backwards into the same card, if it's still on screen. Off with Reduce motion. */
+const GROW_MS=380,GROW_EASE='cubic-bezier(.2,.8,.2,1)';
+const stillMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+const growPhoto=el=>el.querySelector('.media,.thumb')||(el.classList.contains('card')?el:null);
+/* the cards for one plan in the list, so the same one is found again after a re-render (keepScroll keeps its place) */
+const growCards=id=>[...document.querySelectorAll(`#screen main [data-a="detail"][data-id="${CSS.escape(id)}"]`)];
+function growFrom(el,id){
+  if(!el||stillMotion()||!el.closest('#screen main'))return null;
+  const idx=growCards(id).indexOf(el),ph=growPhoto(el);if(idx<0)return null;
+  return {id,idx,bg:ph?ph.style.background:'',rad:getComputedStyle(el).borderRadius,prad:ph?getComputedStyle(ph).borderRadius:'0px'};
+}
+/* where the card and its photo are now, in the overlay's coordinates */
+function growBoxes(g,o){
+  const el=growCards(g.id)[g.idx];if(!el)return null;
+  const r=el.getBoundingClientRect(),ph=growPhoto(el),pr=ph?ph.getBoundingClientRect():null;
+  if(r.bottom<o.top||r.top>o.bottom)return null;   // scrolled out of sight: nothing to grow from or shrink into
+  return {el,card:{left:r.left-o.left,top:r.top-o.top,width:r.width,height:r.height},photo:pr&&{left:pr.left-r.left,top:pr.top-r.top,width:pr.width,height:pr.height}};
+}
+const px=b=>({left:b.left+'px',top:b.top+'px',width:b.width+'px',height:b.height+'px'});
+/* one run of the stand-in, from the card (t=0) to the sheet (t=1) or back */
+function growRun(g,open,done){
+  const ov=document.querySelector('#screen .ov'),sh=ov?.querySelector('.sheet');if(!sh)return false;
+  const o=ov.getBoundingClientRect(),bx=growBoxes(g,o);if(!bx)return false;
+  const sr=sh.getBoundingClientRect(),dp=sh.querySelector('.dphoto'),dr=dp?.getBoundingClientRect();
+  const sheet={left:sr.left-o.left,top:sr.top-o.top,width:sr.width,height:sr.height};
+  const photo=dr&&{left:dr.left-sr.left,top:dr.top-sr.top,width:dr.width,height:Math.min(dr.height,sr.bottom-dr.top)};
+  const gh=document.createElement('div');gh.className='pgrow';gh.innerHTML='<div class="pgp"></div>';
+  const gp=gh.firstChild;gp.style.background=g.bg;if(!g.bg||!bx.photo||!photo)gp.hidden=true;
+  ov.classList.add('growing');ov.appendChild(gh);bx.el.style.visibility='hidden';
+  const dim=getComputedStyle(ov).backgroundColor,opt={duration:GROW_MS,easing:GROW_EASE,fill:'both'};
+  const card={...px(bx.card),borderRadius:g.rad},big={...px(sheet),borderRadius:getComputedStyle(sh).borderRadius};
+  const k=open?[card,big]:[big,card];
+  const run=gh.animate(k,opt);
+  if(!gp.hidden){const a={...px(bx.photo),borderRadius:g.prad},b={...px(photo),borderRadius:getComputedStyle(dp).borderRadius};gp.animate(open?[a,b]:[b,a],opt)}
+  ov.animate(open?[{backgroundColor:'rgba(20,16,10,0)'},{backgroundColor:dim}]:[{backgroundColor:dim},{backgroundColor:'rgba(20,16,10,0)'}],opt);
+  sh.animate(open?[{opacity:0},{opacity:0,offset:.5},{opacity:1}]:[{opacity:1},{opacity:0,offset:.3},{opacity:0}],{duration:GROW_MS,fill:'both'});
+  if(!open)ov.style.pointerEvents='none';
+  run.finished.then(()=>{if(open){gh.remove();ov.classList.remove('growing');sh.getAnimations().forEach(x=>x.cancel());ov.getAnimations().forEach(x=>x.cancel());bx.el.style.visibility=''}done?.()}).catch(()=>{});
+  return true;
+}
+function growPlan(g){growRun(g,true)}
+/* Close the open sheet (or go back to the one it came from). A plan opened from its card shrinks back into it first. */
+let shrinking=false;
+function closeModal(){
+  const m=ui.modal;if(shrinking)return;
+  if(m?.type==='detail'&&m.grow&&!m.back&&!stillMotion()&&growRun(m.grow,false,()=>{shrinking=false;if(ui.modal===m){ui.modal=null;render()}})){shrinking=true;return}
+  ui.modal=m?.back||null;render();
 }
 
 /* ---------- main render ---------- */
@@ -2066,7 +2130,8 @@ const val=id=>document.getElementById(id)?.value?.trim()||'';
 const pw=()=>document.getElementById('a_pw')?.value||'';
 /* the email a new password mustn't contain: the one being typed, or the account's (the phone sign-up password step has no email field) */
 const pwMail=()=>val('a_email')||AUTHU.mail||'';
-const here=()=>location.origin+location.pathname;
+/* where sign-in emails come back to: app.html, the address on Supabase's list of allowed redirects */
+const here=APP_URL;
 /* Supabase lets a number or an email address ask for a new code or link once a minute; the button counts down to match. */
 const RESEND_MS=60000;let resendT=0;
 function resendTimer(){
@@ -2169,7 +2234,7 @@ function fieldMsg(id,msg,ok){
 /* New accounts tick one box: 18 or older (the database refuses the login without it, _before_user_created) and the
    Terms (terms_ok, so onboarding doesn't ask again). Signing in doesn't ask: they agreed when they signed up. */
 /* ticked already when the welcome page's box was ticked */
-const agebox=()=>'<label class="chk top" style="margin-top:14px"><input type="checkbox" id="a_age"'+(ui.auth?.ok?' checked':'')+'> <span>I\'m 18 or older and agree to the <a href="terms.html" target="_blank" rel="noopener">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a></span></label>';
+const agebox=()=>'<label class="chk top" style="margin-top:14px"><input type="checkbox" id="a_age"'+(ui.auth?.ok?' checked':'')+'> <span>I\'m 18 or older and agree to the <a href="terms" target="_blank" rel="noopener">Terms</a> and <a href="privacy" target="_blank" rel="noopener">Privacy policy</a></span></label>';
 const NEW_ACCOUNT={age_18:true,terms_ok:true};
 function ageOk(inForm){
   const c=document.getElementById('a_age');if(!c||c.checked)return true;
@@ -2311,7 +2376,7 @@ const A={
   tab:d=>{if(ui.tab!==d.t)track('tab_view',{tab:d.t});ui.tab=d.t;ui.seen=null;ui.modal=null;ui.settings=false;render()},
   swipe:d=>swipe(d.d),
   swipeok:d=>{S.tips['swipe_'+d.d]=true;save();ui.modal=null;render();swipe(d.d)},
-  detail:d=>{ui.modal={type:'detail',id:d.id};render()},
+  detail:(d,e)=>{const g=growFrom(e?.target.closest?.('[data-a=detail]'),d.id);ui.modal={type:'detail',id:d.id,...(g?{grow:g}:{})};render();if(g)growPlan(g)},
   detailback:d=>{ui.modal={type:'detail',id:d.id,back:ui.modal};render()},   // from a profile: closing goes back to it
   hostview:d=>{ui.modal={type:'host',id:d.id};render()},
   chat:d=>{
@@ -2319,8 +2384,8 @@ const A={
     ui.modal={type:'chat',id:d.id};render()},
   /* The chats button toggles the chats tab, like the bell. */
   chats:()=>{if(ui.tab==='chats'&&!ui.modal){ui.tab=ui.prevTab||'swipe';render();return}if(ui.tab!=='chats'&&ui.tab!=='notes')ui.prevTab=ui.tab;ui.tab='chats';ui.modal=null;track('chats_opened');render()},
-  close:()=>{ui.modal=ui.modal?.back||null;render()},
-  closebg:(d,e)=>{if(e.target.classList.contains('ov')&&!['verify','chat','terms','mustrate'].includes(ui.modal?.type)){ui.modal=ui.modal?.back||null;render()}},
+  close:()=>closeModal(),
+  closebg:(d,e)=>{if(e.target.classList.contains('ov')&&!['verify','chat','terms','mustrate'].includes(ui.modal?.type))closeModal()},
   user:d=>{ui.modal={type:'user',id:d.id,back:ui.modal};render()},
   /* The bell opens the notifications, and tapping it again closes them. Opening doesn't mark anything read:
      a notification is read when you open it, or with "Mark all as read". */
@@ -2716,28 +2781,19 @@ const A={
     const p={name,dob,gender:val('p_gender'),hood,lat:hll[0],lng:hll[1],job:val('p_job'),bio:document.getElementById('p_bio').value.trim(),ints:many('p_int'),avail:many('p_avail'),last_name:last};
     /* fixed once given at sign-up (the database refuses a change), so only sent by an older account that never gave one */
     if(S.me.dob)delete p.dob;if(S.me.gender)delete p.gender;
-    if(p.ints.length<MIN_INTS)return toast(`Pick at least ${MIN_INTS} things you like doing`);
+    if(p.ints.length<MIN_INTS){const d=document.getElementById('ep_int');if(d){d.open=true;d.scrollIntoView({block:'start',behavior:'smooth'})}return toast(`Pick at least ${MIN_INTS} things you like doing`)}
     if(!p.avail.length)return toast("Pick when you're usually free");
-    if(ui.modal?.emo)p.emo=ui.modal.emo;
     S.me.trusted=tn?{name:tn.slice(0,40),phone:tp.slice(0,20)}:null;save();
     if(await run('save_profile',{p})===undefined)return;
-    if(p.emo&&S.me.photoPath&&!await setPhoto(null))return;   // picking an emoji replaces the photos
     track('profile_saved');ui.modal=null;toast('Profile saved');render();
   },
   settings:d=>{ui.settings=d.k!=='off';render();scrollTo(0,0)},
   editprofile:d=>{ui.modal={type:'editprofile'};render();if(d.k==='safety')document.getElementById('ep_safety')?.scrollIntoView({block:'start'})},
-  /* In the edit sheet the emoji is applied on Save; update the preview without losing typed changes. */
-  pickemo:d=>{
-    ui.modal.emo=d.e;
-    document.querySelectorAll('[data-a=pickemo]').forEach(b=>{const on=b.dataset.e===d.e;b.classList.toggle('on',on);b.setAttribute('aria-checked',on)});
-    const pv=document.getElementById('ep_av');if(pv)pv.innerHTML=`<span class="av emo lg" style="background:${PASTEL[0]}" aria-hidden="true">${esc(d.e)}</span>`;
-  },
-  emojipick:()=>{photoMenu(false);ui.modal={type:'emoji'};render()},
-  setemo:async d=>{if(await run('save_profile',{p:{emo:d.e}})===undefined)return;if(S.me.photoPath&&!await setPhoto(null))return;track('avatar_emoji');ui.modal=null;toast('Emoji updated');render()},
   /* No photo yet: go straight to the picker. Otherwise offer change/remove. */
   photo:()=>{photoMenu(document.getElementById('p_menu')?.hidden)},
   pickphoto:d=>{photoMenu(false);cropSlot=d.k==='2'&&S.me.photo?2:1;(document.getElementById('p_photo')||photoInput()).click()},
-  rmphoto:async()=>{photoMenu(false);if(!await setPhoto(null))return;if(!S.me.face)toast('Photos removed. Showing your emoji.');if(ui.modal?.type==='editprofile')render();else refreshMyPhoto()},
+  changephoto:d=>{photoMenu(false);photoRules(d.k==='2'&&S.me.photo?2:1)},
+  rmphoto:async()=>{photoMenu(false);if(!await setPhoto(null))return;if(!S.me.face)toast('Photos removed.');if(ui.modal?.type==='editprofile')render();else refreshMyPhoto()},
   /* onboarding */
   addphone:()=>{ui.modal={type:'addphone'};render();document.getElementById('ap_phone')?.focus()},
   apsend:async d=>{
@@ -2798,7 +2854,7 @@ const A={
     if(!f.ok)return toast('Please agree to the Terms to continue');
     if(suStep(s)<SU_STEPS){ui.su=suStep(s);render();return}
     const p={name:f.name,last_name:f.last,dob:s.dob,gender:s.gender,hood:f.hood,lat:hll[0],lng:hll[1],ints:s.ints,avail:s.avail,job:f.job||'',bio:f.bio||'',
-      emo:defEmo(s.gender),consent:true,terms:true,usage_ok:f.usage};
+      consent:true,terms:true,usage_ok:f.usage};
     e.target.closest('button').disabled=true;
     let r;try{r=await call('save_profile',{p})}catch(err){e.target.closest('button').disabled=false;return}
     if(r?.error==='under18'){suClear();return gone18()}
@@ -2871,8 +2927,12 @@ document.addEventListener('keyup',e=>{if(e.target.classList?.contains('pwi'))cap
 /* Suggestions stay open while focus is in a search box or its list; clicking one keeps the focus in the box. */
 document.addEventListener('mousedown',e=>{if(e.target.closest('.vopt'))e.preventDefault()});
 document.addEventListener('focusout',e=>{const id=e.target.id,box=PF[id]&&e.target.closest('.vbox');if(box)setTimeout(()=>{if(!box.contains(document.activeElement))placeList(id,false)},200)});
+/* The tap pulse on buttons (.btn.pulse in app.html), restarted on every tap, Enter or Space. Capture phase, so it
+   starts before the tap's own action re-renders anything. */
+document.addEventListener('click',e=>{const b=e.target.closest?.('.btn');if(!b||b.disabled)return;b.classList.remove('pulse');void b.offsetWidth;b.classList.add('pulse')},true);
+document.addEventListener('animationend',e=>{if(e.animationName==='bring')e.target.classList.remove('pulse')});
 document.addEventListener('change',e=>{
-  if(e.target.name==='s_int'||e.target.name==='p_int'){const el=document.getElementById(e.target.name+'_n'),n=many(e.target.name).length;if(el){el.textContent=intCount(n);el.classList.toggle('ok',n>=MIN_INTS)}}
+  if(e.target.name==='s_int'||e.target.name==='p_int'){const el=document.getElementById(e.target.name+'_n'),n=many(e.target.name).length;if(el){el.textContent=intCount(n);el.classList.toggle('ok',n>=MIN_INTS)}const sm=document.getElementById(e.target.name+'_s');if(sm)sm.innerHTML=intSum(many(e.target.name))}
   if(e.target.name==='rt_ok'){const w=document.getElementById('rt_wrong');if(w)w.hidden=e.target.value!=='no'}   // "Something went wrong": still in danger, or report it
   if(e.target.id==='d_from'||e.target.id==='d_to'){
     const f=ui.f;f[e.target.id==='d_from'?'dfrom':'dto']=e.target.value;
@@ -2891,7 +2951,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&pm&&!pm.hidden){photoMenu(false);document.getElementById('p_pe')?.focus();return}
   if(e.key==='Enter'&&e.target.matches('[role=button][data-a]')){e.target.click();return}
   if(e.key==='Enter'&&e.target.id==='c_in'){const b=document.querySelector('[data-a=send]');if(b)b.click();return}
-  if(e.key==='Escape'&&ui.modal&&ui.modal.type!=='verify'&&ui.modal.type!=='mustrate'){ui.modal=ui.modal.back||null;render();return}
+  if(e.key==='Escape'&&ui.modal&&ui.modal.type!=='verify'&&ui.modal.type!=='mustrate'){closeModal();return}
   if(ui.modal||ui.tab!=='swipe'||!S.me?.obDone||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
   if(e.key==='ArrowLeft')swipe('left');
   else if(e.key==='ArrowRight')swipe('right');

@@ -19,7 +19,7 @@ function Consent({ on, onPress, what = 'my feedback is' }: { on: boolean; onPres
     <Check on={on} onPress={onPress}>
       <Text style={{ fontSize: 14, lineHeight: 20, color: t.ink2 }}>
         <Text style={{ fontWeight: '700' }}>Required:</Text> I agree {what} stored and used to improve Overhere (
-        <Text style={{ color: t.accink, fontWeight: '700' }} onPress={() => WebBrowser.openBrowserAsync(SITE + '/privacy.html')}>Privacy policy</Text>).
+        <Text style={{ color: t.accink, fontWeight: '700' }} onPress={() => WebBrowser.openBrowserAsync(SITE + '/privacy')}>Privacy policy</Text>).
       </Text>
     </Check>
   );

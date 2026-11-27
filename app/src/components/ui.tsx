@@ -1,8 +1,9 @@
 import Feather from '@expo/vector-icons/Feather';
 import { Image } from 'expo-image';
 import { useRef, useState, type ComponentProps, type ReactNode, type Ref } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type TextInputInstance, type TextInputProps, type ViewStyle } from 'react-native';
-import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import { useGrow } from '@/components/Grow';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type TextInputInstance, type ViewInstance, type TextInputProps, type ViewStyle } from 'react-native';
+import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { introClock, introLogo } from '@/components/Intro';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CATS, defEmo, type Model, type Plan, placeLine, spotTxt, whenStr, kmAway, kmBetween } from '@/lib/model';
@@ -18,6 +19,10 @@ export const Icon = ({ name, size = 16, color }: { name: IconName; size?: number
   return <Feather name={name} size={size} color={color ?? t.ink} />;
 };
 
+const APressable = Animated.createAnimatedComponent(Pressable);
+
+/* Every button gives a visual pulse when tapped (no vibration): it squeezes while held, springs back on release,
+   and a ring in its colour grows out from its edge and fades. Off with Reduce motion. */
 export function Btn({ title, onPress, kind = 'primary', icon, busy, disabled, off, style }: {
   /* alarm: solid red with white text, for getting help (SOS, call 112)
      off: looks disabled (grey, muted text) until a form's required fields are filled, but still takes a tap, so the
@@ -27,11 +32,23 @@ export function Btn({ title, onPress, kind = 'primary', icon, busy, disabled, of
   const t = useTheme();
   const bg = off ? t.field : kind === 'primary' ? t.acc : kind === 'danger' ? t.badbg : kind === 'alarm' ? '#B91C1C' : kind === 'soft' ? t.acc2 : 'transparent';
   const fg = off ? t.mute : kind === 'primary' ? t.onAcc : kind === 'danger' ? t.bad : kind === 'alarm' ? '#FFFFFF' : kind === 'soft' ? t.accink : t.ink;
+  const ringC = off || kind === 'ghost' ? t.mute : kind === 'danger' ? t.bad : kind === 'alarm' ? '#B91C1C' : t.acc;
+  const still = useReducedMotion();
+  const sc = useSharedValue(1), ring = useSharedValue(0);
+  const squeeze = useAnimatedStyle(() => ({ transform: [{ scale: sc.value }] }));
+  const ringStyle = useAnimatedStyle(() => {
+    const g = ring.value * 9;
+    return { top: -g, bottom: -g, left: -g, right: -g, borderRadius: 14 + g, opacity: ring.value > 0 && ring.value < 1 ? 0.6 * (1 - ring.value) : 0 };
+  });
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled: !!(disabled || off) }} onPress={onPress} disabled={disabled || busy}
-      style={({ pressed }) => [s.btn, { backgroundColor: bg, borderColor: kind === 'ghost' && !off ? t.line : bg, opacity: disabled ? 0.5 : pressed ? 0.8 : 1 }, style]}>
+    <APressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ disabled: !!(disabled || off) }} disabled={disabled || busy}
+      onPressIn={() => { if (!still) sc.set(withTiming(0.95, { duration: 90 })); }}
+      onPressOut={() => { if (!still) sc.set(withSpring(1, { damping: 9, stiffness: 340, mass: 0.6 })); }}
+      onPress={() => { if (!still) ring.set(withSequence(withTiming(0, { duration: 0 }), withTiming(1, { duration: 520, easing: Easing.out(Easing.cubic) }))); onPress(); }}
+      style={[s.btn, { backgroundColor: bg, borderColor: kind === 'ghost' && !off ? t.line : bg, opacity: disabled ? 0.5 : 1 }, style, squeeze]}>
+      <Animated.View pointerEvents="none" style={[{ position: 'absolute', borderWidth: 2, borderColor: ringC }, ringStyle]} />
       {busy ? <ActivityIndicator color={fg} /> : (<>{icon ? <Feather name={icon} size={17} color={fg} /> : null}<Text style={[s.btnT, { color: fg }]}>{title}</Text></>)}
-    </Pressable>
+    </APressable>
   );
 }
 
@@ -313,13 +330,17 @@ export function SaveToggle({ on, onPress }: { on: boolean; onPress: () => void }
 
 /* A plan in a list: photo, category, title, when and where. here: where the phone is (Discover, with location on),
    so the distance shown is from you, the same one the distance filter and sort use; otherwise from your home area. */
-export function PlanRow({ m, a, onPress, right, here }: { m: Model; a: Plan; onPress: () => void; right?: ReactNode; here?: [number, number] | null }) {
+/* onPress(grown): the row grows into the plan page first (components/Grow.tsx), so the page opens without a slide */
+export function PlanRow({ m, a, onPress, right, here }: { m: Model; a: Plan; onPress: (grown: boolean) => void; right?: ReactNode; here?: [number, number] | null }) {
   const t = useTheme();
+  const grow = useGrow();
+  const row = useRef<ViewInstance>(null), thumb = useRef<ViewInstance>(null);
   const km = here ? kmBetween(here, geo(a)) : kmAway(m, a);
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={a.desc} onPress={onPress}
-      style={({ pressed }) => [s.row, { backgroundColor: t.card, borderColor: t.line, opacity: pressed ? 0.85 : 1 }]}>
-      <Image source={photoOf(a)} style={s.thumb} contentFit="cover" transition={150} />
+    <Pressable ref={row} accessibilityRole="button" accessibilityLabel={a.desc}
+      onPress={() => grow.open(row, thumb, { id: a.id, radius: R, photoRadius: 14, src: photoOf(a), bg: t.card }, onPress)}
+      style={({ pressed }) => [s.row, { backgroundColor: t.card, borderColor: t.line, opacity: grow.hidden === a.id ? 0 : pressed ? 0.85 : 1 }]}>
+      <View ref={thumb} collapsable={false}><Image source={photoOf(a)} style={s.thumb} contentFit="cover" transition={150} /></View>
       <View style={{ flex: 1, gap: 3 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><CatPill cat={a.cat} /><Text style={{ color: t.mute, fontSize: 12 }}>{spotTxt(a)}</Text></View>
         <Text style={{ color: t.ink, fontSize: 15, fontWeight: '700' }} numberOfLines={2}>{a.desc}</Text>

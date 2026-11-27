@@ -275,6 +275,13 @@ alter table verifications add constraint verifications_status_check
 
 alter table participants add column if not exists user_id uuid;
 alter table profiles add column if not exists usage_ok boolean not null default false;
+/* When the face check last passed. It lasts 6 months (_face_valid); _housekeeping then turns face off and asks for it
+   again. People verified before this column existed get the time of their latest passed check, or now if none is
+   recorded (simulated checks at sign-up), so nobody loses their check the moment this runs. */
+alter table profiles add column if not exists face_at timestamptz;
+update profiles p set face_at = coalesce((select max(v.created_at) from verifications v
+                                          where v.user_id = p.id and v.kind = 'face' and v.status in ('passed', 'approved')), now())
+where p.face and p.face_at is null;
 
 alter table profiles add column if not exists photo text;
 alter table profiles drop constraint if exists profiles_photo_check;
@@ -571,6 +578,14 @@ begin
       '{check}', 'close:' || a.id || ':' || n_rem);
   end loop;
 
+  /* A face check lasts 6 months (_face_valid). After that it's off until the person does it again (against the same
+     two photos), and they're told why. */
+  for nid in update profiles set face = false
+             where face and not is_sample and face_at < now() - _face_valid() returning id loop
+    perform _note(nid, 'update', 'Please redo your face check', 'Face check', 'warn', null,
+      'Face checks last 6 months, and yours has run out. Do it again to keep posting plans and asking to join.');
+  end loop;
+
   delete from auth.users x where x.created_at < now() - interval '7 days'
     and not exists (select 1 from profiles p where p.id = x.id)
     and not exists (select 1 from profile_presets pp where pp.email = lower(coalesce(x.email, '')));
@@ -603,6 +618,8 @@ create or replace function _may_prefill() returns boolean language sql stable as
 create or replace function _verify_max() returns int language sql immutable as $$ select 5 $$;
 
 create or replace function _verify_block() returns interval language sql immutable as $$ select interval '24 hours' $$;
+/* how long a passed face check counts for */
+create or replace function _face_valid() returns interval language sql immutable as $$ select interval '6 months' $$;
 
 /* The first time someone uses up their tries (since their last pass or review decision) the check waits this long,
    quietly: no team email, not in the review queue, and the app is never told how long (it says "a few hours").
@@ -664,7 +681,7 @@ begin
   insert into verifications (user_id, kind, status, provider, session_id, score, detail)
   values (p_user, p_kind, st, p_provider, p_session, p_score, coalesce(p_detail, '{}'));
   if p_passed then
-    if p_kind = 'face' then update profiles set face = true where id = p_user;
+    if p_kind = 'face' then update profiles set face = true, face_at = now() where id = p_user;
     else update profiles set kyc = true where id = p_user; end if;
   elsif (_verify_state(p_user) -> p_kind ->> 'attempts')::int >= _verify_max() then
     st := _verify_pause(p_user, p_kind, p_provider);   -- 'wait' (first time) or 'review'
@@ -797,12 +814,13 @@ begin
   if not found then
     select data into pre from profile_presets where email = em;
     if pre is not null then
-      insert into profiles (id, email, name, dob, gender, hood, lat, lng, job, bio, ints, avail, emo, face, kyc, onboarded, trust_met, trust_shows, hist)
+      insert into profiles (id, email, name, dob, gender, hood, lat, lng, job, bio, ints, avail, emo, face, kyc, onboarded, trust_met, trust_shows, hist, face_at)
       values (u, em, pre->>'name', (pre->>'dob')::date, pre->>'gender', pre->>'hood', (pre->>'lat')::float8, (pre->>'lng')::float8,
               coalesce(pre->>'job', ''), coalesce(pre->>'bio', ''),
               array(select jsonb_array_elements_text(coalesce(pre->'ints', '[]'))), array(select jsonb_array_elements_text(coalesce(pre->'avail', '[]'))),
               coalesce(pre->>'emo', ''), _simulated('face'), _simulated('kyc') and coalesce((pre->>'kyc')::boolean, true), _simulated('face'),
-              coalesce((pre->>'met')::int, 0), coalesce((pre->>'shows')::int, 0), coalesce(pre->'hist', '[]'))
+              coalesce((pre->>'met')::int, 0), coalesce((pre->>'shows')::int, 0), coalesce(pre->'hist', '[]'),
+              case when _simulated('face') then now() end)
       returning * into prof;
     else
       if _may_prefill() then
@@ -1014,6 +1032,7 @@ begin
   select * into me from profiles where id = u;
   if not found then raise exception 'Finish your profile first'; end if;
   if not me.face then raise exception 'Do the face check before posting'; end if;
+  if not me.is_sample and me.face_at < now() - _face_valid() then raise exception 'Your face check is over 6 months old. Please do it again before posting'; end if;
   if (select count(*) from activities where host = u and created_at > now() - interval '1 day') >= 10 then
     raise exception 'You can post up to 10 plans a day';
   end if;
@@ -1104,6 +1123,7 @@ begin
   select * into me from profiles where id = u;
   if not found then raise exception 'Finish your profile first'; end if;
   if not me.face then raise exception 'Do the face check before asking to join'; end if;
+  if not me.is_sample and me.face_at < now() - _face_valid() then raise exception 'Your face check is over 6 months old. Please do it again before asking to join'; end if;
   if (select count(*) from requests where user_id = u and created_at > now() - interval '1 day') >= 50 then
     raise exception 'You have sent a lot of requests today. Please try again tomorrow.';
   end if;
@@ -1208,14 +1228,14 @@ begin
 end $$;
 
 create or replace function _chat_closed(a activities) returns boolean language sql stable as $$
-  select _plan_end(a) < now() - interval '3 hours' $$;
+  select _plan_end(a) < now() - interval '1 hour' $$;
 
 create or replace function send_message(p_act uuid, p_body text, p_poll jsonb default null) returns void language plpgsql security definer set search_path = public as $$
 declare u uuid := _uid(); a activities; body text := trim(coalesce(p_body, '')); poll jsonb;
 begin
   select * into a from activities where id = p_act;
   if not found or not (a.host = u or u = any (_members(p_act))) then raise exception 'Only members can message this group'; end if;
-  if _chat_closed(a) then raise exception 'This chat closed 3 hours after the plan ended'; end if;
+  if _chat_closed(a) then raise exception 'This chat closed an hour after the plan ended'; end if;
   if p_poll is not null then
     if jsonb_typeof(p_poll -> 'opts') <> 'array' or jsonb_array_length(p_poll -> 'opts') not between 2 and 4
        or char_length(coalesce(p_poll ->> 'q', '')) not between 1 and 80 then raise exception 'Add a question and 2 to 4 options'; end if;
@@ -1238,7 +1258,7 @@ begin
   if not found or m.poll is null then raise exception 'That poll is gone'; end if;
   select * into a from activities where id = m.act;
   if not (a.host = u or u = any (_members(a.id))) then raise exception 'Only members can vote'; end if;
-  if _chat_closed(a) then raise exception 'This chat closed 3 hours after the plan ended'; end if;
+  if _chat_closed(a) then raise exception 'This chat closed an hour after the plan ended'; end if;
   if p_opt < 0 or p_opt >= jsonb_array_length(m.poll -> 'opts') then raise exception 'Pick an option'; end if;
   if exists (select 1 from poll_votes where msg = p_msg and user_id = u and opt = p_opt) then
     delete from poll_votes where msg = p_msg and user_id = u;
@@ -1475,7 +1495,7 @@ begin
   insert into verifications (user_id, kind, status, provider)
   values (p_user, p_kind, case when p_approve then 'approved' else 'rejected' end, 'reviewer');
   if p_approve then
-    if p_kind = 'face' then update profiles set face = true where id = p_user;
+    if p_kind = 'face' then update profiles set face = true, face_at = now() where id = p_user;
     else update profiles set kyc = true where id = p_user; end if;
   end if;
   perform _note(p_user, 'update', case when p_approve then 'Verification approved' else 'Please try the check again' end,

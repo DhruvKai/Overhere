@@ -177,8 +177,8 @@ function AboutYou() {
       {!agreedAtSignUp ? (
         <Check on={consent} onPress={() => { setErr(''); setConsent(v => !v); }}>
           <Text style={{ fontSize: 14, lineHeight: 20, color: t.ink2 }}>
-            I agree to the <TextLink inline title="Terms" onPress={() => WebBrowser.openBrowserAsync(SITE + '/terms.html')} /> and{' '}
-            <TextLink inline title="Privacy policy" onPress={() => WebBrowser.openBrowserAsync(SITE + '/privacy.html')} />
+            I agree to the <TextLink inline title="Terms" onPress={() => WebBrowser.openBrowserAsync(SITE + '/terms')} /> and{' '}
+            <TextLink inline title="Privacy policy" onPress={() => WebBrowser.openBrowserAsync(SITE + '/privacy')} />
           </Text>
         </Check>
       ) : null}

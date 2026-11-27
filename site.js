@@ -59,13 +59,13 @@ function nav(v){
 function admin(){
   return `<div class="panel" style="max-width:460px;margin:0 auto"><h2>Demo accounts</h2><p class="mute small">Sign in inside the app with one of these, using the password you gave it in Supabase (Authentication, Users).</p>
   <p class="small">Their email addresses are in SETUP-APP.md on your computer (not listed here, so nobody can target them).</p>
-  <p style="margin-top:16px"><a class="btn wide" href="app.html">Open the app</a></p>
+  <p style="margin-top:16px"><a class="btn wide" href="app">Open the app</a></p>
   <p class="small mute" style="margin:18px 0 0;text-align:center">Looking for results? <a href="addmin/" style="color:var(--acch);font-weight:600">Open the beta dashboard</a></p></div>`;
 }
 /* The same short form as the app's feedback sheet: a rating, one thing to change, and the consent box right above
    Send, which stays off until the rating and the required box are done. */
 function feedback(){
-  return localBanner()+`${fromApp?'<p class="small"><a href="app.html" style="color:var(--acch);font-weight:600">← Back to the app</a></p>':'<p class="small"><a href="./?home" style="color:var(--acch);font-weight:600">← Back</a></p>'}<div class="panel"><h2>Tell us what you think</h2><p class="mute small">Overhere is in beta and we're a small team. We read every message. It takes about 20 seconds.</p>
+  return localBanner()+`${fromApp?'<p class="small"><a href="app" style="color:var(--acch);font-weight:600">← Back to the app</a></p>':'<p class="small"><a href="./?home" style="color:var(--acch);font-weight:600">← Back</a></p>'}<div class="panel"><h2>Tell us what you think</h2><p class="mute small">Overhere is in beta and we're a small team. We read every message. It takes about 20 seconds.</p>
   <form id="f">
   <label id="stars_l">How's Overhere working for you?</label><div class="stars" id="stars" role="group" aria-labelledby="stars_l">${[1,2,3,4,5].map(n=>`<button type="button" data-n="${n}" aria-label="${n} stars" aria-pressed="false">★</button>`).join('')}</div>
   <label for="improve">What's one thing we should change? <span class="mute" style="font-weight:400">(optional)</span></label><textarea id="improve" maxlength="1000" placeholder="Something confusing, missing, or that you'd love to see"></textarea>
@@ -73,7 +73,7 @@ function feedback(){
   <div class="consent">
    <label style="margin-top:0"><input type="checkbox" id="c_quote"> <span>Optional: you may quote my feedback publicly, without my name or email.</span></label>
    <label><input type="checkbox" id="c_contact"> <span>Optional: you may contact me with follow-up questions.</span></label>
-   <label class="req"><input type="checkbox" id="c_store"> <span><b>Required:</b> I agree that my feedback may be stored and used to improve Overhere (<a href="privacy.html">Privacy policy</a>).</span></label>
+   <label class="req"><input type="checkbox" id="c_store"> <span><b>Required:</b> I agree that my feedback may be stored and used to improve Overhere (<a href="privacy">Privacy policy</a>).</span></label>
   </div>
   <div id="err"></div>
   <p style="margin-top:16px"><button class="btn" id="go" type="submit" disabled>Send feedback</button></p>
@@ -81,7 +81,7 @@ function feedback(){
 }
 function thanks(){
   return `<div class="panel" style="text-align:center"><div style="font-size:48px">🙏</div><h2>Thank you!</h2><p class="mute">Your response has been saved. You can keep trying the platform any time.</p>
-  <a class="btn" href="app.html">Back to the app</a></div>`;
+  <a class="btn" href="app">Back to the app</a></div>`;
 }
 
 /* ---------- feedback behavior ---------- */
@@ -276,21 +276,21 @@ $('#au_phone').addEventListener('blur',e=>{const n=phoneDigits(e.target.value);i
 $('#au_email').addEventListener('input',e=>{if(e.target.getAttribute('aria-invalid')==='true'&&!emailProblem(e.target.value.trim()))fieldErr('au_email','')});
 $('#au_f').onsubmit=e=>{
   e.preventDefault();
-  if(quick()){location.href='app.html?join';return}   // the questions and the phone number are in the app
+  if(quick()){location.href='app?join';return}   // the questions and the phone number are in the app
   const h={mode,via:via(),at:Date.now()};
   if(h.via==='phone'){const n=phoneDigits($('#au_phone').value);if(!fieldErr('au_phone',phoneProblem(n)))return;h.phone='+91'+n}
   else{const v=$('#au_email').value.trim();if(!fieldErr('au_email',emailProblem(v)))return;h.email=v}
   /* new accounts tick the 18+ box here, so the app can send the code straight away */
   if(mode==='up'){if(!fieldErr('au_ok',$('#au_ok').checked?'':"Tick the box to confirm you're 18 or older and agree to the Terms."))return;h.ok=true}
   try{sessionStorage.setItem(HANDOFF,JSON.stringify(h))}catch(err){}
-  location.href='app.html?'+(mode==='up'?'join':'signin');
+  location.href='app?'+(mode==='up'?'join':'signin');
 };
 authDraw();
 /* Signed in to the app in this browser: the page stays (it's the home page for everyone), but its sign-up buttons
    open the app instead. A saved login counts even if its short-lived token has expired, since the app renews it. */
 const signedIn=(()=>{try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^sb-.+-auth-token$/.test(k)&&JSON.parse(localStorage.getItem(k))?.refresh_token)return true}}catch(e){}return false})();
 if(signedIn){
-  document.querySelectorAll('a[href="#join"]').forEach(a=>{a.href='app.html';a.removeAttribute('data-mode');a.textContent='Go to site'});
+  document.querySelectorAll('a[href="#join"]').forEach(a=>{a.href='app';a.removeAttribute('data-mode');a.textContent='Go to site'});
   $('#au_box').classList.add('hide');$('#au_in').classList.remove('hide');
 }
 

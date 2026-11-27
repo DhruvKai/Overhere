@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Overhere host guidelines</title>
+<meta name="description" content="What hosts are responsible for, what they're entitled to, and how to run a good plan.">
+<meta name="theme-color" content="#3F7D4E">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<script src="head.js" data-manifest="manifest.webmanifest"></script>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+:root{--bg:#F5F0E6;--card:#FFFDF8;--ink:#1A1A1A;--mute:#6B6B6B;--line:#E7DFCF;--acc:#3F7D4E;--acch:#336842;--acc2:#E7F0E1;--accink:#2E6139;--shadow:0 2px 14px rgba(26,26,26,.06);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15130F;--card:#201D18;--ink:#F2EDE4;--mute:#A39C8E;--line:#34302A;--acc:#4A8F5B;--acch:#5AA06B;--acc2:#1F3325;--accink:#9FD3AA;--shadow:0 2px 14px rgba(0,0,0,.35);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15130F;--card:#201D18;--ink:#F2EDE4;--mute:#A39C8E;--line:#34302A;--acc:#4A8F5B;--acch:#5AA06B;--acc2:#1F3325;--accink:#9FD3AA;--shadow:0 2px 14px rgba(0,0,0,.35);color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;font:15.5px/1.6 "Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
+header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.bar{max-width:760px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:10px}
+.logo{font-weight:800;font-size:18px;letter-spacing:-.02em;flex:1;display:flex;align-items:center;gap:9px;color:inherit;text-decoration:none}
+.dots{display:flex;gap:2px}.dots i{width:11px;height:11px;border-radius:50%;background:#1A1A1A;box-shadow:inset 0 0 0 2.5px var(--acc)}
+.open{background:var(--acc2);color:var(--accink);font-weight:600;font-size:14px;padding:8px 16px;border-radius:99px;text-decoration:none;white-space:nowrap}
+.open:hover{background:var(--acc);color:#fff}
+main{max-width:760px;margin:0 auto;padding:28px 16px 60px}
+h1{font-size:32px;line-height:1.2;margin:0 0 6px;letter-spacing:-.02em;font-weight:600}
+h2{font-size:20px;line-height:1.3;margin:0 0 10px;font-weight:600;letter-spacing:-.01em}
+h3{font-size:16px;margin:18px 0 6px;font-weight:600}
+p{margin:0 0 12px}
+ul{margin:0 0 12px;padding-left:22px}li{margin:4px 0}
+a{color:var(--acch)}
+.mute{color:var(--mute)}
+.panel{background:var(--card);border-radius:22px;padding:24px;margin-bottom:16px;box-shadow:var(--shadow)}
+.short{background:var(--acc2);color:var(--ink)}
+.short h2{color:var(--accink)}
+.tw{overflow-x:auto;margin:0 0 12px}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{text-align:left;vertical-align:top;padding:10px 12px 10px 0;border-bottom:1px solid var(--line)}
+th{font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600;min-width:110px}
+.rule{border-left:3px solid var(--acc);padding:2px 0 2px 12px;margin:0 0 10px}
+.toc{columns:2;column-gap:24px;padding-left:20px;margin:0}
+.foot{text-align:center;font-size:13.5px}
+.co{font-size:14px}
+@media (max-width:560px){h1{font-size:26px}.panel{padding:20px 18px}.toc{columns:1}}
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <a class="logo" href="./"><span class="dots"><i></i><i></i></span>Overhere</a>
+  <a class="open" href="app">Go to site</a>
+</div></header>
+<main>
+  <h1>Host guidelines</h1>
+  <p class="mute">Last updated 27 November 2026</p>
+  <p>Hosts make Overhere work. You choose the plan, decide who joins and set the tone for the group. This guide sets out
+    what you're responsible for, what you're entitled to, and how to run a plan people want to come back to. It sits on
+    top of the <a href="guidelines">Community guidelines</a> and the <a href="terms">Terms</a>, which apply to
+    you too.</p>
+
+  <section class="panel short" aria-labelledby="s0">
+    <h2 id="s0">The short version</h2>
+    <ul>
+      <li>Only post plans you'll go to yourself, at a public venue, with honest details and costs.</li>
+      <li>Choose who joins on what their request says, not on who they are.</li>
+      <li>Keep the chat about the plan, and keep members' details private.</li>
+      <li>Record attendance honestly after the plan, and cancel in the app as early as you can if you have to.</li>
+    </ul>
+  </section>
+
+  <section class="panel" id="before">
+    <h2>1. Before the plan</h2>
+    <ul>
+      <li>Only post a plan you'll attend yourself: hosts are part of the plan. Posting needs your two photos and a passed
+        face check.</li>
+      <li>Describe the activity honestly: what it is, where it is and what it costs. The cost is shown as Equal Split, Go
+        Dutch or Host Pays, and plans don't take payment in the app.</li>
+      <li>Give the date, time and venue as accurately as you can. Choose a public place that suits the activity.</li>
+      <li>Set the group size you can host: 2 to 10 people, not counting you.</li>
+      <li>Set how long the plan lasts (1 to 24 hours). The group chat closes 1 hour after that.</li>
+      <li>Use the audience setting as it's meant to be used, such as women-only plans. Don't try to get around it.</li>
+      <li>Don't use the description to advertise, sell, recruit or promote anything else.</li>
+    </ul>
+  </section>
+
+  <section class="panel" id="requests">
+    <h2>2. Reviewing requests</h2>
+    <ul>
+      <li>Read the person's profile and their note before you decide.</li>
+      <li>Decide on the request, not on religion, caste, gender, sexual orientation, disability or nationality, except where
+        the plan's audience setting applies.</li>
+      <li>Don't accept someone whose request is really for a private meeting or something outside the plan.</li>
+      <li>Don't ask anyone for money, bank details or personal information.</li>
+    </ul>
+  </section>
+
+  <section class="panel" id="during">
+    <h2>3. During the plan</h2>
+    <ul>
+      <li>Be at the venue at the time you posted, or tell the group in the chat if you're running late.</li>
+      <li>Keep the group chat about the plan. Be kind and be clear.</li>
+      <li>Don't share a member's personal details, such as their phone number, address or social media, without their
+        permission.</li>
+      <li>Respect members who want to leave early or don't want photos taken.</li>
+      <li>Don't bring or share alcohol or drugs with people who haven't chosen to have them, and don't pressure anyone to drink.</li>
+    </ul>
+  </section>
+
+  <section class="panel" id="after">
+    <h2>4. Attendance and cancelling</h2>
+    <ul>
+      <li>After each plan, the app asks you to rate it and record who showed up and who didn't. Record it honestly: it
+        builds everyone's reliability record.</li>
+      <li>People who left the plan in the app beforehand aren't on your list, so they're never marked as no-shows.</li>
+      <li>If you can't go ahead with a plan, cancel it in the app as early as you can. Everyone who joined is told
+        straight away.</li>
+    </ul>
+  </section>
+
+  <section class="panel" id="rights">
+    <h2>5. Your rights as a host</h2>
+    <ul>
+      <li><b>Choose who joins.</b> You can accept or decline any request, and you don't have to give a reason.</li>
+      <li><b>Set the plan.</b> You choose the activity, venue, date, length and group size, within the limits above.</li>
+      <li><b>Remove a member</b> at any time, with one of these reasons: they asked to be removed; harassment or unwelcome
+        messages; unsafe or inappropriate conduct; repeatedly late; spam or promotion; or another reason you type in. They
+        are told.</li>
+      <li><b>Get help.</b> If a plan feels unsafe, use the SOS button in the group chat to call 112 or alert your trusted
+        contact. Any member can use it, not just the host. Report the person or message afterwards so our team can act.</li>
+      <li><b>Have your side heard.</b> If a member disputes the attendance you recorded, our team looks at both sides.</li>
+      <li><b>Appeal decisions</b> about your account, as set out in the <a href="guidelines#action">Community
+        guidelines</a>.</li>
+      <li><b>Be treated with respect.</b> Members who abuse or harass a host can be reported, and the same rules apply to
+        them as to anyone else.</li>
+    </ul>
+  </section>
+
+  <section class="panel" id="tips">
+    <h2>6. Tips for a good plan</h2>
+    <h3>Before you post</h3>
+    <ul>
+      <li>Say what the plan is like: the pace, the skill level and what to bring, so people know what they're asking to join.</li>
+      <li>Post a few days ahead. More time gives people a chance to ask, and gives you time to fill the group.</li>
+      <li>Choose a venue that fits your group and is easy to reach by public transport.</li>
+      <li>Be clear about cost, so nobody gets a surprise.</li>
+      <li>Read each note. A short, honest note usually tells you whether someone is right for the plan.</li>
+    </ul>
+    <h3>When the plan starts</h3>
+    <ul>
+      <li>Confirm in the group chat the day before: time, venue and what to bring.</li>
+      <li>Arrive early and greet people at the venue.</li>
+      <li>Start with a quick round of names and one thing each person is into.</li>
+    </ul>
+    <h3>During the plan</h3>
+    <ul>
+      <li>Check in with quieter members, and ask questions that bring everyone in.</li>
+      <li>Have a backup idea in case the plan doesn't land, such as a different spot or a topic to talk about.</li>
+      <li>Respect the venue: order something, keep the space tidy and thank the staff.</li>
+      <li>Take photos only with consent.</li>
+    </ul>
+    <h3>After the plan</h3>
+    <ul>
+      <li>Record attendance while it's fresh.</li>
+      <li>Thank everyone in the chat and say what you enjoyed. The chat stays open for an hour after the plan ends, which
+        is a good time to suggest doing it again. You can also set a plan to repeat every week, every 2 weeks or every month.</li>
+    </ul>
+  </section>
+  <p class="mute foot"><a href="terms">Terms</a> · <a href="guidelines">Community guidelines</a> · <a href="host-guidelines">Host guidelines</a> · <a href="privacy">Privacy policy</a> · <a href="copyright">Copyright</a> · <a href="credits">Credits</a></p>
+</main>
+</body>
+</html>

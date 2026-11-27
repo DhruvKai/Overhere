@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { planHref } from '@/components/Grow';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, Text, useWindowDimensions, View } from 'react-native';
@@ -91,7 +92,7 @@ export default function Person() {
         {!isVer(m, id) ? <Note>{p.name} hasn&apos;t done the face check yet. Meet in busy public places and share your plan with someone you trust.</Note> : null}
 
         <H size={17}>Upcoming activities{ups.length ? ` (${ups.length})` : ''}</H>
-        {ups.length ? ups.map(a => <PlanRow key={a.id} m={m} a={a} onPress={() => router.push({ pathname: '/plan/[id]', params: { id: a.id } })} />)
+        {ups.length ? ups.map(a => <PlanRow key={a.id} m={m} a={a} onPress={grown => router.push(planHref(a.id, grown))} />)
           : <P small mute>No upcoming activities near you right now.</P>}
 
         <H size={17}>Past activities</H>

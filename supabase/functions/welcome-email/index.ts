@@ -75,7 +75,7 @@ const HTML = `<!doctype html>
     <tr><td style="padding:24px 16px 0;font-family:${FONT};font-size:12px;line-height:1.6;color:#8A8270;text-align:center">
       You're getting this because you created an Overhere account.<br>
       This is a one-time account email, not a newsletter, so there's nothing to unsubscribe from.<br><br>
-      <a href="https://overhere.social/privacy.html" style="color:#6B6B6B">Privacy</a> &nbsp;&middot;&nbsp; <a href="https://overhere.social/terms.html" style="color:#6B6B6B">Terms</a> &nbsp;&middot;&nbsp; <a href="mailto:admin@overhere.social" style="color:#6B6B6B">admin@overhere.social</a><br>
+      <a href="https://overhere.social/privacy" style="color:#6B6B6B">Privacy</a> &nbsp;&middot;&nbsp; <a href="https://overhere.social/terms" style="color:#6B6B6B">Terms</a> &nbsp;&middot;&nbsp; <a href="mailto:admin@overhere.social" style="color:#6B6B6B">admin@overhere.social</a><br>
       &copy; Overhere &middot; Made in India
     </td></tr>
   </table>

@@ -86,10 +86,12 @@ export default function Settings() {
         </Card>
 
         <Card style={{ paddingVertical: 4 }}>
-          <Row icon="shield" label="Privacy policy" onPress={() => open('/privacy.html')} />
-          <Row icon="file-text" label="Terms and community guidelines" onPress={() => open('/terms.html')} />
-          <Row icon="alert-circle" label="Copyright" onPress={() => open('/copyright.html')} />
-          <Row icon="image" label="Photo credits" onPress={() => open('/credits.html')} />
+          <Row icon="shield" label="Privacy policy" onPress={() => open('/privacy')} />
+          <Row icon="file-text" label="Terms" onPress={() => open('/terms')} />
+          <Row icon="users" label="Community guidelines" onPress={() => open('/guidelines')} />
+          <Row icon="flag" label="Host guidelines" onPress={() => open('/host-guidelines')} />
+          <Row icon="alert-circle" label="Copyright" onPress={() => open('/copyright')} />
+          <Row icon="image" label="Photo credits" onPress={() => open('/credits')} />
         </Card>
 
         <Card style={{ paddingVertical: 4 }}>

@@ -10,7 +10,7 @@ import { TrustShareSheet } from '@/components/TrustShareSheet';
 import { Avatar, Badge, Btn, Empty, Field, Icon, P } from '@/components/ui';
 import { tipsOf } from '@/lib/feedback';
 import { api } from '@/lib/api';
-import { CHAT_OPEN_H, CHAT_REASONS, chatClosed, inChat, isPast, mutedOf, OPT_OUT, RM_REASONS, short, uname, type Msg } from '@/lib/model';
+import { CHAT_REASONS, chatClosed, inChat, isPast, mutedOf, OPT_OUT, RM_REASONS, short, uname, type Msg } from '@/lib/model';
 import { useModel, useStore } from '@/lib/store';
 import { tidyWhen } from '@/lib/when';
 import { useTheme } from '@/lib/theme';
@@ -142,7 +142,7 @@ export default function Chat() {
         {closed ? (
           <View accessibilityRole="text" style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 14, paddingBottom: insets.bottom + 14, backgroundColor: t.field, borderTopWidth: 1, borderColor: t.line }}>
             <Icon name="lock" size={15} color={t.mute} />
-            <Text style={{ color: t.mute, fontSize: 14, flex: 1 }}>This chat closed {CHAT_OPEN_H} hours after the plan ended. You can still read it.</Text>
+            <Text style={{ color: t.mute, fontSize: 14, flex: 1 }}>This chat closed an hour after the plan ended. You can still read it.</Text>
           </View>
         ) : (
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, padding: 10, paddingBottom: insets.bottom + 10, backgroundColor: t.card, borderTopWidth: 1, borderColor: t.line }}>

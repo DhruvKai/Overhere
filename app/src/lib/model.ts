@@ -142,12 +142,12 @@ export function toModel(st: AppStateResponse): Model {
 
 /* ---------- helpers (ported from web/app.js) ---------- */
 export const nowOf = (m: Model) => Date.now() + m.skew;
-/* A plan ends its duration after it starts; its group chat is read-only from 3 hours after that (_chat_closed in
+/* A plan ends its duration after it starts; its group chat is read-only from an hour after that (_chat_closed in
    web/schema-app.sql decides). */
 export const durTxt = (h: number) => `${h} hour${h === 1 ? '' : 's'}`;
 export const endOf = (a: Plan) => a.when + (a.dur || 2) * 3600e3;
 export const hasEnded = (m: Model, a: Plan) => endOf(a) <= nowOf(m);
-export const CHAT_OPEN_H = 3;
+export const CHAT_OPEN_H = 1;
 export const chatClosed = (m: Model, a: Plan) => endOf(a) + CHAT_OPEN_H * 3600e3 < nowOf(m);
 export const spots = (a: Plan) => a.cap - a.members.length;
 export const spotTxt = (a: Plan) => (spots(a) <= 0 ? 'Full' : `${spots(a)} spot${spots(a) === 1 ? '' : 's'} open`);

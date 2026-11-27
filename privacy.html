@@ -43,30 +43,36 @@ th{font-weight:600;white-space:nowrap}
 tr:last-child td{border-bottom:0}
 td:first-child{font-weight:600;min-width:110px}
 .toc{columns:2;column-gap:24px;padding-left:20px;margin:0}
+.foot{text-align:center;font-size:13.5px}
+.co{font-size:14px}
 @media (max-width:560px){h1{font-size:26px}.panel{padding:20px 18px}.toc{columns:1}}
 </style>
 </head>
 <body>
 <header><div class="bar">
-  <a class="logo" href="index.html"><span class="dots"><i></i><i></i></span>Overhere</a>
-  <a class="open" href="app.html">Go to site</a>
+  <a class="logo" href="./"><span class="dots"><i></i><i></i></span>Overhere</a>
+  <a class="open" href="app">Go to site</a>
 </div></header>
 <main>
   <h1>Privacy policy</h1>
-  <p class="mute">Last updated 25 November 2026</p>
+  <p class="mute">Last updated 27 November 2026</p>
   <p>Overhere is a beta app for doing things in your city with other people: you post a plan you're already making,
-    and choose who joins. This page explains what we collect, who can see it, who helps us run the app, and how to
-    have your data deleted.</p>
+    and choose who joins. It is run by Overhere Activity Platforms, a registered partnership firm. This page explains
+    what we collect, who can see it, who helps us run the app, and how to have your data deleted.</p>
 
   <section class="panel short" aria-labelledby="s0">
     <h2 id="s0">The short version</h2>
     <ul>
       <li>We collect what the app needs: your account, your profile, the plans you post or join, and your group chats.</li>
       <li>Other people see your name, age and profile. They never see your email, phone number, date of birth or trusted contact.</li>
-      <li>Photos are optional. If you add them (up to two), they're stored with your profile and shown where your profile is. Your live location is read only when you tap <i>Use my current location</i> or use SOS, and for your home area we keep only the area (to about 1 km), never your exact spot.</li>
-      <li>The face check is optional. If you take it, the video goes to Amazon to confirm you're a real person and that you
-        match your two photos. We keep the result and scores, never the video. If a scan fails, we keep one still frame
-        from it privately, only until our team has reviewed it or you pass.</li>
+      <li>You can sign up and browse without photos or a face check. To post a plan or ask to join one you need two photos
+        of you and a passed face check. Your photos are stored with your profile and shown where your profile is.</li>
+      <li>The face check video goes to Amazon to confirm you're a real person who matches your two photos. We keep the
+        result and scores, never the video. A passed check lasts 6 months. If a scan fails, we keep one still frame
+        privately, only until our team has reviewed it or you pass.</li>
+      <li>Your live location is read only when you tap <i>Use my current location</i> or use SOS. For your home area we keep
+        only the area (to about 1 km), never your exact spot.</li>
+      <li>Usage statistics are off unless you turn them on.</li>
       <li>We don't sell your data, show ads, or use advertising trackers.</li>
       <li>Delete your account and data at any time: <i>Profile</i> &rarr; <i>Delete my account</i> in the app, or email
         <a href="mailto:admin@overhere.social">admin@overhere.social</a>.</li>
@@ -83,7 +89,7 @@ td:first-child{font-weight:600;min-width:110px}
       <li><a href="#device">What stays on your device</a></li>
       <li><a href="#keep">How long we keep it</a></li>
       <li><a href="#rights">Your choices and rights</a></li>
-      <li><a href="#age">Age</a></li>
+      <li><a href="#age">Age and child safety</a></li>
       <li><a href="#security">Security</a></li>
       <li><a href="#changes">Changes and contact</a></li>
     </ol>
@@ -91,8 +97,9 @@ td:first-child{font-weight:600;min-width:110px}
 
   <section class="panel" id="who">
     <h2>1. Who we are</h2>
-    <p>Overhere is a beta run by Overhere Activity Platforms, a partnership firm, registered at Shakur Shop No. 5,
-      Itwara Bazar, Khandwa, Madhya Pradesh 450001. We decide what data the app collects and why. For questions about your data, to correct or delete it, or to make a complaint,
+    <p>Overhere is run by Overhere Activity Platforms, a registered partnership firm, of Shakur Shop No. 5, Itwara Bazar,
+      Khandwa, Madhya Pradesh 450001, India. We decide what data the app collects and why (under India's data protection
+      law, we are the "data fiduciary"). For questions about your data, to correct or delete it, or to make a complaint,
       email our Grievance Officer, Kajal Aswani, at <a href="mailto:admin@overhere.social">admin@overhere.social</a>.</p>
   </section>
 
@@ -102,12 +109,13 @@ td:first-child{font-weight:600;min-width:110px}
       <thead><tr><th scope="col">What</th><th scope="col">Details</th><th scope="col">Why</th></tr></thead>
       <tbody>
         <tr><td>Your account</td><td>Your email address and password, or your phone number and an email address (which you confirm with a code we email you). Passwords are stored scrambled (hashed), so nobody can read them, including us.</td><td>To sign you in and keep your account yours. Every account has a confirmed email, so we can reach you about your account and you can get back in if you lose your phone number. If you sign in with your phone, we also use your number to stop it being saved as your own trusted contact.</td></tr>
-        <tr><td>Your profile</td><td>First and last name, date of birth, gender, home area (its name and its centre, to about 1 km), job, a short bio, interests, when you're usually free, the emoji you pick, and your two photos if you add them (small, 400 by 400 pixel copies).</td><td>So hosts and members know who they're meeting, and to show you plans that fit you and are near your home area. Gender is used for plans limited to some groups, such as women-only plans.</td></tr>
-        <tr><td>Plans and chats</td><td>Plans you post, join requests and the notes you add, who is in which plan, group chat messages and polls, poll votes, and your notifications. A plan's chat closes 3 hours after the plan starts: you can still read it, but nobody can post in it.</td><td>To run the app, including the Chats list of every group you're in.</td></tr>
-        <tr><td>After a meetup</td><td>Your rating of the meetup and who showed up.</td><td>To show how many meetups people have been to and turned up for, which helps everyone decide who to meet.</td></tr>
+        <tr><td>Your profile</td><td>First and last name, date of birth, gender, home area (its name and its centre, to about 1 km), job and a short bio (both optional), interests, when you're usually free, and your two photos once you add them (small, 400 by 400 pixel copies).</td><td>So hosts and members know who they're meeting, and to show you plans that fit you and are near your home area. Gender is used for plans limited to some groups, such as women-only plans.</td></tr>
+        <tr><td>Plans and chats</td><td>Plans you post, join requests and the notes you add, who is in which plan, the reason you give when you leave a plan (or that a host gives when removing someone), group chat messages and polls, poll votes, and your notifications. A plan's chat closes 1 hour after the plan ends: you can still read it, but nobody can post in it.</td><td>To run the app, including the Chats list of every group you're in.</td></tr>
+        <tr><td>After a meetup</td><td>Your rating of the meetup, who showed up, and any reply you give if you're marked as a no-show.</td><td>To show how many meetups people have been to and turned up for, which helps everyone decide who to meet.</td></tr>
         <tr><td>Safety</td><td>Reports you make (including the reported message and your reason), people you block, your answers to "Arrived safely?" check-ins, and your trusted contact's name and phone number.</td><td>To keep people safe and act on reports.</td></tr>
         <tr><td>Settings</td><td>People you follow, plans you save for later, alerts for new plans, muted chats, and similar choices. Only you see which plans you've saved; the host isn't told.</td><td>So the app remembers your choices on every device.</td></tr>
-        <tr><td>Face check</td><td>If you take it: passed or failed, a confidence score, how closely your face matched each of your two photos, and the time. See <a href="#checks">section 4</a>.</td><td>To confirm people are real before they post plans or ask to join.</td></tr>
+        <tr><td>Face check</td><td>If you take it: passed or failed, a confidence score, how closely your face matched each of your two photos, and the time. A pass counts for 6 months. See <a href="#checks">section 4</a>.</td><td>To confirm people are real before they post plans or ask to join.</td></tr>
+        <tr><td>Phone notifications</td><td>Only in the phone app, if you allow notifications: a token that identifies your phone to the notification service, and which account it belongs to.</td><td>To send your notifications (join requests, approvals, chat messages, reminders) to your phone. Signing out or uninstalling stops them.</td></tr>
         <tr><td>Usage statistics</td><td><b>Only if you turn on <i>Share usage statistics</i></b> (at sign-up or in <i>Profile</i>; it's off unless you choose it): which features you use, for example "opened the app" or "sent a join request", with your account ID and a random ID for each visit. Never the content of your messages, what you type, or recordings of your screen. Turning it off deletes what was collected.</td><td>To learn what works in the beta and what to fix, with your consent.</td></tr>
         <tr><td>Feedback and beta sign-up</td><td>Anything you send through the feedback form on the website or in the app, including a few words you add after a quick question in the app, and which of those you used (linked to your account if you're signed in to the app in the same browser), and, if you filled in our earlier beta sign-up form, what you entered there (name, email, date of birth, gender, neighbourhood, interests, availability).</td><td>To improve the app. If you later create an account and confirm the same email, your earlier details can fill in your profile so you don't type them twice.</td></tr>
       </tbody>
@@ -125,7 +133,7 @@ td:first-child{font-weight:600;min-width:110px}
     <div class="tw"><table>
       <thead><tr><th scope="col">Who</th><th scope="col">What they see</th></tr></thead>
       <tbody>
-        <tr><td>People a plan is open to</td><td>Your name, age (not your date of birth), gender, job, bio, interests, emoji or photos, a "Verified" badge if you passed the face check, how many meetups you've been to and turned up for, and the plans you host.</td></tr>
+        <tr><td>People a plan is open to</td><td>Your name, age (not your date of birth), gender, job, bio, interests, your photos (or the first letter of your name if you haven't added any), a "Verified" badge while your face check is valid, how many meetups you've been to and turned up for, and the plans you host.</td></tr>
         <tr><td>A host you ask to join</td><td>All of the above, plus the note you add to your request.</td></tr>
         <tr><td>Members of a plan you're in</td><td>Who else is going, and the group chat. Everyone in a group sees its full history, including messages sent before they joined.</td></tr>
         <tr><td>Only you</td><td>Your email, phone number, date of birth, trusted contact, settings, and the details of your checks.</td></tr>
@@ -139,9 +147,9 @@ td:first-child{font-weight:600;min-width:110px}
 
   <section class="panel" id="checks">
     <h2>4. Face check (and a later ID check)</h2>
-    <p><b>The face check is optional.</b> You can skip it at sign-up and still browse plans. You need it to post a plan,
-      ask to join one, or see plans limited to some groups. We ask for your consent separately, at the moment you take
-      the check. It works like this:</p>
+    <p>You can skip the face check at sign-up and still browse plans. You need it to post a plan, ask to join one, or see
+      plans limited to some groups. We ask for your consent separately, at the moment you take the check. It works like
+      this:</p>
     <ul>
       <li>A few seconds of camera video go straight from your browser to Amazon Web Services (Amazon Rekognition Face
         Liveness), which confirms a real, live person is in front of the camera. The video doesn't pass through our
@@ -149,6 +157,8 @@ td:first-child{font-weight:600;min-width:110px}
       <li>You need two photos of your face first. Amazon compares one frame from the video with each of them, to
         check they all show the same person. If you change or remove a photo later, you take the check again.</li>
       <li>We keep the outcome: passed or failed, a confidence score, a similarity score for each photo, and the time.</li>
+      <li>A passed check lasts <b>6 months</b>. After that it stops counting, the app tells you, and you take it again
+        (against the same two photos) to keep posting and joining plans.</li>
       <li>If the scan passes, we don't keep the frame. <b>If it fails</b>, we keep that one still frame (not the video)
         in private storage that only our team can open, so a person can compare it with your two photos by eye. It is
         deleted as soon as our team has reviewed your check, or when you pass, or if you delete your account. We
@@ -182,6 +192,7 @@ td:first-child{font-weight:600;min-width:110px}
         <tr><td>Our email provider (Resend)</td><td>Sends sign-up confirmation emails, codes to confirm your email address, and password emails (these are the only emails we send you; we don't send marketing email). It also sends our own team short alerts when a face check is paused (with your name) or when phone sign-in for a number is paused after wrong codes (with that number).</td></tr>
         <tr><td>Name.com</td><td>Our domain provider. Emails you send to admin@overhere.social pass through its forwarding service to our inbox.</td></tr>
         <tr><td>Twilio</td><td>Only if you sign in with your phone number: sends your one-time code by SMS, and checks the code you type. It receives your phone number. After 5 wrong codes within an hour, we pause phone sign-in for that number for an hour; to count them we keep a one-way code made from the number, not the number itself.</td></tr>
+        <tr><td>Expo, and Google Firebase Cloud Messaging</td><td>Only in the phone app, if you allow notifications: deliver your notifications to your phone. They receive your phone's notification token and the text of each notification.</td></tr>
         <tr><td>Amazon Web Services</td><td>Only if you take the face check: runs it (see <a href="#checks">section 4</a>).</td></tr>
         <tr><td>Cloudflare Turnstile</td><td>When you sign in, sign up, ask for a code or reset a password: confirms that sign-ins and code requests come from a person, not a bot. It runs in your browser and sees your IP address and basic browser details. We don't use it for anything else.</td></tr>
       </tbody>
@@ -214,6 +225,8 @@ td:first-child{font-weight:600;min-width:110px}
       <li>Messages you sent in group chats stay, so the conversation still makes sense for the others, but they no longer show your name.</li>
       <li>Feedback you sent is kept without any link to you. On request, we also delete it and your earlier beta sign-up.</li>
     </ul>
+    <p>Sign-ups that are started but never finished are deleted after 7 days. Reports, and what we need to handle them
+      and any appeal, are kept only as long as that takes, or longer where the law requires it.</p>
   </section>
 
   <section class="panel" id="rights">
@@ -227,25 +240,37 @@ td:first-child{font-weight:600;min-width:110px}
       <li><b>Withdraw your consent:</b> turn off <i>Share usage statistics</i> in <i>Profile</i> at any time (this also deletes
         what was collected). For everything else, delete your account as above: the app can't work without your profile.</li>
       <li><b>Control who you deal with:</b> mute chats, leave plans, block people and report messages from inside the app.</li>
+      <li><b>Name someone to act for you:</b> you can nominate a person to use these rights for you if you die or can't
+        use them yourself. Email us with their name and how to reach them.</li>
       <li><b>Complaints:</b> email us first and we'll try to put it right. You also have the right to complain to the
         data protection authority where you live. In India, that is the Data Protection Board of India.</li>
     </ul>
+    <p>We reply to requests about your data within 15 days.</p>
   </section>
 
   <section class="panel" id="age">
-    <h2>9. Age</h2>
+    <h2>9. Age and child safety</h2>
     <p>Overhere is only for people aged 18 or over. You confirm you're 18 or older before an account is made, and you
       give your date of birth when you create your profile. If the date of birth shows you're under 18, we don't create
       the account, and we delete the sign-in details (phone number or email) straight away. Sign-ups that are started
       but never finished are deleted after 7 days. If you believe someone younger has an account, tell us and we'll
       delete it.</p>
+    <p>We have zero tolerance for anything that sexualises or endangers a child, or any attempt to contact or meet a
+      child through Overhere. You can report a person or message from inside the app, or email us. Reports about a child
+      are looked at first. When a report is confirmed, we remove the account permanently: its profile is removed and its
+      upcoming plans are cancelled. Where the law requires it, we report serious cases to the authorities and keep the
+      evidence needed for that.</p>
   </section>
 
   <section class="panel" id="security">
     <h2>10. Security</h2>
-    <p>Everything travels over encrypted connections (HTTPS). The database shows each person only what they are allowed
-      to see, and it checks every request itself; the app in your browser can't get around those checks. No system is
-      perfectly secure. If a breach affects your data, we will tell you and the authorities as the law requires.</p>
+    <p>Everything travels over encrypted connections (HTTPS), and Supabase, which stores our data, encrypts it at rest.
+      The database shows each person only what they are allowed to see, and it checks every request itself; the app
+      can't get around those checks. Face check frames kept after a failed scan are in private storage that only our
+      team can open.</p>
+    <p>No system is perfectly secure. If a breach affects your data, we will tell you without delay, saying what happened,
+      what information was involved, what we have done and what you can do, and we will report it to the Data Protection
+      Board of India as the law requires.</p>
   </section>
 
   <section class="panel" id="changes">
@@ -256,8 +281,10 @@ td:first-child{font-weight:600;min-width:110px}
     <p><b>Grievance Officer.</b> For complaints about your data, about content on Overhere, or about a decision we made,
       write to our Grievance Officer, Kajal Aswani, at <a href="mailto:admin@overhere.social">admin@overhere.social</a>. We acknowledge
       complaints within 24 hours and resolve them within 15 days.</p>
+    <p class="co mute">Overhere Activity Platforms (registered partnership firm), Shakur Shop No. 5, Itwara Bazar,
+      Khandwa, Madhya Pradesh 450001, India.</p>
   </section>
-  <p class="mute" style="text-align:center;font-size:13.5px"><a href="terms.html">Terms and community guidelines</a> · <a href="copyright.html">Copyright</a> · <a href="credits.html">Photo, icon and font credits</a></p>
+  <p class="mute foot"><a href="terms">Terms</a> · <a href="guidelines">Community guidelines</a> · <a href="host-guidelines">Host guidelines</a> · <a href="privacy">Privacy policy</a> · <a href="copyright">Copyright</a> · <a href="credits">Credits</a></p>
 </main>
 </body>
 </html>

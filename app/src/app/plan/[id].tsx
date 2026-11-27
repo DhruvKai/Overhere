@@ -1,9 +1,10 @@
 import { Image } from 'expo-image';
 import Feather from '@expo/vector-icons/Feather';
-import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useFocusEffect, useLocalSearchParams, usePreventRemove } from 'expo-router';
 import { setStatusBarStyle } from 'expo-status-bar';
 import { goBack } from '@/lib/nav';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { PLAN_PHOTO, useGrow } from '@/components/Grow';
 import { ActionSheetIOS, Alert, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { JoinSheet } from '@/components/JoinSheet';
@@ -23,7 +24,18 @@ import { useModel, useStore, useToggleSave } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 
 export default function PlanScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, grow: grown } = useLocalSearchParams<{ id: string; grow?: string }>();
+  /* opened from a card that grew into this page (components/Grow.tsx): say when it's drawn, and on the way out
+     (Back, the back button, closing after leaving or cancelling) shrink back into that card instead */
+  const grow = useGrow();
+  /* the way out is held until the stand-in covers the page; then prevention is switched off and it goes ahead */
+  const [gone, setGone] = useState(false);
+  const goOn = useRef<(() => void) | null>(null);
+  usePreventRemove(!!grown && !gone, ({ repeat }) => {
+    goOn.current = repeat;
+    if (!grow.close(id, () => setGone(true))) setGone(true);
+  });
+  useEffect(() => { if (gone && goOn.current) { const f = goOn.current; goOn.current = null; f(); } }, [gone]);
   const t = useTheme();
   const insets = useSafeAreaInsets();
   /* light status bar text over the photo while this screen is showing, the theme's again when it isn't */
@@ -91,7 +103,8 @@ export default function PlanScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       {/* with no button bar at the bottom, the page keeps clear of Android's navigation buttons itself */}
       <ScrollView contentContainerStyle={{ paddingBottom: 40 + (bar ? 0 : insets.bottom) }}>
-        <Image source={photoOf(a)} style={{ width: '100%', height: 280 + insets.top }} contentFit="cover" accessibilityIgnoresInvertColors />
+        <Image source={photoOf(a)} style={{ width: '100%', height: PLAN_PHOTO + insets.top }} contentFit="cover" accessibilityIgnoresInvertColors
+          onDisplay={grown ? () => grow.ready(id) : undefined} />
         <View style={{ marginTop: -24, borderTopLeftRadius: 24, borderTopRightRadius: 24, backgroundColor: t.bg, padding: 20, paddingTop: 20, gap: 14 }}>
           <View>
             <CatPill cat={a.cat} tint />

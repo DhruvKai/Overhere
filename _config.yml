@@ -1,3 +1,6 @@
 # GitHub Pages builds this site with Jekyll, which skips dot-folders. .well-known holds assetlinks.json, which lets
 # overhere.social invite links open the Android app (app/app.json intentFilters).
 include: [".well-known"]
+# app/ is the phone app's source code (Expo), not part of the website. Leaving it out also lets /app open app.html
+# (clean URLs): with an app folder published, /app would point at that folder instead.
+exclude: ["app"]

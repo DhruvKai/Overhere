@@ -164,8 +164,8 @@ export default function SignIn() {
     <View style={{ marginBottom: 12 }}>
       <Check on={agreed} onPress={() => { setAgreed(v => !v); setErr(''); }}>
         <Text style={{ fontSize: 14, lineHeight: 20, color: t.ink2 }}>
-          I&apos;m 18 or older and agree to the <TextLink inline title="Terms" onPress={() => open('/terms.html')} /> and{' '}
-          <TextLink inline title="Privacy policy" onPress={() => open('/privacy.html')} />
+          I&apos;m 18 or older and agree to the <TextLink inline title="Terms" onPress={() => open('/terms')} /> and{' '}
+          <TextLink inline title="Privacy policy" onPress={() => open('/privacy')} />
         </Text>
       </Check>
     </View>
@@ -283,8 +283,8 @@ export default function SignIn() {
           {/* new accounts agree with the box above; this is the reminder for everyone signing in */}
           {!signUp ? (
             <P mute small style={{ marginTop: 20, textAlign: 'center' }}>
-              By signing in you agree to the <TextLink inline title="Terms" onPress={() => open('/terms.html')} /> and{' '}
-              <TextLink inline title="Privacy policy" onPress={() => open('/privacy.html')} />.
+              By signing in you agree to the <TextLink inline title="Terms" onPress={() => open('/terms')} /> and{' '}
+              <TextLink inline title="Privacy policy" onPress={() => open('/privacy')} />.
             </P>
           ) : null}
         </FormScroll>

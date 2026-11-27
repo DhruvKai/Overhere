@@ -1,4 +1,5 @@
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
+import { planHref } from '@/components/Grow';
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
@@ -156,7 +157,7 @@ export default function Discover() {
           return (
             <View>
               {why ? <Text style={{ color: t.accink, fontSize: 12, fontWeight: '700', marginBottom: 4 }}>★ {why}</Text> : null}
-              <PlanRow m={m} a={item} here={here} onPress={() => router.push({ pathname: '/plan/[id]', params: { id: item.id } })}
+              <PlanRow m={m} a={item} here={here} onPress={grown => router.push(planHref(item.id, grown))}
                 right={(
                   <View style={{ alignItems: 'flex-end', gap: 8 }}>
                     {canSave(m, item) ? <SaveToggle on={saved(m).includes(item.id)} onPress={() => toggleSave(item.id)} /> : null}

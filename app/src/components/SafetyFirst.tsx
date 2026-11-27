@@ -28,7 +28,7 @@ export function SafetyFirst({ onOk, title = true }: { onOk: () => void; title?: 
       {tips.map(x => <P key={x} style={{ marginBottom: 6 }}>• {x}</P>)}
       <P small mute style={{ marginTop: 6, marginBottom: 16 }}>
         The face check confirms a real person made each account. It doesn&apos;t tell you what they&apos;re like. More in the{' '}
-        <Text onPress={() => WebBrowser.openBrowserAsync(SITE + '/terms.html#safety')} style={{ color: t.accink, fontWeight: '700' }}>Terms</Text>.
+        <Text onPress={() => WebBrowser.openBrowserAsync(SITE + '/terms#safety')} style={{ color: t.accink, fontWeight: '700' }}>Terms</Text>.
       </P>
       <Btn title="I understand, continue" onPress={ok} />
     </View>

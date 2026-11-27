@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GrowProvider } from '@/components/Grow';
 import { Intro, introPending } from '@/components/Intro';
 import { Btn, Empty, Icon, Loading } from '@/components/ui';
 import { api } from '@/lib/api';
@@ -113,7 +114,7 @@ function Gate() {
   return (
     /* Screens sit in the middle column on tablets (lib/layout.ts). The tabs keep the full width so the tab bar
        spans the screen (their screens get the column in (tabs)/_layout.tsx), and sign-in so the welcome photos do. */
-    <>
+    <GrowProvider>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg, ...column } }}>
         <Stack.Protected guard={!signedIn}>
           <Stack.Screen name="sign-in" options={{ contentStyle: { backgroundColor: t.bg } }} />
@@ -132,7 +133,11 @@ function Gate() {
         </Stack.Protected>
         <Stack.Protected guard={setUp && onboarded}>
           <Stack.Screen name="(tabs)" options={{ contentStyle: { backgroundColor: t.bg } }} />
-          <Stack.Screen name="plan/[id]" options={{ headerShown: true, title: '', headerBackTitle: 'Back', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink, headerShadowVisible: false }} />
+          {/* opened from a card that grows into it (components/Grow.tsx): no slide in or out, the card does the moving */}
+          <Stack.Screen name="plan/[id]" options={({ route }) => ({
+            headerShown: true, title: '', headerBackTitle: 'Back', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink, headerShadowVisible: false,
+            ...((route.params as { grow?: string } | undefined)?.grow ? { animation: 'none' as const, gestureEnabled: false } : {}),
+          })} />
           <Stack.Screen name="rate/[id]" options={{ presentation: 'modal', headerShown: true, title: 'How did it go?', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink }} />
           <Stack.Screen name="person/[id]" options={{ headerShown: true, title: '', headerBackTitle: 'Back', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink, headerShadowVisible: false }} />
           <Stack.Screen name="chat/[id]" options={{ headerShown: true, title: 'Group chat', headerBackTitle: 'Back', headerStyle: { backgroundColor: t.card }, headerTintColor: t.ink }} />
@@ -145,7 +150,7 @@ function Gate() {
         </Stack.Protected>
       </Stack>
       {intro ? <Intro go={splashGone} onDone={introDone} /> : null}
-    </>
+    </GrowProvider>
   );
 }
 

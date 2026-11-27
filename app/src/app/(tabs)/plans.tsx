@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { planHref } from '@/components/Grow';
 import { useState } from 'react';
 import { Pressable, RefreshControl, SectionList, View } from 'react-native';
 import { Header } from '@/components/Header';
@@ -53,12 +54,12 @@ export default function Plans() {
         ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
         renderItem={({ item, section }) => {
           if (section.title === 'Saved for later') {
-            return <PlanRow m={m} a={item} onPress={() => router.push({ pathname: '/plan/[id]', params: { id: item.id } })} right={<SaveToggle on onPress={() => toggleSave(item.id)} />} />;
+            return <PlanRow m={m} a={item} onPress={grown => router.push(planHref(item.id, grown))} right={<SaveToggle on onPress={() => toggleSave(item.id)} />} />;
           }
           const [txt, tone] = status(m, item);
           const unreadChat = inChat(m, item) && (m.chats[item.id]?.length ?? 0) > 0;
           return (
-            <PlanRow m={m} a={item} onPress={() => router.push({ pathname: '/plan/[id]', params: { id: item.id } })}
+            <PlanRow m={m} a={item} onPress={grown => router.push(planHref(item.id, grown))}
               right={(
                 <View style={{ alignItems: 'flex-end', gap: 10 }}>
                   {txt ? <Badge text={txt} tone={tone} /> : null}

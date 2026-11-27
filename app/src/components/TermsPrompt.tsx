@@ -29,7 +29,8 @@ export function TermsPrompt() {
           <H size={20}>Our terms and community guidelines</H>
           <P style={{ marginTop: 10, marginBottom: 10 }}>
             To keep using Overhere, please read and agree to our{' '}
-            <Text onPress={() => WebBrowser.openBrowserAsync(SITE + '/terms.html')} style={{ color: t.accink, fontWeight: '700' }}>Terms and community guidelines</Text>. In short:
+            <Text onPress={() => WebBrowser.openBrowserAsync(SITE + '/terms')} style={{ color: t.accink, fontWeight: '700' }}>Terms</Text> and{' '}
+            <Text onPress={() => WebBrowser.openBrowserAsync(SITE + '/guidelines')} style={{ color: t.accink, fontWeight: '700' }}>Community guidelines</Text>. In short:
           </P>
           {items.map(x => <P key={x} small style={{ marginBottom: 6 }}>• {x}</P>)}
           <View style={{ height: 12 }} />

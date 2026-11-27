@@ -2,8 +2,9 @@ import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { planHref, useGrow } from '@/components/Grow';
+import { useEffect, useRef, type RefObject } from 'react';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View, type ViewInstance } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -26,6 +27,10 @@ export function SwipeDeck({ m, cards, onSwipe, holdLeft }: {
   const y = useSharedValue(0);
   const top = cards[0];
   const limit = width * 0.3;
+  /* the top card grows into its plan page (components/Grow.tsx), from a tap on it or on Details */
+  const grow = useGrow();
+  const topCard = useRef<ViewInstance>(null);
+  const openTop = () => { if (top) grow.open(topCard, null, { id: top.id, radius: R + 4, src: photoOf(top), bg: '#1c1530' }, grown => router.push(planHref(top.id, grown))); };
 
   /* .set()/.get() rather than .value, so the React Compiler can see what changes */
   useEffect(() => { x.set(0); y.set(0); }, [top?.id, x, y]);
@@ -77,7 +82,7 @@ export function SwipeDeck({ m, cards, onSwipe, holdLeft }: {
         {next ? <Animated.View style={[StyleSheet.absoluteFill, nextStyle]}><DeckCard m={m} a={next} /></Animated.View> : null}
         <GestureDetector gesture={pan}>
           <Animated.View style={[StyleSheet.absoluteFill, topStyle]}>
-            <DeckCard m={m} a={top} onOpen={() => router.push({ pathname: '/plan/[id]', params: { id: top.id } })} />
+            <DeckCard m={m} a={top} onOpen={openTop} cardRef={topCard} gone={grow.hidden === top.id} />
             <Animated.View style={[s.stamp, { left: 20, borderColor: t.ok }, likeStyle]}><Text style={[s.stampT, { color: t.ok }]}>JOIN</Text></Animated.View>
             <Animated.View style={[s.stamp, { right: 20, borderColor: t.bad }, skipStyle]}><Text style={[s.stampT, { color: t.bad }]}>SKIP</Text></Animated.View>
           </Animated.View>
@@ -87,7 +92,7 @@ export function SwipeDeck({ m, cards, onSwipe, holdLeft }: {
         <Pressable accessibilityRole="button" accessibilityLabel="Skip" onPress={() => tap('left')} style={[s.round, { backgroundColor: t.card, borderColor: t.line }]}>
           <Icon name="x" size={26} color={t.bad} />
         </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Details" onPress={() => router.push({ pathname: '/plan/[id]', params: { id: top.id } })} style={[s.round, s.small, { backgroundColor: t.card, borderColor: t.line }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Details" onPress={openTop} style={[s.round, s.small, { backgroundColor: t.card, borderColor: t.line }]}>
           <Icon name="info" size={20} color={t.ink2} />
         </Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel="Request to join" onPress={() => tap('right')} style={[s.round, { backgroundColor: t.acc, borderColor: t.acc }]}>
@@ -98,11 +103,11 @@ export function SwipeDeck({ m, cards, onSwipe, holdLeft }: {
   );
 }
 
-function DeckCard({ m, a, onOpen }: { m: Model; a: Plan; onOpen?: () => void }) {
+function DeckCard({ m, a, onOpen, cardRef, gone }: { m: Model; a: Plan; onOpen?: () => void; cardRef?: RefObject<ViewInstance | null>; gone?: boolean }) {
   const km = kmAway(m, a);
   const host = m.people[a.host];
   return (
-    <Pressable onPress={onOpen} accessibilityRole="button" accessibilityLabel={`${a.desc}, ${whenStr(a.when)}`} style={s.card}>
+    <Pressable ref={cardRef} onPress={onOpen} accessibilityRole="button" accessibilityLabel={`${a.desc}, ${whenStr(a.when)}`} style={[s.card, gone ? { opacity: 0 } : null]}>
       <Image source={photoOf(a)} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
       <LinearGradient colors={['transparent', 'rgba(0,0,0,.25)', 'rgba(0,0,0,.85)']} locations={[0.35, 0.55, 1]} style={StyleSheet.absoluteFill} />
       {onOpen && a.host !== m.me ? (
