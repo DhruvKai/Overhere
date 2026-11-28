@@ -12,7 +12,8 @@ import { Icon, Note, P } from './ui';
 /* Where you're browsing, under the title on Swipe and Discover (Header): near your home area, or a city with plans
    (the website's whereBar). Tap to change. The choice is saved in profiles.state.city and the server sends that
    city's plans. */
-export function WhereButton() {
+/* chip (Swipe's slim header): a small outlined pill with just the place's name */
+export function WhereButton({ chip }: { chip?: boolean }) {
   const t = useTheme();
   const m = useModel();
   const [open, setOpen] = useState(false);
@@ -20,9 +21,11 @@ export function WhereButton() {
   return (
     <>
       <Pressable accessibilityRole="button" accessibilityLabel={`Showing plans ${c ? 'in ' + viewName(m) : 'near ' + homeName(m)}. Change city`} onPress={() => setOpen(true)}
-        hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', minHeight: 28 }}>
+        hitSlop={8} style={chip
+          ? { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1, maxWidth: 190, minHeight: 34, paddingHorizontal: 11, borderRadius: 99, backgroundColor: t.card, borderWidth: 1, borderColor: t.line }
+          : { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', minHeight: 28 }}>
         <Icon name="map-pin" size={13} color={t.accink} />
-        <Text style={{ color: t.ink2, fontWeight: '600', fontSize: 14 }} numberOfLines={1}>{c ? viewName(m) : 'Near ' + homeName(m)}</Text>
+        <Text style={{ color: t.ink2, fontWeight: chip ? '700' : '600', fontSize: chip ? 13 : 14, flexShrink: 1 }} numberOfLines={1}>{c ? viewName(m) : chip ? homeName(m) : 'Near ' + homeName(m)}</Text>
         <Icon name="chevron-down" size={14} color={t.mute} />
       </Pressable>
       {open ? <CitySheet onClose={() => setOpen(false)} /> : null}

@@ -2,15 +2,15 @@ import { useLocalSearchParams } from 'expo-router';
 import { goBack } from '@/lib/nav';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Pressable, Text, View, type ScrollViewInstance, type TextInputInstance } from 'react-native';
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withSequence, withTiming } from 'react-native-reanimated';
+import Animated, { FadeIn, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withSequence, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PhotoPair } from '@/components/PhotoPair';
 import { PlacePicker } from '@/components/PlacePicker';
-import { Avatar, BottomBar, Btn, Chip, Field, Icon, Label, P, Wrap } from '@/components/ui';
+import { BottomBar, Btn, Chip, Field, Icon, Label, P, Wrap } from '@/components/ui';
 import { api } from '@/lib/api';
 import { setPhoto } from '@/lib/avatar';
 import { isoDob, maskDob, showDob } from '@/lib/dob';
-import { defEmo, EMOJIS, GENDERS, homeLL, MIN_INTS, NEAR_KM, TIMES, trustedOf } from '@/lib/model';
+import { GENDERS, homeLL, MIN_INTS, NEAR_KM, TIMES, trustedOf } from '@/lib/model';
 import { InterestPicker } from '@/components/InterestPicker';
 import type { Gender } from '@/lib/types';
 import { useModel, useStore } from '@/lib/store';
@@ -19,7 +19,7 @@ import { FormScroll, KeyboardSafe } from '@/components/KeyboardSafe';
 
 const toggle = (l: string[], v: string) => (l.includes(v) ? l.filter(x => x !== v) : [...l, v]);
 
-/* Name, avatar (an emoji, or two photos of your face that the face check is matched against), date of birth, gender,
+/* Name, two photos of your face (the face check is matched against them), date of birth, gender,
    home area, job, bio and likes, as on the website. Date of birth and gender are fixed once given at sign-up. */
 export default function EditProfile() {
   const t = useTheme();
@@ -30,7 +30,6 @@ export default function EditProfile() {
   const p = m.profile!;
   const [name, setName] = useState(p.name);
   const [last, setLast] = useState(p.last_name ?? '');
-  const [emo, setEmo] = useState(p.emo || defEmo(p.gender));
   const [dob, setDob] = useState(showDob(p.dob));
   const [gender, setGender] = useState<Gender>(p.gender);
   const [hood, setHood] = useState(p.hood);
@@ -44,8 +43,6 @@ export default function EditProfile() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [photoBusy, setPhotoBusy] = useState(false);
-  const [emoPicked, setEmoPicked] = useState(false);   // picking an emoji while you have photos removes them on Save
-  const hasPhoto = !!p.photo && !emoPicked;
 
   /* Profile's "Finish your profile" opens this with ?focus=job|bio|photos: scroll that part into view (Spot outlines
      it for a moment) and, for a text field, put the cursor in it. Only once, on the first layout. */
@@ -67,7 +64,7 @@ export default function EditProfile() {
     setPhotoBusy(true);
     const reset = await run(() => setPhoto(null));
     setPhotoBusy(false);
-    if (reset !== undefined) toast(reset === true ? 'Photos removed. Add two photos and redo the face check to be verified again.' : 'Photos removed. Showing your emoji.');
+    if (reset !== undefined) toast(reset === true ? 'Photos removed. Add two photos and redo the face check to be verified again.' : 'Photos removed.');
   }
 
   async function save() {
@@ -87,11 +84,10 @@ export default function EditProfile() {
     setBusy(true);
     const ok = await run(async () => {
       await api.saveProfile({
-        name: name.trim(), last_name: last.trim(), emo, job: job.trim(), bio: bio.trim(), ints, avail, hood, lat: ll[0], lng: ll[1],
+        name: name.trim(), last_name: last.trim(), job: job.trim(), bio: bio.trim(), ints, avail, hood, lat: ll[0], lng: ll[1],
         /* fixed once given at sign-up (the database refuses a change), so only sent by an older account that never gave one */
         ...(p.dob ? {} : { dob: iso }), ...(p.gender ? {} : { gender }),
       });
-      if (emoPicked && p.photo) await setPhoto(null);
     });
     setBusy(false);
     if (ok !== undefined) { toast('Saved'); goBack(); }
@@ -103,28 +99,11 @@ export default function EditProfile() {
         <Spot on={focus === 'photos'} onY={jumpTo}>
           <Label>Your photos</Label>
           <P mute small style={{ marginBottom: 10 }}>
-            Photo 1 is your profile picture. The face check needs both and matches your live face against each.{p.face && p.photo ? ' A new photo means doing the face check again.' : ''}
+            Photo 1 is your profile picture. The face check needs both and matches your live face against each.
           </P>
-          <PhotoPair onSaved={() => setEmoPicked(false)} />
+          <PhotoPair />
         </Spot>
-        {p.photo && !emoPicked ? <Btn title="Remove photos" icon="trash-2" kind="ghost" onPress={removePhotos} busy={photoBusy} style={{ marginBottom: 16 }} /> : null}
-        <Label>Or an emoji</Label>
-        <View style={{ flexDirection: 'row', gap: 14, alignItems: 'center', marginBottom: 12 }}>
-          {hasPhoto ? <Avatar m={m} id={m.me} size={56} /> : (
-            <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: t.field, alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontSize: 30 }}>{emo}</Text></View>
-          )}
-          <P mute small style={{ flex: 1 }}>
-            {p.photo ? `Picking an emoji removes your photos when you save${p.face ? ', and means redoing your face check' : ''}.` : 'Other people see this next to your name until you add photos.'}
-          </P>
-        </View>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
-          {EMOJIS.map(e => (
-            <Pressable key={e} accessibilityRole="button" accessibilityState={{ selected: !hasPhoto && emo === e }} accessibilityLabel={`Avatar ${e}`} onPress={() => { setEmo(e); if (p.photo) setEmoPicked(true); }}
-              style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: !hasPhoto && emo === e ? t.acc : 'transparent', backgroundColor: t.field }}>
-              <Text style={{ fontSize: 22 }}>{e}</Text>
-            </Pressable>
-          ))}
-        </View>
+        {p.photo ? <Btn title="Remove photos" icon="trash-2" kind="ghost" onPress={removePhotos} busy={photoBusy} style={{ marginBottom: 16 }} /> : null}
         <Field label="First name" value={name} onChangeText={setName} maxLength={40} autoComplete="given-name" textContentType="givenName" />
         <Field label="Last name" value={last} onChangeText={setLast} maxLength={40} autoComplete="family-name" textContentType="familyName" />
         {/* Once given, date of birth and gender are fixed: shown as locked rows (no field background, a lock, muted text)
@@ -151,8 +130,7 @@ export default function EditProfile() {
         <Spot on={focus === 'bio'} onY={jumpTo}>
           <Field ref={bioBox} label="About you" value={bio} onChangeText={setBio} maxLength={300} multiline hint={`${bio.length}/300`} />
         </Spot>
-        <Label>What you like doing</Label>
-        <InterestPicker value={ints} onChange={setInts} />
+        <Interests value={ints} onChange={setInts} />
         <Label>When you&apos;re usually free</Label>
         <Wrap>{TIMES.map(v => <Chip key={v} label={v} on={avail.includes(v)} onPress={() => setAvail(l => toggle(l, v))} />)}</Wrap>
         <Label>Trusted contact</Label>
@@ -165,6 +143,42 @@ export default function EditProfile() {
         <Btn title="Save" onPress={save} busy={busy} />
       </BottomBar>
     </KeyboardSafe>
+  );
+}
+
+/* Interests, folded away as one row (the list is long): what you picked so far as a few chips and how many more, and a
+   chevron. Tapping it opens the full picker under it (the Interests <details> in Edit profile in web/app.js). */
+function Interests({ value, onChange }: { value: string[]; onChange: (next: string[]) => void }) {
+  const t = useTheme();
+  const still = useReducedMotion();
+  const [open, setOpen] = useState(false);
+  const turn = useSharedValue(0);
+  useEffect(() => { turn.set(withTiming(open ? 1 : 0, { duration: still ? 0 : 200 })); }, [open, still, turn]);
+  const chevron = useAnimatedStyle(() => ({ transform: [{ rotate: `${turn.get() * 180}deg` }] }));
+  const K = 4;
+  return (
+    <View style={{ marginBottom: 16, borderWidth: 1, borderColor: t.line, borderRadius: 16, backgroundColor: t.chip, overflow: 'hidden' }}>
+      <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`Interests, ${value.length} picked`} onPress={() => setOpen(o => !o)}
+        style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14, backgroundColor: pressed ? t.field : 'transparent' })}>
+        <View style={{ flex: 1, gap: 8 }}>
+          <Text style={{ color: t.ink, fontWeight: '700', fontSize: 14 }}>Interests</Text>
+          {value.length ? (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+              {value.slice(0, K).map(x => (
+                <Text key={x} style={{ backgroundColor: t.acc2, color: t.accink, fontSize: 12.5, fontWeight: '600', paddingHorizontal: 11, paddingVertical: 4, borderRadius: 99, overflow: 'hidden' }}>{x}</Text>
+              ))}
+              {value.length > K ? <Text style={{ color: t.mute, fontSize: 12.5, fontWeight: '600', paddingLeft: 2 }}>+{value.length - K} more</Text> : null}
+            </View>
+          ) : <Text style={{ color: t.mute, fontSize: 13 }}>Tap to pick at least {MIN_INTS}</Text>}
+        </View>
+        <Animated.View style={chevron}><Icon name="chevron-down" size={18} color={t.mute} /></Animated.View>
+      </Pressable>
+      {open ? (
+        <Animated.View entering={still ? undefined : FadeIn.duration(180)} style={{ paddingHorizontal: 16, paddingBottom: 4, borderTopWidth: 1, borderTopColor: t.line, paddingTop: 12 }}>
+          <InterestPicker value={value} onChange={onChange} />
+        </Animated.View>
+      ) : null}
+    </View>
   );
 }
 

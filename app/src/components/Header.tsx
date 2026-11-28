@@ -9,9 +9,17 @@ import { Icon, Logo, type IconName } from './ui';
 import { WhereButton } from './Where';
 
 /* Tab header: the title, then where you're browsing (tap to change city; Swipe and Discover) or nothing, and Updates
-   or something else on the right. (Post is in the middle of the tab bar.) */
-export function Header({ title, where, right, logo }: { title: string; where?: boolean; right?: ReactNode; logo?: boolean }) {
+   or something else on the right. (Post is in the middle of the tab bar.)
+   slim (Swipe): one short line, a smaller logo, the city as a chip and the bell, so the card gets the room. */
+export function Header({ title, where, right, logo, slim }: { title: string; where?: boolean; right?: ReactNode; logo?: boolean; slim?: boolean }) {
   const t = useTheme(), insets = useSafeAreaInsets();
+  if (slim) return (
+    <View style={{ paddingTop: insets.top + 4, paddingHorizontal: 16, paddingBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <View style={{ flex: 1 }}>{logo ? <Logo size={20} /> : <Text accessibilityRole="header" style={{ fontSize: 20, fontWeight: '800', color: t.ink }}>{title}</Text>}</View>
+      {where ? <WhereButton chip /> : null}
+      {right ?? <UpdatesButton size={38} />}
+    </View>
+  );
   return (
     <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       <View style={{ flex: 1 }}>
@@ -36,13 +44,13 @@ export function HeaderIcon({ icon, label, onPress }: { icon: IconName; label: st
 
 /* Updates at the top right: a round bell button (like the gear on Profile) with the number of new ones since you last
    opened Updates. */
-export function UpdatesButton() {
+export function UpdatesButton({ size = 44 }: { size?: number }) {
   const t = useTheme();
   const model = useStore().model;
   const unread = model ? bellCount(model) : 0;
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={unread ? `Updates, ${unread} new` : 'Updates'} onPress={() => router.push('/updates')} hitSlop={6}
-      style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, backgroundColor: t.card, borderWidth: 1, borderColor: t.line, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.8 : 1 })}>
+    <Pressable accessibilityRole="button" accessibilityLabel={unread ? `Updates, ${unread} new` : 'Updates'} onPress={() => router.push('/updates')} hitSlop={6 + (44 - size) / 2}
+      style={({ pressed }) => ({ width: size, height: size, borderRadius: size / 2, backgroundColor: t.card, borderWidth: 1, borderColor: t.line, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.8 : 1 })}>
       <Icon name="bell" size={20} />
       {/* soft: a pale badge with the number in the brand green, rather than a bright red one */}
       {unread ? (

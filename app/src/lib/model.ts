@@ -5,7 +5,7 @@ import type { AppStateResponse, Cat, Cost, Gender, RawNote, RawProfile, RawReq }
 /* The app's view of app_state(), and the same rules web/app.js uses to decide what goes in Swipe and Discover. */
 
 export type Person = {
-  id: string; name: string; gender: Gender | ''; age: number | ''; job: string; bio: string; emo: string; photo: string; photo2: string;
+  id: string; name: string; gender: Gender | ''; age: number | ''; job: string; bio: string; photo: string; photo2: string;
   verified: boolean; kyc: boolean; sample: boolean; ints: string[]; avail: string[]; met: number; shows: number; noshows: number;
   hist: [string, Cat, number, string][];   // plans from before the app: title, category, days ago, Hosted/Joined
 };
@@ -92,8 +92,6 @@ export const REPEAT = { weekly: 'Every week', biweekly: 'Every 2 weeks', monthly
 export const REPORT_REASONS = ['Made me feel unsafe', 'Inappropriate messages or behaviour', 'Fake profile or scam', "Didn't show up", 'Copyright infringement', 'Something else'];
 export const CHAT_REASONS = ['Harassment or threats', 'Sexual or unwanted messages', 'Spam or scam', 'Hate speech', 'Copyright infringement', 'Something else'];
 export const NEAR_KM = 50;
-export const EMOJIS = ['👩🏻', '👩🏽', '👩🏿', '👨🏻', '👨🏽', '👨🏿', '🧑🏼', '🧑🏾', '👩🏽‍🦱', '👨🏻‍🦱', '👩🏾‍🦳', '🧔🏽', '👱🏻‍♀️', '👳🏽‍♂️', '🧕🏽', '👩🏽‍💻', '👨🏾‍💻', '👩🏻‍🎨', '👨🏽‍🍳', '🧑🏽‍🎤', '😀', '😎', '🤓', '🥳', '🦊', '🐼', '🐯', '🦉', '🌻', '🎧', '🎬', '☕', '🎸'];
-export const defEmo = (g: string) => (g === 'Woman' ? '👩' : g === 'Man' ? '👨' : '🧑');
 const isUuid = (x: unknown): x is string => typeof x === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(x);
 
 export function toModel(st: AppStateResponse): Model {
@@ -101,7 +99,7 @@ export function toModel(st: AppStateResponse): Model {
   const people: Record<string, Person> = {};
   (st.people ?? []).forEach(x => {
     people[x.id] = {
-      id: x.id, name: x.name, gender: x.gender, age: x.age, job: x.job || '', bio: x.bio || '', emo: x.emo || defEmo(x.gender), photo: avatarUrl(x.photo), photo2: avatarUrl(x.photo2),
+      id: x.id, name: x.name, gender: x.gender, age: x.age, job: x.job || '', bio: x.bio || '', photo: avatarUrl(x.photo), photo2: avatarUrl(x.photo2),
       verified: !!x.face, kyc: !!x.kyc, sample: !!x.sample, ints: x.ints || [], avail: x.avail || [], met: x.met || 0, shows: x.shows || 0,
       noshows: x.noshows ?? Math.max(0, (x.met || 0) - (x.shows || 0)),
       hist: Array.isArray(x.hist) ? x.hist as Person['hist'] : [],

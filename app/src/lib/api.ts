@@ -86,7 +86,7 @@ export const api = {
   welcome: (fn: string) => edge<{ sent: boolean; why?: string }>(fn, {}),
   faceResult: (sessionId: string) => edge<{ status: 'passed' | 'failed' | 'review' | 'wait'; reason: string | null; message: string | null }>('face-result', { sessionId }),
   /* photo 1 (the profile picture) or 2: a path in the avatars bucket, or null to clear it; clearing photo 1 clears both
-     and shows the emoji (set_photo in web/schema-app.sql) */
+     and shows the first letter of the name (set_photo in web/schema-app.sql) */
   setPhoto: (path: string | null, slot: 1 | 2 = 1) =>
     call<{ old: string | null; old2: string | null; face_reset: boolean }>('set_photo', { p_path: path, p_slot: slot }),
   deleteMyAccount: () => call('delete_my_account'),

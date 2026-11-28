@@ -34,10 +34,11 @@ export default function Swipe() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Header title="This week" logo where />
+      {/* one short line (logo, city, bell) so the card gets the room */}
+      <Header title="This week" logo where slim />
       <View style={{ paddingHorizontal: 16 }}><CityNote /><LockedNote /><FeedbackCard /></View>
       {cards.length ? (
-        <View style={{ flex: 1, paddingHorizontal: 16 }}>
+        <View style={{ flex: 1, paddingHorizontal: 14, paddingBottom: 12 }}>
           <SwipeDeck m={m} cards={cards} onSwipe={onSwipe} holdLeft={!sure} />
         </View>
       ) : (

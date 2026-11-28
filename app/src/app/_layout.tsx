@@ -133,10 +133,11 @@ function Gate() {
         </Stack.Protected>
         <Stack.Protected guard={setUp && onboarded}>
           <Stack.Screen name="(tabs)" options={{ contentStyle: { backgroundColor: t.bg } }} />
-          {/* opened from a card that grows into it (components/Grow.tsx): no slide in or out, the card does the moving */}
+          {/* opened from a card it grows out of (components/Grow.tsx): see-through over the list, which stays drawn
+              under it, and no slide in or out: the page does the moving */}
           <Stack.Screen name="plan/[id]" options={({ route }) => ({
             headerShown: true, title: '', headerBackTitle: 'Back', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink, headerShadowVisible: false,
-            ...((route.params as { grow?: string } | undefined)?.grow ? { animation: 'none' as const, gestureEnabled: false } : {}),
+            ...((route.params as { grow?: string } | undefined)?.grow ? { presentation: 'transparentModal' as const, animation: 'none' as const, gestureEnabled: false, contentStyle: { backgroundColor: 'transparent' } } : {}),
           })} />
           <Stack.Screen name="rate/[id]" options={{ presentation: 'modal', headerShown: true, title: 'How did it go?', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink }} />
           <Stack.Screen name="person/[id]" options={{ headerShown: true, title: '', headerBackTitle: 'Back', headerStyle: { backgroundColor: t.bg }, headerTintColor: t.ink, headerShadowVisible: false }} />

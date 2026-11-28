@@ -55,5 +55,11 @@
     "build:android": "node scripts/build-android.mjs",
     "sync:mapkit": "node scripts/sync-mapkit.mjs"
   },
-  "private": true
+  "private": true,
+  "reanimated": {
+    "staticFeatureFlags": {
+      "ANDROID_SYNCHRONOUSLY_UPDATE_UI_PROPS": true,
+      "IOS_SYNCHRONOUSLY_UPDATE_UI_PROPS": true
+    }
+  }
 }

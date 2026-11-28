@@ -6,7 +6,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type T
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { introClock, introLogo } from '@/components/Intro';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CATS, defEmo, type Model, type Plan, placeLine, spotTxt, whenStr, kmAway, kmBetween } from '@/lib/model';
+import { CATS, type Model, type Plan, placeLine, spotTxt, whenStr, kmAway, kmBetween } from '@/lib/model';
 import { geo } from '@/lib/spots';
 import { avatarUrl } from '@/lib/avatar';
 import { photoOf } from '@/lib/photos';
@@ -278,19 +278,19 @@ export function Loading() {
   return <View style={[s.center, { backgroundColor: t.bg }]}><ActivityIndicator color={t.acc} size="large" /></View>;
 }
 
-const PASTEL = ['#E3EFDB', '#E9E4FB', '#D9F2E6', '#FBE3EE', '#DDEEFB', '#FBF0D2'];
+/* no photo: the first letter of the name on a colour picked from it, as on the website (av in web/app.js) */
+const HUES = ['#3F7D4E', '#8B5CF6', '#10B981', '#EC4899', '#0EA5E9', '#EAB308'];
 export function Avatar({ m, id, size = 36 }: { m: Model; id: string; size?: number }) {
   const p = id === m.me ? m.profile : m.people[id];
   const name = p?.name || '?';
   let h = 0;
   for (const c of name) h += c.charCodeAt(0);
-  const emo = (p?.emo as string) || defEmo(p?.gender || '');
   /* your own photo comes from the profile row (a path), other people's already as a link (toModel) */
   const photo = id === m.me ? avatarUrl(m.profile?.photo) : (p as { photo?: string } | undefined)?.photo;
-  if (photo) return <Image accessibilityLabel={name} source={{ uri: photo }} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: PASTEL[h % PASTEL.length] }} contentFit="cover" transition={150} />;
+  if (photo) return <Image accessibilityLabel={name} source={{ uri: photo }} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: HUES[h % HUES.length] }} contentFit="cover" transition={150} />;
   return (
-    <View accessibilityLabel={name} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: PASTEL[h % PASTEL.length], alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ fontSize: size * 0.55 }}>{emo}</Text>
+    <View accessibilityLabel={name} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: HUES[h % HUES.length], alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ color: '#fff', fontSize: size * 0.42, fontWeight: '700' }}>{name[0].toUpperCase()}</Text>
     </View>
   );
 }
@@ -330,17 +330,17 @@ export function SaveToggle({ on, onPress }: { on: boolean; onPress: () => void }
 
 /* A plan in a list: photo, category, title, when and where. here: where the phone is (Discover, with location on),
    so the distance shown is from you, the same one the distance filter and sort use; otherwise from your home area. */
-/* onPress(grown): the row grows into the plan page first (components/Grow.tsx), so the page opens without a slide */
+/* onPress(grown): open the plan page; grown: it grows out of this row (components/Grow.tsx) instead of sliding in */
 export function PlanRow({ m, a, onPress, right, here }: { m: Model; a: Plan; onPress: (grown: boolean) => void; right?: ReactNode; here?: [number, number] | null }) {
   const t = useTheme();
   const grow = useGrow();
-  const row = useRef<ViewInstance>(null), thumb = useRef<ViewInstance>(null);
+  const row = useRef<ViewInstance>(null);
   const km = here ? kmBetween(here, geo(a)) : kmAway(m, a);
   return (
     <Pressable ref={row} accessibilityRole="button" accessibilityLabel={a.desc}
-      onPress={() => grow.open(row, thumb, { id: a.id, radius: R, photoRadius: 14, src: photoOf(a), bg: t.card }, onPress)}
-      style={({ pressed }) => [s.row, { backgroundColor: t.card, borderColor: t.line, opacity: grow.hidden === a.id ? 0 : pressed ? 0.85 : 1 }]}>
-      <View ref={thumb} collapsable={false}><Image source={photoOf(a)} style={s.thumb} contentFit="cover" transition={150} /></View>
+      onPress={() => grow.open(row, { id: a.id, radius: R }, onPress)}
+      style={({ pressed }) => [s.row, { backgroundColor: t.card, borderColor: t.line, opacity: pressed ? 0.85 : 1 }]}>
+      <Image source={photoOf(a)} style={s.thumb} contentFit="cover" transition={150} />
       <View style={{ flex: 1, gap: 3 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><CatPill cat={a.cat} /><Text style={{ color: t.mute, fontSize: 12 }}>{spotTxt(a)}</Text></View>
         <Text style={{ color: t.ink, fontSize: 15, fontWeight: '700' }} numberOfLines={2}>{a.desc}</Text>
