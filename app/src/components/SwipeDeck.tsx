@@ -116,8 +116,9 @@ export function SwipeDeck({ m, cards: ranked, onSwipe, holdLeft }: {
           {(next ? [next, top] : [top]).map(a => a.id === top.id ? (
             <Animated.View key={a.id} style={[StyleSheet.absoluteFill, topStyle]}>
               <DeckCard m={m} a={a} onOpen={openTop} />
-              <Animated.View style={[s.stamp, { left: 20, borderColor: t.ok }, likeStyle]}><Text style={[s.stampT, { color: t.ok }]}>JOIN</Text></Animated.View>
-              <Animated.View style={[s.stamp, { right: 20, borderColor: t.bad }, skipStyle]}><Text style={[s.stampT, { color: t.bad }]}>SKIP</Text></Animated.View>
+              {/* the stamps only show; they're invisible at rest and SKIP sits over the share button, so taps go through */}
+              <Animated.View pointerEvents="none" style={[s.stamp, { left: 20, borderColor: t.ok }, likeStyle]}><Text style={[s.stampT, { color: t.ok }]}>JOIN</Text></Animated.View>
+              <Animated.View pointerEvents="none" style={[s.stamp, { right: 20, borderColor: t.bad }, skipStyle]}><Text style={[s.stampT, { color: t.bad }]}>SKIP</Text></Animated.View>
             </Animated.View>
           ) : (
             <Animated.View key={a.id} style={[StyleSheet.absoluteFill, nextStyle]}><DeckCard m={m} a={a} /></Animated.View>

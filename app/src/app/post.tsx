@@ -29,7 +29,7 @@ export default function Post() {
   /* Android draws behind its navigation buttons, so the end of the page keeps clear of them */
   const insets = useSafeAreaInsets();
   const m = useModel();
-  const { run, toast, askMicro } = useStore();
+  const { run, toast, askMicro, saveAsked } = useStore();
   const { id, tpl } = useLocalSearchParams<{ id?: string; tpl?: string }>();
   const edit = id ? m.acts.find(a => a.id === id && a.host === m.me) : undefined;
   const start = edit ?? (tpl ? m.acts.find(a => a.id === tpl) : undefined);
@@ -91,7 +91,7 @@ export default function Post() {
     if (r === undefined) return;
     toast(edit ? (edit.members.length ? 'Saved. Everyone going sees a note about the changes.' : 'Saved') : 'Posted! People nearby can see it now.');
     goBack();
-    if (!edit) { askMicro('post'); registerPush(true); }   // to hear about requests to join
+    if (!edit) { saveAsked(() => ({ fbDid: true })); askMicro('post'); registerPush(true); }   // to hear about requests to join
   }
 
 

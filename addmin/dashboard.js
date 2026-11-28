@@ -72,6 +72,38 @@ function reviewPanel(rv,fr){
     :'<p class="empty">No one is waiting for review.</p>')+'<div style="height:16px"></div>';
 }
 
+/* Reports from people in the app (admin_reports in schema-app.sql): the open ones grouped by the person reported (or
+   the plan, for a check-in that went wrong), with one decision for the group; who is suspended; the last decisions.
+   Null when schema-app.sql has not been re-run yet. Each new report is also emailed to the team (_report_email). */
+async function fetchReports(){if(!REMOTE)return null;try{return await rpc('admin_reports',{pass:PASS})}catch(e){return null}}
+const URGENT=['Made me feel unsafe','Check-in: something went wrong'];
+const OUTCOME={dismissed:'dismissed',warned:'warned',suspended:'suspended'};
+const avatar=(ph,name)=>/^[0-9a-f-]{36}\/[0-9a-z]{16}\.jpg$/.test(ph||'')?`<img class="rvp" src="${esc(BASE+'/storage/v1/object/public/avatars/'+ph)}" alt="${esc(name)}" width="56" height="56">`:`<span class="rvp none" aria-hidden="true">${esc((name||'?')[0])}</span>`;
+function reportsPanel(rp){
+  if(!rp)return '';
+  const groups=new Map();
+  (rp.open||[]).forEach(r=>{const k=r.target||'act:'+r.act;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(r)});
+  const gs=[...groups.values()].sort((a,b)=>(b.some(r=>URGENT.includes(r.reason))-a.some(r=>URGENT.includes(r.reason)))||a[0].at-b[0].at);
+  const past=p=>{const e=Object.entries(p||{}).map(([k,v])=>`${OUTCOME[k]||k} ${+v}×`);return e.length?` · before: ${esc(e.join(', '))}`:''};
+  const open=gs.map((rs,i)=>{
+    const f=rs[0],person=!!f.target,urgent=rs.some(r=>URGENT.includes(r.reason));
+    return `<div class="rg${urgent?' urgent':''}">
+      <div class="rv">${person?avatar(f.photo,f.target_name):''}<span class="who"><b>${esc(person?f.target_name:'A plan: '+(f.plan||'(gone)'))}</b>${urgent?' <span class="tagu">Urgent</span>':''}${f.suspended?' <span class="tagu">Suspended</span>':''}<br><span class="small mute">${rs.length} open report${rs.length>1?'s':''}${person?past(f.past):''}</span></span></div>
+      <ul class="rl">${rs.map(r=>`<li><b>${esc(r.reason)}</b> <span class="small mute">· ${esc(when(r.at))} · from ${esc(r.reporter_name||'someone')}${r.plan&&person?` · plan: ${esc(r.plan)}`:''}</span>${r.msg_text?`<div class="rq">“${esc(r.msg_text)}”</div>`:''}${r.note?`<div class="rn">${esc(r.note)}</div>`:''}</li>`).join('')}</ul>
+      <label for="rpn${i}">${person?'Note (shown to them if you warn or suspend)':'Note (only for the team)'}</label>
+      <textarea id="rpn${i}" class="rpn" maxlength="300" rows="2" placeholder="${person?'e.g. Messages to other members must stay respectful.':'What you found'}"></textarea>
+      <div class="ra" data-ids="${esc(rs.map(r=>r.id).join(','))}" data-n="rpn${i}" data-who="${esc(person?f.target_name:'this plan')}">
+        <button class="btn sec" data-ra="dismissed">${person?'Dismiss':'Mark reviewed'}</button>${person?`<button class="btn warnb" data-ra="warned">Warn</button>${f.suspended?'':'<button class="btn badb" data-ra="suspended">Suspend</button>'}`:''}</div></div>`;
+  }).join('');
+  const sus=(rp.suspended||[]).map(p=>`<div class="rv">${avatar(p.photo,p.name)}<span class="who"><b>${esc(p.name)}</b> · since ${esc(when(p.since))}${p.note?`<br><span class="small mute">${esc(p.note)}</span>`:''}</span><button class="btn sec" data-lift="${esc(p.user)}" data-who="${esc(p.name)}">Lift suspension</button></div>`).join('');
+  const done=(rp.handled||[]).map(h=>[when(h.at),h.target_name||('Plan: '+(h.plan||'?')),h.reason,OUTCOME[h.status]||h.status,h.note||'']);
+  return panel('Reports',gs.length?`${gs.length} to review`:'nothing to review',
+    `<p class="small mute">Reports people sent about someone's profile, a chat message or a meetup. Each one is also emailed to the team. <b>Dismiss</b> closes them with no action. <b>Warn</b> sends the person a notice in Updates with your note. <b>Suspend</b> stops them posting, asking to join and sending messages, and hides their upcoming plans from new people; nothing of theirs is deleted, and you can lift it below. The people who reported get a thank-you that doesn't say what you decided.</p>`
+    +(gs.length?open:'<p class="empty">No open reports.</p>')
+    +(sus?`<h3 class="rh">Suspended</h3>${sus}`:'')
+    +(done.length?`<details><summary>Last ${done.length>1?done.length+' decisions':'decision'}</summary><table><thead><tr>${['When','About','Reason','Decision','Note'].map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${done.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></details>`:''))+'<div style="height:16px"></div>';
+}
+
 /* Same totals, worked out from data saved in this browser when Supabase is not connected. */
 function localStats(){
   let all={};try{all=JSON.parse(localStorage.getItem(LKEY)||'{}')}catch(e){}
@@ -105,7 +137,7 @@ function dayChart(byDay){
     +table(['Day','Sign-ups'],days.map((d,i)=>[lab(d),vals[i]]).filter(r=>r[1]));
 }
 
-function view(st,rv,fr){
+function view(st,rv,fr,rp){
   last=new Date();
   const P=Number(st.participants||0),T=Number(st.tried||0),F=Number(st.feedback||0),wu=st.would_use||{},wuN=sum(wu);
   const avg=st.avg_rating==null?null:Number(st.avg_rating),rated=st.rated==null?F:Number(st.rated);   // rated: the dashboard from before schema-app.sql was re-run
@@ -119,6 +151,7 @@ function view(st,rv,fr){
   $('#main').innerHTML=`${REMOTE?'':'<div class="note">Supabase is not connected, so this shows data saved in this browser only.</div>'}
   <div class="top"><div><h1>How the beta is going</h1><p class="small mute" style="margin:0">Totals only: no names or emails. Feedback text appears only where people agreed to be quoted. Updated ${last.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}.</p></div>
     <div style="display:flex;gap:8px"><button class="btn sec" id="refresh">Refresh</button>${REMOTE?'<button class="btn sec" id="lock">Lock</button>':''}</div></div>
+  ${reportsPanel(rp)}
   ${reviewPanel(rv,fr)}
   <div class="kpis">
     <div class="panel kpi hero"><div class="l">Sign-ups</div><div class="v">${num(P)}</div><div class="s">${num(st.sessions_30d||0)} app sessions in the last 30 days</div></div>
@@ -155,6 +188,20 @@ function view(st,rv,fr){
     }
     catch(e){b.disabled=false;alert(e.message)}
   });
+  /* a decision on a group of reports; Warn and Suspend ask first, since the person is told */
+  document.querySelectorAll('[data-ra]').forEach(b=>b.onclick=async()=>{
+    const box=b.closest('.ra'),act=b.dataset.ra,note=($('#'+box.dataset.n)?.value||'').trim();
+    if(act!=='dismissed'&&!confirm(`${act==='warned'?'Warn':'Suspend'} ${box.dataset.who}? They get a notice${note?' with your note':''}.`))return;
+    box.querySelectorAll('button').forEach(x=>x.disabled=true);
+    try{await rpc('admin_act_report',{pass:PASS,p_reports:box.dataset.ids.split(','),p_action:act,p_note:note});load()}
+    catch(e){box.querySelectorAll('button').forEach(x=>x.disabled=false);alert(e.message)}
+  });
+  document.querySelectorAll('[data-lift]').forEach(b=>b.onclick=async()=>{
+    if(!confirm(`Lift ${b.dataset.who}'s suspension? They get a notice that they can use Overhere again.`))return;
+    b.disabled=true;
+    try{await rpc('admin_lift_suspension',{pass:PASS,p_user:b.dataset.lift});load()}
+    catch(e){b.disabled=false;alert(e.message)}
+  });
   const lk=$('#lock');if(lk)lk.onclick=()=>{PASS='';login()};
 }
 function login(err){
@@ -166,7 +213,7 @@ function login(err){
 }
 async function load(){
   const b=document.querySelector('#f button,#refresh');if(b){b.disabled=true;b.textContent='Loading…'}
-  try{const st=await fetchStats(),rv=await fetchReviews();view(st,rv,await fetchFrames(rv))}catch(e){REMOTE?login(e.message):($('#main').innerHTML=`<div class="err">${esc(e.message)}</div>`)}
+  try{const st=await fetchStats(),[rv,rp]=await Promise.all([fetchReviews(),fetchReports()]);view(st,rv,await fetchFrames(rv),rp)}catch(e){REMOTE?login(e.message):($('#main').innerHTML=`<div class="err">${esc(e.message)}</div>`)}
 }
 /* One tooltip for every bar and column: follows the pointer, or sits above the focused mark. */
 const tip=$('#tip');

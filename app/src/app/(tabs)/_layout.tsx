@@ -1,18 +1,19 @@
 import Feather from '@expo/vector-icons/Feather';
 import { router, Tabs } from 'expo-router';
-import { useEffect } from 'react';
-import { Pressable, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { AppState, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MicroAsk } from '@/components/Feedback';
 import { Avatar, Btn, Empty, Icon } from '@/components/ui';
 import { TermsPrompt } from '@/components/TermsPrompt';
+import { askedOf, FB_TICK, FB_TIME, fbOpen } from '@/lib/feedback';
 import { column } from '@/lib/layout';
 import { nowOf } from '@/lib/model';
 import { useReminders } from '@/lib/reminders';
 import { useStore } from '@/lib/store';
 import { useTheme } from '@/lib/theme';
 
-/* Each start of the app counts as a visit, for when to ask for feedback (fbDue in lib/feedback.ts). */
+/* Each start of the app counts as a visit, and decides whether the feedback card is due (fbOpen in lib/feedback.ts). */
 let counted = false;
 
 export default function TabLayout() {
@@ -23,8 +24,19 @@ export default function TabLayout() {
     if (counted || !model) return;
     counted = true;
     const now = nowOf(model);
-    saveAsked(a => ({ fbOpens: (a.fbOpens || 0) + 1, ...(a.fbFirst ? {} : { fbFirst: now }) }));
+    saveAsked(a => fbOpen(model, a, now));
   }, [model, saveAsked]);
+  /* Minutes of use while the app is on screen, saved once a minute until FB_TIME is reached. */
+  const time = useRef(FB_TIME);
+  useEffect(() => { time.current = model ? askedOf(model).fbTime || 0 : FB_TIME; }, [model]);
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (AppState.currentState !== 'active' || time.current >= FB_TIME) return;
+      time.current += FB_TICK;
+      saveAsked(a => ({ fbTime: Math.min(FB_TIME, (a.fbTime || 0) + FB_TICK) }));
+    }, FB_TICK);
+    return () => clearInterval(id);
+  }, [saveAsked]);
   useReminders();
   /* A hosted plan whose three daily attendance reminders went unanswered comes before anything else (app_state 'due',
      the website's mustrate): the tabs wait until it's rated. */

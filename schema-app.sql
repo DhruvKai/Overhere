@@ -222,6 +222,15 @@ create table if not exists reports (
   note       text not null default '' check (char_length(note) <= 500),
   created_at timestamptz not null default now()
 );
+-- What the team decided (the Reports panel in addmin/, admin_act_report): open until someone looks at it. emailed says
+-- the alert to the team went out (_report_email).
+alter table reports add column if not exists status text not null default 'open';
+alter table reports drop constraint if exists reports_status_check;
+alter table reports add constraint reports_status_check check (status in ('open', 'dismissed', 'warned', 'suspended'));
+alter table reports add column if not exists handled_at timestamptz;
+alter table reports add column if not exists admin_note text not null default '' check (char_length(admin_note) <= 500);
+alter table reports add column if not exists emailed boolean not null default false;
+create index if not exists reports_open on reports (created_at) where status = 'open';
 
 create table if not exists blocks (
   blocker uuid not null references profiles(id) on delete cascade,
@@ -288,6 +297,10 @@ alter table profiles drop constraint if exists profiles_photo_check;
 alter table profiles add constraint profiles_photo_check check (photo is null or photo ~ '^[0-9a-f-]{36}/[0-9a-z]{16}\.jpg$');
 alter table profiles add column if not exists photo2 text;
 alter table profiles add column if not exists last_name text not null default '' check (char_length(last_name) <= 40);
+-- Suspended by the team after a report (admin_act_report): while set, they can't post, edit, ask to join or message
+-- (_not_suspended), and their upcoming plans are hidden from new people (_eligible). Nothing of theirs is deleted.
+alter table profiles add column if not exists suspended_at timestamptz;
+alter table profiles add column if not exists suspended_note text not null default '' check (char_length(suspended_note) <= 500);
 alter table profiles drop constraint if exists profiles_photo2_check;
 alter table profiles add constraint profiles_photo2_check check (photo2 is null or photo2 ~ '^[0-9a-f-]{36}/[0-9a-z]{16}\.jpg$');
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -402,7 +415,15 @@ create or replace function _blocked(x uuid, y uuid) returns boolean language sql
 
 create or replace function _eligible(a activities, viewer uuid) returns boolean language sql stable as $$
   select (a.audience is null or exists (select 1 from profiles p where p.id = viewer and p.face and p.gender = any (a.audience)))
-     and not _blocked(viewer, a.host) $$;
+     and not _blocked(viewer, a.host)
+     and not exists (select 1 from profiles h where h.id = a.host and h.suspended_at is not null) $$;
+
+create or replace function _not_suspended(p uuid) returns void language plpgsql stable as $$
+begin
+  if exists (select 1 from profiles where id = p and suspended_at is not null) then
+    raise exception 'Your account is suspended while we look into a report. Email admin@overhere.social if you think this is a mistake.';
+  end if;
+end $$;
 
 create or replace function _note(p_user uuid, p_kind text, p_title text, p_tag text, p_tone text, p_act uuid,
                                  p_body text, p_flags text[] default '{}', p_key text default null)
@@ -1029,6 +1050,7 @@ create or replace function _far_from_home(me profiles, p jsonb) returns boolean 
 create or replace function post_activity(p jsonb) returns uuid language plpgsql security definer set search_path = public as $$
 declare u uuid := _uid(); me profiles; st timestamptz; nid uuid; v_cap int; v_dur int;
 begin
+  perform _not_suspended(u);
   select * into me from profiles where id = u;
   if not found then raise exception 'Finish your profile first'; end if;
   if not me.face then raise exception 'Do the face check before posting'; end if;
@@ -1062,6 +1084,7 @@ end $$;
 create or replace function edit_activity(p_act uuid, p jsonb) returns void language plpgsql security definer set search_path = public as $$
 declare u uuid := _uid(); a activities; me profiles; st timestamptz; moved boolean; ms uuid[]; m uuid; v_cap int; v_dur int;
 begin
+  perform _not_suspended(u);
   select * into a from activities where id = p_act for update;
   if not found or a.host <> u then raise exception 'Only the host can edit this activity'; end if;
   if a.starts_at <= now() then raise exception 'This activity has already started'; end if;
@@ -1120,6 +1143,7 @@ end $$;
 create or replace function request_join(p_act uuid, p_note text) returns text language plpgsql security definer set search_path = public as $$
 declare u uuid := _uid(); me profiles; a activities; rid uuid;
 begin
+  perform _not_suspended(u);
   select * into me from profiles where id = u;
   if not found then raise exception 'Finish your profile first'; end if;
   if not me.face then raise exception 'Do the face check before asking to join'; end if;
@@ -1233,6 +1257,7 @@ create or replace function _chat_closed(a activities) returns boolean language s
 create or replace function send_message(p_act uuid, p_body text, p_poll jsonb default null) returns void language plpgsql security definer set search_path = public as $$
 declare u uuid := _uid(); a activities; body text := trim(coalesce(p_body, '')); poll jsonb;
 begin
+  perform _not_suspended(u);
   select * into a from activities where id = p_act;
   if not found or not (a.host = u or u = any (_members(p_act))) then raise exception 'Only members can message this group'; end if;
   if _chat_closed(a) then raise exception 'This chat closed an hour after the plan ended'; end if;
@@ -1355,6 +1380,119 @@ begin
   end if;
   insert into reports (reporter, target, act, msg, msg_text, reason, note)
   values (u, p_target, p_act, p_msg, (select body from messages where id = p_msg), left(p_reason, 80), left(coalesce(p_note, ''), 500));
+end $$;
+
+/* An email to the team for each new report, straight from the database through Resend (pg_net, the same as push).
+   It needs the Resend key in Vault, saved once in the SQL editor:
+     select vault.create_secret('<the RESEND_API_KEY of the Edge Functions>', 'resend_api_key');
+   Without it, or if anything fails, the report is still saved. A host removing someone ("Removed: ...") is only
+   listed in the dashboard. Safety reasons say URGENT in the subject. */
+create or replace function _report_email() returns trigger language plpgsql security definer set search_path = public as $$
+declare k text; a activities; n int; who text; subj text; body text;
+begin
+  if new.reason like 'Removed: %' then return null; end if;
+  select decrypted_secret into k from vault.decrypted_secrets where name = 'resend_api_key' limit 1;
+  if k is null then return null; end if;
+  select * into a from activities where id = new.act;
+  who := case when new.target is null then 'a plan' else _name(new.target) end;
+  select count(*) into n from reports where status = 'open'
+    and (target = new.target or (new.target is null and target is null and act = new.act));
+  subj := case when new.reason in ('Made me feel unsafe', 'Check-in: something went wrong') then 'URGENT: ' else '' end
+       || 'Report about ' || who || ': ' || new.reason;
+  body := concat_ws(E'\n\n',
+    'Reported: ' || case when new.target is null then 'no one in particular (about a plan)' else who || ' (' || new.target || ')' end,
+    'By: ' || case when new.reporter is null then 'someone' else _name(new.reporter) || ' (' || new.reporter || ')' end,
+    case when a.id is not null then 'Plan: ' || a.description || ', ' || _when(a.starts_at) || ' at ' || a.venue end,
+    'Reason: ' || new.reason,
+    case when new.note <> '' then 'Their note: ' || new.note end,
+    case when new.msg_text is not null then 'The message: "' || new.msg_text || '"' end,
+    'Open reports about ' || case when new.target is null then 'this plan' else 'this person' end || ' now: ' || n,
+    'Review it in the dashboard, under Reports: https://overhere.social/addmin/');
+  perform net.http_post(url := 'https://api.resend.com/emails',
+    body := jsonb_build_object('from', 'Overhere alerts <alerts@mail.overhere.social>',
+              'to', jsonb_build_array(coalesce((select v from app_config where app_config.k = 'alert_to'), 'admin@overhere.social')),
+              'subject', left(subj, 200), 'text', body),
+    headers := jsonb_build_object('Authorization', 'Bearer ' || k, 'Content-Type', 'application/json'));
+  update reports set emailed = true where id = new.id;
+  return null;
+exception when others then
+  return null;
+end $$;
+drop trigger if exists reports_email on reports;
+create trigger reports_email after insert on reports for each row execute function _report_email();
+revoke all on function _report_email() from public, anon, authenticated;
+
+/* The Reports panel of the dashboard (addmin/): open reports, who is suspended, and the last 30 decisions. */
+create or replace function admin_reports(pass text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare e text := _admin_err(pass);
+begin
+  if e is not null then return jsonb_build_object('error', e); end if;
+  return jsonb_build_object(
+    'open', (select coalesce(jsonb_agg(jsonb_build_object(
+        'id', r.id, 'at', _ms(r.created_at), 'reason', r.reason, 'note', r.note, 'msg_text', r.msg_text,
+        'reporter', r.reporter, 'reporter_name', case when r.reporter is not null then _name(r.reporter) end,
+        'target', r.target, 'target_name', case when r.target is not null then _name(r.target) end,
+        'photo', t.photo, 'suspended', t.suspended_at is not null,
+        'act', r.act, 'plan', x.description, 'plan_at', _ms(x.starts_at),
+        'past', (select jsonb_object_agg(q.status, q.c) from (select o.status, count(*) c from reports o
+                 where o.target = r.target and o.status <> 'open' group by o.status) q))
+      order by r.created_at), '[]')
+      from reports r left join profiles t on t.id = r.target left join activities x on x.id = r.act
+      where r.status = 'open'),
+    'suspended', (select coalesce(jsonb_agg(jsonb_build_object('user', p.id, 'name', p.name, 'photo', p.photo,
+        'since', _ms(p.suspended_at), 'note', p.suspended_note) order by p.suspended_at desc), '[]')
+      from profiles p where p.suspended_at is not null),
+    'handled', (select coalesce(jsonb_agg(q.h order by q.hat desc), '[]') from (
+      select r.handled_at hat, jsonb_build_object('at', _ms(r.handled_at), 'status', r.status, 'note', r.admin_note,
+        'reason', r.reason, 'target_name', case when r.target is not null then _name(r.target) end, 'plan', x.description) h
+      from reports r left join activities x on x.id = r.act where r.status <> 'open' and r.handled_at is not null
+      order by r.handled_at desc limit 30) q));
+end $$;
+
+/* The team's decision on the open reports about one person (or one plan), all closed together: dismissed (no action),
+   warned (a notice to them in Updates) or suspended (_not_suspended, until admin_lift_suspension). The note is shown
+   to them when warned or suspended. Each person who reported gets a thank-you that doesn't say what was decided. */
+create or replace function admin_act_report(pass text, p_reports uuid[], p_action text, p_note text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare e text := _admin_err(pass); n int; tg uuid[]; v_note text := left(trim(coalesce(p_note, '')), 300); r record;
+begin
+  if e is not null then return jsonb_build_object('error', e); end if;
+  if p_action not in ('dismissed', 'warned', 'suspended') then raise exception 'Unknown action'; end if;
+  select count(*), array_agg(distinct target) filter (where target is not null) into n, tg
+  from reports where id = any (p_reports) and status = 'open';
+  if n = 0 then raise exception 'These reports were already handled. Reload the dashboard.'; end if;
+  if p_action <> 'dismissed' and coalesce(cardinality(tg), 0) <> 1 then
+    raise exception 'Warn and suspend need reports about one person';
+  end if;
+  update reports set status = p_action, handled_at = now(), admin_note = v_note where id = any (p_reports) and status = 'open';
+  if p_action = 'warned' then
+    perform _note(tg[1], 'update', 'A message from the Overhere team', 'Safety', 'warn', null,
+      'We looked into a report about you. Please keep to our Community guidelines (overhere.social/guidelines) so everyone feels safe.'
+      || case when v_note <> '' then ' ' || v_note else '' end);
+  elsif p_action = 'suspended' then
+    update profiles set suspended_at = coalesce(suspended_at, now()), suspended_note = v_note where id = tg[1];
+    perform _note(tg[1], 'update', 'Your account is suspended', 'Account', 'warn', null,
+      'After looking into a report, we have suspended your account: for now you can''t post plans, ask to join or send messages.'
+      || case when v_note <> '' then ' ' || v_note else '' end || ' If you think this is a mistake, email admin@overhere.social.');
+  end if;
+  for r in select distinct on (reporter) reporter, id from reports
+           where id = any (p_reports) and reporter is not null and reporter is distinct from tg[1] order by reporter, created_at loop
+    perform _note(r.reporter, 'update', 'Thanks for your report', 'Safety', 'ok', null,
+      'Our team has looked into your report. Thank you for helping keep Overhere safe.', '{}', 'report-done:' || r.id);
+  end loop;
+  return jsonb_build_object('ok', true, 'handled', n);
+end $$;
+
+create or replace function admin_lift_suspension(pass text, p_user uuid) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare e text := _admin_err(pass);
+begin
+  if e is not null then return jsonb_build_object('error', e); end if;
+  update profiles set suspended_at = null, suspended_note = '' where id = p_user and suspended_at is not null;
+  if not found then raise exception 'They are not suspended'; end if;
+  perform _note(p_user, 'update', 'Your account is active again', 'Account', 'ok', null,
+    'You can post plans, ask to join and send messages again. Thanks for your patience.');
+  return jsonb_build_object('ok', true);
 end $$;
 
 create or replace function block_user(p_user uuid) returns void language plpgsql security definer set search_path = public as $$
@@ -1630,7 +1768,7 @@ do $$ declare f record; begin
              'edit_activity','cancel_activity','request_join','withdraw_request','decide_request','leave_activity','remove_member','send_message','vote',
              'relist_spot','record_attendance','noshow_reply',
              'rate_activity','report','block_user','unblock_user','add_notification','read_notifications','verify_simulated','set_photo',
-             'verify_precheck_service','verify_start_service','verify_finish_service','admin_reviews','admin_decide_review',
+             'verify_precheck_service','verify_start_service','verify_finish_service','admin_reviews','admin_decide_review','admin_reports','admin_act_report','admin_lift_suspension',
              'admin_stats','log_event','send_feedback','delete_my_account','accept_terms','invite_info',
              'verify_alert_claim_service','face_frames_keep_service','otp_guard_check_service','otp_guard_fail_service','otp_guard_ok_service'))
   loop
@@ -1639,7 +1777,7 @@ do $$ declare f record; begin
     if f.proname in ('verify_precheck_service', 'verify_start_service', 'verify_finish_service', 'verify_alert_claim_service',
                      'face_frames_keep_service', 'otp_guard_check_service', 'otp_guard_fail_service', 'otp_guard_ok_service') then
       execute format('grant execute on function %s to service_role', f.sig);       -- Edge Functions only
-    elsif f.proname in ('admin_reviews', 'admin_decide_review', 'admin_stats') then
+    elsif f.proname in ('admin_reviews', 'admin_decide_review', 'admin_stats', 'admin_reports', 'admin_act_report', 'admin_lift_suspension') then
       execute format('grant execute on function %s to anon, authenticated', f.sig); -- password checked inside
     elsif f.proname in ('log_event', 'send_feedback') then
       execute format('grant execute on function %s to anon, authenticated', f.sig); -- limited inside

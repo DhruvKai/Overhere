@@ -724,15 +724,24 @@ function microHtml(){
 }
 /* ---- the feedback sheet, and when to ask for it ---- */
 /* S.asked also remembers: fbSent (when you last sent feedback from the app), fbFirst and fbOpens (your first visit and
-   how many times you've opened the app), fbNo and fbNoAt (how often, and when, you said "not now" to the card). */
-const FB_AFTER=2*864e5,FB_AGAIN=7*864e5;
+   how many times you've opened the app), fbTime (minutes of use, counted up to FB_TIME), fbDid (you've posted a plan or
+   asked to join one), fbReady (both were true when you last opened Overhere), fbNo and fbNoAt (how often, and when, you
+   said "not now" to the card). The same rules as the app's lib/feedback.ts, which shares S.asked. */
+const FB_TIME=10*60e3,FB_TICK=60e3,FB_AGAIN=7*864e5;
 let OPENED=false;
-function countOpen(){if(OPENED||!S.me)return;OPENED=true;const a=S.asked;a.fbOpens=(a.fbOpens||0)+1;if(!a.fbFirst)a.fbFirst=now();save()}
-/* The card in the feed shows from your 3rd visit or 2nd day, and once more a week after "not now". */
+/* fbDid is saved when you post or ask; the rest covers what you did before it was. */
+const fbDid=a=>!!(a.fbDid||a.post||a.request||S.acts.some(x=>x.host==='me'||x.members.includes('me'))||S.reqs.some(r=>r.user==='me'));
+function countOpen(){if(OPENED||!S.me)return;OPENED=true;const a=S.asked;a.fbOpens=(a.fbOpens||0)+1;if(!a.fbFirst)a.fbFirst=now();
+  if(!a.fbReady&&(a.fbTime||0)>=FB_TIME&&fbDid(a))a.fbReady=true;save()}
+/* Minutes of use while the page is in view, saved once a minute until FB_TIME is reached. */
+setInterval(()=>{const a=S.me&&S.asked;if(!a||document.visibilityState!=='visible'||(a.fbTime||0)>=FB_TIME)return;
+  a.fbTime=Math.min(FB_TIME,(a.fbTime||0)+FB_TICK);save()},FB_TICK);
+/* The card in the feed waits until you've used Overhere for 10 minutes in all and posted a plan or asked to join one.
+   It's checked when you open Overhere (fbReady, set by countOpen), so it shows on a later visit, never straight after
+   posting or asking, which have their own quick question. It comes back once, a week after "not now". */
 function fbDue(){
-  const a=S.asked||{};if(a.fbSent||(a.fbNo||0)>=2)return false;
-  if(a.fbNo&&now()-(a.fbNoAt||0)<FB_AGAIN)return false;
-  return (a.fbOpens||0)>=3||(!!a.fbFirst&&now()-a.fbFirst>=FB_AFTER);
+  const a=S.asked||{};if(a.fbSent||(a.fbNo||0)>=2||!a.fbReady)return false;
+  return !(a.fbNo&&now()-(a.fbNoAt||0)<FB_AGAIN);
 }
 const fbCard=()=>fbDue()?`<div class="fbcard"><span class="fe" aria-hidden="true">💬</span><div class="fx"><b>How's Overhere going so far?</b><span>20 seconds, and it shapes what we build next.</span></div>
   <button class="btn sm" data-a="fb" data-k="card">Tell us</button><button class="ib" data-a="fbnot" title="Not now" aria-label="Not now">${I('x',15)}</button></div>`:'';
@@ -1025,7 +1034,8 @@ function bindDrag(){
   const st=el.querySelector('.stamp');
   /* a tap opens the details; a drag must not */
   el.addEventListener('click',e=>{if(dragged){e.stopPropagation();dragged=false}});
-  el.onpointerdown=e=>{if(e.target.closest('button'))return;down=true;sx=e.clientX;el.setPointerCapture(e.pointerId);el.style.transition='none'};
+  /* a new press starts fresh, so a small drag that snapped back doesn't swallow the next tap (on Share, say) */
+  el.onpointerdown=e=>{dragged=false;if(e.target.closest('button'))return;down=true;sx=e.clientX;el.setPointerCapture(e.pointerId);el.style.transition='none'};
   el.onpointermove=e=>{
     if(!down)return;dx=e.clientX-sx;
     el.style.transform=`translateX(${dx}px) rotate(${dx/18}deg)`;
@@ -2606,7 +2616,7 @@ const A={
     }
     const id=await run('post_activity',{p});
     if(id===undefined){e.target.closest('button').disabled=false;return}
-    track('post_created',{cat:p.cat,repeat:!!rep,audience:all?'everyone':'limited',cost:p.cost,template:!!ui.modal?.tpl});askMicro('post');
+    track('post_created',{cat:p.cat,repeat:!!rep,audience:all?'everyone':'limited',cost:p.cost,template:!!ui.modal?.tpl});S.asked.fbDid=true;save();askMicro('post');
     ui.modal=null;ui.tab='acts';toast('Posted. Now visible to eligible people.');render();
   },
   editact:d=>{ui.modal={type:'post',id:d.id};render()},
@@ -2623,7 +2633,7 @@ const A={
       const st=await run('request_join',{p_act:d.id,p_note:note});
       if(st===undefined)return;
       if(a)learn(a.cat,1);
-      track('request_sent',{waitlist:st==='waitlist',note:!!note});askMicro('request');
+      track('request_sent',{waitlist:st==='waitlist',note:!!note});S.asked.fbDid=true;save();askMicro('request');
       toast(st==='waitlist'?`You're on the waitlist. Your request goes to ${uname(a?.host)} if a spot opens.`:st==='accepted'?`${uname(a?.host)} said yes! Say hi in the group chat.`:'Request sent to '+uname(a?.host)+'. Follow it in Requests.');
       ui.modal=null;
       if(ui.tab==='swipe'&&!deck().length){ui.tab='discover';toast("Request sent. You've seen everything nearby, here's Discover.")}

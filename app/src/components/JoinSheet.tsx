@@ -17,7 +17,7 @@ import { Btn, Field, Label, Meta, Note } from './ui';
 export function JoinSheet({ plan, onClose, onDone }: { plan: Plan | null; onClose: () => void; onDone?: () => void }) {
   const t = useTheme();
   const m = useModel();
-  const { run, toast, askMicro, savePriv } = useStore();
+  const { run, toast, askMicro, savePriv, saveAsked } = useStore();
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [safety, setSafety] = useState(false);
@@ -38,6 +38,7 @@ export function JoinSheet({ plan, onClose, onDone }: { plan: Plan | null; onClos
     if (st === undefined) return;
     /* asking to join counts towards the category in Swipe's order */
     savePriv(p => learnTaste(p, a.cat, 1));
+    saveAsked(() => ({ fbDid: true }));   // counts towards when to ask for feedback (lib/feedback.ts)
     toast(st === 'accepted' ? `${hostName} said yes! Say hi in the group chat.` : `Request sent to ${hostName}. Follow it in My plans.`);
     setNote('');
     onClose();
